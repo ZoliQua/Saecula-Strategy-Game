@@ -1808,6 +1808,11 @@ tulajdonos felülírhatja.
   - minden játékos egy királlyal (`king`) indul a városházája mellett;
   - a játékos kiesik, ha nincs élő királya (a szállítóhajón utazó él) vagy
     nincs városházája (így elbújtatott királlyal nem húzható a végtelenségig);
+  - ha valaki a királya elvesztésével esik ki, a városházái (az épülők is)
+    ugyanabban a lépésben összedőlnek, így utána pontosan úgy viselkedik, mint
+    egy Hódításban kiesett játékos: a serege és a többi épülete megmarad, külön
+    tiltás nincs rá. Az összedőlés senkinek sem ad pontot (tulajdonosi döntés,
+    2026-11-22);
   - a csapat akkor nyer, ha minden ellenfele kiesett; az ember a saját
     kiesésével veszít. Új győzelmi ok: `regicide`;
   - a király nem képezhető, nem harcol, nem téríthető, népességet nem foglal,
