@@ -15,6 +15,7 @@ import v9Save from './fixtures/v9-092.json';
 import v10Save from './fixtures/v10-m16.json';
 import v11Save from './fixtures/v11-m17.json';
 import v12Save from './fixtures/v12-m18.json';
+import v13Save from './fixtures/v13-m19.json';
 
 /**
  * 1.0 save compatibility: a real save of every schema version (the step
@@ -35,6 +36,7 @@ const SAVES: ReadonlyArray<readonly [string, unknown]> = [
   ['v10 (M16)', v10Save],
   ['v11 (M17)', v11Save],
   ['v12 (M18)', v12Save],
+  ['v13 (M19)', v13Save],
 ];
 
 describe('every schema version loads and plays on', () => {
