@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { tileToScreen } from '../../iso/coordinates';
 import type { Entity } from '../components';
+import { canViewerSee } from './renderPlacement';
 import type { EcsWorld } from '../world';
+import type { FogOfWarData } from '../../map/FogOfWarData';
 
 interface BarRecord {
   bg: Phaser.GameObjects.Rectangle;
@@ -14,16 +16,25 @@ const BAR_HEIGHT = 4;
 /**
  * Draws a thin HP bar above every entity with a health component,
  * unless HP is full — full-HP bars just add visual noise. Hidden
- * entirely for entities that are dying.
+ * entirely for entities that are dying, and for those the viewer cannot
+ * see (the renderer's fog rule, canViewerSee): a bar never gives away a
+ * position under fog.
  */
 export class HealthBarSystem {
   private readonly scene: Phaser.Scene;
   private readonly world: EcsWorld;
   private readonly bars = new Map<number, BarRecord>();
+  private fog: FogOfWarData | null = null;
+  private viewerPlayerId = 1;
 
   constructor(scene: Phaser.Scene, world: EcsWorld) {
     this.scene = scene;
     this.world = world;
+  }
+
+  setFogContext(fog: FogOfWarData, viewerPlayerId: number): void {
+    this.fog = fog;
+    this.viewerPlayerId = viewerPlayerId;
   }
 
   update(): void {
@@ -32,7 +43,7 @@ export class HealthBarSystem {
       if (entity.id === undefined) continue;
       const full = entity.health.current >= entity.health.max;
       const dying = (entity as Entity).dying !== undefined;
-      if (full || dying) continue;
+      if (full || dying || !canViewerSee(entity, this.fog, this.viewerPlayerId)) continue;
       alive.add(entity.id);
 
       let record = this.bars.get(entity.id);

@@ -75,6 +75,8 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
   építi meg a kikötőjét. A nyitó portya előtti visszatartás kb. 9 falusinál
   megállította a falusi-képzést, így a kikötő csak a portyák után készült el,
   és a vízi meccset az döntötte el, kinek volt véletlenül kikötője.
+- **Életerő-csík a ködben:** a sérült ellenfél életerő-csíkja már nem látszik a
+  felfedezett, de épp nem látott területen.
 
 ### Fejlesztőknek
 
