@@ -218,7 +218,6 @@ export const TERRAIN_LOOK = {
   swayMinZoom: 0.7,
 } as const;
 
-/** Unit X-ray silhouettes behind cliffs, buildings and trees (UnitXRay). Sizes in world px. */
 /** The king's crown (M19): the HUD's amber accent, unlit; sizes in world px. */
 export const CROWN = {
   gold: 0xffcf8f,
@@ -237,6 +236,7 @@ export const CROWN = {
   minimapRise: 2,
 } as const;
 
+/** Unit X-ray silhouettes behind cliffs, buildings and trees (UnitXRay). Sizes in world px. */
 export const XRAY = {
   /** Opacity of the team-colour silhouette. */
   alpha: 0.55,

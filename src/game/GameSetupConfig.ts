@@ -1,5 +1,5 @@
 import { SCENARIO_IDS, type ScenarioId } from '../campaign/missions';
-import { GAME_SPEEDS, START_RESOURCES, TREATY, type StartResourcesId } from '../config/balance';
+import { GAME_SPEEDS, START_RESOURCES, TREATY, WONDER_HOLD_MS, type StartResourcesId } from '../config/balance';
 import { AVAILABLE_CIVS, DEFAULT_CIV } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import { createRng } from '../map/random';
@@ -41,6 +41,11 @@ const DEFAULT_VICTORY: VictoryMode = 'conquest_wonder';
 /** The mode lets a held Wonder win. */
 export function hasWonderVictory(mode: VictoryMode): boolean {
   return mode === 'conquest_wonder' || mode === 'all';
+}
+
+/** How long a Wonder must stand to win in `mode`; null where it cannot. */
+export function wonderHoldFor(mode: VictoryMode): number | null {
+  return hasWonderVictory(mode) ? WONDER_HOLD_MS : null;
 }
 
 /** The mode ends the match on score at the time limit. */

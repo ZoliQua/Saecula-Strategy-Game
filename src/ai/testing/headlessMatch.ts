@@ -10,6 +10,7 @@ import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
 import { TradeSystem } from '../../ecs/systems/TradeSystem';
+import { HillSystem } from '../../ecs/systems/HillSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
@@ -31,6 +32,7 @@ import type { PersonalityId } from '../../config/aiPersonality';
 import {
   clampAllies,
   defaultSetupConfig,
+  hasHill,
   hasRegicide,
   hasTimeVictory,
   hasWonderVictory,
@@ -85,7 +87,7 @@ export interface HeadlessMatchOptions {
   readonly mission?: ScenarioId;
   /** The match ends on score at the time limit: the AIs see the limit (default false). */
   readonly timeVictory?: boolean;
-  /** The victory mode, in place of the two flags above (M19: Regicide spawns kings and judges every step). */
+  /** The victory mode, in place of the two flags above (M19: Regicide spawns kings, King of the Hill a hill; both judge every step). */
   readonly victory?: VictoryMode;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
@@ -117,8 +119,8 @@ export interface HeadlessMatch {
   readonly timeMs: () => number;
   /**
    * The match judged as the game judges it, campaign objectives aside: this
-   * marks the defeated; the first decided result stands. Regicide also
-   * judges after every step, as every frame of the game does.
+   * marks the defeated; the first decided result stands. Regicide and King
+   * of the Hill also judge after every step, as every frame of the game does.
    */
   judge(): VictoryState;
   /** The match as a save; needs every AI built with an `rng` and no AI-driven human. */
@@ -294,6 +296,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),
     wonders: new WonderSystem(world, wonderVictory, treaty),
+    hill: new HillSystem(world, players, treaty),
     population: new PopulationSystem(world, 1, players),
   };
   const timeLimit = hasTimeVictory(setup.victory) ? new TimeLimitWatch(players, stats, now) : null;
@@ -305,8 +308,8 @@ function assemble(parts: MatchParts): HeadlessMatch {
     if (state.kind !== 'playing') decided = state;
     return state;
   };
-  // Only in Regicide: stepping never marked anybody in the older modes, and their sims must not move.
-  const judgesEachStep = hasRegicide(setup.victory);
+  // Only in the M19 modes: stepping never marked anybody in the older ones, and their sims must not move.
+  const judgesEachStep = hasRegicide(setup.victory) || hasHill(setup.victory);
   const step = (dt: number) => {
     now += dt;
     paths.reset(dt);
@@ -327,6 +330,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.transports.update(dt);
     systems.death.update(dt);
     systems.wonders.update(dt);
+    systems.hill.update(dt);
     timeLimit?.advance(dt);
     const timeVictory = timeLimit?.view();
     const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }) };

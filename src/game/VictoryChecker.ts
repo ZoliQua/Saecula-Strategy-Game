@@ -1,7 +1,7 @@
-import { WONDER_HOLD_MS } from '../config/balance';
 import type { EcsWorld } from '../ecs/world';
 import { areAllies, areEnemies } from './diplomacy';
-import { hasRegicide, hasWonderVictory, type VictoryMode } from './GameSetupConfig';
+import { hasHill, hasRegicide, wonderHoldFor, type VictoryMode } from './GameSetupConfig';
+import { hillState, hillWinner } from './hill';
 import type { PlayerManager } from './PlayerManager';
 import { hasLivingKing } from './regicide';
 import { timeLeading, type TimeVictoryRule } from './timeVictory';
@@ -35,13 +35,16 @@ export type VictoryState =
  * kingless, the victory when some enemy is kingless; else both name
  * `conquest`.
  *
+ * King of the Hill (M19, when `hill` is set, after conquest): the team
+ * whose clock (HillSystem) is full wins, while any of it still stands.
+ *
  * Time victory (when `time` is set, checked last): once the clock reaches
  * the limit the standing player with the best score wins (timeLeading).
  *
  * Teams (M16): the human's team wins once every enemy-team player is
  * defeated (an ally may have fallen); the human loses when their own town
- * centres are gone, whatever their allies still hold. A Wonder held by
- * the human or an ally is a victory, by an enemy a defeat; time compares
+ * centres are gone, whatever their allies still hold. A Wonder or hill held
+ * by the human or an ally is a victory, by an enemy a defeat; time compares
  * the teams' summed scores. A team result names the winning team's
  * lowest-id standing player as `winnerId`. With no allies every player is
  * its own team and every result is the free-for-all one.
@@ -58,6 +61,8 @@ export class VictoryChecker {
     private readonly mission: { complete(): boolean } | null = null,
     /** Regicide (M19): losing the king eliminates too. */
     private readonly regicide = false,
+    /** King of the Hill (M19): a full hill clock wins. */
+    private readonly hill = false,
   ) {}
 
   check(): VictoryState {
@@ -80,6 +85,11 @@ export class VictoryChecker {
       return { kind: 'victory', winnerId: human.id, cause };
     }
     if (this.mission?.complete()) return { kind: 'victory', winnerId: human.id, cause: 'mission' };
+    const hillWinnerId = this.hillWinnerId();
+    if (hillWinnerId !== null) {
+      const ours = this.onHumanTeam(human.id, hillWinnerId);
+      return { kind: ours ? 'victory' : 'defeat', winnerId: hillWinnerId, cause: 'hill' };
+    }
     const wonderWinner = this.wonderWinner();
     if (wonderWinner !== null) {
       const ours = this.onHumanTeam(human.id, wonderWinner);
@@ -97,6 +107,12 @@ export class VictoryChecker {
 
   private lostKing(playerId: number): boolean {
     return this.regicide && !hasLivingKing(this.world, playerId);
+  }
+
+  /** The player named for the team that has held the hill long enough, or null. */
+  private hillWinnerId(): number | null {
+    const hill = this.hill ? hillState(this.world) : null;
+    return hill ? hillWinner(hill.heldMs, this.players) : null;
   }
 
   private onHumanTeam(humanId: number, playerId: number): boolean {
@@ -140,5 +156,5 @@ export function createVictoryChecker(
   time: TimeVictoryRule | null = null,
   mission: { complete(): boolean } | null = null,
 ): VictoryChecker {
-  return new VictoryChecker(world, players, hasWonderVictory(victory) ? WONDER_HOLD_MS : null, time, mission, hasRegicide(victory));
+  return new VictoryChecker(world, players, wonderHoldFor(victory), time, mission, hasRegicide(victory), hasHill(victory));
 }

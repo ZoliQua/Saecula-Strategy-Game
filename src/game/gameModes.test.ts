@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HILL } from '../config/balance';
+import { HILL, WONDER_HOLD_MS } from '../config/balance';
 import { hu } from '../i18n/hu';
 import { MAP_TEMPLATES } from '../map/generator';
 import {
@@ -12,6 +12,7 @@ import {
   VICTORY_MODES,
   victoryAllowed,
   withSetup,
+  wonderHoldFor,
 } from './GameSetupConfig';
 import { VICTORY_CAUSES } from './VictoryChecker';
 
@@ -27,6 +28,10 @@ describe('game modes (M19)', () => {
       expect(hasWonderVictory(mode), mode).toBe(false);
       expect(hasTimeVictory(mode), mode).toBe(false);
     }
+  });
+
+  it('the Wonder hold follows the mode (the game, its HUD and the checker share it)', () => {
+    for (const mode of VICTORY_MODES) expect(wonderHoldFor(mode), mode).toBe(hasWonderVictory(mode) ? WONDER_HOLD_MS : null);
   });
 
   it('two new causes follow the old ones', () => {

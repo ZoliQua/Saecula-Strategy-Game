@@ -4,10 +4,12 @@ import {
   createResourceNode,
   TERRAIN_RESOURCE,
 } from '../../ecs/archetypes/resource';
+import { createHill } from '../../ecs/archetypes/hill';
 import { createVillager } from '../../ecs/archetypes/villager';
 import { createWall } from '../../ecs/archetypes/wall';
 import { createUnit } from '../../ecs/archetypes/createUnit';
 import { spawnMissionExtras } from '../../campaign/missionStart';
+import { findHillSite } from '../../game/hill';
 import { kingStartTile } from '../../game/regicide';
 import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
@@ -16,7 +18,7 @@ import type { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { NAVAL } from '../../config/balance';
 import { townCenterOrigin, villagerSpawnTiles } from '../../map/startLayout';
-import { hasRegicide, mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { hasHill, hasRegicide, mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 
 export interface GeneratedGame {
@@ -41,13 +43,17 @@ export function generateGameMap(config: GameSetupConfig): GeneratedGame {
 }
 
 /**
- * generateGameMap, or null when the template finds no valid map for the
- * seed (MapGenerationError after its retries); any other error is a bug and
- * propagates.
+ * generateGameMap, or null when the setup has no playable map for the
+ * seed: the template found no valid one (MapGenerationError after its
+ * retries), or King of the Hill (M19) has no site on it. Any other error
+ * is a bug and propagates.
  */
 export function tryGenerateGameMap(config: GameSetupConfig): GeneratedGame | null {
   try {
-    return generateGameMap(config);
+    const game = generateGameMap(config);
+    if (!hasHill(config.victory) || hillSiteOf(game)) return game;
+    console.warn(`No hill site on the ${config.template} map for seed ${config.seed}`);
+    return null;
   } catch (e) {
     if (e instanceof MapGenerationError) {
       console.warn(e.message);
@@ -55,6 +61,11 @@ export function tryGenerateGameMap(config: GameSetupConfig): GeneratedGame | nul
     }
     throw e;
   }
+}
+
+/** The hill's centre on this map (M19): the same before and after the spawn (findHillSite already counts its blockers). */
+function hillSiteOf({ mapData, starts, walls }: GeneratedGame): TileCoord | null {
+  return findHillSite({ map: mapData, playerStarts: starts, walls });
 }
 
 /** Creates one resource-node entity per resource terrain tile. */
@@ -105,9 +116,10 @@ export function spawnPresetWalls(
 
 /**
  * Everything a new match starts with, in spawn order: resource nodes,
- * starting entities, preset walls, a mission's extras and, last, Regicide's
- * kings (M19): every other entity keeps its id and order, and the walls
- * already block their tiles when the kings' tiles are chosen.
+ * starting entities, preset walls, a mission's extras and, last, what an
+ * M19 mode adds, Regicide's kings or the hill: every other entity keeps its
+ * id and order, and the walls already block their tiles when the kings'
+ * tiles are chosen.
  */
 export function spawnNewMatch(
   world: EcsWorld,
@@ -121,6 +133,14 @@ export function spawnNewMatch(
   spawnPresetWalls(world, players, mapData, walls);
   if (setup.mission) spawnMissionExtras(world, players, mapData, setup.mission);
   if (hasRegicide(setup.victory)) spawnKings(world, players, mapData, starts);
+  if (hasHill(setup.victory)) spawnHill(world, game);
+}
+
+/** The hill at its site (tryGenerateGameMap has ruled out a map without one). */
+function spawnHill(world: EcsWorld, game: GeneratedGame): void {
+  const site = hillSiteOf(game);
+  if (!site) throw new RangeError('no site for a hill on this map');
+  createHill(world, game.mapData, site);
 }
 
 /** One king for every player, beside its town centre. */

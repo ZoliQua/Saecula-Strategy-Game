@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { createUnit } from '../ecs/archetypes/createUnit';
 import type { Entity } from '../ecs/components';
 import { killEntity } from '../game/kill';
 import { hasLivingKing } from '../game/regicide';
+import { NEIGHBOUR_STEPS } from '../map/gridSteps';
+import { TERRAIN } from '../map/TerrainTypes';
 import { parseSave } from '../save/parse';
 import { FIXED_DATE, MIN, savableMatch, STEP_MS } from '../save/savedMatch.testkit';
 import { prepareMatch } from '../scenes/game/MatchStart';
@@ -87,11 +90,17 @@ describe('a headless Regicide match (M19)', () => {
     const m = savableMatch({ victory: 'regicide' });
     m.run(1_000, STEP_MS);
     const king = kingOf(m, 2);
-    const ship = find(m, (e) => e.owner?.playerId === 2 && e.gatherer !== undefined);
-    // Any living carrier will do for the rule; the meadow has no sea to sail.
-    m.world.remove(king);
-    m.world.addComponent(ship, 'cargo', { units: [king] });
+    const shore = king.position!;
+    // The meadow has no sea: one tile of water beside the king floats the transport.
+    const berth = NEIGHBOUR_STEPS.map(([dx, dy]) => ({ tx: shore.tx + dx, ty: shore.ty + dy })).find((t) => m.map.isPassable(t.tx, t.ty))!;
+    m.map.setTile(berth.tx, berth.ty, TERRAIN.water);
+    const ship = createUnit(m.world, { type: 'transport', tile: berth, playerId: 2 });
+    m.world.addComponent(king, 'boardIntent', { transportId: ship.id! });
+    m.run(STEP_MS, STEP_MS);
+    expect(m.world.has(king)).toBe(false);
+    expect(ship.cargo?.units.map((u) => u.unit?.unitType)).toEqual(['king']);
     const resumed = resumeHeadlessMatch(reload(m));
+    expect(resumed.world.entities.find((e) => e.id === ship.id)?.cargo?.units.map((u) => u.unit?.unitType)).toEqual(['king']);
     expect(hasLivingKing(resumed.world, 2)).toBe(true);
     resumed.run(1_000, STEP_MS);
     expect(resumed.players.get(2)?.defeated).toBe(false);

@@ -3,7 +3,7 @@ import { buildingHpMultiplier } from '../game/modifiers';
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
 import { CAMERA_BOUNDS_PADDING } from '../config/constants';
-import { hasWonderVictory, startResourcesFor, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
+import { startResourcesFor, wonderHoldFor, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
 import { timeRuleFor } from '../game/timeVictory';
 import { decidedWinner, gameOverRows } from '../game/gameOverStats';
 import type { PlayerManager } from '../game/PlayerManager';
@@ -17,7 +17,6 @@ import { gameEvents } from '../game/events';
 import { tradeAtMarket } from '../game/market';
 import { isFriendly } from '../game/diplomacy';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
-import { WONDER_HOLD_MS } from '../config/balance';
 import { DAY_START_PHASE } from '../config/visual';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { tileToScreen } from '../iso/coordinates';
@@ -235,7 +234,7 @@ export class GameScene extends Phaser.Scene {
 
     if (start.kind === 'new') spawnNewMatch(this.world, this.players, start.generated, config);
 
-    const wonderHoldMs = hasWonderVictory(config.victory) ? WONDER_HOLD_MS : null;
+    const wonderHoldMs = wonderHoldFor(config.victory);
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     const time = timeRuleFor(config.victory, this.runner.stats, () => this.gameElapsedMs);
     this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, { done: restored?.campaign?.done ?? [], stats: this.runner.stats }) : null;

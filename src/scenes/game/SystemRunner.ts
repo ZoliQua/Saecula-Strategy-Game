@@ -28,6 +28,7 @@ import { FogOfWarSystem } from '../../ecs/systems/FogOfWarSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
 import { TradeSystem } from '../../ecs/systems/TradeSystem';
 import { HealthBarSystem } from '../../ecs/systems/HealthBarSystem';
+import { HillSystem } from '../../ecs/systems/HillSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
@@ -116,6 +117,8 @@ export class SystemRunner {
   private readonly projectileRender: ProjectileRenderSystem;
   private readonly death: DeathSystem;
   private readonly wonders: WonderSystem;
+  /** King of the Hill's clocks (M19): idle without a hill entity. */
+  private readonly hill: HillSystem;
   private readonly wonderVictory: boolean;
   /** The treaty clock (M16): game time against setup.treatyMin. */
   private readonly treatyClock: TreatyClock;
@@ -204,6 +207,7 @@ export class SystemRunner {
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
     this.wonders = new WonderSystem(world, options.wonderVictory, this.treaty);
+    this.hill = new HillSystem(world, players, this.treaty);
     this.healthBars = new HealthBarSystem(scene, world);
     const { restore } = options;
     this.stats = restore?.stats ?? new MatchStats(world, players, 0);
@@ -332,6 +336,7 @@ export class SystemRunner {
     this.transports.update(delta);
     this.death.update(delta);
     this.wonders.update(delta);
+    this.hill.update(delta);
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
     const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }) };

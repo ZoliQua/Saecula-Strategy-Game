@@ -2,6 +2,7 @@ import type { AIPlayerState } from '../ai/strategyState';
 import type { Entity } from '../ecs/components';
 import { createEcsWorld, setNextEntityId, type EcsWorld } from '../ecs/world';
 import type { GameSetupConfig } from '../game/GameSetupConfig';
+import { forbidBuildingOnHill, hillState } from '../game/hill';
 import { createPlayer, playerColor, type Player } from '../game/Player';
 import { PlayerManager } from '../game/PlayerManager';
 import { FogOfWarData } from '../map/FogOfWarData';
@@ -64,7 +65,8 @@ function restoredPlayer(p: SavedPlayer): Player {
  * Rebuilds a match from a (parsed) save: a fresh world with the saved
  * entities added in saved order with their ids, entity ids continuing
  * from `nextEntityId`, the players (population is recomputed by the
- * game, not read), the map, fogs and match statistics. Throws RangeError when a byte array
+ * game, not read), the map (with a hill's zone closed to building again,
+ * M19), fogs and match statistics. Throws RangeError when a byte array
  * does not fit the map; parseSave rules that out.
  */
 export function restoreMatch(save: SaveData): RestoredMatch {
@@ -84,6 +86,9 @@ export function restoreMatch(save: SaveData): RestoredMatch {
   const players = new PlayerManager(save.players.map(restoredPlayer));
   // Teams are not saved: they follow the setup (M16).
   players.assignTeams(save.setup.allies);
+  const mapData = MapData.fromRaw(width, height, decodeBytes(save.map.terrain, size), decodeBytes(save.map.blocked, size));
+  const hill = hillState(world);
+  if (hill) forbidBuildingOnHill(mapData, hill.centre);
   const stats = new MatchStats(world, players, save.gameTimeMs);
   stats.restore(save.stats);
   return {
@@ -91,7 +96,7 @@ export function restoreMatch(save: SaveData): RestoredMatch {
     setup: { ...save.setup },
     players,
     world,
-    mapData: MapData.fromRaw(width, height, decodeBytes(save.map.terrain, size), decodeBytes(save.map.blocked, size)),
+    mapData,
     fogs,
     aiStates,
     gameTimeMs: save.gameTimeMs,

@@ -12,6 +12,8 @@ export class MapData {
   public readonly height: number;
   private readonly tiles: Uint8Array;
   private readonly blocked: Uint8Array;
+  /** 1 = walkable but never built on (the hill, M19); null while no tile is. Derived, never saved. */
+  private noBuild: Uint8Array | null = null;
   private waterRev = 0;
 
   constructor(width: number, height: number, fill: TerrainId = TERRAIN.grass) {
@@ -76,11 +78,21 @@ export class MapData {
   }
 
   /**
-   * Free grass a building may cover: walkable and not a resource. Berry
-   * bushes are walkable, but a building on one would bury the bush.
+   * Free grass a building may cover: walkable, not a resource and not
+   * closed to building (forbidBuilding). Berry bushes are walkable, but a
+   * building on one would bury the bush.
    */
   isBuildable(tx: number, ty: number): boolean {
-    return this.isPassable(tx, ty) && this.tiles[ty * this.width + tx] === TERRAIN.grass;
+    if (!this.isPassable(tx, ty)) return false;
+    const idx = ty * this.width + tx;
+    return this.tiles[idx] === TERRAIN.grass && (this.noBuild === null || this.noBuild[idx] === 0);
+  }
+
+  /** Closes a tile to every building for good, whatever its terrain becomes; units still walk over it. */
+  forbidBuilding(tx: number, ty: number): void {
+    if (!isInsideMap({ tx, ty }, this.width, this.height)) return;
+    this.noBuild ??= new Uint8Array(this.width * this.height);
+    this.noBuild[ty * this.width + tx] = 1;
   }
 
   setBlocked(tx: number, ty: number, blocked: boolean): void {
