@@ -115,6 +115,13 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Változott
 
+- **Királygyilkos és A domb ura mindenki-mindenki ellen:** két vagy több AI
+  mellett, szövetségesek nélkül minden AI a legközelebbi ellenfelét támadja
+  (téged vagy egy másik AI-t), nem mind téged; hat játékos Királygyilkosban a
+  királyod már nem esik el az első percekben. A többi mód, a csapatmeccs és az
+  egy AI-s meccs és a kampány pontosan úgy megy, mint eddig.
+- A „Mind” győzelmi mód neve „Hódítás, Csoda vagy idő” lett, mert a
+  Királygyilkost és A domb urát sosem tartalmazta.
 - **Lengyel és oszmán műhelyek és erődök:** a két új nép laktanyája, lőtere,
   istállója és kovácsműhelye minden korban a saját stílusában készül (nádtetős
   biskupini faépületek, krakkói téglagótika, zamośći attika-pártázat; sávos
@@ -128,6 +135,9 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Javítva
 
+- **Játék vége táblázat:** csapatmeccsen a „Szövetséges” jelvény már nem
+  nyomja össze egyetlen betűre a szövetséges népének nevét: a név alá törik,
+  és alacsony ablakban a kártya görgethető, a gombja nem vágódik le.
 - **A Közepes, Nehéz és Mesteri AI vízi térképen** 10 helyett 8 falusinál
   építi meg a kikötőjét. A nyitó portya előtti visszatartás kb. 9 falusinál
   megállította a falusi-képzést, így a kikötő csak a portyák után készült el,
