@@ -110,6 +110,10 @@ describe('Polish unit looks', () => {
     expect(teamCoverage(type, 'polish')).toBeGreaterThanOrEqual(teamCoverage(type, 'hungarian') * 0.8);
   });
 
+  it('the winged hussar keeps team colour the owner mark: the wings do not drown it (vs the Polish cavalry)', () => {
+    expect(teamCoverage('winged_hussar', 'polish')).toBeGreaterThanOrEqual(teamCoverage('cavalry', 'polish') * 0.8);
+  });
+
   it.each(TYPES)('rasterizes in all painted headings: %s', (type) => {
     for (let slot = 0; slot < PAINTED_HEADINGS.length; slot++) {
       const px = idlePixels(type, 'polish', slot);

@@ -175,7 +175,12 @@ type Exit = 'king' | 'razed' | 'both' | 'none';
  * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw
  * (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
  * with the nine-civ pool (player 3 French, not Spanish) player 3's
- * economy differed between the king and the razed run.
+ * economy differed between the king and the razed run by 1 gold. The two
+ * runs are not the same world: the king run has a dead king entity, which
+ * is later removed and changes the entities' iteration order, so the
+ * surviving villagers' deposits land one step apart. That is a test-order
+ * sensitivity, not a bug in the collapse logic; the civ pin keeps the old
+ * line-up, where the two runs happen to coincide.
  */
 function playOn(exit: Exit) {
   const m = savableMatch({ victory: 'regicide', treatyMin: 20, civs: classicCivs(3, 2) });
