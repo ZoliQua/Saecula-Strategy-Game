@@ -1,5 +1,6 @@
 import type { Difficulty } from '../game/GameSetupConfig';
 import type { BaseUnitType, BuildingType } from '../types';
+import { AI_KING, type HillTuning, type KingTuning } from './aiModes';
 
 /**
  * AI tuning (PROGRAM_TERV.md §10): every number the AI strategies and
@@ -112,6 +113,13 @@ export const AI_EASY = {
   minMilitary: 5,
   attackWave: 8,
   firstAttackMs: { min: 8 * 60_000, max: 15 * 60_000 } satisfies Span,
+  /** Regicide (M19): it notices a threat later and settles for a nearer refuge. */
+  king: { ...AI_KING, alarm: 2, safe: 5 } satisfies KingTuning,
+  /**
+   * King of the Hill (M19), at its own pace (a decision every 20-30 s): half a wave when pressed, and
+   * small reinforcements, as it keeps only some eight soldiers in all.
+   */
+  hill: { urgentArmy: 4, reinforce: 3 } satisfies HillTuning,
 } as const;
 /** Easy AI: chance per game that it ever researches an age-up. */
 export const AI_EASY_AGE_UP_CHANCE = 0.5;
@@ -156,6 +164,7 @@ export const AI_GATHER_HANDICAP: Readonly<Record<Difficulty, number>> = {
 
 // Strategy-family tables (split out to keep each file focused).
 export * from './aiMedium';
+export * from './aiModes';
 export * from './aiHard';
 export * from './aiMaster';
 export * from './aiPersonality';

@@ -87,6 +87,8 @@ export const AI_HARD: HardTuning = {
   monks: { ...AI_MEDIUM.monks, beforeArmy: false },
   minDefenders: 6,
   attackWave: 10,
+  /** M19: half of its wave (Mesteri inherits it, and Medium's king). */
+  hill: { urgentArmy: 5, reinforce: 5 },
   firstAttackMs: { min: 3 * 60_000, max: 5 * 60_000 },
   /**
    * §10.3 first attack at 3-5 min: the raiders are trained from 2.5 min before the rolled time

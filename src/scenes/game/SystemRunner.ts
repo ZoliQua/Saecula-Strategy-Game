@@ -7,6 +7,7 @@ import { audio } from '../../audio/AudioManager';
 import { AudioWatch } from '../../audio/AudioWatch';
 import { applyDifficulty, hasPersonality } from '../../ai/createStrategy';
 import { buildMatchAIs } from '../../ai/matchAIs';
+import { aiModeContext } from '../../ai/modeContext';
 import { pickPersonality } from '../../ai/personality';
 import type { AIPlayerState } from '../../ai/strategyState';
 import type { AIThoughts } from '../../ai/thoughts';
@@ -71,7 +72,7 @@ export interface SystemRunnerOptions {
   readonly wonderVictory: boolean;
   /** The match ends on score at TIME_VICTORY.limitMs: the AIs see the limit. */
   readonly timeVictory?: boolean;
-  /** Regicide (M19): the kings wear crowns and the human hears of them (default false). */
+  /** Regicide (M19): the kings wear crowns, the human hears of them and the AIs play for them (default false). */
   readonly regicide?: boolean;
   /** Game time the match starts at (a save's clock); default 0. */
   readonly startMs?: number;
@@ -138,6 +139,8 @@ export class SystemRunner {
   private readonly buildingFx: BuildingFxSystem;
   private readonly cliffSort: CliffBuildingSort;
   private readonly xray: UnitXRay;
+  /** The match is Regicide (M19): the AIs are told. */
+  private readonly regicide: boolean;
   /** Regicide only (M19). */
   private readonly crowns: CrownSystem | null;
   private readonly kingWatch: KingWatch | null;
@@ -254,7 +257,7 @@ export class SystemRunner {
     this.xray = new UnitXRay(scene, world, tileMap.coverSources());
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
-    const regicide = options.regicide === true;
+    const regicide = (this.regicide = options.regicide === true);
     this.crowns = regicide ? new CrownSystem(scene, world, (e) => this.xray.raisedDepth(e)) : null;
     this.kingWatch = regicide ? new KingWatch(world, players, this.humanId, showHudNotice) : null;
     this.hillMarker = new HillMarkerSystem(scene, world, players, this.fogData, this.treaty);
@@ -343,7 +346,7 @@ export class SystemRunner {
     this.hill.update(delta);
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
-    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }) };
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(this.world, this.players, this.regicide) };
     for (const ai of this.aiPlayers) {
       // Whom this AI attacks, re-chosen every decision (M16 teams; without allies: the human).
       const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world);

@@ -1,5 +1,6 @@
 import type { BaseUnitType, BuildingType, TechId } from '../types';
 import type { CounterTuning, GatherWeights, NavalTuning, Span } from './aiBalance';
+import { AI_KING, type HillTuning, type KingTuning } from './aiModes';
 
 /**
  * Tuning of the Medium strategy family (Medium, and Hard which builds on
@@ -18,6 +19,10 @@ export interface MediumTuning {
   readonly ageUpReserve: readonly number[];
   readonly minDefenders: number;
   readonly attackWave: number;
+  /** Regicide (M19): the own king. */
+  readonly king: KingTuning;
+  /** King of the Hill (M19): launches beyond the usual wave. */
+  readonly hill: HillTuning;
   readonly firstAttackMs: Span;
   readonly pressure: {
     readonly unit: BaseUnitType;
@@ -149,6 +154,9 @@ export const AI_MEDIUM: MediumTuning = {
   minDefenders: 5,
   /** Attack when this many military units (scouts excluded) exist. */
   attackWave: 12,
+  king: AI_KING,
+  /** M19: half a wave, both when a rival's clock is past half and as reinforcements for a hold. */
+  hill: { urgentArmy: 6, reinforce: 6 },
   /**
    * §10.2 first attack (5-8 min): an early pressure wave at a rolled time with whatever army exists
    * then. Rolled up to 7.5 min, so a squad still a scout short at the roll leaves by 8.

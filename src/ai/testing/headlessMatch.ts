@@ -57,6 +57,7 @@ import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
 import { buildMatchAIs } from '../matchAIs';
+import { aiModeContext } from '../modeContext';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
 import { treatyActive, type TreatyGate } from '../../game/treaty';
 import { chooseEnemyPlayer } from '../targetPlayer';
@@ -310,7 +311,8 @@ function assemble(parts: MatchParts): HeadlessMatch {
     return state;
   };
   // Only in the M19 modes: stepping never marked anybody in the older ones, and their sims must not move.
-  const judgesEachStep = hasRegicide(setup.victory) || hasHill(setup.victory);
+  const regicide = hasRegicide(setup.victory);
+  const judgesEachStep = regicide || hasHill(setup.victory);
   const step = (dt: number) => {
     now += dt;
     paths.reset(dt);
@@ -334,7 +336,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.hill.update(dt);
     timeLimit?.advance(dt);
     const timeVictory = timeLimit?.view();
-    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }) };
+    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(world, players, regicide) };
     for (const ai of ais) ai.update(withEnemy(base, enemyOf(ai.player.id)), dt);
     humanAi?.update(withEnemy(base, humanEnemy()), dt);
     systems.population.update();

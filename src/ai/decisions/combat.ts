@@ -78,20 +78,47 @@ export function pickFlankTarget(
   return best;
 }
 
+/** A king (M19: they only exist in Regicide). */
+export function isKing(e: Entity): boolean {
+  return e.unit?.unitType === 'king';
+}
+
+/**
+ * Whether a unit with an attack order turns to a king (Regicide): one of `enemyUnits` (the seen
+ * ones it can attack) is within `radius`, and the order is not on a king already, a breach toward one included.
+ */
+export function turnsToKing(
+  unit: Entity,
+  byId: ReadonlyMap<number, Entity>,
+  enemyUnits: readonly Entity[],
+  radius: number,
+): boolean {
+  const order = unit.attackIntent;
+  if (!order || !unit.position) return false;
+  const quarry = byId.get(order.resumeTargetId ?? order.targetId);
+  if (quarry && !quarry.dying && isKing(quarry)) return false;
+  const from = unit.position;
+  return enemyUnits.some((e) => isKing(e) && !e.dying && e.position !== undefined && chebyshev(e.position, from) <= radius);
+}
+
 /**
  * The visible enemy a unit should engage: the nearest within `radius`,
- * armed units first, then other units, then buildings (walls last).
+ * with `kingsFirst` (Regicide) a king before anybody, then armed units
+ * first, then other units, then buildings (walls last).
  */
 export function pickEngageTarget(
   from: TileCoord,
   enemyUnits: readonly Entity[],
   enemyBuildings: readonly Entity[],
   radius: number,
+  kingsFirst = false,
 ): Entity | null {
   const within = (list: readonly Entity[]) =>
     list.filter((e) => e.position && !e.dying && chebyshev(e.position, from) <= radius)
       .sort((a, b) => chebyshev(a.position!, from) - chebyshev(b.position!, from));
   const units = within(enemyUnits);
+  const king = kingsFirst ? units.find(isKing) : undefined;
+  if (king) return king;
   const armed = units.find((u) => u.attacker);
   if (armed) return armed;
   if (units[0]) return units[0];

@@ -6,9 +6,11 @@ import { canAttackTarget } from '../ecs/navLayer';
 import { clearUnitOrders } from '../ecs/orders';
 import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
-import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
+import { groupCentre, isKing, pickAttackTarget, pickEngageTarget, turnsToKing, type WonderTargeting } from './decisions/combat';
 import { nearest } from './decisions/gathering';
 import { nextExploreTarget } from './decisions/scouting';
+import { hillGoal, holdHill, holdLost } from './HillPlay';
+import { playsRegicide } from './KingPlay';
 import { ownLiving, pruneOwnLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, copyTile, type ArmyState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
@@ -20,6 +22,8 @@ const isBusy = (u: Entity) => u.attackIntent !== undefined || u.moveIntent !== u
  * (sent at the remembered enemy, or exploring until it is found),
  * engaging what the units can see, falling back when a wave is spent, and
  * the scout's endless exploration. Stateful: remembers the current wave.
+ * In Regicide (M19) the wave goes for a king in sight first; in King of
+ * the Hill its goal is the hill, which it then holds (HillPlay).
  * Units `isReserved` reports (another controller's, e.g. a raid) are
  * never drafted into the wave or into home defence.
  */
@@ -95,20 +99,24 @@ export class ArmyControl {
       return this.wave.size;
     }
     for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
-    this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
+    // A wave for the hill (M19) has no building to march on (nor, for Mesteri, to flank).
+    this.waveTarget = hillGoal(ctx) ? null : pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
-    this.steerWave(ctx, view, this.prune(view));
+    this.steerWave(ctx, view, this.prune(view), true);
     return this.wave.size;
   }
 
   /**
    * Upkeep: home defenders answer threats near the base; the wave fights
    * what it sees, otherwise marches on the target (or explores); a spent
-   * wave falls back home.
+   * wave falls back home (from the hill only once it is lost).
    */
   update(ctx: AIContext, view: WorldView): void {
     const members = this.prune(view);
-    if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) this.retreat(ctx, view);
+    if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) {
+      const hill = hillGoal(ctx);
+      if (!hill || holdLost(hill, view, this.wave.size)) this.retreat(ctx, view);
+    }
     this.defend(ctx, view);
     if (this.attacking) this.steerWave(ctx, view, members);
   }
@@ -134,8 +142,11 @@ export class ArmyControl {
     }
   }
 
-  /** `members`: the wave's living units, just pruned. */
-  private steerWave(ctx: AIContext, view: WorldView, members: readonly Entity[]): void {
+  /** `members`: the wave's living units, just pruned; `launched`: the wave has just left. */
+  private steerWave(ctx: AIContext, view: WorldView, members: readonly Entity[], launched = false): void {
+    const hill = hillGoal(ctx);
+    if (hill) return holdHill(ctx, view, hill, members, launched);
+    const kingsFirst = playsRegicide(ctx);
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
     this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemyUnit(e, ctx));
@@ -143,8 +154,11 @@ export class ArmyControl {
     const idle: Entity[] = [];
     for (const u of members) {
       if (!u.position) continue;
-      if (u.attackIntent && !this.shouldSwitch(u, view, enemyUnits)) continue;
-      const engage = pickEngageTarget(u.position, enemyUnits.filter((e) => canAttackTarget(u, e)), enemyBuildings, AI_COMMON.engageRadius);
+      if (u.attackIntent) {
+        const toKing = kingsFirst && turnsToKing(u, view.byId, enemyUnits.filter((e) => canAttackTarget(u, e)), AI_COMMON.engageRadius);
+        if (!toKing && (!this.shouldSwitch(u, view, enemyUnits) || (kingsFirst && huntsKing(u, view)))) continue;
+      }
+      const engage = pickEngageTarget(u.position, enemyUnits.filter((e) => canAttackTarget(u, e)), enemyBuildings, AI_COMMON.engageRadius, kingsFirst);
       if (engage?.id !== undefined) {
         clearUnitOrders(ctx.world, u);
         ctx.world.addComponent(u, 'attackIntent', { targetId: engage.id });
@@ -262,6 +276,13 @@ function wonderTargeting(ctx: AIContext): WonderTargeting | undefined {
     canWin: (ownerId) => !(ctx.isDefeated?.(ownerId) ?? false),
     isEnemy: (ownerId) => areEnemies(teams, ctx.player.id, ownerId),
   };
+}
+
+/** Regicide: the unit is on a king, or breaking through to one. */
+function huntsKing(u: Entity, view: WorldView): boolean {
+  const order = u.attackIntent!;
+  const quarry = view.byId.get(order.resumeTargetId ?? order.targetId);
+  return quarry !== undefined && isKing(quarry);
 }
 
 function home(view: WorldView): TileCoord {
