@@ -1931,7 +1931,7 @@ csapatok, fegyverszünet, Királygyilkos, A domb ura) mutatják be.
     AI, 2. korból. Cél: nyerd meg a meccset.
   - *Versenyfutás a Csodáért* (`wonder_race`) — finn, kicsi Mezőség, 1
     Közepes AI, 3. korból, többlet-nyersanyaggal (a Csoda árának kb.
-    kétharmada), 10 perc fegyverszünettel, „Hódítás vagy Csoda” móddal. Cél: építs fel egy Csodát
+    kétharmada), fegyverszünet nélkül, „Hódítás vagy Csoda” móddal. Cél: építs fel egy Csodát
     (az ellenfél Csodája a szokásos Csoda-győzelemmel nyerhet).
   - *Az utolsó bástya* (`last_stand`) — magyar, kicsi Erődítmény, 2 Nehéz AI,
     2. korból, többlet-nyersanyaggal. Cél: tarts ki 15 percig.
@@ -1959,6 +1959,33 @@ csapatok, fegyverszünet, Királygyilkos, A domb ura) mutatják be.
   csapat-kampány a 5. küldetésen túl.
 - Keret (10.): az M19 keretei (új textúra nincs; a Királygyilkos csak
   szárazföldi térképen, a Szigetvilág a 400 MB-os vízi kereten belül).
+- **Állapot (2026-12-08):** kész. `src/campaign/missions.ts` (`CHAPTERS`,
+  `SHORT_IDS`, `isShort`, `isChainMission`), az előrehaladás `shortDone` mezője,
+  a lista szakaszai és jelvényei (`campaignSections`, `scenarioBadge`,
+  `scenarioKicker`), a győzelmi módot megnevező és a nép egyedi épületét néven
+  hívó célszöveg, `schemaVersion` 14 valódi v13-mentéssel. Claude döntései a
+  mérések után: az *Új partok* gálya-célja 2 (a Közepes AI hajóhada egyszerre
+  2–3 gályát tart, és harcban veszít belőlük; 4-gyel 40 perc alatt sem
+  teljesült); a *Versenyfutás* többlete 1000/1200/800 (a Csoda árának kb.
+  kétharmada), és fegyverszünet nélkül fut (a záró átnézés szerint 10 perc
+  fegyverszünet alatt a Csoda kockázat nélkül felépíthető volt). Az
+  eligazítások nem írnak be szabályszámot (perc, arany): ezeket a célsorok a
+  konfigurációból mutatják. Szimulációk (AI vezérelte emberi hellyel): *Új
+  partok* (Közepes) kikötő 7,7, 3 halászhajó 11,7, középkor 12,5, 2 gálya kb.
+  20 percnél; *A Hanza útjai* (Közepes, szövetségessel) mind a négy cél 27,8
+  percre; *Az utolsó bástya* 15 percét egy Nehéz AI kitartja; a *Versenyfutás*
+  10. percében az ember áll, a Csodát a teszt helyezi el (a Közepes AI a
+  seregre költ); *A király feje* és *A domb* indulása (király mindenkinek,
+  domb a térképen). A Nehéz AI az emberi helyen *A király fejét* (két Nehéz
+  ellen, 31. perc) és *A dombot* (a Közepes ellen) elveszíti: a
+  megnyerhetőséget, mint a 3. küldetésnél, szimuláció nem ellenőrzi, a
+  tesztjáték dönt. Mentés oda-vissza menet közben (*A Hanza útjai* teljesült
+  céllal, szövetséggel és fegyverszünettel; *A király feje* királyokkal). A
+  teljes tesztcsomag 4054 teszt. Böngésző-smoke (5196, fej nélküli Chrome):
+  a kampánylista három szakasszal és jelvényekkel (teljesített I. fejezet után
+  a 4. elérhető, az 5–6. zárolt, egy rövid küldetés pipával), az *Új partok*
+  eligazítása, *A domb* indítása középkorban, dombbal és célpanellel,
+  konzolhiba nélkül. A záró átnézés blokkoló hibát nem talált.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
