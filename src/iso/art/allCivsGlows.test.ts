@@ -106,8 +106,7 @@ const GRAZED_CEILINGS: Readonly<Record<string, number>> = {
   'russian wonder@2': 2,
   'russian foundry@3': 1,
   'russian wonder@3': 2,
-  // M21 Polish: the medieval barracks' first upper light behind its corner tower, the shared foundry's front light behind its furnace.
-  'polish barracks@1': 1,
+  // M21 Polish: the shared foundry's front light behind its furnace (M22: the Biskupin barracks hides none).
   'polish foundry@1': 1,
   'polish foundry@2': 1,
   'polish foundry@3': 1,
