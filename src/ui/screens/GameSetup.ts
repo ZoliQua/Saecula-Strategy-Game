@@ -167,6 +167,8 @@ export class GameSetup {
 
     this.civPicker = new CivPicker(this.config.civ, civPreview, (civ) => this.change({ civ }));
     this.aiCivChips = new ChipGroup('ai-civs', t.aiCivs, aiCivItems(), this.config.aiCivs, (v) => this.change({ aiCivs: v }));
+    // Two rows of chips: five columns for "Vegyes" and eight civs, six for ten.
+    this.aiCivChips.root.style.setProperty('--chip-cols', String(Math.ceil(AI_CIV_CHOICES.length / 2)));
 
     this.seedInput = el('input', {
       class: 'seed-input',

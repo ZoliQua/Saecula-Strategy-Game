@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CIV_DEFS } from '../../config/civs';
+import { AVAILABLE_CIVS, CIV_DEFS } from '../../config/civs';
 import type { AgeId, CivId } from '../../types';
 import { occludedGlows } from './testing/occludedGlows.testkit';
 import { PIN_TEAM } from './testing/pinnedArt.testkit';
@@ -31,7 +31,8 @@ describe('landmark art: Spanish, Italian, Russian, Finnish', () => {
   });
 
   it.each(CIVS)('%s: has its own painter, shared with no other civ', (civ) => {
-    const others = (Object.keys(registry.LANDMARK_ART) as CivId[]).filter((c) => c !== civ);
+    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman entries borrow these painters until M21 Tasks 2 and 4 replace them.
+    const others = AVAILABLE_CIVS.filter((c) => c !== civ);
     for (const other of others) expect(registry.LANDMARK_ART[civ]).not.toBe(registry.LANDMARK_ART[other]);
   });
 

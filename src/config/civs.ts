@@ -106,7 +106,15 @@ export const CIV_IDS: readonly CivId[] = [
   'italian',
   'russian',
   'finnish',
+  'polish',
+  'ottoman',
 ];
+
+/**
+ * The eight civs before M21. Campaign missions draw their mixed AI civs
+ * from this pool, so every mission's line-up stays what it was.
+ */
+export const CLASSIC_CIVS: readonly CivId[] = CIV_IDS.slice(0, 8);
 
 /** Fallback civ: setup default and any missing civ lookup. */
 export const DEFAULT_CIV: CivId = 'hungarian';
@@ -203,6 +211,28 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     heraldry: { primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 },
     uniqueUnit: 'sissi',
     bonus: { kind: 'infantrySpeed', bonus: CIV_BONUS.infantrySpeed },
+    landmark: { kind: 'sauna' },
+  },
+  // White eagle on red: red, white, gold. Art is the Hungarian set until the M21 art tasks replace it.
+  polish: {
+    available: false,
+    architecture: HUNGARIAN_ARCH,
+    wallStyle: HUNGARIAN_WALLS,
+    unitLook: 'hungarian',
+    heraldry: { primary: 0xdc143c, secondary: 0xf2efe6, accent: 0xd4a017 },
+    uniqueUnit: 'winged_hussar',
+    bonus: { kind: 'villagerSpeed', bonus: CIV_BONUS.villagerSpeed },
+    landmark: { kind: 'mint' },
+  },
+  // White crescent and star on red: red, white, green. Art is the Hungarian set until the M21 art tasks replace it.
+  ottoman: {
+    available: false,
+    architecture: HUNGARIAN_ARCH,
+    wallStyle: HUNGARIAN_WALLS,
+    unitLook: 'hungarian',
+    heraldry: { primary: 0xc8102e, secondary: 0xf2efe6, accent: 0x1f7a3a },
+    uniqueUnit: 'janissary',
+    bonus: { kind: 'trainSpeed', bonus: CIV_BONUS.trainSpeed },
     landmark: { kind: 'sauna' },
   },
 };

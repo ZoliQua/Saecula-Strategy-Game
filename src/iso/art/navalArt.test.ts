@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CIV_IDS } from '../../config/civs';
+import { AVAILABLE_CIVS, CIV_IDS } from '../../config/civs';
 import type { AgeId, UnitType } from '../../types';
 import { PIN_TEAM } from './testing/pinnedArt.testkit';
 import { hashPainting, installRecordingCanvas, type RecordedCanvas } from './testing/recordingCanvas.testkit';
@@ -47,8 +47,9 @@ describe('naval art', () => {
   });
 
   it('the civs paint their ships differently (hull palette), and the four ships differ', () => {
-    const galleys = new Set(CIV_IDS.map((civ) => unitPixelsHash('galley', civ)));
-    expect(galleys.size).toBe(CIV_IDS.length);
+    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman civs borrow Hungarian art until M21 Task 5 restores CIV_IDS here.
+    const galleys = new Set(AVAILABLE_CIVS.map((civ) => unitPixelsHash('galley', civ)));
+    expect(galleys.size).toBe(AVAILABLE_CIVS.length);
     expect(new Set(SHIPS.map((t) => unitPixelsHash(t, 'english'))).size).toBe(SHIPS.length);
   });
 });

@@ -116,7 +116,7 @@ describe('AI civ roster (M8)', () => {
     it(`no ${difficulty} AI path queues a replaced base type`, () => {
       const offenders: string[] = [];
       attempts.length = 0;
-      for (const civs of [ALL_CIVS.slice(0, 4), ALL_CIVS.slice(4, 8)]) {
+      for (const civs of [ALL_CIVS.slice(0, 4), ALL_CIVS.slice(4, 8), ALL_CIVS.slice(8)]) {
         const [human, ...ais] = civs as [CivId, ...CivId[]];
         const seed = 11;
         const match = createHeadlessMatch({

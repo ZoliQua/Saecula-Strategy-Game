@@ -44,14 +44,14 @@ describe('landmark rules (M17)', () => {
     const kinds = Object.fromEntries(CIV_IDS.map((c) => [c, landmarkOf(c).kind]));
     expect(kinds).toEqual({
       hungarian: 'fort', english: 'modifier', german: 'modifier', french: 'modifier',
-      spanish: 'mint', italian: 'modifier', russian: 'fort', finnish: 'sauna',
+      spanish: 'mint', italian: 'modifier', russian: 'fort', finnish: 'sauna', polish: 'mint', ottoman: 'sauna',
     });
     const effect = (c: (typeof CIV_IDS)[number]) => {
       const lm = landmarkOf(c);
       return lm.kind === 'modifier' ? lm.effect.kind : null;
     };
     expect([effect('english'), effect('german'), effect('french'), effect('italian')]).toEqual(['dockTrainSpeed', 'tradeGold', 'researchSpeed', 'marketRate']);
-    expect(CIV_IDS.map((c) => hu.landmarks[c].name)).toEqual(['Végvár', 'Királyi hajógyár', 'Hanza-kontor', 'Akadémia', 'Pénzverde', 'Bankház', 'Osztrog', 'Szauna']);
+    expect(CIV_IDS.map((c) => hu.landmarks[c].name)).toEqual(['Végvár', 'Királyi hajógyár', 'Hanza-kontor', 'Akadémia', 'Pénzverde', 'Bankház', 'Osztrog', 'Szauna', 'Wieliczkai sóbánya', 'Hamam']);
     for (const c of CIV_IDS) expect(hu.landmarks[c].role.length).toBeGreaterThan(10);
   });
 

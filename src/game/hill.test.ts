@@ -145,7 +145,7 @@ describe('hillOccupant (M19)', () => {
   players.markDefeated(3);
   const unit = (type: UnitType, playerId = 1) => createUnit(createEcsWorld(), { type, tile: CENTRE, playerId });
 
-  it.each(['scout', 'swordsman', 'archer', 'knight', 'pikeman', 'crossbowman', 'musketeer', 'cannon', 'cavalry', 'hussar', 'sissi'] as const)('%s occupies', (type) => {
+  it.each(['scout', 'swordsman', 'archer', 'knight', 'pikeman', 'crossbowman', 'musketeer', 'cannon', 'cavalry', 'hussar', 'sissi', 'winged_hussar', 'janissary'] as const)('%s occupies', (type) => {
     expect(hillOccupant(unit(type), players)).toBe(true);
   });
 

@@ -1,6 +1,6 @@
 import { SCENARIO_IDS, type ScenarioId } from '../campaign/missions';
 import { GAME_SPEEDS, START_RESOURCES, TREATY, WONDER_HOLD_MS, type StartResourcesId } from '../config/balance';
-import { AVAILABLE_CIVS, DEFAULT_CIV } from '../config/civs';
+import { AVAILABLE_CIVS, CLASSIC_CIVS, DEFAULT_CIV } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import { createRng } from '../map/random';
 import { MODE_DEFAULTS } from './matchModes';
@@ -231,9 +231,14 @@ export function assignCivs(config: GameSetupConfig, rng: () => number, pool: rea
 /** Salt so the civ draw does not follow the map generator's sequence. */
 const CIV_RNG_SALT = 0x5bd1e995;
 
-/** The civs of a match from its config: the same seed always gives the same line-up. */
+/**
+ * The civs of a match from its config: the same seed always gives the same
+ * line-up. A campaign mission draws from the eight pre-M21 civs
+ * (CLASSIC_CIVS), so every mission keeps its line-up.
+ */
 export function matchCivs(config: GameSetupConfig): { human: CivId; ais: CivId[] } {
-  return { human: config.civ, ais: assignCivs(config, createRng(config.seed ^ CIV_RNG_SALT)) };
+  const pool = config.mission ? CLASSIC_CIVS : AVAILABLE_CIVS;
+  return { human: config.civ, ais: assignCivs(config, createRng(config.seed ^ CIV_RNG_SALT), pool) };
 }
 
 /** Each civ present in the match once (human's first): only these get art painted and kept. */

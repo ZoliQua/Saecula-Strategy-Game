@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CIV_IDS } from '../config/civs';
 import { createRng } from '../map/random';
 import {
   AI_CIV_CHOICES,
@@ -184,6 +185,18 @@ describe('assignCivs', () => {
       for (const civ of civs) dealt.add(civ);
     }
     expect(dealt).toEqual(new Set(AVAILABLE_CIVS));
+  });
+
+  it('mixed: 5 AIs over the full 10-civ pool can draw the Polish and the Ottoman civ', () => {
+    const dealt = new Set<string>();
+    for (let seed = 1; seed <= 100; seed++) {
+      const civs = assignCivs(config(5, 'mixed', seed), createRng(seed), CIV_IDS);
+      expect(new Set(civs).size).toBe(5);
+      for (const civ of civs) dealt.add(civ);
+    }
+    expect(dealt.has('polish')).toBe(true);
+    expect(dealt.has('ottoman')).toBe(true);
+    expect(dealt).toEqual(new Set(CIV_IDS));
   });
 
   it('is deterministic per seed', () => {

@@ -1,16 +1,33 @@
 import { describe, expect, it } from 'vitest';
 import type { CivId } from '../types';
-import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS, MENU_CIV, menuDioramaCivs } from './civs';
+import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS, CLASSIC_CIVS, MENU_CIV, menuDioramaCivs } from './civs';
 
 describe('civ registry', () => {
-  it('lists all eight civs', () => {
-    expect(CIV_IDS).toEqual(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish']);
+  it('lists all ten civs; the first eight are the classic (pre-M21) civs', () => {
+    expect(CIV_IDS).toEqual(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish', 'polish', 'ottoman']);
+    expect(CLASSIC_CIVS).toEqual(CIV_IDS.slice(0, 8));
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes all eight civs available: the setup picker lists every one as playable', () => {
-    expect(AVAILABLE_CIVS).toEqual(CIV_IDS);
-    for (const id of CIV_IDS) expect(CIV_DEFS[id].available, id).toBe(true);
+  it('makes the eight classic civs available: the setup picker lists every one as playable', () => {
+    // M21 Task 5 makes the Polish and Ottoman civs available once their art lands; then this is CIV_IDS again.
+    expect(AVAILABLE_CIVS).toEqual(CLASSIC_CIVS);
+    for (const id of CLASSIC_CIVS) expect(CIV_DEFS[id].available, id).toBe(true);
+  });
+
+  it('gives the Polish and Ottoman civs their heraldry, unique unit, bonus and landmark', () => {
+    expect(CIV_DEFS.polish).toMatchObject({
+      heraldry: { primary: 0xdc143c, secondary: 0xf2efe6, accent: 0xd4a017 },
+      uniqueUnit: 'winged_hussar',
+      bonus: { kind: 'villagerSpeed', bonus: 0.1 },
+      landmark: { kind: 'mint' },
+    });
+    expect(CIV_DEFS.ottoman).toMatchObject({
+      heraldry: { primary: 0xc8102e, secondary: 0xf2efe6, accent: 0x1f7a3a },
+      uniqueUnit: 'janissary',
+      bonus: { kind: 'trainSpeed', bonus: 0.15 },
+      landmark: { kind: 'sauna' },
+    });
   });
 
   it('gives Finnish its own architecture, walls and unit look in every age', () => {
@@ -20,12 +37,13 @@ describe('civ registry', () => {
   });
 
   it('gives every civ its own walls and unit look (no Hungarian stub left)', () => {
-    const others = CIV_IDS.filter((id) => id !== 'hungarian');
+    // Narrowed to the available civs: the Polish and Ottoman rows borrow the Hungarian art until Task 5 restores CIV_IDS here.
+    const others = AVAILABLE_CIVS.filter((id) => id !== 'hungarian');
     for (const id of others) {
       expect(CIV_DEFS[id].wallStyle, id).not.toEqual(CIV_DEFS.hungarian.wallStyle);
       expect(CIV_DEFS[id].unitLook, id).not.toBe(CIV_DEFS.hungarian.unitLook);
     }
-    expect(new Set(CIV_IDS.map((id) => CIV_DEFS[id].unitLook)).size).toBe(CIV_IDS.length);
+    expect(new Set(AVAILABLE_CIVS.map((id) => CIV_DEFS[id].unitLook)).size).toBe(AVAILABLE_CIVS.length);
   });
 
   it('gives Russian its own architecture, walls and unit look in every age', () => {
@@ -90,14 +108,14 @@ describe('menuDioramaCivs', () => {
 
   it('cycles through every other civ of the pool, visit by visit, and never shows the menu civ twice', () => {
     const pool: readonly CivId[] = CIV_IDS;
-    const seconds = Array.from({ length: 14 }, (_, v) => menuDioramaCivs(v, pool));
+    const seconds = Array.from({ length: 2 * (CIV_IDS.length - 1) }, (_, v) => menuDioramaCivs(v, pool));
     for (const [front, back] of seconds) {
       expect(front).toBe(MENU_CIV);
       expect(back).not.toBe(MENU_CIV);
     }
     const others = CIV_IDS.filter((c) => c !== MENU_CIV);
-    expect(seconds.slice(0, 7).map(([, b]) => b)).toEqual(others);
-    expect(seconds.slice(7).map(([, b]) => b)).toEqual(others);
+    expect(seconds.slice(0, others.length).map(([, b]) => b)).toEqual(others);
+    expect(seconds.slice(others.length, 2 * others.length).map(([, b]) => b)).toEqual(others);
   });
 
   it('still shows two different civs when the menu civ is the only one in the pool', () => {

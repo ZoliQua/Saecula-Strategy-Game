@@ -127,12 +127,20 @@ export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>
   italian: bankhausArt,
   russian: ostrogArt,
   finnish: saunaArt,
+  // M21 placeholders: Tasks 2 and 4 replace them with the Wieliczka salt mine and the hamam.
+  polish: casaMonedaArt,
+  ottoman: saunaArt,
 };
 
-/** The civ whose age styles include `id` (every style belongs to one civ). */
-const STYLE_CIV = new Map<ArchStyleId, CivId>(
-  CIV_IDS.flatMap((civ) => Object.values(CIV_DEFS[civ].architecture).map((id) => [id, civ] as const)),
-);
+/**
+ * The civ whose age styles include `id` (every style belongs to one civ).
+ * The first civ in registry order wins, so a civ still borrowing another's
+ * styles (M21, until its art lands) never takes over that civ's landmark.
+ */
+const STYLE_CIV = new Map<ArchStyleId, CivId>();
+for (const civ of CIV_IDS) {
+  for (const id of Object.values(CIV_DEFS[civ].architecture)) if (!STYLE_CIV.has(id)) STYLE_CIV.set(id, civ);
+}
 
 /** The landmark of the civ owning style `id`, painted in that style (none for a style no civ uses). */
 function landmarkFor(id: ArchStyleId, s: ArchStyle): { landmark?: BuildingArt } {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CIV_DEFS, CIV_IDS } from '../../../config/civs';
+import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS } from '../../../config/civs';
 import { isNavalType } from '../../../config/balance';
 import { baseUnitType, civUnitTypes } from '../../../game/civUnits';
 import type { CivId, UnitType } from '../../../types';
@@ -48,7 +48,8 @@ const sheetArea = (type: UnitType, civ: CivId): number => {
 };
 
 describe('unique unit looks', () => {
-  it.each(CIV_IDS)('%s: the unique unit has its own look, of the base unit’s kind', (civ) => {
+  // Narrowed to AVAILABLE_CIVS: the winged hussar and the janissary get their looks in M21 Tasks 3 and 5, which restore CIV_IDS here.
+  it.each(AVAILABLE_CIVS)('%s: the unique unit has its own look, of the base unit’s kind', (civ) => {
     const type = uniqueOf(civ);
     const look = LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type];
     expect(look).toBeDefined();
