@@ -2147,8 +2147,9 @@ meccsenkénti legfeljebb 6 nép (1.1) nem változik.
   esetben (az M19 egy könnyebb népsort mért: 249,6 MB). **Tulajdonosi döntés
   (2026-11-26): elfogadva**, ismert szélső esetként, a keret nem változik.
   `naval6 --ships --trade` 396,5 MB ≤ 400 MB (M19: 392,8); JS-bundle 0,82 MB gzip
-  (M19: 0,78). A népenkénti betöltési többletet nem mértük: a mérés idején a gép
-  terhelése (load average 50–150) a futásokat 30 s-mal is szórta. Böngésző-smoke
+  (M19: 0,78). Betöltés (kicsi Mezőség, magyar ember és egy AI, friss fej nélküli
+  Chrome GPU-val, 3 futás mediánja): magyar AI-val 0,72 s, finn 0,97, lengyel
+  0,95, oszmán 0,95 s — egy új nép +0,22–0,23 s, mint a régieké. Böngésző-smoke
   (5196, fej nélküli Chrome): a beállítóképernyő 10 népkártyája 1280×720-on és
   1400×900-on; lengyelként ház, 3. kor, szárnyas huszár az istállóban (könnyűlovas
   nem), sóbánya (29 arany/perc); oszmánként janicsár a lőtéren (számszeríjász
