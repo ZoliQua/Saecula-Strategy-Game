@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { defaultSetupConfig, HILL_TEMPLATES, SPEED_CHOICES, TREATY_MINUTES, VICTORY_MODES, withSetup, type VictoryMode } from '../../game/GameSetupConfig';
+import { defaultSetupConfig, HILL_TEMPLATES, REGICIDE_TEMPLATES, SPEED_CHOICES, TREATY_MINUTES, VICTORY_MODES, withSetup, type VictoryMode } from '../../game/GameSetupConfig';
 import { MAP_TEMPLATES } from '../../map/generator';
-import { alliesItems, parseChoice, speedItems, startResourceItems, treatyItems, victoryItems, victoryRowView, victoryWasReset } from './modeItems';
+import { alliesItems, parseChoice, speedItems, startResourceItems, treatyItems, victoryItems, victoryResetMode, victoryRowView } from './modeItems';
 import { installDomStub } from '../testing/domStub.testkit';
 import { Segmented } from './Segmented';
 import { segPlace } from './segLayout';
@@ -35,43 +35,65 @@ describe('victory row (M19)', () => {
     expect(victoryItems().map((i) => i.label).slice(-2)).toEqual(['Királygyilkos', 'A domb ura']);
   });
 
-  it('disables the hill on the templates without one and says why', () => {
+  it('disables the hill and Regicide on the templates without a place for them and says why', () => {
+    const hillLine = 'A domb ura csak Mezőség, Vadon és Erődítmény térképen játszható.';
+    const regicideLine = 'A Királygyilkos csak tenger nélküli térképen játszható (Mezőség, Vadon, Szigetek és Erődítmény).';
     for (const template of MAP_TEMPLATES) {
-      const view = victoryRowView(template, false);
-      if (HILL_TEMPLATES.includes(template)) {
-        expect(view, template).toEqual({ disabled: [], hint: '', warn: false });
-      } else {
-        expect(view.disabled, template).toEqual(['hill']);
-        expect(view.warn, template).toBe(false);
-        expect(view.hint, template).toBe('A domb ura csak Mezőség, Vadon és Erődítmény térképen játszható.');
-      }
+      const view = victoryRowView(template, null);
+      const lines: string[] = [];
+      const disabled: VictoryMode[] = [];
+      if (!REGICIDE_TEMPLATES.includes(template)) (disabled.push('regicide'), lines.push(regicideLine));
+      if (!HILL_TEMPLATES.includes(template)) (disabled.push('hill'), lines.push(hillLine));
+      expect(view, template).toEqual({ disabled, hint: lines.join(' '), warn: false });
     }
+    expect(victoryRowView('islands', null).disabled).toEqual(['hill']);
+    expect(victoryRowView('archipelago', null).disabled).toEqual(['regicide', 'hill']);
   });
 
-  it('a reset is named with the mode it went back to', () => {
-    const view = victoryRowView('islands', true);
-    expect(view.warn).toBe(true);
-    expect(view.hint).toContain('A domb ura');
-    expect(view.hint).toContain('visszaállt: Hódítás vagy Csoda');
+  it('a reset is named with the mode it lost and the mode it went back to', () => {
+    const hill = victoryRowView('islands', 'hill');
+    expect(hill.warn).toBe(true);
+    expect(hill.hint).toBe('A domb ura ezen a térképen nem játszható, ezért a győzelem módja visszaállt: Hódítás vagy Csoda.');
+    const regicide = victoryRowView('inland_sea', 'regicide');
+    expect(regicide.warn).toBe(true);
+    expect(regicide.hint).toBe('A Királygyilkos ezen a térképen nem játszható, ezért a győzelem módja visszaállt: Hódítás vagy Csoda.');
   });
 
   it('a template switch that drops the hill is noticed until a mode is picked or a hill map is back', () => {
     const hill = withSetup(defaultSetupConfig(1), { victory: 'hill' });
     const islands = withSetup(hill, { template: 'islands' });
     expect(islands.victory).toBe('conquest_wonder');
-    expect(victoryWasReset(false, hill, { template: 'islands' }, islands)).toBe(true);
+    expect(victoryResetMode(null, hill, { template: 'islands' }, islands)).toBe('hill');
     const random = withSetup(islands, { template: 'random' });
-    expect(victoryWasReset(true, islands, { template: 'random' }, random)).toBe(true);
-    expect(victoryWasReset(true, islands, { seed: 9 }, withSetup(islands, { seed: 9 }))).toBe(true);
-    expect(victoryWasReset(true, islands, { victory: 'all' }, withSetup(islands, { victory: 'all' }))).toBe(false);
-    expect(victoryWasReset(true, islands, { template: 'meadow' }, withSetup(islands, { template: 'meadow' }))).toBe(false);
+    expect(victoryResetMode('hill', islands, { template: 'random' }, random)).toBe('hill');
+    expect(victoryResetMode('hill', islands, { seed: 9 }, withSetup(islands, { seed: 9 }))).toBe('hill');
+    expect(victoryResetMode('hill', islands, { victory: 'all' }, withSetup(islands, { victory: 'all' }))).toBeNull();
+    expect(victoryResetMode('hill', islands, { template: 'meadow' }, withSetup(islands, { template: 'meadow' }))).toBeNull();
+  });
+
+  it('a template switch to a sea map drops Regicide the same way; Islands keep it', () => {
+    const regicide = withSetup(defaultSetupConfig(1), { victory: 'regicide' });
+    const islands = withSetup(regicide, { template: 'islands' });
+    expect(islands.victory).toBe('regicide');
+    expect(victoryResetMode(null, regicide, { template: 'islands' }, islands)).toBeNull();
+    for (const template of ['random', 'inland_sea', 'archipelago'] as const) {
+      const sea = withSetup(regicide, { template });
+      expect(sea.victory, template).toBe('conquest_wonder');
+      expect(victoryResetMode(null, regicide, { template }, sea), template).toBe('regicide');
+    }
+    const sea = withSetup(regicide, { template: 'archipelago' });
+    expect(victoryResetMode('regicide', sea, { template: 'random' }, withSetup(sea, { template: 'random' }))).toBe('regicide');
+    const back = withSetup(sea, { template: 'islands' });
+    expect(back.victory).toBe('conquest_wonder');
+    expect(victoryResetMode('regicide', sea, { template: 'islands' }, back)).toBeNull();
   });
 
   it('no notice when nothing was lost', () => {
     const base = defaultSetupConfig(1);
-    expect(victoryWasReset(false, base, { template: 'islands' }, withSetup(base, { template: 'islands' }))).toBe(false);
+    expect(victoryResetMode(null, base, { template: 'islands' }, withSetup(base, { template: 'islands' }))).toBeNull();
+    expect(victoryResetMode(null, base, { template: 'archipelago' }, withSetup(base, { template: 'archipelago' }))).toBeNull();
     const hill = withSetup(base, { victory: 'hill' });
-    expect(victoryWasReset(false, hill, { template: 'fortress' }, withSetup(hill, { template: 'fortress' }))).toBe(false);
+    expect(victoryResetMode(null, hill, { template: 'fortress' }, withSetup(hill, { template: 'fortress' }))).toBeNull();
   });
 
   describe('Segmented.setEnabled', () => {
@@ -87,7 +109,7 @@ describe('victory row (M19)', () => {
       const buttons = dom.node(seg.root).all().filter((n) => n.tag === 'button');
       const at = (mode: VictoryMode) => buttons[VICTORY_MODES.indexOf(mode)]!;
       const press = (from: VictoryMode, key: string) => at(from).fire('keydown', { key });
-      for (const mode of victoryRowView('islands', false).disabled) seg.setEnabled(mode, false, 'why');
+      for (const mode of victoryRowView('islands', null).disabled) seg.setEnabled(mode, false, 'why');
       return { dom, seg, at, press, picked };
     }
 

@@ -66,9 +66,19 @@ export function hasHill(mode: VictoryMode): boolean {
 /** The templates with a fair hill site (M19). */
 export const HILL_TEMPLATES: readonly MapTemplate[] = ['meadow', 'wilderness', 'fortress'];
 
+/**
+ * The templates without sea (M19): Regicide is played only here. Its king
+ * draws every civ's knight-slot sheet from minute 0, which with the ship
+ * sheets would break the 400 MB water texture budget (owner decision,
+ * 2026-11-23). Islands are cliffs and bridges, no water.
+ */
+export const REGICIDE_TEMPLATES: readonly MapTemplate[] = ['meadow', 'wilderness', 'islands', 'fortress'];
+
 /** Whether a new match of `template` may be set up with `mode`; a saved match keeps whatever mode it has. */
 export function victoryAllowed(mode: VictoryMode, template: MapTemplate): boolean {
-  return !hasHill(mode) || HILL_TEMPLATES.includes(template);
+  if (hasHill(mode)) return HILL_TEMPLATES.includes(template);
+  if (hasRegicide(mode)) return REGICIDE_TEMPLATES.includes(template);
+  return true;
 }
 
 /** Treaty length in game minutes (0 = none, M16). */

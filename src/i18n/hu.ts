@@ -5,6 +5,9 @@ const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
 
 /** The minutes a team must hold the hill (M19). */
 const HILL_MINUTES = HILL.holdMs / 60_000;
+/** "a, b és c" (M19). */
+const listOf = (items: readonly string[]): string =>
+  items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} és ${items[items.length - 1]}`;
 
 /** What a tutorial hint is filled with (hu.campaign.tutorial.hints). */
 export interface TutorialHintArgs {
@@ -118,10 +121,13 @@ export const hu = {
       hill: 'A domb ura',
     },
     /** Under the victory row on a template without a hill (M19). */
-    hillOnly: (maps: readonly string[]) =>
-      `A domb ura csak ${maps.slice(0, -1).join(', ')} és ${maps[maps.length - 1] ?? ''} térképen játszható.`,
+    hillOnly: (maps: readonly string[]) => `A domb ura csak ${listOf(maps)} térképen játszható.`,
+    /** Under the victory row on a template with sea (M19). */
+    regicideOnly: (maps: readonly string[]) => `A Királygyilkos csak tenger nélküli térképen játszható (${listOf(maps)}).`,
     /** The template took the chosen hill away (M19). */
     hillReset: (mode: string) => `A domb ura ezen a térképen nem játszható, ezért a győzelem módja visszaállt: ${mode}.`,
+    /** The template took the chosen Regicide away (M19). */
+    regicideReset: (mode: string) => `A Királygyilkos ezen a térképen nem játszható, ezért a győzelem módja visszaállt: ${mode}.`,
     allies: 'Szövetségesek',
     /** Under the allies row: who is on whose side (M16). */
     alliesHint: (allies: number, enemies: number) =>

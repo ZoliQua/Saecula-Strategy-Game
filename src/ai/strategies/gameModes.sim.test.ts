@@ -58,19 +58,20 @@ describe.each(LEVELS)('the M19 modes start and are played at %s (64×64 meadow)'
  * King of the Hill: every match decided within 60 game minutes, medians 14.4 min (meadow), 14.4
  * (wilderness), 14.1 (fortress). Regicide, since the AI defends its king against scouts (villagers
  * when the home army is short) and flees toward its town centre (fix round 1): medians 19.7 min
- * (meadow, 14.3–28.1), 19.4 (fortress, 13.3–23.1), none before minute 10; archipelago 22.2, 11 of
- * 12 decided (seed 5 still open at 60 min). Before it the opening scout raid killed the king at
+ * (meadow, 14.3–28.1), 19.4 (fortress, 13.3–23.1), 15.7 (islands, 14.1–54.3; 10 by the king, 2 by
+ * conquest), none before minute 10. Regicide is not played on sea maps (texture budget, owner
+ * decision 2026-11-23). Before it the opening scout raid killed the king at
  * minute 6.2 (meadow) and 6.5 (fortress), every seed before minute 10. Kept here: one seed per map.
  */
 describe('Hard v Hard: each mode is decided within 60 game minutes', () => {
   it.each([
-    // In the sweep: decided at 14.4, 20.9, 21.3, 20.3, 20.7 and 19.2 min.
+    // In the sweep: decided at 14.4, 20.9, 21.3, 20.3, 20.7 and 15.2 min.
     ['hill', 'meadow', 3],
     ['hill', 'wilderness', 7],
     ['hill', 'fortress', 19],
     ['regicide', 'meadow', 13],
     ['regicide', 'fortress', 7],
-    ['regicide', 'archipelago', 7],
+    ['regicide', 'islands', 7],
   ] as const)('%s on %s, seed %i', (victory, template, seed) => {
     const m = duel(victory, template, seed, 'hard');
     m.run(60 * MIN, 100, () => m.judge().kind !== 'playing');

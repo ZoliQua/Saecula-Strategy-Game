@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { HILL, WONDER_HOLD_MS } from '../config/balance';
 import { hu } from '../i18n/hu';
-import { MAP_TEMPLATES } from '../map/generator';
+import { generateMap, MAP_TEMPLATES, type MapTemplate } from '../map/generator';
+import { isSea } from '../map/TerrainTypes';
 import {
   defaultSetupConfig,
   hasHill,
@@ -9,6 +10,7 @@ import {
   hasTimeVictory,
   hasWonderVictory,
   HILL_TEMPLATES,
+  REGICIDE_TEMPLATES,
   VICTORY_MODES,
   victoryAllowed,
   withSetup,
@@ -42,13 +44,32 @@ describe('game modes (M19)', () => {
     expect(HILL).toEqual({ size: 7, minPassable: 33, holdMs: 480_000 });
   });
 
-  it('only the hill depends on the template: meadow, wilderness and fortress have one', () => {
+  it('the hill is on meadow, wilderness and fortress; Regicide on every template without sea', () => {
     expect(HILL_TEMPLATES).toEqual(['meadow', 'wilderness', 'fortress']);
+    expect(REGICIDE_TEMPLATES).toEqual(['meadow', 'wilderness', 'islands', 'fortress']);
     for (const template of MAP_TEMPLATES) {
       for (const mode of VICTORY_MODES) {
-        const allowed = mode !== 'hill' || ['meadow', 'wilderness', 'fortress'].includes(template);
+        const allowed =
+          mode === 'hill'
+            ? ['meadow', 'wilderness', 'fortress'].includes(template)
+            : mode === 'regicide'
+              ? ['meadow', 'wilderness', 'islands', 'fortress'].includes(template)
+              : true;
         expect(victoryAllowed(mode, template), `${mode} on ${template}`).toBe(allowed);
       }
+    }
+  });
+
+  it('the Regicide templates never have sea, the others always may (texture budget, 2026-11-23)', () => {
+    const seaOn = (template: MapTemplate, size: number, players: number, seed: number) => {
+      const { map } = generateMap({ template, width: size, height: size, playerCount: players, seed });
+      for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) if (isSea(map.getTile(tx, ty))) return true;
+      return false;
+    };
+    for (const template of MAP_TEMPLATES) {
+      const runs = ([[64, 2], [96, 4], [128, 6]] as const).flatMap(([size, players]) => [1, 2, 3].map((seed) => seaOn(template, size, players, seed)));
+      expect(runs.some(Boolean), template).toBe(!REGICIDE_TEMPLATES.includes(template));
+      if (REGICIDE_TEMPLATES.includes(template)) expect(runs.every((sea) => !sea), template).toBe(true);
     }
   });
 

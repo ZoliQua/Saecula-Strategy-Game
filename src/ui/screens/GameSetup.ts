@@ -37,7 +37,7 @@ import {
   VICTORY_PER_ROW,
   victoryItems,
   victoryRowView,
-  victoryWasReset,
+  victoryResetMode,
 } from './modeItems';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
@@ -74,8 +74,8 @@ export class GameSetup {
   private readonly diffSeg: Segmented<string>;
   private readonly victorySeg: Segmented<VictoryMode>;
   private readonly victoryHint: HTMLElement;
-  /** The template took the chosen hill away (victoryWasReset): the row says so. */
-  private victoryReset = false;
+  /** The mode a template switch took away (victoryResetMode): the row says so. */
+  private victoryReset: VictoryMode | null = null;
   /** Rebuilt when the AI count changes (its options are 0..aiCount - 1). */
   private alliesSeg: Segmented<string>;
   private alliesFor: number;
@@ -295,10 +295,10 @@ export class GameSetup {
     const before = this.config;
     const wasReset = this.victoryReset;
     this.config = withSetup(before, partial);
-    this.victoryReset = victoryWasReset(wasReset, before, partial, this.config);
+    this.victoryReset = victoryResetMode(wasReset, before, partial, this.config);
     this.refresh();
     // A reset is never silent, also with the row scrolled out of the card.
-    if (this.victoryReset && !wasReset) {
+    if (this.victoryReset !== null && wasReset === null) {
       const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       this.victoryHint.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' });
     }
