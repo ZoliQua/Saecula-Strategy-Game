@@ -2203,6 +2203,29 @@ grafika: játékmenet, számok, mentés és AI nem változik.
 - Keret (10.): az M21 keretei; a `distinct6` és a Királygyilkos `--trade`
   legnehezebb esete (M21: 258,0 MB, elfogadott szélső eset) legfeljebb 1 MB-tal
   nőhet.
+- **Állapot (2026-12-14):** kész. 16 új festő: `ottoman/ottomanWorkshops.ts`
+  (bizánci, szeldzsuk és oszmán lőtér és kovácsműhely, oszmán istálló),
+  `polish/biskupinMil.ts`, `polish/zamoscMil.ts` és a krakkói kovácsműhely
+  (`krakowMil.ts`); közös, népazonosító nélküli kellékek
+  (`architecture/kits/workshopProps.ts`: üllő, íjtartó); saját 3. kori bástya
+  (`zamoscBastion.ts`: fehér kő attika-pártázat vakárkádokkal és oromdíszes
+  őrházzal; `ottomanBastion.ts`: sávos faragott kő, ólomkupolás köşk
+  félholddal), gyilokjárós Rumeli-tornyok; a csillagerőd-készlet egy alapból
+  kikapcsolt `scarpFace` kapcsolót kapott. Minden új festő mérete és
+  `maxHeight`-je a lecseréltével egyezik, ezt a népek rajz-tesztje őrzi. Csak
+  a kicserélt lengyel és oszmán helyek rögzítései változtak; minden más nép
+  rögzítése bitre azonos. Mérve (1280×720, swiftshader, ugyanabban a
+  munkamenetben): Királygyilkos `distinct6 --trade` a legnehezebb népsorral a
+  nem terep-textúrák 220,6 MB (M21: 220,7), a csúcs 248,0 MB (M21 ugyanígy
+  248,2; a korábbi 258,0 a 0,65-ös terep-ingadozás); a teljes tesztcsomag
+  4560 teszt. Böngésző (5196, fej nélküli Chrome): oszmán és lengyel meccs
+  indul, mind a 30 érintett épület–kor–nép festés konzolhiba nélkül. Minden
+  feladatot független átnézés követett; javítva: a 3. kori oszmán istálló és
+  lőtér sziluettje (a kupolák a tetővonal fölé kerültek), minaretnek látszó
+  kovácskémény, a két nép közös kellékei a `kits/`-be, a gyenge biskupini
+  kovácsműhely, a kupolába olvadó oszmán bástyazászló. Ismert korlát: az 1.
+  kori oszmán műhelyeknél a lapos kupolák miatt a szín viszi a jelleg nagyobb
+  részét.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
