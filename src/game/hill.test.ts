@@ -89,6 +89,25 @@ describe('findHillSite (M19)', () => {
     expect(findHillSite(crossWith([south]))).toEqual({ tx: 32, ty: 40 });
   });
 
+  it('nearest is the straight line, not the square ring', () => {
+    // Two 33-tile blobs: the best window of the first is (28,28), 4 off the centre in both axes
+    // (Chebyshev 4, distance² 32), of the second (32,37), 5 straight down (Chebyshev 5, distance² 25).
+    const map = new MapData(64, 64, TERRAIN.cliff);
+    const blob = (c: TileCoord) => {
+      open(map, c.tx - 3, c.ty - 3, c.tx + 3, c.ty);
+      open(map, c.tx - 3, c.ty + 1, c.tx + 1, c.ty + 1);
+    };
+    blob({ tx: 28, ty: 28 });
+    blob({ tx: 32, ty: 39 });
+    // Corridors in from the west, ending beside the blobs and far from the centre windows.
+    open(map, 4, 32, 10, 32);
+    open(map, 10, 28, 10, 36);
+    open(map, 10, 28, 24, 28);
+    open(map, 10, 36, 28, 36);
+    const layout = { map, playerStarts: [{ tx: 6, ty: 29 }, { tx: 8, ty: 29 }], walls: [] };
+    expect(findHillSite(layout)).toEqual({ tx: 32, ty: 37 });
+  });
+
   it('the zone lies wholly on the map', () => {
     const map = new MapData(64, 64, TERRAIN.cliff);
     open(map, 0, 0, 4, 20); // five tiles wide: only the windows from the edge hold 33 of them
@@ -168,6 +187,9 @@ describe('hillState and hillWinner', () => {
     expect(hillState(world)).toEqual({ centre: CENTRE, heldMs: {}, holderTeam: null, contested: false });
     hill.hill!.heldMs[2] = 500;
     expect(hillState(world)?.heldMs[2]).toBe(500);
+    const state = hillState(world)!;
+    // @ts-expect-error the clocks are read-only for everyone but the HillSystem
+    state.heldMs[2] = 0;
   });
 
   it('a full clock wins for its lowest-id standing player', () => {

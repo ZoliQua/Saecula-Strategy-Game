@@ -91,6 +91,7 @@ export function hillOccupant(unit: Entity, players: Pick<PlayerManager, 'get'>):
 /** The hill as everybody may know it (its place and clocks are public). */
 export interface HillState extends Readonly<NonNullable<Entity['hill']>> {
   readonly centre: TileCoord;
+  readonly heldMs: Readonly<Record<number, number>>;
 }
 
 /** The match's hill, or null outside King of the Hill. */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HILL, WONDER_HOLD_MS } from '../config/balance';
 import { createBuilding } from '../ecs/archetypes/building';
+import { createUnit } from '../ecs/archetypes/createUnit';
 import { createHill } from '../ecs/archetypes/hill';
 import type { Entity } from '../ecs/components';
 import { createEcsWorld } from '../ecs/world';
@@ -19,7 +20,7 @@ function setup({ allies = 0, victory = 'hill' as VictoryMode } = {}) {
   const hill = createHill(world, map, { tx: 32, ty: 32 }).hill!;
   const checker = createVictoryChecker(victory, world, players);
   return {
-    map, world, checker,
+    map, world, checker, players,
     hold: (team: number, ms: number = HILL.holdMs) => (hill.heldMs[team] = ms),
     raze: (id: number) => killEntity(world, tcs[id - 1] as Entity & { health: { current: number; max: number } }),
   };
@@ -89,8 +90,9 @@ describe('King of the Hill victory (M19)', () => {
 
   it.each(['conquest', 'conquest_wonder', 'conquest_time', 'all', 'regicide'] as const)('%s: a hill clock wins nothing', (victory) => {
     const m = setup({ victory });
+    // Regicide watches kings: give everybody one, so only the hill clock is in play.
+    for (const p of m.players.all()) createUnit(m.world, { type: 'king', tile: { tx: p.id * 9, ty: 9 }, playerId: p.id });
     m.hold(2);
-    const state = m.checker.check();
-    if (state.kind !== 'playing') expect(state.cause).not.toBe('hill');
+    expect(m.checker.check()).toEqual({ kind: 'playing' });
   });
 });

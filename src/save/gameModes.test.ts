@@ -88,6 +88,9 @@ describe('what a saved hill may be (M19)', () => {
     ['a holder while contested', (_, h) => (h.components.hill!.contested = true), false],
     ['no position', (_, h) => delete h.components.position, false],
     ['an owner', (_, h) => (h.components.owner = { playerId: 1 }), false],
+    ['a fractional centre', (_, h) => (h.components.position = { tx: 32.5, ty: 32 }), false],
+    ['a zone partly off the map', (_, h) => (h.components.position = { tx: 1, ty: 32 }), false],
+    ['an extra component', (_, h) => (h.components.dying = { ttlMs: 500 }), false],
     ['two hills', (s, h) => {
       s.entities.push({ id: s.nextEntityId, components: structuredClone(h.components) });
       s.nextEntityId++;

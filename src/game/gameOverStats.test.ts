@@ -57,6 +57,9 @@ describe('gameOverRows', () => {
     // A human Wonder win leaves AIs standing.
     const wonder = [createPlayer({ id: 1, isHuman: true }), createPlayer({ id: 2 })];
     expect(decidedWinner({ kind: 'victory', winnerId: 1, cause: 'wonder' }, wonder)).toBe(1);
+    // A hill or a time defeat names its winner while others stand.
+    expect(decidedWinner({ kind: 'defeat', winnerId: 2, cause: 'hill' }, [...wonder, createPlayer({ id: 3 })])).toBe(2);
+    expect(decidedWinner({ kind: 'defeat', winnerId: 2, cause: 'time' }, [...wonder, createPlayer({ id: 3 })])).toBe(2);
   });
 });
 

@@ -25,8 +25,8 @@ export interface GameOverPlayerRow {
 
 /**
  * Who the table names the winner, or null when nothing is decided among
- * the survivors: a human victory or a Wonder names its winner; a conquest
- * or Regicide (M19) defeat of the human only when every player still standing is on one
+ * the survivors: a human victory, a Wonder, a hill (M19) or a time defeat names
+ * its winner; a conquest or Regicide (M19) defeat of the human only when every player still standing is on one
  * team (VictoryChecker's winnerId is then just the first enemy standing):
  * that team's lowest-id standing player, never the human's own team. With
  * no allies that is "exactly one other player still stands".
