@@ -1,4 +1,5 @@
 import type { IsoPainter, WallStyle } from '../isoPainter';
+import { atticRoof } from './kits/atticParapet';
 import { halfHipRoof } from './kits/halfHip';
 import { pavilionRoof } from './kits/pavilionRoof';
 import { steppedGableRoof, stepsGable } from './kits/steppedGable';
@@ -14,7 +15,8 @@ type GableDetail = (width: number, rise: number) => void;
  * `pitch`, overhangs with `eave`, `form` may force hip or gable, and
  * `material` replaces the painter's cover; 'halfHip' clips every main gable
  * with a small hip; 'pavilion' raises every main roof as a truncated
- * French pavilion roof. Styles with stepped gables
+ * French pavilion roof; 'attic' hides every main roof behind a crested
+ * attic parapet (kits/atticParapet.ts). Styles with stepped gables
  * (kits.steppedGables) close every main gable in coped steps. With the native profile
  * (pitch 1, eave 1, form 'native', no material) each call paints
  * exactly the IsoPainter / roofs.ts roof it wraps. Anything standing
@@ -86,7 +88,8 @@ export function styledGable(
   const r = rise * s.roof.pitch;
   const o = overhang * s.roof.eave;
   withCover(p, s, () => {
-    if (s.roof.form === 'hip') p.hipRoof(u0, v0, u1, v1, eave, r, color, o);
+    if (s.roof.form === 'attic') atticRoof(p, s, u0, v0, u1, v1, eave, r, color);
+    else if (s.roof.form === 'hip') p.hipRoof(u0, v0, u1, v1, eave, r, color, o);
     else if (s.roof.form === 'pavilion') pavilionRoof(p, s, u0, v0, u1, v1, eave, r, color, o);
     else if (stepsGable(s, r, axis === 'u' ? v1 - v0 : u1 - u0)) steppedGableRoof(p, s, u0, v0, u1, v1, eave, r, color, wall, axis, detail);
     else if (s.roof.form === 'halfHip' && r >= HALF_HIP_MIN_RISE) halfHipRoof(p, u0, v0, u1, v1, eave, r, color, wall, axis, o, detail);
@@ -111,6 +114,7 @@ export function styledHip(
   const r = rise * s.roof.pitch;
   const o = overhang * s.roof.eave;
   return withCover(p, s, () => {
+    if (s.roof.form === 'attic') return atticRoof(p, s, u0, v0, u1, v1, eave, r, color);
     if (s.roof.form === 'pavilion') return pavilionRoof(p, s, u0, v0, u1, v1, eave, r, color, o);
     if (s.roof.form !== 'gable') return p.hipRoof(u0, v0, u1, v1, eave, r, color, o);
     const axis = u1 - u0 >= v1 - v0 ? 'u' : 'v';

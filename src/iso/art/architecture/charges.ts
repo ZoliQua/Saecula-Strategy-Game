@@ -4,6 +4,7 @@ import { FINNISH_CHARGES } from './finnish/finnishCharge';
 import { FRENCH_CHARGES } from './french/frenchCharge';
 import { GERMAN_CHARGES } from './german/germanCharge';
 import { ITALIAN_CHARGES } from './italian/italianCharge';
+import { POLISH_CHARGES } from './polish/polishCharge';
 import { RUSSIAN_CHARGES } from './russian/russianCharge';
 import { SPANISH_CHARGES } from './spanish/spanishCharge';
 
@@ -26,7 +27,7 @@ export const BASE_CHARGES = {
   },
 } satisfies Record<string, ChargePainter>;
 
-export const CHARGES = { ...BASE_CHARGES, ...ENGLISH_CHARGES, ...GERMAN_CHARGES, ...FRENCH_CHARGES, ...SPANISH_CHARGES, ...ITALIAN_CHARGES, ...RUSSIAN_CHARGES, ...FINNISH_CHARGES } satisfies Record<string, ChargePainter>;
+export const CHARGES = { ...BASE_CHARGES, ...ENGLISH_CHARGES, ...GERMAN_CHARGES, ...FRENCH_CHARGES, ...SPANISH_CHARGES, ...ITALIAN_CHARGES, ...RUSSIAN_CHARGES, ...FINNISH_CHARGES, ...POLISH_CHARGES } satisfies Record<string, ChargePainter>;
 
 /** Heraldic charge on crests and shields. */
 export type CrestCharge = keyof typeof CHARGES;

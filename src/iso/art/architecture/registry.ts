@@ -34,6 +34,9 @@ import { comuneArt } from './italian/comune';
 import { etruriaArt } from './italian/etruria';
 import { ITALIAN_COMUNE, ITALIAN_ETRURIA, ITALIAN_RINASCIMENTO } from './italian/italianStyles';
 import { rinascimentoArt } from './italian/rinascimento';
+import { biskupinArt, krakowArt, zamoscArt } from './polish/polish';
+import { POLISH_ATTIC, POLISH_BISKUPIN, POLISH_KRAKOW } from './polish/polishStyles';
+import { saltMineArt } from './polish/saltMine';
 import { izbaArt } from './russian/izba';
 import { ostrogArt } from './russian/ostrog';
 import { petrineArt } from './russian/petrine';
@@ -87,6 +90,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   finnic: FINNISH_FINNIC,
   greystone: FINNISH_GREYSTONE,
   gustavian: FINNISH_GUSTAVIAN,
+  biskupin: POLISH_BISKUPIN,
+  krakow_gothic: POLISH_KRAKOW,
+  polish_attic: POLISH_ATTIC,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -110,6 +116,9 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   izba: izbaArt,
   petrine: petrineArt,
   nordic: nordicArt,
+  biskupin: biskupinArt,
+  krakow: krakowArt,
+  zamosc: zamoscArt,
 };
 
 /**
@@ -127,8 +136,8 @@ export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>
   italian: bankhausArt,
   russian: ostrogArt,
   finnish: saunaArt,
-  // M21 placeholders: Tasks 2 and 4 replace them with the Wieliczka salt mine and the hamam.
-  polish: casaMonedaArt,
+  polish: saltMineArt,
+  // M21 placeholder: Task 4 replaces it with the hamam.
   ottoman: saunaArt,
 };
 

@@ -34,7 +34,10 @@ export type ArchStyleId =
   | 'petrine'
   | 'finnic'
   | 'greystone'
-  | 'gustavian';
+  | 'gustavian'
+  | 'biskupin'
+  | 'krakow_gothic'
+  | 'polish_attic';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId =
   | 'palisade'
@@ -213,10 +216,10 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     bonus: { kind: 'infantrySpeed', bonus: CIV_BONUS.infantrySpeed },
     landmark: { kind: 'sauna' },
   },
-  // White eagle on red: red, white, gold. Art is the Hungarian set until the M21 art tasks replace it.
+  // White eagle on red: red, white, gold. Architecture is its own (M21 Task 2); walls and units stay Hungarian until Task 3.
   polish: {
     available: false,
-    architecture: HUNGARIAN_ARCH,
+    architecture: { 1: 'biskupin', 2: 'krakow_gothic', 3: 'polish_attic' },
     wallStyle: HUNGARIAN_WALLS,
     unitLook: 'hungarian',
     heraldry: { primary: 0xdc143c, secondary: 0xf2efe6, accent: 0xd4a017 },
