@@ -1805,6 +1805,13 @@ tulajdonos felülírhatja.
   sem. A csapatok, a fegyverszünet, a kezdő nyersanyag és a sebesség (M16)
   mindkettővel működik. A régi módok menete bitre változatlan.
 - **Királygyilkos:**
+  - csak tenger nélküli sablonon: Rét, Vadon, Szigetek (szakadék és híd, víz
+    nélkül) és Erődítmény; máshol a választó tiltott, magyarázattal, és
+    sablonváltáskor a mód az alapértelmezettre áll vissza (mint A domb uránál).
+    Oka a textúra-keret: a király lovag-lapja minden nép lapját az első perctől
+    betölti (népenként kb. 7,4 MB); tengeres térképen a hajólapokkal együtt ez
+    437 MB volna a 400 helyett (tulajdonosi döntés, 2026-11-23: a lovas,
+    koronás király marad, a mód a tengeres térképekről kimarad);
   - minden játékos egy királlyal (`king`) indul a városházája mellett;
   - a játékos kiesik, ha nincs élő királya (a szállítóhajón utazó él) vagy
     nincs városházája (így elbújtatott királlyal nem húzható a végtelenségig);
@@ -1850,13 +1857,14 @@ tulajdonos felülírhatja.
   percen belül eldől; mentés oda-vissza és migráció; a régi módok szimulációi
   és rajz-rögzítései változatlanok.
 - Nem része: király képessége vagy saját grafikája, várkastély, több vagy
-  mozgó domb, a domb a többi sablonon, a módok kampányban, Csoda- vagy
+  mozgó domb, a domb a többi sablonon, Királygyilkos tengeres térképen, a módok kampányban, Csoda- vagy
   időgyőzelem a két új módban, népegyensúly a két új módban.
-- Keret (10.): az M18 keretei; a textúra-memória legfeljebb 1 MB-tal nő, vízen
-  is a 400 MB-on belül marad.
+- Keret (10.): az M18 keretei. A domb ura a textúra-memóriát legfeljebb 1 MB-tal
+  növeli. A Királygyilkos a lovag-lapok miatt többet (népenként egy lap), ezért
+  csak szárazföldi sablonon játszható, és ott a 256 MB-on belül marad.
 - **Alapmérés a pályaválasztáshoz (2026-11-22):** sablononként és
   méret–játékosszám páronként 60 mag. Réten, Vadonban és Erődítményben mindig
-  van alkalmas hely a középtől legfeljebb 3 mezőre. Szigeteken, Véletlen és
+  van alkalmas hely a középtől legfeljebb 4 mezőre. Szigeteken, Véletlen és
   Beltenger térképen a legtávolabbi és a legközelebbi játékos gyalogtávjának
   aránya 3–6 játékossal mediánban 1,4–4,7, ezért maradnak ki. A Szigetvilágnak
   nincs közös szárazföldje.
