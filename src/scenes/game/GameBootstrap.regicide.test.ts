@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createEcsWorld } from '../../ecs/world';
 import { chebyshev } from '../../iso/coordinates';
-import { defaultSetupConfig, matchCivs, VICTORY_MODES, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { defaultSetupConfig, matchCivs, REGICIDE_TEMPLATES, VICTORY_MODES, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
 import { createPlayers } from '../../game/PlayerManager';
 import { computePopulation } from '../../game/population';
-import { MAP_TEMPLATES } from '../../map/generator';
 import { reachMask } from '../../map/gridSteps';
 import { townCenterOrigin, TOWN_CENTER_SIZE, villagerSpawnTiles } from '../../map/startLayout';
 import { spawnNewMatch, tryGenerateGameMap } from './GameBootstrap';
@@ -41,7 +40,7 @@ describe('Regicide spawn (M19)', () => {
   });
 
   const layouts = [['small', 1], ['small', 5], ['medium', 3], ['large', 5]] as const;
-  it.each(MAP_TEMPLATES)('%s: one king each, on a free tile by the town centre that walks wherever the villagers do', (template) => {
+  it.each(REGICIDE_TEMPLATES)('%s: one king each, on a free tile by the town centre that walks wherever the villagers do', (template) => {
     let checked = 0;
     for (const [mapSize, aiCount] of layouts) {
       for (let seed = 1; seed <= 5; seed++) {

@@ -60,6 +60,8 @@ describe('game modes (M19)', () => {
     }
   });
 
+  // A spot check: the meadow, wilderness, islands and fortress generators never write water or fish
+  // (only inland_sea, archipelago and random do), so the sample guards against a later change.
   it('the Regicide templates never have sea, the others always may (texture budget, 2026-11-23)', () => {
     const seaOn = (template: MapTemplate, size: number, players: number, seed: number) => {
       const { map } = generateMap({ template, width: size, height: size, playerCount: players, seed });
