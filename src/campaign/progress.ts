@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import { MISSION_IDS, TUTORIAL_ID, type MissionId, type ScenarioId } from './missions';
+import { isShort, MISSION_IDS, SHORT_IDS, TUTORIAL_ID, type MissionId, type ScenarioId, type ShortId } from './missions';
 
 /** The localStorage key of the campaign progress (CLAUDE.md §7.6: internal keys keep the isorts prefix). */
 export const CAMPAIGN_KEY = 'isorts.campaign.v1';
 
-/** `tutorialDone` (M18) is optional: progress stored before it reads as not done. */
-const ProgressSchema = z.object({ completed: z.array(z.enum(MISSION_IDS)), tutorialDone: z.boolean().optional() }).strict();
+/** `tutorialDone` (M18) and `shortDone` (M20) are optional: progress stored before them reads as not done. */
+const ProgressSchema = z
+  .object({ completed: z.array(z.enum(MISSION_IDS)), tutorialDone: z.boolean().optional(), shortDone: z.array(z.enum(SHORT_IDS)).optional() })
+  .strict();
 type StoredProgress = z.infer<typeof ProgressSchema>;
 
 export type MissionStatus = 'locked' | 'available' | 'completed';
@@ -60,9 +62,15 @@ export class CampaignProgress {
     return this.read().tutorialDone === true;
   }
 
-  /** The tutorial is always available; missions unlock in order. */
+  /** The short scenarios completed (M20; they never lock or unlock anything). */
+  shortDone(): Set<ShortId> {
+    return new Set(this.read().shortDone ?? []);
+  }
+
+  /** The tutorial and the short scenarios are always available; chain missions unlock in order. */
   status(id: ScenarioId): MissionStatus {
     if (id === TUTORIAL_ID) return this.tutorialDone() ? 'completed' : 'available';
+    if (isShort(id)) return this.shortDone().has(id) ? 'completed' : 'available';
     const done = this.completed();
     if (done.has(id)) return 'completed';
     const i = MISSION_IDS.indexOf(id);
@@ -72,12 +80,19 @@ export class CampaignProgress {
   markCompleted(id: ScenarioId): void {
     const p = this.read();
     if (id === TUTORIAL_ID) {
-      if (!p.tutorialDone) this.write({ completed: p.completed, tutorialDone: true });
+      if (!p.tutorialDone) this.write({ ...p, tutorialDone: true });
+      return;
+    }
+    if (isShort(id)) {
+      const shorts = new Set(p.shortDone ?? []);
+      if (shorts.has(id)) return;
+      shorts.add(id);
+      this.write({ ...p, shortDone: SHORT_IDS.filter((s) => shorts.has(s)) });
       return;
     }
     const done = new Set(p.completed);
     if (done.has(id)) return;
     done.add(id);
-    this.write({ completed: MISSION_IDS.filter((m) => done.has(m)), ...(p.tutorialDone ? { tutorialDone: true } : {}) });
+    this.write({ ...p, completed: MISSION_IDS.filter((m) => done.has(m)) });
   }
 }

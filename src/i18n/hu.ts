@@ -572,8 +572,16 @@ export const hu = {
   campaign: {
     kicker: 'Saecula krónikája',
     title: 'Kampány',
-    intro: 'Kezdd az oktató küldetéssel, ha most ismerkedsz a játékkal. Utána három küldetés vezet Rómától a felvilágosodásig: mindegyik a következőt nyitja meg, a teljesítetteket újrajátszhatod.',
+    intro: 'Kezdd az oktató küldetéssel, ha most ismerkedsz a játékkal. Utána két fejezet, hat küldetés vezet Rómától a felvilágosodásig: mindegyik a következőt nyitja meg, a teljesítetteket újrajátszhatod. A rövid küldetések bármikor játszhatók.',
     missionNumber: (n: number) => `${n}. küldetés`,
+    /** The list's section titles (M20): the two chapters and the short scenarios. */
+    sections: {
+      chapters: ['I. fejezet · Rómától a felvilágosodásig', 'II. fejezet · Tengerek, kereskedők, királyok'] as readonly string[],
+      short: 'Rövid küldetések · bármikor játszhatók',
+    },
+    /** A short scenario's list badge and briefing kicker (M20). */
+    shortBadge: (n: number) => `R${n}`,
+    shortKicker: 'Rövid küldetés',
     status: { locked: 'Zárolva', available: 'Elérhető', completed: 'Teljesítve' },
     lockedHint: 'Előbb teljesítsd az előző küldetést.',
     objectivesTitle: 'Célok',
@@ -585,7 +593,15 @@ export const hu = {
       ownBuildings: (name: string, n: number) => (n === 1 ? `Építs fel: ${name}` : `Építs fel ${n} épületet: ${name}`),
       ownUnits: (name: string, n: number) => `Képezz ${n} egységet: ${name}`,
       survive: (min: number) => `Tarts ki ${min} percig (a városházád álljon)`,
-      winMatch: 'Nyerd meg a meccset (hódítás vagy Csoda)',
+      /** By the mission's victory mode (M20). */
+      winMatch: {
+        conquest: 'Nyerd meg a meccset (hódítás)',
+        conquest_wonder: 'Nyerd meg a meccset (hódítás vagy Csoda)',
+        conquest_time: 'Nyerd meg a meccset (hódítás vagy idő)',
+        all: 'Nyerd meg a meccset (hódítás, Csoda vagy idő)',
+        regicide: 'Nyerd meg a meccset (királygyilkosság vagy hódítás)',
+        hill: 'Nyerd meg a meccset (a domb megtartása vagy hódítás)',
+      },
       built: (name: string, n: number) => (n === 1 ? `Építs egy új épületet: ${name}` : `Építs ${n} új épületet: ${name}`),
       gathered: (resource: string, n: number) => `Gyűjts ${n} egységnyi nyersanyagot: ${resource}`,
       repaired: (n: number) => (n === 1 ? 'Javíts meg egy sérült épületet' : `Javíts meg ${n} sérült épületet`),
@@ -651,8 +667,56 @@ export const hu = {
         place: 'Olaszok · közepes Szigetek · 2 nehéz ellenfél · a felvilágosodásban',
         briefing:
           'A szigetvilág városállamai egy új korszak vezetéséért versengenek. Bőséges kincstárral indulsz: építs Csodát és tartsd meg, vagy foglald el ellenfeleid városházáit. Csak egy út vezet a győzelemhez: nyerd meg a meccset.',
-        victory: 'A Saecula krónikája lezárul: a te néped neve fémjelzi a kort. Gratulálunk, teljesítetted a kampányt!',
+        victory: 'A krónika első fejezete lezárul: a te néped neve fémjelzi a kort. A második fejezet már vár a tengereken túl.',
         defeat: 'A szigetek ura más lett. A krónika utolsó lapja még üres: próbáld újra.',
+      },
+      new_shores: {
+        title: 'Új partok',
+        place: 'Spanyolok · közepes Szigetvilág · 1 közepes ellenfél',
+        briefing:
+          'A korona új földeket keres a tengeren túl, de a szigeted kicsi, és a szomszéd francia flotta is a vizeket kémleli. Építs kikötőt, etesd a népet a tenger halaiból, állíts két gályát a partok védelmére, és lépj a középkorba.',
+        victory: 'A gályák vitorlái fehérlenek a láthatáron, a halászok tele hálóval térnek haza. A tenger a tiéd.',
+        defeat: 'A sziget elesett, a flotta szétszóródott. Építs gyorsabban kikötőt, és próbáld újra.',
+      },
+      hansa_roads: {
+        title: 'A Hanza útjai',
+        place: 'Németek · közepes Mezőség · 1 szövetséges, 2 közepes ellenfél · 20 perc fegyverszünet',
+        briefing:
+          'A városok kereskedőszövetsége a te vezetésedet várja. Húsz perc békéd van, mielőtt a riválisok fegyvert ragadnak: építs piacot és Hanza-kontort, indíts kereskedőkocsikat a szövetséges piaca felé, és gyűjts kétezer aranyat.',
+        victory: 'A kocsisorok megtelt ládákkal érkeznek, a kontor mérlege arannyal billen. A Hanza útjai a te városodba vezetnek.',
+        defeat: 'A riválisok felégették a raktárakat. Erősítsd meg a várost a fegyverszünet alatt, és próbáld újra.',
+      },
+      kings_head: {
+        title: 'A király feje',
+        place: 'Franciák · közepes Vadon · Királygyilkos · 2 nehéz ellenfél · középkorból indulva',
+        briefing:
+          'Két trónkövetelő vonult fel a vadon szélén, és mindkettő a koronádra tör. Ebben a háborúban a király élete a tét: védd a magadét, és ejtsd el az övékét, vagy rombold le minden városházájukat.',
+        victory: 'Az ellenséges királyok elestek, a vadon csendes. A Saecula krónikája a te nevedet írja a kor fölé. Gratulálunk, teljesítetted a kampányt!',
+        defeat: 'A király elesett, a korona elveszett. Tartsd közelebb az udvart a sereghez, és próbáld újra.',
+      },
+      hill_rush: {
+        title: 'A domb',
+        place: 'Rövid küldetés · Oroszok · kicsi Erődítmény · A domb ura · 1 közepes ellenfél',
+        briefing:
+          'A vidék közepén álló dombot az uralja, aki elég sokáig tartja. Középkori sereggel indulsz: foglald el a dombot, és tartsd nyolc percig, mielőtt az ellenfél teszi meg.',
+        victory: 'A zászlód a dombtetőn lobog. A vidék a tiéd.',
+        defeat: 'A domb másé lett. Vonulj fel hamarabb, és próbáld újra.',
+      },
+      wonder_race: {
+        title: 'Versenyfutás a Csodáért',
+        place: 'Rövid küldetés · Finnek · kicsi Mezőség · 1 közepes ellenfél · a felvilágosodásban · 10 perc fegyverszünet',
+        briefing:
+          'A kincstár tele, de a szomszéd is Csodára gyűjt. Tíz perc békéd van: gyűjts, építs, és emeld fel a Csodát, mielőtt az ellenfél a magáét befejezi vagy a falaidat ostromolja.',
+        victory: 'A Csoda áll, a szomszédok csodálattal néznek fel rá. Megnyerted a versenyt.',
+        defeat: 'Az ellenfél gyorsabb volt. Állíts több falusit az építkezésre, és próbáld újra.',
+      },
+      last_stand: {
+        title: 'Az utolsó bástya',
+        place: 'Rövid küldetés · Magyarok · kicsi Erődítmény · 2 nehéz ellenfél · középkorból indulva',
+        briefing:
+          'Két sereg vonul a végvár ellen, felmentés tizenöt perc múlva érkezik. Erősítsd a falakat, építsd fel a Végvárat, és tartsd a városházát, amíg a felmentők megérkeznek.',
+        victory: 'A felmentő sereg kürtje megszólal. A bástya kitartott.',
+        defeat: 'A bástya elesett. Építs hamarabb védelmet, és próbáld újra.',
       },
     },
   },

@@ -100,7 +100,7 @@ describe('missions', () => {
   it('are valid setups (withSetup keeps them as they are), tagged with their id, in order', () => {
     for (const id of MISSION_IDS) expect(withSetup(missionSetup(id), {})).toEqual(missionSetup(id));
     expect(missionSetup('border_guards').mission).toBe('border_guards');
-    expect(MISSION_IDS.map(nextMission)).toEqual(['border_guards', 'age_of_wonders', null]);
+    expect(MISSION_IDS.map(nextMission)).toEqual(['border_guards', 'age_of_wonders', 'new_shores', 'hansa_roads', 'kings_head', null]);
   });
 
   it('start: every player in the mission age with the age-up techs, the human with the bonus', () => {
@@ -137,9 +137,9 @@ describe('CampaignProgress', () => {
   it('unlocks in order, keeps completed missions replayable, and persists', () => {
     const store = memory();
     const p = new CampaignProgress(store);
-    expect(MISSION_IDS.map((id) => p.status(id))).toEqual(['available', 'locked', 'locked']);
+    expect(MISSION_IDS.map((id) => p.status(id))).toEqual(['available', 'locked', 'locked', 'locked', 'locked', 'locked']);
     p.markCompleted('first_monastery');
-    expect(MISSION_IDS.map((id) => p.status(id))).toEqual(['completed', 'available', 'locked']);
+    expect(MISSION_IDS.map((id) => p.status(id))).toEqual(['completed', 'available', 'locked', 'locked', 'locked', 'locked']);
     expect(JSON.parse(store.data[CAMPAIGN_KEY]!)).toEqual({ completed: ['first_monastery'] });
     expect(new CampaignProgress(store).status('border_guards')).toBe('available');
   });
