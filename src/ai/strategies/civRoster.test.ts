@@ -126,7 +126,7 @@ describe('AI civ roster (M8)', () => {
           civs: { human, ais },
           strategy: (id) => createStrategy(difficulty, createRng(seed * 31 + id)),
           difficulty: () => difficulty,
-          enemyOf: (id) => (id % 4) + 1,
+          enemyOf: (id) => (id % civs.length) + 1,
           humanStrategy: createStrategy(difficulty, createRng(seed * 31 + 1)),
           humanEnemy: () => 2,
         });

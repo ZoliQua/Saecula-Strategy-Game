@@ -53,9 +53,9 @@ function duel(seed: number, minutes: number): { wonAt: number; master: MasterStr
   return { wonAt, master };
 }
 
-/** Hard alone (same setup as `alone`): when it reached age 2. */
+/** Hard alone (same setup and civs as `alone`): when it reached age 2. */
 function hardAge2(seed: number): number {
-  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
+  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, civs: classicCivs(seed, 1), strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
   const ai = match.players.get(2)!;
   let age2 = Infinity;
   match.run(16 * MIN, 100, (t) => {

@@ -83,7 +83,9 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
    * Age-up pace on its own (64×64 meadow, passive human, Hard handicap), re-measured in the final-review
    * fix wave on seeds 1-8: age 2 at 12.65 / 11.89 / 12.64 / 12.62 / 13.24 / 12.72 / 12.82 / 11.27 min, age 3
    * at 19.84 / 19.07 / 20.29 / 20.65 / 20.87 / 20.32 / 20.42 / 18.87 min. No seed is left out. (§10.3 asks
-   * for ASAP; Hard is no faster than Medium yet: a known follow-up, final-review m4.)
+   * for ASAP; Hard is no faster than Medium yet: a known follow-up, final-review m4.) Those timings are
+   * from the eight-civ draw; since M21 the mixed draw is over ten civs (seed 7 draws Ottoman, seed 8
+   * Polish), which this test keeps as extra coverage, so the per-seed timings above no longer apply.
    */
   it('on seeds 1-8 alone: age 2 by 13.5 min (worst 13.24) and age 3 by 21.5 min (worst 20.87)', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {

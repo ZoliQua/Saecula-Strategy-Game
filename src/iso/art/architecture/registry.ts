@@ -151,8 +151,8 @@ export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>
 
 /**
  * The civ whose age styles include `id` (every style belongs to one civ).
- * The first civ in registry order wins, so a civ still borrowing another's
- * styles (M21, until its art lands) never takes over that civ's landmark.
+ * The first civ in registry order wins, so a civ that borrows another's
+ * styles (as Polish and Ottoman did during M21) never takes over that civ's landmark.
  */
 const STYLE_CIV = new Map<ArchStyleId, CivId>();
 for (const civ of CIV_IDS) {
