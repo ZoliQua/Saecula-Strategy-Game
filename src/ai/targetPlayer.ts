@@ -2,6 +2,21 @@ import type { EcsWorld } from '../ecs/world';
 import { chebyshev, type TileCoord } from '../iso/coordinates';
 import { areAllies, areEnemies } from '../game/diplomacy';
 import type { PlayerManager } from '../game/PlayerManager';
+import { hasHill, hasRegicide, type GameSetupConfig } from '../game/GameSetupConfig';
+
+/**
+ * Whether the setup's mode picks free-for-all targets (M23): Regicide or King
+ * of the Hill, outside the campaign (a mission keeps the match it was
+ * measured with, e.g. *The King's Head*'s two AIs on the human).
+ */
+export function freeForAllMode(setup: Pick<GameSetupConfig, 'victory' | 'mission'>): boolean {
+  return (hasRegicide(setup.victory) || hasHill(setup.victory)) && setup.mission === undefined;
+}
+
+/** A free-for-all mode that actually picks: no teams and at least two AIs (with one, its nearest enemy is the human anyway). */
+export function freeForAllTargets(mode: boolean, players: Pick<PlayerManager, 'hasTeams' | 'ais'>): boolean {
+  return mode && !players.hasTeams() && players.ais().length >= 2;
+}
 
 /**
  * Whom AI player `me` attacks (M16, CLAUDE.md §9 "AI csapatban"),
@@ -28,7 +43,7 @@ export function chooseEnemyPlayer(players: PlayerManager, me: number, world: Ecs
   const human = players.human();
   if (!human) return undefined;
   if (!players.hasTeams()) {
-    if (!nearest || players.ais().length < 2) return human.id;
+    if (!freeForAllTargets(nearest, players)) return human.id;
     const tcs = townCentres(world);
     const standing = (id: number) => players.get(id)?.defeated !== true && (tcs.get(id)?.length ?? 0) > 0;
     const candidates = players.all().filter((p) => p.id !== me && areEnemies(players, me, p.id)).map((p) => p.id).filter(standing);

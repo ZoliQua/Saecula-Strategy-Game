@@ -16,13 +16,13 @@ interface Outcome {
   readonly humanKingFell: number;
 }
 
-/** 6 players (human slot driven by an AI too), Hard, free-for-all. `old` pins the pre-M23 targeting (everyone attacks player 1; the human attacks 2). */
+/** 6 players (human slot driven by an AI too), Hard, free-for-all. `old` pins the pre-M23 targeting (everyone attacks player 1, the human attacks 2, waves fight only their target's units). */
 function play(victory: VictoryMode, seed: number, old: boolean, limit: number): Outcome {
   const strategy = (id: number) => createStrategy('hard', createRng(aiRngSeed(seed, id)));
   const m: HeadlessMatch = createHeadlessMatch({
     seed, size: 64, template: 'meadow', aiCount: 5, victory,
     strategy, difficulty: () => 'hard', humanStrategy: strategy(1),
-    ...(old ? { enemyOf: () => 1, humanEnemy: () => 2 } : {}),
+    ...(old ? { enemyOf: () => 1, humanEnemy: () => 2, freeForAll: false } : {}),
   });
   const king = m.world.entities.find((e) => e.unit?.unitType === 'king' && e.owner?.playerId === 1);
   const ownerOf = new Map<number, number>();
@@ -51,8 +51,9 @@ function play(victory: VictoryMode, seed: number, old: boolean, limit: number): 
  * M23: in free-for-all Regicide every AI picks its nearest standing enemy (chooseEnemyPlayer
  * `nearest`) instead of all five raiding the human slot. 64x64 meadow, 6 players, Hard, the human slot
  * driven by a Hard AI, 20 game minutes, measured before the change by pinning the old targeting
- * (`old`: AIs -> 1, human -> 2): seed 7: the human's king fell at 332 s before, lives after
- * (attack-order seconds on the human 401 -> 1817, on other AIs 534 -> 11954). Seed 3 (outside the
+ * (`old`: AIs -> 1, human -> 2, waves fight only their target's units): seed 7: the human's king
+ * fell at 332 s before, lives after (attack-order seconds on the human 401 -> 2404, on other AIs
+ * 534 -> 12895; with waves that fight every enemy on the way, final review fix). Seed 3 (outside the
  * suite): the king lived both ways (hill seeds 3 and 7 likewise, aimed-at-human seconds 327/342 -> 330/373).
  */
 describe('free-for-all Regicide, 6 players', () => {

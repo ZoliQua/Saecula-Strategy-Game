@@ -60,7 +60,7 @@ import { buildMatchAIs } from '../matchAIs';
 import { aiModeContext } from '../modeContext';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
 import { treatyActive, type TreatyGate } from '../../game/treaty';
-import { chooseEnemyPlayer } from '../targetPlayer';
+import { chooseEnemyPlayer, freeForAllMode, freeForAllTargets } from '../targetPlayer';
 
 export interface HeadlessMatchOptions {
   readonly seed: number;
@@ -90,6 +90,8 @@ export interface HeadlessMatchOptions {
   readonly timeVictory?: boolean;
   /** The victory mode, in place of the two flags above (M19: Regicide spawns kings, King of the Hill a hill; both judge every step). */
   readonly victory?: VictoryMode;
+  /** Free-for-all targets (M23) on or off; default from the setup (freeForAllMode, two or more AIs). Tests pin the pre-M23 match with false. */
+  readonly freeForAll?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
   /** AIs on the human's team (M16 setup `allies`, clamped to 0..aiCount - 1; default 0). Stored in the setup only. */
@@ -191,8 +193,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup), setup.allies);
   if (options.mission) applyMissionStart(players, options.mission);
   spawnNewMatch(world, players, { mapData: map, starts: generated.playerStarts, walls: generated.walls }, setup);
-  // M23: free-for-all picking needs two AIs; with one, the old fixed enemies (AI -> 1, human -> 2) stay.
-  const nearest = (hasRegicide(setup.victory) || hasHill(setup.victory)) && players.ais().length >= 2;
+  // M23: free-for-all picking needs two AIs and no mission; otherwise the old fixed enemies (AI -> 1, human -> 2) stay.
+  const nearest = options.freeForAll ?? freeForAllTargets(freeForAllMode(setup), players);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     const personality = options.personality?.(p.id);
@@ -212,6 +214,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     humanAi,
     humanEnemy: options.humanEnemy ?? (players.hasTeams() || nearest ? () => chooseEnemyPlayer(players, 1, world, nearest) : () => 2),
     enemyOf: options.enemyOf ?? defaultEnemyOf(players, world, nearest),
+    freeForAll: nearest,
     startMs: 0,
     camera: { tx: options.size / 2, ty: options.size / 2, zoom: 1 },
     lightPhase: 0,
@@ -243,7 +246,8 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
     ais,
     humanAi: null,
     humanEnemy: () => 2,
-    enemyOf: defaultEnemyOf(r.players, r.world, (hasRegicide(r.setup.victory) || hasHill(r.setup.victory)) && r.players.ais().length >= 2),
+    enemyOf: defaultEnemyOf(r.players, r.world, freeForAllTargets(freeForAllMode(r.setup), r.players)),
+    freeForAll: freeForAllTargets(freeForAllMode(r.setup), r.players),
     startMs: r.gameTimeMs,
     camera: r.camera,
     lightPhase: r.lightPhase,
@@ -271,6 +275,8 @@ interface MatchParts {
   readonly humanAi: AIPlayer | null;
   readonly humanEnemy: () => number | undefined;
   readonly enemyOf: (playerId: number) => number | undefined;
+  /** Waves fight any enemy unit (M23 free-for-all; AIContext.freeForAll). */
+  readonly freeForAll: boolean;
   readonly startMs: number;
   readonly camera: MatchState['camera'];
   readonly lightPhase: number;
@@ -279,7 +285,7 @@ interface MatchParts {
 
 /** The systems and the step loop over a built (or restored) match. */
 function assemble(parts: MatchParts): HeadlessMatch {
-  const { setup, world, map, players, ais, humanAi, humanEnemy, enemyOf, stats } = parts;
+  const { setup, world, map, players, ais, humanAi, humanEnemy, enemyOf, freeForAll, stats } = parts;
   const human = players.human();
   const fogFor = (id: number): FogOfWarData | null =>
     (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
@@ -348,7 +354,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.hill.update(dt);
     timeLimit?.advance(dt);
     const timeVictory = timeLimit?.view();
-    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(world, players, regicide) };
+    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(world, players, regicide), ...(freeForAll && { freeForAll }) };
     for (const ai of ais) ai.update(withEnemy(base, enemyOf(ai.player.id)), dt);
     humanAi?.update(withEnemy(base, humanEnemy()), dt);
     systems.population.update();

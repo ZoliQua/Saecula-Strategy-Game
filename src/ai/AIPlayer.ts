@@ -43,6 +43,12 @@ export interface AIContext extends AIModeContext {
    * may still order attacks, which CombatSystem drops.
    */
   readonly treatyActive?: boolean;
+  /**
+   * Free-for-all targets (M23; absent = false): every player picks its
+   * nearest enemy, so a wave fights any enemy unit it meets on the way, as
+   * in a team match.
+   */
+  readonly freeForAll?: boolean;
 }
 
 export interface AIStrategy {

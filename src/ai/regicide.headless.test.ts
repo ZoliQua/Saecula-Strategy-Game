@@ -206,7 +206,10 @@ function playOn(exit: Exit, civs: { civs?: ReturnType<typeof classicCivs> } = {}
   return { exitMs, economy, defeated: player.defeated, save: m.snapshot(FIXED_DATE) };
 }
 
-/** Most a deposit can move between two runs one step apart. */
+/**
+ * Most a running total can move between two runs one step apart: one
+ * villager load (carry capacity 10, createUnit) per resource, with room for two.
+ */
 const DEPOSIT = 20;
 
 /**
@@ -260,6 +263,8 @@ describe('out by the king is out as in Conquest (M19)', () => {
     expectSameExit(king.economy, razed.economy);
     expect(king.economy.age).toBe(1);
     expect(census(king.save)).toEqual(census(razed.save));
+    // With this draw the two runs happen to coincide exactly; kept as a tripwire, the tolerant checks above are the claim.
+    expect(king.economy).toEqual(razed.economy);
     expect(king.save.stats.players['3']).toMatchObject({ unitsLost: 1, buildingsLost: 0 });
     expect(razed.save.stats.players['3']).toMatchObject({ unitsLost: 0, buildingsLost: 1 });
     // With the king dead in both, nothing at all differs: the collapse is that death.

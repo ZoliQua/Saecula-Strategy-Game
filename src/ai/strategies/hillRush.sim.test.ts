@@ -13,10 +13,12 @@ const MIN = 60_000;
  * 400 / 300, opponent: one Medium AI on RNG `id * 13 + rs`, human Hard AI on RNG
  * `rs`) won 9 of 16 AI seeds (rs 1..16), every win and loss by the hill, at
  * 20.8-29.0 minutes. Winning seeds: 1, 2, 3, 4, 6, 10, 11, 14, 15. At least half,
- * so the start bonus stays unchanged. Pinned: five winning seeds (seed 6 also won in the first sweep but flipped to a loss once the uncommitted FFA targeting work was in the tree, so it is not pinned: single seeds are fragile, the half-of-16 rate is the measure).
+ * so the start bonus stays unchanged. Pinned: six of the winning seeds (with
+ * one AI the M23 free-for-all targeting does not apply, so the match is the
+ * one measured; single seeds are fragile, the half-of-16 rate is the measure).
  */
 describe('hill rush winnability (M23)', () => {
-  it.each([1, 3, 10, 11, 14])('a Hard player wins by the hill on AI seed %i', (rs) => {
+  it.each([1, 3, 6, 10, 11, 14])('a Hard player wins by the hill on AI seed %i', (rs) => {
     const s = missionSetup('hill_rush');
     const m = createHeadlessMatch({ mission: 'hill_rush', seed: s.seed, size: 64, aiCount: 1, strategy: (id) => new MediumStrategy(createRng(id * 13 + rs)), difficulty: () => s.difficulty, humanStrategy: new HardStrategy(createRng(rs)) });
     m.run(40 * MIN, 100, (t) => (Math.round(t) % 1000 === 0 ? m.judge().kind !== 'playing' : undefined));
