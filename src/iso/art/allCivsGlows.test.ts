@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AVAILABLE_CIVS, CIV_DEFS } from '../../config/civs';
+import { CIV_DEFS, CIV_IDS } from '../../config/civs';
 import type { AgeId, CivId } from '../../types';
 import { IsoPainter } from './isoPainter';
 import { GlowCover } from './lighting/glowCover';
@@ -111,6 +111,10 @@ const GRAZED_CEILINGS: Readonly<Record<string, number>> = {
   'polish foundry@1': 1,
   'polish foundry@2': 1,
   'polish foundry@3': 1,
+  // M21 Ottoman: the shared foundry's front light behind its furnace, in every age.
+  'ottoman foundry@1': 1,
+  'ottoman foundry@2': 1,
+  'ottoman foundry@3': 1,
 };
 
 let buildings: typeof import('./buildings');
@@ -134,12 +138,10 @@ describe('no lit window glows behind a later solid', () => {
   });
 
   it('every M5 civ drops hidden glows; the pin-locked Hungarian and English styles keep theirs', () => {
-    // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
-    expect(AVAILABLE_CIVS.filter((civ) => !dropsHidden(civ))).toEqual(['hungarian', 'english']);
+    expect(CIV_IDS.filter((civ) => !dropsHidden(civ))).toEqual(['hungarian', 'english']);
   });
 
-  // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
-  it.each(AVAILABLE_CIVS)('%s: no hidden glow beyond its ceiling, and none hidden at its centre where the style drops them', (civ) => {
+  it.each(CIV_IDS)('%s: no hidden glow beyond its ceiling, and none hidden at its centre where the style drops them', (civ) => {
     const ceilings = dropsHidden(civ) ? GRAZED_CEILINGS : PRE_M5_CEILINGS;
     for (const [key, paint] of paintings(civ)) {
       const hits = occludedGlows(paint);
@@ -152,8 +154,7 @@ describe('no lit window glows behind a later solid', () => {
     }
   });
 
-  // Narrowed to AVAILABLE_CIVS: it flips dropHiddenGlows on the civ's styles, which for the Ottoman civ are still the Hungarian ones (M21 Task 5 restores CIV_IDS here).
-  it.each(AVAILABLE_CIVS.filter((civ) => civ !== 'hungarian' && civ !== 'english'))('%s: GlowCover drops only glows the checker finds hidden (no visible window goes dark)', (civ) => {
+  it.each(CIV_IDS.filter((civ) => civ !== 'hungarian' && civ !== 'english'))('%s: GlowCover drops only glows the checker finds hidden (no visible window goes dark)', (civ) => {
     const civStyles = AGES.map((age) => styles.ARCH_STYLES[CIV_DEFS[civ].architecture[age]] as { dropHiddenGlows?: boolean });
     const key = (g: unknown): string => {
       const { x, y } = g as { x: number; y: number };

@@ -69,9 +69,12 @@ export type WallStyleId =
   | 'granite_bastion'
   | 'box_rampart'
   | 'barbican_curtain'
-  | 'zamosc_bastion';
+  | 'zamosc_bastion'
+  | 'opus_mixtum'
+  | 'rumeli'
+  | 'ottoman_bastion';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish' | 'polish';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish' | 'polish' | 'ottoman';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -233,12 +236,12 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     bonus: { kind: 'villagerSpeed', bonus: CIV_BONUS.villagerSpeed },
     landmark: { kind: 'mint' },
   },
-  // White crescent and star on red: red, white, green. Byzantine / Seljuk / Osmanlı buildings; walls and units are the Hungarian set until M21 Task 5.
+  // White crescent and star on red: red, white, green. Byzantine / Seljuk / Osmanlı buildings; the Theodosian opus mixtum wall, Rumelihisarı round towers under lead cones and an ashlar bastion trace; Ottoman unit liveries.
   ottoman: {
-    available: false,
+    available: true,
     architecture: { 1: 'byzantine', 2: 'seljuk', 3: 'osmanli' },
-    wallStyle: HUNGARIAN_WALLS,
-    unitLook: 'hungarian',
+    wallStyle: { 1: 'opus_mixtum', 2: 'rumeli', 3: 'ottoman_bastion' },
+    unitLook: 'ottoman',
     heraldry: { primary: 0xc8102e, secondary: 0xf2efe6, accent: 0x1f7a3a },
     uniqueUnit: 'janissary',
     bonus: { kind: 'trainSpeed', bonus: CIV_BONUS.trainSpeed },

@@ -66,9 +66,8 @@ describe('Polish wall styles', () => {
   });
 
   it('compares against every other registered wall style set', () => {
-    expect(OTHERS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish']));
-    // Ottoman still borrows the Hungarian set until M21 Task 5; it then adds one more.
-    expect(OTHERS.length).toBeGreaterThanOrEqual(8);
+    expect(OTHERS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish', 'ottoman']));
+    expect(OTHERS).toHaveLength(9);
   });
 
   it.each(AGES)("age %s: every piece differs from every other registered civ's piece", (age) => {

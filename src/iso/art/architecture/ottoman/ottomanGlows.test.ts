@@ -15,9 +15,9 @@ import { installRecordingCanvas } from '../../testing/recordingCanvas.testkit';
  * grazes keep their glow, as in allCivsGlows.test.ts; the ceilings below
  * hold them. The only one is inherited from the shared foundry (always
  * painted in the age-3 style): its front light, ~29 % covered by its
- * furnace (the same graze Polish carries). M21 Task 5 moves these
- * ceilings into allCivsGlows' GRAZED_CEILINGS when Ottoman becomes
- * available. The types
+ * furnace (the same graze Polish carries). allCivsGlows'
+ * GRAZED_CEILINGS holds the same ceilings since Ottoman became available
+ * (M21 Task 5). The types
  * tested are every building type whose Ottoman art records a glow in some
  * age, not a fixed list.
  */

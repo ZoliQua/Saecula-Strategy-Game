@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { CIV_DEFS, CIV_IDS } from '../../../../config/civs';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../canvas';
@@ -101,12 +104,20 @@ describe('Ottoman architecture (Byzantine, Seljuk, Osmanlı, Süleymaniye, hamam
       expect(s.dropHiddenGlows, s.id).toBe(true);
       expect(Object.keys(ARCH_FAMILIES)).toContain(s.family);
     }
-    // Age 3 never rides the onion-dome kit: its domes are low lead domes.
-    expect(OTTOMAN_OSMANLI.kits?.onionDomes).toBeUndefined();
     expect(CHARGES.crescent).toBeTypeOf('function');
     expect(CIV_DEFS.ottoman.architecture).toEqual({ 1: 'byzantine', 2: 'seljuk', 3: 'osmanli' });
-    // Walls and units land in M21 Task 5, which makes the civ available.
-    expect(CIV_DEFS.ottoman.available).toBe(false);
+    // Walls and units landed in M21 Task 5, which made the civ available.
+    expect(CIV_DEFS.ottoman.available).toBe(true);
+  });
+
+  it('never rides the onion-dome kit: the domes are low lead domes, not Russian onions (Review Focus 1)', () => {
+    // No style switches the kit on…
+    for (const s of [OTTOMAN_BYZANTINE, OTTOMAN_SELJUK, OTTOMAN_OSMANLI]) expect(s.kits?.onionDomes, s.id).not.toBe(true);
+    // …and no Ottoman painter reaches for it directly.
+    const dir = fileURLToPath(new URL('.', import.meta.url));
+    const sources = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
+    expect(sources.length).toBeGreaterThan(5);
+    for (const f of sources) expect(readFileSync(join(dir, f), 'utf8'), f).not.toMatch(/onionDome/);
   });
 
   it('seed salts are unique across every registered style', () => {

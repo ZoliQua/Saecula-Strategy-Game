@@ -66,8 +66,8 @@ describe('Finnish wall styles', () => {
   });
 
   it('compares against every other registered wall style set', () => {
-    expect(OTHERS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'polish']));
-    expect(OTHERS).toHaveLength(8);
+    expect(OTHERS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'polish', 'ottoman']));
+    expect(OTHERS).toHaveLength(9);
   });
 
   it.each(AGES)("age %s: every piece differs from every other registered civ's piece", (age) => {

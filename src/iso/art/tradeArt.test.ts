@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AVAILABLE_CIVS, CIV_IDS } from '../../config/civs';
+import { CIV_IDS } from '../../config/civs';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { installRecordingCanvas } from './testing/recordingCanvas.testkit';
 import { unitPixelsHash } from './testing/unitPins.testkit';
@@ -37,8 +37,7 @@ describe('trade art', () => {
     const walk = g.layout.offsets.walk ?? 0;
     const px = (k: number) => Array.from(sheet.rasterizeFrame('trade_cart', 'english', k).albedo.slice(0, 20000)).join(',');
     expect(px(walk)).not.toBe(px(walk + 3));
-    // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
-    expect(new Set(AVAILABLE_CIVS.map((civ) => unitPixelsHash('trade_cart', civ))).size).toBe(AVAILABLE_CIVS.length);
+    expect(new Set(CIV_IDS.map((civ) => unitPixelsHash('trade_cart', civ))).size).toBe(CIV_IDS.length);
   });
 
   it('the trade ship shares the transport sheet: the same texture key, animations, walk cycle and look in every civ', () => {

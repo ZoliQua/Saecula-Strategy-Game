@@ -85,9 +85,9 @@ describe('GameSetupConfig', () => {
     expect(withSetup(defaultSetupConfig(1), { civ: bogus }).civ).toBe('hungarian');
   });
 
-  it('keeps every human civ (all nine are playable until Ottoman joins in M21 Task 5)', () => {
+  it('keeps every human civ (all ten are playable)', () => {
     for (const civ of AVAILABLE_CIVS) expect(withSetup(defaultSetupConfig(1), { civ }).civ).toBe(civ);
-    expect(AVAILABLE_CIVS).toHaveLength(9);
+    expect(AVAILABLE_CIVS).toHaveLength(10);
   });
 
   it('falls back to a mixed AI line-up for an unknown AI civ', () => {
@@ -123,8 +123,8 @@ describe('GameSetupConfig', () => {
 });
 
 describe('AI_CIV_CHOICES', () => {
-  it('offers a mix first, then every available civ: 10 options (Vegyes / Magyar / Angol / Német / Francia / Spanyol / Olasz / Orosz / Finn / Lengyel)', () => {
-    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish', 'polish']);
+  it('offers a mix first, then every civ: 11 options (Vegyes / Magyar / Angol / Német / Francia / Spanyol / Olasz / Orosz / Finn / Lengyel / Oszmán)', () => {
+    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish', 'polish', 'ottoman']);
   });
 
   it('every choice survives withSetup unchanged', () => {

@@ -4,8 +4,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Pixel-identity guard for the Ottoman building art: every building
  * type x age and every Wonder stage (testing/pinnedArt.testkit.ts), so
  * later kit and family changes cannot silently change Ottoman.
- * Recorded at M21 Task 4's final art; the walls (wall@1-3) are still the
- * Hungarian set and M21 Task 5 re-records them with the Ottoman walls.
+ * Recorded at M21 Task 4's final art; M21 Task 5 re-recorded wall@1-3
+ * with the Ottoman walls (opus mixtum, Rumelihisarı, ashlar bastion trace).
  */
 
 pinBuildings('ottoman', {
@@ -20,7 +20,7 @@ pinBuildings('ottoman', {
   'blacksmith@1': 'ac6cf974026dbb30',
   'foundry@1': 'ba9dc40cd65ecd95',
   'tower@1': '9d08f8cd45061aeb',
-  'wall@1': '45442ef0f4f9e62e',
+  'wall@1': '4eb1b44a27c07476',
   'wonder@1': '40eb9b1e74a2e513',
   'town_center@2': '4db099b4e7024d1f',
   'house@2': '7652977a0fad6ef2',
@@ -33,7 +33,7 @@ pinBuildings('ottoman', {
   'blacksmith@2': '3ce22f31d12bd5c5',
   'foundry@2': '3e2ea4c6e8a4daa5',
   'tower@2': 'c6736b9e5362e420',
-  'wall@2': 'dec25542df0efafb',
+  'wall@2': 'd6907ccf056f68a9',
   'wonder@2': '40eb9b1e74a2e513',
   'town_center@3': '2180840002eb1cb6',
   'house@3': '0ec349c3530ab1ef',
@@ -46,7 +46,7 @@ pinBuildings('ottoman', {
   'blacksmith@3': '9170744de33dcccb',
   'foundry@3': '2dd5e0fe471d7103',
   'tower@3': '4ab6eefa900bf6de',
-  'wall@3': 'd5f668f582dbfe68',
+  'wall@3': 'a08ed6648000ae75',
   'wonder@3': '40eb9b1e74a2e513',
   'wonder~s1': 'c277d3d542de1a44',
   'wonder~s2': '8ed937621cbdddc4',

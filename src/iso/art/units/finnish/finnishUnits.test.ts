@@ -62,8 +62,8 @@ function cues(look: UnitLook): readonly unknown[] {
 
 describe('Finnish unit looks', () => {
   it('compares against every other registered look', () => {
-    expect(OTHER_LOOK_CIVS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'polish']));
-    expect(OTHER_LOOK_CIVS).toHaveLength(8);
+    expect(OTHER_LOOK_CIVS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'polish', 'ottoman']));
+    expect(OTHER_LOOK_CIVS).toHaveLength(9);
   });
 
   it('overrides every unit type with its own look', () => {

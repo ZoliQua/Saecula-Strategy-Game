@@ -9,11 +9,15 @@ describe('civ registry', () => {
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes the eight classic civs and Polish available: the setup picker lists every one as playable', () => {
-    // M21 Task 5 makes the Ottoman civ available once its art lands; then this is CIV_IDS again.
-    expect(AVAILABLE_CIVS).toEqual([...CLASSIC_CIVS, 'polish']);
-    for (const id of AVAILABLE_CIVS) expect(CIV_DEFS[id].available, id).toBe(true);
-    expect(CIV_DEFS.ottoman.available).toBe(false);
+  it('makes all ten civs available: the setup picker lists every one as playable', () => {
+    expect(AVAILABLE_CIVS).toEqual(CIV_IDS);
+    for (const id of CIV_IDS) expect(CIV_DEFS[id].available, id).toBe(true);
+  });
+
+  it('gives Ottoman its own architecture, walls and unit look in every age', () => {
+    expect(CIV_DEFS.ottoman.architecture).toEqual({ 1: 'byzantine', 2: 'seljuk', 3: 'osmanli' });
+    expect(CIV_DEFS.ottoman.wallStyle).toEqual({ 1: 'opus_mixtum', 2: 'rumeli', 3: 'ottoman_bastion' });
+    expect(CIV_DEFS.ottoman.unitLook).toBe('ottoman');
   });
 
   it('gives Polish its own architecture, walls and unit look in every age', () => {
@@ -44,13 +48,13 @@ describe('civ registry', () => {
   });
 
   it('gives every civ its own walls and unit look (no Hungarian stub left)', () => {
-    // Narrowed to the available civs: the Ottoman row borrows the Hungarian art until Task 5 restores CIV_IDS here.
-    const others = AVAILABLE_CIVS.filter((id) => id !== 'hungarian');
+    const others = CIV_IDS.filter((id) => id !== 'hungarian');
     for (const id of others) {
       expect(CIV_DEFS[id].wallStyle, id).not.toEqual(CIV_DEFS.hungarian.wallStyle);
       expect(CIV_DEFS[id].unitLook, id).not.toBe(CIV_DEFS.hungarian.unitLook);
     }
-    expect(new Set(AVAILABLE_CIVS.map((id) => CIV_DEFS[id].unitLook)).size).toBe(AVAILABLE_CIVS.length);
+    expect(new Set(CIV_IDS.map((id) => CIV_DEFS[id].unitLook)).size).toBe(CIV_IDS.length);
+    expect(new Set(CIV_IDS.map((id) => JSON.stringify(CIV_DEFS[id].wallStyle))).size).toBe(CIV_IDS.length);
   });
 
   it('gives Russian its own architecture, walls and unit look in every age', () => {
@@ -101,7 +105,7 @@ describe('civ registry', () => {
 
 describe('menuDioramaCivs', () => {
   it('pairs the menu civ with the other playable civs today, one per visit', () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((visit) => menuDioramaCivs(visit))).toEqual([
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((visit) => menuDioramaCivs(visit))).toEqual([
       [MENU_CIV, 'english'],
       [MENU_CIV, 'german'],
       [MENU_CIV, 'french'],
@@ -110,6 +114,7 @@ describe('menuDioramaCivs', () => {
       [MENU_CIV, 'russian'],
       [MENU_CIV, 'finnish'],
       [MENU_CIV, 'polish'],
+      [MENU_CIV, 'ottoman'],
       [MENU_CIV, 'english'],
     ]);
   });
