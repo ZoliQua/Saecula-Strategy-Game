@@ -6,6 +6,7 @@ import { MovementSystem } from '../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../ecs/systems/PathfindingSystem';
 import { chebyshev } from '../iso/coordinates';
 import { createRng } from '../map/random';
+import { TERRAIN } from '../map/TerrainTypes';
 import { ArmyControl } from './ArmyControl';
 import type { AIContext } from './AIPlayer';
 import { FlankControl } from './FlankControl';
@@ -289,5 +290,106 @@ describe('a wave and the enemy king (M19)', () => {
     s.world.addComponent(own[0]!, 'attackIntent', { targetId: guard.id! });
     flank.update(s.regicide(), view);
     expect(own.map((u) => u.attackIntent?.targetId)).toEqual([king.id, king.id, king.id]);
+  });
+});
+
+const make = () => new MediumStrategy(createRng(3));
+
+describe('the king guards and repairs share villagers (M19 fix round 2)', () => {
+  function raid(count: number) {
+    const s = modeScene();
+    const king = s.unit('king', 7, 7);
+    for (let i = 0; i < 6; i++) createResourceNode(s.world, { tile: { tx: 14, ty: 2 + i }, type: 'wood' });
+    const villagers = Array.from({ length: count }, (_, i) => s.unit('villager', 9 + (i % 4), 3 + Math.floor(i / 4)));
+    return { s, king, villagers };
+  }
+  /** Water all round a tile: a foe there cannot be walked to. */
+  const island = (map: { setTile(tx: number, ty: number, t: number): void }, at: { tx: number; ty: number }) => {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx !== 0 || dy !== 0) map.setTile(at.tx + dx, at.ty + dy, TERRAIN.water);
+  };
+
+  /** An own house at 30% HP far off, `count` villagers by the king, a scout beside it; the Medium AI over 30 s. */
+  function repairVsGuard(count: number) {
+    const s = modeScene();
+    s.me.resources = { food: 2000, wood: 2000, gold: 2000 };
+    s.unit('king', 7, 7);
+    for (let i = 0; i < 6; i++) createResourceNode(s.world, { tile: { tx: 14, ty: 2 + i }, type: 'wood' });
+    const house = createBuilding(s.world, { type: 'house', origin: { tx: 30, ty: 4 }, playerId: 2, mapData: s.map });
+    house.health!.current = Math.floor(house.health!.max * 0.3);
+    const villagers = Array.from({ length: count }, (_, i) => s.unit('villager', 9 + (i % 4), 3 + Math.floor(i / 4)));
+    const scout = s.unit('scout', 9, 7, 1);
+    const ai = make();
+    const guardSets = new Set<string>();
+    let repairSeen = false;
+    for (let t = 0; t <= 30_000; t += 500) {
+      ai.update(s.regicide(t), 500);
+      expect(villagers.filter((v) => v.attackIntent && v.repairIntent)).toHaveLength(0);
+      const guards = villagers.filter((v) => v.attackIntent?.targetId === scout.id).map((v) => v.id);
+      guardSets.add(guards.join(','));
+      expect(guards).toHaveLength(AI_KING.guardsPerFoe);
+      if (villagers.some((v) => v.repairIntent)) repairSeen = true;
+    }
+    return { guardSets, repairSeen };
+  }
+
+  it('repair does not pull the guards off the scout, nor the guards the repairers, for 30 s', () => {
+    const { guardSets } = repairVsGuard(8);
+    expect(guardSets.size).toBe(1);
+  });
+
+  it('free villagers repair while the same two keep guarding', () => {
+    const { guardSets, repairSeen } = repairVsGuard(16);
+    expect(guardSets.size).toBe(1);
+    expect(repairSeen).toBe(true);
+  });
+
+  it('a foe that cannot be walked to is not guarded against', () => {
+    const { s, villagers } = raid(4);
+    const scout = s.unit('scout', 12, 10, 1);
+    island(s.map, scout.position!);
+    make().update(s.regicide(), 100);
+    expect(villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+  });
+
+  it('a guard is released when its foe ends up out of reach', () => {
+    const { s, villagers } = raid(4);
+    const scout = s.unit('scout', 9, 7, 1);
+    const ai = make();
+    ai.update(s.regicide(), 100);
+    expect(villagers.some((v) => v.attackIntent)).toBe(true);
+    scout.position = { tx: 12, ty: 10 };
+    island(s.map, scout.position);
+    ai.update(s.regicide(1000), 100);
+    expect(villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+  });
+
+  it('a guard breaching toward its foe keeps going', () => {
+    const { s, villagers } = raid(4);
+    const scout = s.unit('scout', 9, 7, 1);
+    const wall = createBuilding(s.world, { type: 'house', origin: { tx: 20, ty: 20 }, playerId: 1, mapData: s.map });
+    const ai = make();
+    ai.update(s.regicide(), 100);
+    const guard = villagers.find((v) => v.attackIntent)!;
+    guard.attackIntent!.resumeTargetId = scout.id!;
+    guard.attackIntent!.targetId = wall.id!;
+    ai.update(s.regicide(1000), 100);
+    expect(guard.attackIntent?.resumeTargetId).toBe(scout.id);
+    expect(guard.attackIntent?.targetId).toBe(wall.id);
+  });
+
+  it('a king that cannot be walked home is ordered again only after the retry window', () => {
+    const s = modeScene();
+    const king = s.unit('king', 25, 25);
+    const ai = make();
+    ai.update(s.regicide(0), 100);
+    expect(king.moveIntent).toBeDefined();
+    // The pathfinder gave up on the goal: no order is left, the king still strays.
+    s.world.removeComponent(king, 'moveIntent');
+    for (let t = 1000; t < AI_KING.homeRetryMs; t += 1000) {
+      ai.update(s.regicide(t), 100);
+      expect(king.moveIntent).toBeUndefined();
+    }
+    ai.update(s.regicide(AI_KING.homeRetryMs), 100);
+    expect(king.moveIntent).toBeDefined();
   });
 });

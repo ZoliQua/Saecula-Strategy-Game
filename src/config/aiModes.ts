@@ -22,6 +22,8 @@ export interface KingTuning {
   readonly guardsPerFoe: number;
   /** At most this many villagers defend the king at once. */
   readonly maxGuards: number;
+  /** A king the pathfinder could not bring home is ordered home again no sooner than this (ms). */
+  readonly homeRetryMs: number;
 }
 
 /** When an AI sends units to the hill beyond its usual waves. */
@@ -37,7 +39,7 @@ export interface HillTuning {
  * villager's town centre sees 4, the king 6); a margin of 2 makes a step back impossible while the
  * threats stand still.
  */
-export const AI_KING: KingTuning = { homeRadius: 7, alarm: 4, safe: 7, margin: 2, villagerRadius: 2, minExits: 3, rallyRadius: 2, guardRadius: 8, guardsPerFoe: 2, maxGuards: 6 };
+export const AI_KING: KingTuning = { homeRadius: 7, alarm: 4, safe: 7, margin: 2, villagerRadius: 2, minExits: 3, rallyRadius: 2, guardRadius: 8, guardsPerFoe: 2, maxGuards: 6, homeRetryMs: 5000 };
 
 /** How every AI holds a hill. Distances in tiles from the zone's centre unless said otherwise. */
 export const AI_HILL = {

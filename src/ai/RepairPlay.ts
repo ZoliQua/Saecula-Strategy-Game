@@ -59,7 +59,7 @@ export class RepairPlay {
     const target = this.pickTarget(ctx, view);
     if (!target) return;
     const at = target.position!;
-    const candidates = view.villagers.filter((v) => v.position && !v.repairIntent && !v.buildCommand && canRepair(ctx.world, v, target, ctx.teams));
+    const candidates = view.villagers.filter((v) => v.position && !v.repairIntent && !v.attackIntent && !v.buildCommand && canRepair(ctx.world, v, target, ctx.teams));
     const idle = candidates.filter((v) => isIdleVillager(v, view));
     const gatherers = candidates
       .filter((v) => !idle.includes(v) && villagerTask(v, view.byId) !== 'build')
