@@ -56,6 +56,9 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
   szállítóhajón kel át a vízen (az AI is így tesz).
 - 🏆 **Három győzelmi feltétel** — hódítás, egy Csoda megtartása tíz percig,
   vagy a legtöbb pont, amikor lejár a 60 perces időkorlát.
+- 👑 **Két játékmód** — Királygyilkos (védd a királyodat; ha elesik, kiesel; tenger nélküli térképen) és
+  A domb ura (tartsd nyolc percig a térkép közepén megjelölt dombot); az AI is
+  játssza mindkettőt.
 - 🤝 **Csapatok és meccs-beállítások** — gépi szövetségesekkel egy ellenséges
   csapat ellen (közös látás, csapatgyőzelem), 10 vagy 20 perces fegyverszünet,
   normál, magas vagy halálmeccs kezdő nyersanyag, és 1×, 1,5× vagy 2× sebesség.
@@ -159,6 +162,7 @@ A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
 | M13 | Háromküldetéses kampány | ✅ 0.8.0 |
 | M14 | Hajók, kikötő, halászat és két vízi térkép | ✅ 0.9.0 |
 | M18 | Oktató mód, épületjavítás, színtévesztő-barát színek | 🔧 kiadatlan |
+| M19 | Királygyilkos és A domb ura játékmód | 🔧 kiadatlan |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, hosszú sztori-kampány.

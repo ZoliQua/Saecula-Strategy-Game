@@ -3,7 +3,8 @@ import type { Entity } from '../ecs/components';
 import { canAttackTarget } from '../ecs/navLayer';
 import { clearUnitOrders } from '../ecs/orders';
 import type { AIContext } from './AIPlayer';
-import { pickEngageTarget } from './decisions/combat';
+import { isKing, pickEngageTarget, turnsToKing } from './decisions/combat';
+import { playsRegicide } from './KingPlay';
 import { ownLiving, pruneOwnLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, type FlankState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
@@ -15,7 +16,8 @@ const isBusy = (u: Entity) => u.attackIntent !== undefined || u.moveIntent !== u
  * for an enemy economy building far from the main target. It fights the
  * enemies it meets on the way, attacks its target once in sight, and
  * once the target is gone (destroyed, or found missing) its members are
- * released, idle, to the other controllers. One flank at a time.
+ * released, idle, to the other controllers. One flank at a time. In
+ * Regicide (M19) a king in sight comes first, as for the wave it left.
  */
 export class FlankControl {
   private readonly flank = new Set<number>();
@@ -97,6 +99,7 @@ export class FlankControl {
     const goal = this.goal;
     if (!goal) return;
     const enemyUnits = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
+    const kingsFirst = playsRegicide(ctx);
     const goalInSight = view.visibleEnemyBuildings.some((b) => b.id === goal.id);
     for (const u of members) {
       const id = u.id!;
@@ -104,8 +107,14 @@ export class FlankControl {
       // A path being walked, or a fight: the march works, so only consecutive failed paths count.
       if ((u.movable?.path.length ?? 0) > 0 || u.attackIntent) this.reorders.delete(id);
       const current = u.attackIntent ? view.byId.get(u.attackIntent.targetId) : undefined;
-      if (current && !current.dying && !current.building) continue;
-      const engage = pickEngageTarget(u.position, enemyUnits.filter((e) => canAttackTarget(u, e)), [], AI_COMMON.engageRadius);
+      const reachable = () => enemyUnits.filter((e) => canAttackTarget(u, e));
+      if (current && !current.dying) {
+        const toKing = kingsFirst && turnsToKing(u, view.byId, reachable(), AI_COMMON.engageRadius);
+        const through = u.attackIntent?.resumeTargetId;
+        const breach = kingsFirst && through !== undefined && isKing(view.byId.get(through) ?? {});
+        if (!toKing && (!current.building || breach)) continue;
+      }
+      const engage = pickEngageTarget(u.position, reachable(), [], AI_COMMON.engageRadius, kingsFirst);
       if (engage?.id !== undefined) {
         this.reorders.delete(id);
         clearUnitOrders(ctx.world, u);

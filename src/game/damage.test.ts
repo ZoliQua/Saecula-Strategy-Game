@@ -54,10 +54,16 @@ describe('balance table sanity', () => {
   it('every unit has positive stats and non-negative costs', () => {
     for (const [t, u] of Object.entries(UNIT_BALANCE)) {
       expect(u.hp, t).toBeGreaterThan(0);
-      expect(u.trainTime, t).toBeGreaterThan(0);
-      expect(u.trainers.length, t).toBeGreaterThan(0);
-      // The monk never fights (M11): it heals and converts instead; nor do the fishing boat and the transport (M14), nor the traders (M17).
-      if (t === 'monk' || t === 'fishing_boat' || t === 'transport' || t === 'trade_cart' || t === 'trade_ship') expect(u.meleeAtk + u.pierceAtk, t).toBe(0);
+      // The king (M19) is the one unit nobody trains.
+      if (t === 'king') {
+        expect(u.trainTime, t).toBe(0);
+        expect(u.trainers, t).toEqual([]);
+      } else {
+        expect(u.trainTime, t).toBeGreaterThan(0);
+        expect(u.trainers.length, t).toBeGreaterThan(0);
+      }
+      // The monk never fights (M11): it heals and converts instead; nor do the fishing boat and the transport (M14), nor the traders (M17), nor the king (M19).
+      if (t === 'monk' || t === 'fishing_boat' || t === 'transport' || t === 'trade_cart' || t === 'trade_ship' || t === 'king') expect(u.meleeAtk + u.pierceAtk, t).toBe(0);
       else expect(u.meleeAtk + u.pierceAtk, t).toBeGreaterThan(0);
       for (const v of Object.values(u.cost)) expect(v).toBeGreaterThanOrEqual(0);
     }

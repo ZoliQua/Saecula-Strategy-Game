@@ -56,11 +56,15 @@ import {
  * v12 (M18): a villager's repair order (repairIntent), a building's last-damage game time
  * (building.damagedAtMs; absent = never damaged, as in every v11 save), each player's repair count and gathered-by-type
  * (stats repairsDone, gatheredBy, builtBy), and the tutorial scenario id (setup.mission 'tutorial').
+ * v13 (M19): the setup's victory enum gains regicide and hill, the unit-type enum the king, and the
+ *   ownerless hill entity its component (hill: each team's time, the holder, contested).
  */
 
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 const nonNeg = num.nonnegative();
+/** Record keys are player or team ids in decimal. */
+const idKey = z.string().regex(/^[1-9]\d*$/);
 const point = z.object({ x: num, y: num }).strict();
 const attackValues = { meleeAtk: num, pierceAtk: num, bonusVsCavalry: num };
 
@@ -120,6 +124,15 @@ const COMPONENT_SHAPE = {
     tradeRoute: z.object({ homeId: int, targetId: int, toTarget: z.boolean(), armed: z.boolean() }).strict().optional(),
     dying: z.object({ ttlMs: num }).strict().optional(),
     wonder: z.object({ heldMs: nonNeg }).strict().optional(),
+    hill: z
+      .object({
+        // JSON keys are strings; the component indexes the clocks by team number (a z.record key infers string).
+        heldMs: z.record(idKey, nonNeg) as unknown as z.ZodType<Record<number, number>>,
+        holderTeam: int.positive().nullable(),
+        contested: z.boolean(),
+      })
+      .strict()
+      .optional(),
     fogEmitter: z.object({ sightRange: num }).strict().optional(),
     projectile: z
       .object({
@@ -187,8 +200,6 @@ export const StoredSetupSchema = GameSetupConfigSchema.extend({
 export type GameSetupConfigSchemaCheck = Assert<Exact<z.infer<typeof GameSetupConfigSchema>, GameSetupConfig>>;
 
 const playerId = int.positive();
-/** Record keys are player ids in decimal. */
-const playerKey = z.string().regex(/^[1-9]\d*$/);
 
 const marketPrice = num.min(MARKET.minPrice).max(MARKET.maxPrice);
 
@@ -245,7 +256,7 @@ export const TimelineSampleSchema = z.object({ tMs: nonNeg, scores: z.array(num)
 /** MatchStats.snapshot(): counters by player id and the score / population timeline (player id order). */
 export const MatchStatsSchema = z
   .object({
-    players: z.record(playerKey, PlayerMatchStatsSchema),
+    players: z.record(idKey, PlayerMatchStatsSchema),
     timeline: z.array(TimelineSampleSchema),
   })
   .strict();
@@ -287,9 +298,9 @@ export const SaveDataSchema = z
     entities: z.array(z.object({ id: playerId, components: EntityComponentsSchema }).strict()),
     nextEntityId: playerId,
     /** Base64 fog states per player id (the human's and each AI's). */
-    fogOfWar: z.record(playerKey, z.string()),
+    fogOfWar: z.record(idKey, z.string()),
     /** Each AI's state outside the ECS, by player id. */
-    ai: z.record(playerKey, AIPlayerStateSchema),
+    ai: z.record(idKey, AIPlayerStateSchema),
     camera: z.object({ tx: num, ty: num, zoom: num.positive() }).strict(),
     lightPhase: num,
     stats: MatchStatsSchema,

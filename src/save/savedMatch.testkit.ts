@@ -1,7 +1,7 @@
 import { aiRngSeed, createStrategy } from '../ai/createStrategy';
 import { pickPersonality } from '../ai/personality';
 import { createHeadlessMatch, type HeadlessMatch } from '../ai/testing/headlessMatch';
-import type { Difficulty } from '../game/GameSetupConfig';
+import type { Difficulty, TreatyMinutes, VictoryMode } from '../game/GameSetupConfig';
 import { createStatefulRng, type StatefulRng } from '../map/random';
 
 /** The `createdAt` every save test snapshots with, so snapshots compare equal. */
@@ -15,6 +15,8 @@ export interface SavedMatchOptions {
   readonly size?: number;
   readonly aiCount?: number;
   readonly difficulty?: Difficulty;
+  readonly victory?: VictoryMode;
+  readonly treatyMin?: TreatyMinutes;
 }
 
 /**
@@ -41,5 +43,7 @@ export function savableMatch(options: SavedMatchOptions = {}): HeadlessMatch {
     rng,
     difficulty: () => difficulty,
     wonderVictory: true,
+    ...(options.victory ? { victory: options.victory } : {}),
+    ...(options.treatyMin ? { treatyMin: options.treatyMin } : {}),
   });
 }

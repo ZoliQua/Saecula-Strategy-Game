@@ -12,6 +12,28 @@ raises the patch version.
 
 ### Added
 
+- **Regicide:** a new victory mode on maps without sea: Meadow, Wilderness,
+  Islands and Fortress (greyed out with the reason on the others: the king's
+  mounted sheets together with the ship sheets would break the water-map
+  texture budget). Every player starts with a king next to the town centre; a
+  player is out when the king dies or the last town centre falls. Losing the
+  king brings that player's town centres down with it. The king cannot be
+  trained, does not fight or count toward population, cannot be converted and
+  can be healed. It wears a crown over its head and on the minimap,
+  and you are told when your king is under attack and when any king falls.
+- **King of the Hill:** a new victory mode on Meadow, Wilderness and Fortress
+  maps (greyed out with the reason on the others). A marked 7×7 hill near the
+  map centre cannot be built on; while only one team's fighting units
+  (not villagers) stand on it, that team's clock runs, and the first team to
+  hold it for 8 minutes in total wins. A contested or empty hill, and the
+  treaty, stop every clock. The hill's ring and standards take the holder's
+  colour, and a HUD panel shows every team's clock. Conquest still wins in
+  both new modes; Wonder and time victory are off.
+- The AIs play both modes at every level, without cheating: they keep their
+  king at home and out of seen danger, strike a visible enemy king first, and
+  in King of the Hill march to the hill and hold it, setting out early when a
+  rival's clock passes the halfway mark, even with a smaller army.
+- Saves move to version 13.
 - **Tutorial:** a step-by-step first mission at the top of the campaign list
   (gather wood, build a house, gather food, six villagers, barracks, three
   swordsmen, repair a damaged house, reach the Middle Ages), with a short hint

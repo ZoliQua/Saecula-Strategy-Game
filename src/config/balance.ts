@@ -94,10 +94,24 @@ export interface BuildingBalance {
 
 const c = (food: number, wood: number, gold: number): Resources => ({ food, wood, gold });
 
+const VILLAGER_SPEED = 0.9;
+
+/** The king of Regicide (M19): never trained, no attack, no population. */
+export const KING = {
+  hp: 150,
+  /** Table speed. */
+  speed: VILLAGER_SPEED * 1.2,
+  los: 6,
+  meleeDef: 2,
+  pierceDef: 2,
+  /** The "king under attack" notice comes at most this often. */
+  alertEveryMs: 10_000,
+} as const;
+
 export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
   villager: {
     age: 1, hp: 25, meleeAtk: 3, pierceAtk: 0, meleeDef: 0, pierceDef: 0,
-    range: 1, speed: 0.9, los: 4, cost: c(50, 0, 0), trainTime: 25,
+    range: 1, speed: VILLAGER_SPEED, los: 4, cost: c(50, 0, 0), trainTime: 25,
     trainers: ['town_center'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
   },
   scout: {
@@ -222,6 +236,12 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     age: 2, hp: 100, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 6,
     range: 0, speed: 1.3, los: 5, cost: c(0, 100, 50), trainTime: 45,
     trainers: ['dock'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
+  // M19: spawned at the start of a Regicide match (KING).
+  king: {
+    age: 1, hp: KING.hp, meleeAtk: 0, pierceAtk: 0, meleeDef: KING.meleeDef, pierceDef: KING.pierceDef,
+    range: 0, speed: KING.speed, los: KING.los, cost: c(0, 0, 0), trainTime: 0,
+    trainers: [], popCost: 0, cooldownMs: MELEE_COOLDOWN_MS,
   },
 };
 
@@ -432,6 +452,16 @@ export const LANDMARK = {
 
 /** How long a finished Wonder must stand for its owner to win (Wonder victory, CLAUDE.md §4.8). */
 export const WONDER_HOLD_MS = 600_000;
+
+/** The hill of King of the Hill (M19). */
+export const HILL = {
+  /** Tiles per side of the zone. */
+  size: 7,
+  /** Passable tiles a zone needs. */
+  minPassable: 33,
+  /** A team wins once its summed time on the hill reaches this. */
+  holdMs: 480_000,
+} as const;
 
 /** Time victory (CLAUDE.md §4.8 #3, M9): the highest score among the standing players wins at `limitMs`. */
 export const TIME_VICTORY = {

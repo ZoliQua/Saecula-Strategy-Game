@@ -157,6 +157,12 @@ export interface Entity {
   /** A converted unit's original civ: it keeps that look under its new owner (M11). */
   originCiv?: { civ: CivId };
   dying?: { ttlMs: number };
+  /**
+   * The hill of King of the Hill (M19): an ownerless entity whose `position`
+   * is the zone's centre. `heldMs` is each team's summed time on it,
+   * `holderTeam` the team alone on it, `contested` when several are.
+   */
+  hill?: { heldMs: Record<number /* team */, number>; holderTeam: number | null; contested: boolean };
   /** A finished Wonder's victory clock (only while the match's victory mode includes the Wonder). */
   wonder?: { heldMs: number };
   fogEmitter?: { sightRange: number };

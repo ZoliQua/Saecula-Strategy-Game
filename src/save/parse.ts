@@ -1,3 +1,6 @@
+import { teamFor } from '../game/diplomacy';
+import { hasHill } from '../game/GameSetupConfig';
+import { hillTiles } from '../game/hill';
 import { decodeBytes } from './base64';
 import { migrate } from './migrations';
 import { positionsOnMap } from './positions';
@@ -18,9 +21,33 @@ function bytesFit(text: string, length: number, max = 255): boolean {
   }
 }
 
+/** Whether the hill's zone lies wholly on the map, round a whole-tile centre. */
+function hillOnMap(centre: { tx: number; ty: number }, save: SaveData): boolean {
+  if (!Number.isInteger(centre.tx) || !Number.isInteger(centre.ty)) return false;
+  return [...hillTiles(centre)].every((t) => t.tx >= 0 && t.ty >= 0 && t.tx < save.map.width && t.ty < save.map.height);
+}
+
+/**
+ * King of the Hill (M19) has exactly one hill, no other mode any: on the
+ * map (never in a cargo; whole zone on it), nothing but position and hill, ownerless, every clock and the holder a team of
+ * this setup, and no holder while contested.
+ */
+function hillConsistent(save: SaveData): boolean {
+  if (save.entities.some((e) => e.components.cargo?.units.some((u) => u.hill))) return false;
+  const hills = save.entities.filter((e) => e.components.hill);
+  if (hills.length !== (hasHill(save.setup.victory) ? 1 : 0)) return false;
+  return hills.every(({ components }) => {
+    const { hill, position, owner } = components;
+    if (Object.keys(components).some((k) => k !== 'position' && k !== 'hill')) return false;
+    if (!hill || !position || owner || !hillOnMap(position, save) || (hill.contested && hill.holderTeam !== null)) return false;
+    const teams = new Set(save.players.map((p) => teamFor(p.id, save.setup.allies)));
+    return Object.keys(hill.heldMs).every((team) => teams.has(Number(team))) && (hill.holderTeam === null || teams.has(hill.holderTeam));
+  });
+}
+
 /**
  * What zod cannot see: byte-array lengths, unique ids, exactly one human,
- * fewer allies than AIs,
+ * fewer allies than AIs, a hill as the mode has it (hillConsistent),
  * records keyed by real players (stats by every player), timeline samples
  * of one value per player, and every tile on the map.
  */
@@ -33,6 +60,7 @@ function consistent(save: SaveData): boolean {
   if (save.players.filter((p) => p.isHuman).length !== 1) return false;
   // At least one AI is always on the enemy team (M16).
   if (save.setup.allies >= save.setup.aiCount) return false;
+  if (!hillConsistent(save)) return false;
   if (!Object.keys(save.fogOfWar).every((id) => playerIds.has(Number(id)))) return false;
   const aiIds = new Set(save.players.filter((p) => !p.isHuman).map((p) => p.id));
   if (!Object.keys(save.ai).every((id) => aiIds.has(Number(id)))) return false;

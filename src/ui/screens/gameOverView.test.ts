@@ -28,7 +28,7 @@ describe('gameOverRowView in teams (M16)', () => {
 });
 
 describe('gameOverBody (M16 team wording)', () => {
-  const causes = ['conquest', 'wonder', 'time'] as const;
+  const causes = ['conquest', 'wonder', 'time', 'regicide', 'hill'] as const;
 
   it('without teams every cause and outcome keeps its free-for-all line', () => {
     for (const cause of [...causes, 'mission'] as const) {
@@ -53,7 +53,28 @@ describe('gameOverBody (M16 team wording)', () => {
     expect(gameOverBody({ victory: false, cause: 'time', teams: true })).toContain('ellenséges csapat több pontot');
   });
 
+  it('the Regicide defeat names the king only: a lost town centre reports conquest (M19)', () => {
+    for (const teams of [false, true]) {
+      const line = gameOverBody({ victory: false, cause: 'regicide', teams });
+      expect(line).toMatch(/kir[aá]ly/i);
+      expect(line).not.toMatch(/városház/i);
+    }
+  });
+
   it("a mission's closing text wins over any line", () => {
     expect(gameOverBody({ victory: true, cause: 'wonder', teams: true, missionText: 'Kész.' })).toBe('Kész.');
+  });
+});
+
+describe('game over in the new modes (M19)', () => {
+  it('each new cause reads as its mode does on the setup card', () => {
+    for (const mode of ['regicide', 'hill'] as const) expect(hu.gameOver.causes[mode]).toBe(hu.setup.victories[mode]);
+  });
+
+  it('the hill lines say who held it and how long', () => {
+    const line = (victory: boolean, teams: boolean) => gameOverBody({ victory, cause: 'hill', teams });
+    for (const victory of [true, false]) for (const teams of [true, false]) expect(line(victory, teams)).toContain('8 percig');
+    expect(line(true, false)).toContain('tartottad a dombot');
+    expect(line(false, true)).toContain('ellenséges csapat');
   });
 });

@@ -25,8 +25,8 @@ export interface GameOverPlayerRow {
 
 /**
  * Who the table names the winner, or null when nothing is decided among
- * the survivors: a human victory or a Wonder names its winner; a conquest
- * defeat of the human only when every player still standing is on one
+ * the survivors: a human victory, a Wonder, a hill (M19) or a time defeat names
+ * its winner; a conquest or Regicide (M19) defeat of the human only when every player still standing is on one
  * team (VictoryChecker's winnerId is then just the first enemy standing):
  * that team's lowest-id standing player, never the human's own team. With
  * no allies that is "exactly one other player still stands".
@@ -35,7 +35,8 @@ export function decidedWinner(
   state: { readonly kind: 'victory' | 'defeat'; readonly winnerId: number; readonly cause: VictoryCause },
   players: readonly Pick<Player, 'id' | 'defeated' | 'team' | 'isHuman'>[],
 ): number | null {
-  if (state.kind === 'victory' || state.cause !== 'conquest') return state.winnerId;
+  const eliminated = state.cause === 'conquest' || state.cause === 'regicide';
+  if (state.kind === 'victory' || !eliminated) return state.winnerId;
   const standing = players.filter((p) => !p.defeated).sort((a, b) => a.id - b.id);
   const first = standing[0];
   // A defeat never crowns the human's own team (the human and the last enemy fell together, allies left).

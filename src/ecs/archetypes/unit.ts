@@ -39,6 +39,8 @@ const TEXTURE_KEYS: Record<UnitType, string> = {
   trade_cart: 'unit_trade_cart',
   // M17: the trade ship is drawn with the transport's sheet (texture budget); name and panel tell them apart.
   trade_ship: 'unit_transport',
+  // M19: the king has no sheet. This is its slot's key; what is drawn depends on the civ (art unitSheetType).
+  king: 'unit_knight',
   hussar: 'unit_hussar',
   longbowman: 'unit_longbowman',
   landsknecht: 'unit_landsknecht',

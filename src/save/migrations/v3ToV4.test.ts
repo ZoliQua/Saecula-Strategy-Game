@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resumeHeadlessMatch } from '../../ai/testing/headlessMatch';
-import { VICTORY_MODES } from '../../game/GameSetupConfig';
+import { hasHill, VICTORY_MODES } from '../../game/GameSetupConfig';
 import { parseSave } from '../parse';
 import { SCHEMA_VERSION } from '../schema';
 import { FIXED_DATE, STEP_MS } from '../savedMatch.testkit';
@@ -35,7 +35,10 @@ describe('v3 → v4 migration', () => {
 
   it('every victory mode round-trips through a v4 save', () => {
     for (const victory of VICTORY_MODES) {
-      const s = { ...v3Save, schemaVersion: 4, setup: { ...v3Save.setup, victory } };
+      // A hill save has exactly one hill (M19, parse.ts).
+      const hill = { id: v3Save.nextEntityId, components: { position: { tx: 32, ty: 32 }, hill: { heldMs: {}, holderTeam: null, contested: false } } };
+      const withHill = hasHill(victory) ? { entities: [...v3Save.entities, hill], nextEntityId: v3Save.nextEntityId + 1 } : {};
+      const s = { ...v3Save, schemaVersion: 4, setup: { ...v3Save.setup, victory }, ...withHill };
       const parsed = parseSave(JSON.stringify(s));
       expect(parsed.ok && parsed.save.setup.victory).toBe(victory);
     }

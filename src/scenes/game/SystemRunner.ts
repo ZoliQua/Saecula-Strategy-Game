@@ -7,6 +7,7 @@ import { audio } from '../../audio/AudioManager';
 import { AudioWatch } from '../../audio/AudioWatch';
 import { applyDifficulty, hasPersonality } from '../../ai/createStrategy';
 import { buildMatchAIs } from '../../ai/matchAIs';
+import { aiModeContext } from '../../ai/modeContext';
 import { pickPersonality } from '../../ai/personality';
 import type { AIPlayerState } from '../../ai/strategyState';
 import type { AIThoughts } from '../../ai/thoughts';
@@ -15,6 +16,7 @@ import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { BuildingFxSystem } from '../../ecs/systems/BuildingFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
+import { CrownSystem } from '../../ecs/systems/CrownSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
@@ -27,6 +29,8 @@ import { FogOfWarSystem } from '../../ecs/systems/FogOfWarSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
 import { TradeSystem } from '../../ecs/systems/TradeSystem';
 import { HealthBarSystem } from '../../ecs/systems/HealthBarSystem';
+import { HillMarkerSystem } from '../../ecs/systems/HillMarkerSystem';
+import { HillSystem } from '../../ecs/systems/HillSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
@@ -42,6 +46,7 @@ import type { EcsWorld } from '../../ecs/world';
 import { AGE_UP_FX } from '../../config/visual';
 import { areAllies, isFriendly } from '../../game/diplomacy';
 import { tradeRouteView } from '../../game/trade';
+import { KingWatch } from '../../game/kingWatch';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -67,6 +72,8 @@ export interface SystemRunnerOptions {
   readonly wonderVictory: boolean;
   /** The match ends on score at TIME_VICTORY.limitMs: the AIs see the limit. */
   readonly timeVictory?: boolean;
+  /** Regicide (M19): the kings wear crowns, the human hears of them and the AIs play for them (default false). */
+  readonly regicide?: boolean;
   /** Game time the match starts at (a save's clock); default 0. */
   readonly startMs?: number;
   /** The match seed (config.seed). */
@@ -112,6 +119,8 @@ export class SystemRunner {
   private readonly projectileRender: ProjectileRenderSystem;
   private readonly death: DeathSystem;
   private readonly wonders: WonderSystem;
+  /** King of the Hill's clocks (M19): idle without a hill entity. */
+  private readonly hill: HillSystem;
   private readonly wonderVictory: boolean;
   /** The treaty clock (M16): game time against setup.treatyMin. */
   private readonly treatyClock: TreatyClock;
@@ -130,6 +139,13 @@ export class SystemRunner {
   private readonly buildingFx: BuildingFxSystem;
   private readonly cliffSort: CliffBuildingSort;
   private readonly xray: UnitXRay;
+  /** The match is Regicide (M19): the AIs are told. */
+  private readonly regicide: boolean;
+  /** Regicide only (M19). */
+  private readonly crowns: CrownSystem | null;
+  private readonly kingWatch: KingWatch | null;
+  /** The hill's ring and standards (M19): idle without a hill entity. */
+  private readonly hillMarker: HillMarkerSystem;
   /** Game sounds from the ECS; `combatNear()` feeds the combat music. */
   readonly audioWatch: AudioWatch;
   private readonly camera: Phaser.Cameras.Scene2D.Camera;
@@ -197,6 +213,7 @@ export class SystemRunner {
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
     this.wonders = new WonderSystem(world, options.wonderVictory, this.treaty);
+    this.hill = new HillSystem(world, players, this.treaty);
     this.healthBars = new HealthBarSystem(scene, world);
     const { restore } = options;
     this.stats = restore?.stats ?? new MatchStats(world, players, 0);
@@ -241,6 +258,10 @@ export class SystemRunner {
     this.xray = new UnitXRay(scene, world, tileMap.coverSources());
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
+    const regicide = (this.regicide = options.regicide === true);
+    this.crowns = regicide ? new CrownSystem(scene, world, (e) => this.xray.raisedDepth(e)) : null;
+    this.kingWatch = regicide ? new KingWatch(world, players, this.humanId, showHudNotice) : null;
+    this.hillMarker = new HillMarkerSystem(scene, world, players, this.fogData, this.treaty);
     this.evictTimer = scene.time.addEvent({
       ...evictionTimer(restore !== undefined),
       loop: true,
@@ -323,9 +344,10 @@ export class SystemRunner {
     this.transports.update(delta);
     this.death.update(delta);
     this.wonders.update(delta);
+    this.hill.update(delta);
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
-    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }) };
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(this.world, this.players, this.regicide) };
     for (const ai of this.aiPlayers) {
       // Whom this AI attacks, re-chosen every decision (M16 teams; without allies: the human).
       const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world);
@@ -333,12 +355,15 @@ export class SystemRunner {
     }
     this.population.update();
     this.stats.update(delta);
+    this.kingWatch?.update(this.gameMs);
     this.fogOfWar.update(delta);
     this.tileMap.applyFog(this.fogData);
     this.render.update();
     this.xray.update();
     // After the X-ray: selection rings follow this frame's raised depths (xray.raisedDepth).
     this.selection.update();
+    this.crowns?.update();
+    this.hillMarker.update(time);
     this.buildingFx.update(delta);
     this.projectileRender.update();
     this.healthBars.update();
@@ -370,6 +395,9 @@ export class SystemRunner {
     this.evictTimer.remove();
     this.cliffSort.destroy();
     this.xray.destroy();
+    this.crowns?.destroy();
+    this.kingWatch?.destroy();
+    this.hillMarker.destroy();
     this.ageUpFx.destroy();
     this.buildingFx.destroy();
     this.ambientFx.destroy();

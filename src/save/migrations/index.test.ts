@@ -4,8 +4,8 @@ import { MIGRATIONS, migrate, type Migration } from './index';
 
 describe('save migrations', () => {
   it('the current version has a step from every older version', () => {
-    expect(SCHEMA_VERSION).toBe(12);
-    expect(Object.keys(MIGRATIONS)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
+    expect(SCHEMA_VERSION).toBe(13);
+    expect(Object.keys(MIGRATIONS)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']);
   });
 
   it('current version passes through', () => {

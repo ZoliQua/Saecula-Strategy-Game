@@ -4,7 +4,8 @@ import { BUILDING_BALANCE } from '../../config/balance';
 import { COMMON_WALL_PIECES } from '../../iso/art/walls/commonWallPieces';
 import type { BuildingType, CivId } from '../../types';
 import { ART_EVICT_AFTER_LOAD_MS, ART_EVICT_INTERVAL_MS } from '../../config/visual';
-import { ageUpArtJobs, BackgroundArt, civBaseOwners, evictionTimer, planArtLoad, prewarmUnitTypes, type AgeSpan, type ArtPainters } from './artLoadPlan';
+import { ageUpArtJobs, BackgroundArt, civBaseOwners, evictionTimer, planArtLoad, prewarmUnitTypes, setupPrewarmSheets, type AgeSpan, type ArtPainters } from './artLoadPlan';
+import { defaultSetupConfig, withSetup } from '../../game/GameSetupConfig';
 
 const ALL_TYPES = Object.keys(BUILDING_SPECS) as BuildingType[];
 const AGE1_TYPES = ALL_TYPES.filter((t) => BUILDING_BALANCE[t].age === 1);
@@ -321,5 +322,19 @@ describe('evictionTimer', () => {
     expect(t.delay - t.startAt).toBe(ART_EVICT_AFTER_LOAD_MS);
     expect(ART_EVICT_AFTER_LOAD_MS).toBeGreaterThan(0);
     expect(ART_EVICT_AFTER_LOAD_MS).toBeLessThan(5_000);
+  });
+});
+
+describe('setupPrewarmSheets (M19)', () => {
+  const config = withSetup(defaultSetupConfig(3), { civ: 'hungarian', aiCivs: 'english', aiCount: 2, victory: 'conquest' });
+
+  it('the old modes prewarm what they did', () => {
+    const want = (['hungarian', 'english'] as const).flatMap((civ) => prewarmUnitTypes(civ, 'hungarian').map((type) => [type, civ]));
+    expect(setupPrewarmSheets(config)).toEqual(want);
+  });
+
+  it('Regicide adds the shared sheet of each civ in play for its king', () => {
+    const regicide = { ...config, victory: 'regicide' as const };
+    expect(setupPrewarmSheets(regicide)).toEqual([...setupPrewarmSheets(config), ['king', 'hungarian'], ['king', 'english']]);
   });
 });

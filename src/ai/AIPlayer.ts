@@ -8,6 +8,7 @@ import { FogOfWarData } from '../map/FogOfWarData';
 import type { MapData } from '../map/MapData';
 import type { StatefulRng } from '../map/random';
 import type { AIPlayerState, StrategyState } from './strategyState';
+import type { AIModeContext } from './modeContext';
 import type { AIThoughts } from './thoughts';
 
 /**
@@ -15,7 +16,7 @@ import type { AIThoughts } from './thoughts';
  * never mutate ECS directly — they queue intents on entities via
  * `world.addComponent`, identical to player inputs.
  */
-export interface AIContext {
+export interface AIContext extends AIModeContext {
   readonly world: EcsWorld;
   readonly mapData: MapData;
   readonly player: Player;

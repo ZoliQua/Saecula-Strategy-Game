@@ -62,7 +62,7 @@ describe('GameSetupConfig', () => {
 
   it('default victory is conquest_wonder', () => {
     expect(defaultSetupConfig(1).victory).toBe('conquest_wonder');
-    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder', 'conquest_time', 'all']);
+    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder', 'conquest_time', 'all', 'regicide', 'hill']);
     expect(withSetup(defaultSetupConfig(1), { victory: 'all' }).victory).toBe('all');
     expect(withSetup(defaultSetupConfig(1), { victory: 'conquest' }).victory).toBe('conquest');
   });

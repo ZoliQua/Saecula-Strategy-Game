@@ -12,7 +12,8 @@ const TYPES: readonly ResourceType[] = ['food', 'wood', 'gold'];
 
 /** A villager with nothing to do (not walking either). */
 export function isIdleVillager(v: Entity, view: WorldView): boolean {
-  if (villagerTask(v, view.byId) !== 'idle') return false;
+  // A villager defending its king (M19 Regicide) is busy: the guard lets it go when done.
+  if (villagerTask(v, view.byId) !== 'idle' || v.attackIntent) return false;
   return !v.moveIntent && (v.movable?.path.length ?? 0) === 0;
 }
 

@@ -11,6 +11,7 @@ import { CommandPanel } from './panels/CommandPanel';
 import { ResourceBar } from './panels/ResourceBar';
 import { SelectionPanel } from './panels/SelectionPanel';
 import { SidePanel } from './panels/SidePanel';
+import { HillClock } from './panels/HillClock';
 import { ObjectivesPanel } from './panels/ObjectivesPanel';
 import { TimeLimitClock } from './panels/TimeLimitClock';
 import { TreatyClock } from './panels/TreatyClock';
@@ -60,6 +61,8 @@ export class Hud {
     audio().playSFX('notification_attacked');
     this.toast(hu.treaty.ended);
   });
+  /** King of the Hill's clocks (M19). */
+  private readonly hill = new HillClock();
   private readonly side = new SidePanel();
   private readonly dockWatch: ResizeObserver | null;
   /** Removes the page-zoom guard (a pinch over a HUD card must not zoom the browser page). */
@@ -120,7 +123,7 @@ export class Hud {
       this.minimapSlot,
     );
     const bottom = el('div', { class: 'hud-bottom' }, minimapCard, this.selection.root, this.commands.root);
-    const right = el('div', { class: 'hud-right' }, this.objectives.root, this.timeLimit.root, this.treaty.root, this.wonderTimers.root, this.side.root);
+    const right = el('div', { class: 'hud-right' }, this.objectives.root, this.timeLimit.root, this.treaty.root, this.hill.root, this.wonderTimers.root, this.side.root);
     this.root = el('div', { class: 'hud' }, top, right, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
     this.unguardZoom = guardPageZoom(uiRoot(), document);
@@ -198,6 +201,7 @@ export class Hud {
     this.objectives.render(state);
     this.timeLimit.render(state);
     this.treaty.render(state);
+    this.hill.render(state);
     this.wonderTimers.render(state);
     this.side.render(state);
     this.ageChip.textContent = AGE_NAME[state.currentAge];
@@ -222,6 +226,7 @@ export class Hud {
     this.objectives.destroy();
     this.timeLimit.destroy();
     this.treaty.destroy();
+    this.hill.destroy();
     this.wonderTimers.destroy();
     this.dockWatch?.disconnect();
     this.side.destroy();

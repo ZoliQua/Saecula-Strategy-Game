@@ -1,4 +1,17 @@
+import { hasHill, hasRegicide, type VictoryMode } from '../../game/GameSetupConfig';
+import { hu } from '../../i18n/hu';
 import type { MatchRecord } from '../../stats/matchRecord';
+
+/**
+ * The mode line of a logged match: the M19 modes only (the old modes' rows
+ * stay as they were), with what decided it when that was not the mode itself.
+ */
+export function matchModeTexts({ setup, cause }: { setup: { victory: VictoryMode }; cause: MatchRecord['cause'] }): string[] {
+  const mode = setup.victory;
+  if (!hasRegicide(mode) && !hasHill(mode)) return [];
+  const name = hu.setup.victories[mode];
+  return cause === null || cause === mode ? [name] : [name, `${hu.gameOver.causeLabel}: ${hu.gameOver.causes[cause]}`];
+}
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 

@@ -1,5 +1,11 @@
+import type { TileCoord } from '../iso/coordinates';
 import type { Entity } from './components';
 import type { EcsWorld } from './world';
+
+/** Where a unit is walking: its pending order's tile, else the end of its path. */
+export function headingOf(entity: Entity): TileCoord | undefined {
+  return entity.moveIntent?.target ?? entity.movable?.path.at(-1);
+}
 
 /**
  * Drops whatever a unit was doing (gather target, gather / attack / move

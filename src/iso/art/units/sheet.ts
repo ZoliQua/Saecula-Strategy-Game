@@ -8,6 +8,7 @@ import { ANIM_FRAMES, frameContent, paintOrder, sheetLayout, unitAnims, type She
 import { contactShadow, unitLook } from './looks';
 import { FrameRaster, type ContactShadow, type FramePixels } from './raster';
 import { buildFigure, figureBounds, frameBounds } from './rig';
+import { unitSheetType } from './sheetType';
 
 /** Transparent margin around the figure (outline + anti-aliasing) in an animation's logical box, art px. */
 const PAD = 4;
@@ -130,10 +131,11 @@ const FALLBACK_BLOCK: AnimBlock = { w: S, h: S, feetY: S / 2 };
  * Frame boxes fitted to every pose of each animation, and each frame's
  * own content rectangle (figure with its outline, and the visible part
  * of the contact shadow) shelf-packed into the sheet, tallest first
- * (computed once per type and unit look). Only the rectangles are stored; sprites keep the logical
+ * (computed once per sheet type and unit look). Only the rectangles are stored; sprites keep the logical
  * box (Frame.setTrim), so origin and feet line do not move.
  */
-export function sheetGeometry(type: UnitType, civ: CivId): SheetGeometry {
+export function sheetGeometry(unitType: UnitType, civ: CivId): SheetGeometry {
+  const type = unitSheetType(unitType, civ);
   const id = `${type}~${CIV_DEFS[civ].unitLook}`;
   const hit = geometries.get(id);
   if (hit) return hit;

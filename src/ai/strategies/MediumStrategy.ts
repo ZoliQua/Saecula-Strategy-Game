@@ -4,14 +4,16 @@ import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { isUnitAvailable } from '../../game/availability';
 import { TECH_SPECS } from '../../game/technologies';
-import { baseUnitType, civUnitType } from '../../game/civUnits';
-import { BASE_UNIT_TYPES, type BaseUnitType, type BuildingType, type Resources, type TechId } from '../../types';
+import { baseUnitType, civUnitType, TRAINABLE_UNIT_TYPES } from '../../game/civUnits';
+import type { BaseUnitType, BuildingType, Resources, TechId } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import { ArmyControl } from '../ArmyControl';
 import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
 import { attackReady, pickAttackTarget } from '../decisions/combat';
 import { landReachableFromAny } from '../decisions/naval';
+import { hillGoal, hillWaveDue } from '../HillPlay';
+import { controlKings } from '../KingPlay';
 import { LandingControl } from '../LandingControl';
 import { NavalPlay } from '../NavalPlay';
 import { weightsForGoal } from '../decisions/gathering';
@@ -27,6 +29,7 @@ import {
   type BuildFn,
   unstaffedSite,
 } from '../economyBuildings';
+import type { AIHill } from '../modeContext';
 import type { WorldView } from '../perception';
 import { expectKind, loadedTime, savedTime, type MediumFields, type StrategyState } from '../strategyState';
 import { PressureControl } from '../PressureControl';
@@ -47,7 +50,8 @@ function nearestTile(tiles: readonly TileCoord[], from: TileCoord): TileCoord | 
  * soon as they are affordable, blacksmith and economy techs, a mixed army
  * adjusted to what its scout has seen, one scout exploring all game,
  * attack waves of 12+ units (never before the rolled 5-8 min), and home
- * defence whenever its base is attacked.
+ * defence whenever its base is attacked. The M19 modes: KingPlay and
+ * HillPlay.
  */
 export class MediumStrategy extends BaseStrategy {
   readonly name: string = 'medium';
@@ -102,7 +106,7 @@ export class MediumStrategy extends BaseStrategy {
       ownCount: (v, t, f) => this.ownCount(v, t, f),
       startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a, this.reserve(c, v)),
       train: (c, v, t, n) => this.train(c, v, t, n, this.armySavings(c, v)),
-      transportsWanted: (c, v) => (this.enemyWalkable(c, v) ? 0 : this.tune.navy.transports),
+      transportsWanted: (c, v) => (hillGoal(c) || this.enemyWalkable(c, v) ? 0 : this.tune.navy.transports),
     });
     this.pressure = new PressureControl(tune, this.army, {
       isReserved: (u) => this.isReserved(u),
@@ -170,10 +174,11 @@ export class MediumStrategy extends BaseStrategy {
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
+    const kingFoes = controlKings(ctx, view, this.tune.king);
     // Repairs first (M18): a villager it calls off goes back to the economy just below.
     this.repair.update(ctx, view);
     assignIdleVillagers(ctx.world, view, this.gatherWeights(ctx, view));
-    this.army.update(ctx, view);
+    this.army.update(ctx, view, kingFoes);
     this.monks.control(ctx, view);
     this.naval.control(ctx, view);
     this.landing.update(ctx, view);
@@ -212,16 +217,13 @@ export class MediumStrategy extends BaseStrategy {
     this.trade.train(ctx, view);
     this.researchTechs(ctx, view);
     this.pressure.launch(ctx, view);
-    this.pressure.recall(ctx, view);
+    // King of the Hill (M19): the goal is always walkable, and nobody is called off it.
+    const hill = hillGoal(ctx);
+    if (!hill) this.pressure.recall(ctx, view);
     // The treaty (M16): no main wave and no landing while it holds.
-    if (ctx.treatyActive !== true && this.pressure.sent && !this.army.attacking && attackReady({
-      armySize: view.military.filter((u) => !this.isReserved(u)).length,
-      wave: this.waveThreshold(ctx, view),
-      timeMs: ctx.timeMs,
-      notBeforeMs: this.firstAttackAtMs,
-    })) {
+    if (ctx.treatyActive !== true && this.waveDue(ctx, view, hill)) {
       // The enemy across the sea (M14): the wave lands from transports instead of marching.
-      if (!this.enemyWalkable(ctx, view)) this.tryLanding(ctx, view);
+      if (!hill && !this.enemyWalkable(ctx, view)) this.tryLanding(ctx, view);
       else {
         this.army.launchWave(ctx, view);
         this.pressure.mainWaveLaunched();
@@ -230,8 +232,28 @@ export class MediumStrategy extends BaseStrategy {
     }
     // An army out "exploring" its own island while the enemy is across the sea: home, to board
     // (a wave that has landed over there fights on).
-    if (!this.enemyWalkable(ctx, view) && this.army.attacking && !this.waveReachesEnemy(ctx, view)) this.army.recall(ctx, view);
+    if (!hill && !this.enemyWalkable(ctx, view) && this.army.attacking && !this.waveReachesEnemy(ctx, view)) this.army.recall(ctx, view);
     this.updateThoughts(ctx, view);
+  }
+
+  /** Whether the main wave (on the hill: the next one) leaves now. */
+  private waveDue(ctx: AIContext, view: WorldView, hill: AIHill | undefined): boolean {
+    if (!hill) {
+      return this.pressure.sent && !this.army.attacking && attackReady({
+        armySize: view.military.filter((u) => !this.isReserved(u)).length,
+        wave: this.waveThreshold(ctx, view),
+        timeMs: ctx.timeMs,
+        notBeforeMs: this.firstAttackAtMs,
+      });
+    }
+    return hillWaveDue(ctx, hill, {
+      out: this.army.attacking,
+      army: view.military.filter((u) => !this.isReserved(u) && !this.army.inWave(u)).length,
+      wave: this.waveThreshold(ctx, view),
+      notBeforeMs: this.firstAttackAtMs,
+      opened: this.pressure.sent,
+      underAttack: this.army.underAttack(view),
+    }, this.tune.hill);
   }
 
   /**
@@ -419,7 +441,7 @@ export class MediumStrategy extends BaseStrategy {
   /** Mix for the current age, countered against what has been seen, limited to what is unlocked. */
   protected armyMix(ctx: AIContext, view: WorldView): ReturnType<typeof counterMix> {
     const base = this.tune.armyByAge[ctx.player.age] ?? {};
-    const allowed = BASE_UNIT_TYPES.filter(
+    const allowed = TRAINABLE_UNIT_TYPES.filter(
       // Monks are trained apart (MonkPlay), never as part of the army mix.
       (t) => t !== 'villager' && t !== 'scout' && t !== 'monk' && isUnitAvailable(t, ctx.player.age),
     );

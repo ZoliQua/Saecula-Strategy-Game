@@ -20,6 +20,10 @@ export const icons = {
   chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg>`,
   idle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h5l-5 6h5"/><path d="M13 5h4l-4 5h4"/><path d="M16 15h3.5L16 19h3.5"/></svg>`,
   walk: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.8"/><path d="m9 21 2.5-6 3 2.5V21"/><path d="m7 11.5 3-3.5h3.5l2 3.5 2.5 1"/><path d="m11.5 15 1.5-7"/></svg>`,
+  hill: `<svg viewBox="0 0 24 24"><path fill="currentColor" opacity=".55" d="M1.5 21c2.6-5.4 6.3-8.5 10.5-8.5S19.9 15.6 22.5 21Z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M12 14V3"/><path fill="currentColor" d="M12 3.2h7.5L17 6.1 19.5 9H12Z"/></svg>`,
+  hillFlag: `<svg viewBox="0 0 16 16"><path fill="none" stroke="#f2efe9" stroke-width="1.6" stroke-linecap="round" d="M3.5 14.5v-13"/><path fill="currentColor" d="M4.3 2h10l-2.8 3.5 2.8 3.5h-10Z"/></svg>`,
+  hillEmpty: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round"><path stroke-width="1.6" d="M8 14.5v-13M2 3h12"/><path stroke-width="1.3" d="M2.8 3c.4 3.4 2.4 4.2 5.2 4.2S12.8 6.4 13.2 3"/></svg>`,
+  hillSwords: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13.5 2.5 3 13M2.5 2.5 13 13M2.5 9.5l4 4M13.5 9.5l-4 4"/></svg>`,
 } as const;
 
 export type IconName = keyof typeof icons;

@@ -1,11 +1,19 @@
 import type Phaser from 'phaser';
 import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
+import { CROWN, HILL_MARK } from '../config/visual';
+import { HILL } from '../config/balance';
 import type { EcsWorld } from '../ecs/world';
 import { playerColor } from '../game/Player';
+import { livingKings } from '../game/regicide';
+import { drawHillGlyph } from '../iso/art/hillArt';
+import { drawCrown } from '../iso/art/crown';
+import { poly } from '../iso/art/canvas';
+import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { css } from '../iso/art/palette';
 import { FOG_EXPLORED, FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
 import type { MapData } from '../map/MapData';
 import { TERRAIN, type TerrainId } from '../map/TerrainTypes';
+import { uiStore } from './store';
 
 const REBUILD_INTERVAL_MS = 500;
 
@@ -28,10 +36,26 @@ export function minimapShows(ownerId: number, friendly: (ownerId: number) => boo
   return friendly(ownerId) || visible();
 }
 
+/** The tiles the minimap puts a crown on (M19): living kings, under the units' own fog rule. */
+export function minimapCrowns(world: EcsWorld, friendly: (ownerId: number) => boolean, visible: (at: TileCoord) => boolean): TileCoord[] {
+  const tiles: TileCoord[] = [];
+  for (const king of livingKings(world)) {
+    if (minimapShows(king.owner.playerId, friendly, () => visible(king.position))) tiles.push(king.position);
+  }
+  return tiles;
+}
+
+/** The hill's diamond on a minimap `scale` (CSS px per world px): its zone, never too small to find (M19). */
+export function minimapHillMark(scale: number): { halfW: number; halfH: number } {
+  const halfW = Math.max(HILL_MARK.minimap.minHalfWidth, (HILL.size * TILE_WIDTH * scale) / 2);
+  return { halfW, halfH: (halfW * TILE_HEIGHT) / TILE_WIDTH };
+}
+
 /**
  * Isometric overview drawn on a DOM canvas. Tiles, fog, units and
  * buildings are repainted twice a second; the camera frustum is
  * redrawn every frame. Clicking or dragging jumps the main camera.
+ * The hill's mark (M19) is public: drawn over the fog, from the UI store.
  */
 export class Minimap {
   readonly canvas: HTMLCanvasElement;
@@ -152,6 +176,7 @@ export class Minimap {
         diamond(cx, cy);
       }
     }
+    this.drawHillZone(ctx);
     for (const e of this.world.with('owner', 'position')) {
       if (!e.unit && !e.building) continue;
       const fog = this.fog;
@@ -172,6 +197,49 @@ export class Minimap {
       ctx.fill();
       ctx.stroke();
     }
+    this.drawHillFlag(ctx);
+    // Crowns last, over every dot (M19).
+    const fog = this.fog;
+    for (const { tx, ty } of minimapCrowns(this.world, this.friendly, (at) => !fog || fog.isVisible(at.tx, at.ty))) {
+      const [cx, cy] = this.toMini((tx - ty) * hw, (tx + ty) * hh);
+      drawCrown(ctx, cx, cy - CROWN.minimapRise * this.dpr, CROWN.minimapWidth * this.dpr, CROWN.minimapHeight * this.dpr, this.dpr);
+    }
+  }
+
+  /** The zone under the units' dots: solid when held, dashed otherwise. */
+  private drawHillZone(ctx: CanvasRenderingContext2D): void {
+    const hill = uiStore.getState().hill;
+    if (!hill) return;
+    const { sx, sy } = tileToScreen(hill.centre);
+    const [cx, cy] = this.toMini(sx, sy);
+    const { halfW, halfH } = minimapHillMark(this.scale);
+    const w = halfW * this.dpr;
+    const h = halfH * this.dpr;
+    const line = HILL_MARK.minimap.line * this.dpr;
+    const color = hill.color ?? HILL_MARK.linen;
+    ctx.save();
+    poly(ctx, [[cx, cy - h], [cx + w, cy], [cx, cy + h], [cx - w, cy]]);
+    ctx.fillStyle = css(color, HILL_MARK.minimap.fill);
+    ctx.fill();
+    ctx.strokeStyle = css(HILL_MARK.ink);
+    ctx.lineWidth = 2 * line;
+    ctx.stroke();
+    if (hill.status !== 'held') ctx.setLineDash([2 * line, 2 * line]);
+    ctx.strokeStyle = css(color);
+    ctx.lineWidth = line;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** The glyph on the zone's far corner, over the dots and clear of its middle. */
+  private drawHillFlag(ctx: CanvasRenderingContext2D): void {
+    const hill = uiStore.getState().hill;
+    if (!hill) return;
+    const { sx, sy } = tileToScreen(hill.centre);
+    const [cx, cy] = this.toMini(sx, sy);
+    const { glyphWidth, glyphHeight } = HILL_MARK.minimap;
+    const bottom = cy - minimapHillMark(this.scale).halfH * this.dpr;
+    drawHillGlyph(ctx, cx, bottom, glyphWidth * this.dpr, glyphHeight * this.dpr, hill.status, hill.color ?? HILL_MARK.linen, this.dpr);
   }
 
   destroy(): void {

@@ -5,6 +5,7 @@ import { baseUnitType, civUnitType } from '../game/civUnits';
 import type { BaseUnitType } from '../types';
 import type { AIContext } from './AIPlayer';
 import type { ArmyControl } from './ArmyControl';
+import { hillGoal } from './HillPlay';
 import type { WorldView } from './perception';
 import type { PressureState } from './strategyState';
 
@@ -63,13 +64,14 @@ export class PressureControl {
   /**
    * At the first-attack time, sends the raid. Below the minimum size it
    * waits for the next decision (a few more units) instead of sending a
-   * token force.
+   * token force. It joins a wave on the hill (M19): a hold need never end.
    */
   launch(ctx: AIContext, view: WorldView): void {
     // The treaty (M16): the raid waits for its end (no state changes, so it leaves right after).
     if (this.sentFlag || ctx.treatyActive === true) return;
     const squad = this.squad(view);
-    if (ctx.timeMs < this.act.firstAttackAtMs() || squad.length < this.tune.pressure.minArmy || this.army.attacking) return;
+    if (ctx.timeMs < this.act.firstAttackAtMs() || squad.length < this.tune.pressure.minArmy) return;
+    if (this.army.attacking && !hillGoal(ctx)) return;
     this.army.launchWave(ctx, view, squad);
     this.sentFlag = true;
     this.raidOutSinceMs = ctx.timeMs;

@@ -4,6 +4,8 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { buildingTexture, registerLitArt } from './buildingTextures';
 import { paintConstructionSite } from './art/buildings';
 import { paintWallBanner } from './art/walls/wallBanner';
+import { paintCrown } from './art/crown';
+import { HILL_ART, HILL_ART_FRAMES } from './art/hillArt';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
   paintArrow,
@@ -66,6 +68,12 @@ export const FX_KEYS = {
   glow: 'fx_glow',
   explosion: 'fx_explosion',
   wallBanner: 'fx_wall_banner',
+  crown: 'fx_crown',
+  hillPole: 'fx_hill_pole',
+  hillFlag: 'fx_hill_flag',
+  hillTorn: 'fx_hill_torn',
+  hillFurled: 'fx_hill_furled',
+  hillSwords: 'fx_hill_swords',
 } as const;
 
 export function constructionKey(size: number): string {
@@ -127,6 +135,7 @@ function generateFx(scene: Phaser.Scene): void {
   radial(FX_KEYS.dust, 32, [[0, 'rgba(214,190,140,.8)'], [1, 'rgba(214,190,140,0)']]);
   radial(FX_KEYS.spark, 16, [[0, 'rgba(255,250,220,1)'], [0.4, 'rgba(255,200,90,.9)'], [1, 'rgba(255,140,40,0)']]);
   radial(FX_KEYS.mote, 12, [[0, 'rgba(255,248,210,.95)'], [1, 'rgba(255,248,210,0)']]);
+  if (!scene.textures.exists(FX_KEYS.crown)) registerCanvas(scene, FX_KEYS.crown, paintCrown());
   generateCombatFx(scene);
   generateDamageArt(scene);
 }
@@ -151,6 +160,14 @@ function generateCombatFx(scene: Phaser.Scene): void {
   once(FX_KEYS.scorch, paintScorch);
   once(FX_KEYS.debris, paintDebris);
   once(FX_KEYS.glow, paintGlow);
+  once(FX_KEYS.hillPole, HILL_ART.pole);
+  once(FX_KEYS.hillFurled, HILL_ART.furled);
+  once(FX_KEYS.hillSwords, HILL_ART.swords);
+  for (const [key, paint] of [[FX_KEYS.hillFlag, HILL_ART.flag], [FX_KEYS.hillTorn, HILL_ART.torn]] as const) {
+    if (scene.textures.exists(key)) continue;
+    const strip = paint();
+    registerStrip(scene, key, strip, strip.width / HILL_ART_FRAMES, HILL_ART_FRAMES);
+  }
   if (!scene.textures.exists(FX_KEYS.wallBanner)) {
     const banner = paintWallBanner();
     registerCanvas(scene, FX_KEYS.wallBanner, banner);

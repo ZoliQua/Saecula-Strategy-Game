@@ -10,6 +10,8 @@ import { expectKind, type StrategyState } from '../strategyState';
 import { assignIdleVillagers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 import { AI_EASY_NAVY } from '../../config/aiBalance';
+import { hillGoal, hillWaveDue } from '../HillPlay';
+import { controlKings } from '../KingPlay';
 import { NavalPlay } from '../NavalPlay';
 
 /**
@@ -18,7 +20,7 @@ import { NavalPlay } from '../NavalPlay';
  * random otherwise), about half villagers and half swordsmen, no scout,
  * one age-up attempt with a 50% chance after a long delay, and attack
  * waves of 8+ swordsmen from a random 8-15 min onwards. It defends its
- * base like every AI.
+ * base like every AI, and plays the M19 modes at its own pace.
  */
 export class EasyStrategy extends BaseStrategy {
   readonly name = 'easy';
@@ -64,8 +66,9 @@ export class EasyStrategy extends BaseStrategy {
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
+    const kingFoes = controlKings(ctx, view, AI_EASY.king);
     assignIdleVillagers(ctx.world, view, AI_EASY.gather);
-    this.army.update(ctx, view);
+    this.army.update(ctx, view, kingFoes);
     this.naval.control(ctx, view);
     this.maybeAgeUp(ctx, view);
   }
@@ -75,17 +78,24 @@ export class EasyStrategy extends BaseStrategy {
     else this.randomBuild(ctx, view);
     this.naval.build(ctx, view);
     this.naval.train(ctx, view);
-    const swords = view.military.length;
     // The treaty (M16): no wave while it holds.
-    if (ctx.treatyActive !== true && !this.army.attacking && attackReady({
-      armySize: swords,
-      wave: AI_EASY.attackWave,
-      timeMs: ctx.timeMs,
-      notBeforeMs: this.firstAttackAtMs,
-    })) {
-      this.army.launchWave(ctx, view);
-    }
+    if (ctx.treatyActive !== true && this.waveDue(ctx, view)) this.army.launchWave(ctx, view);
     this.log.phase = this.army.underAttack(view) ? 'defending' : this.army.attacking ? 'attacking' : 'buildUp';
+  }
+
+  private waveDue(ctx: AIContext, view: WorldView): boolean {
+    const wave = AI_EASY.attackWave;
+    const notBeforeMs = this.firstAttackAtMs;
+    const hill = hillGoal(ctx);
+    if (!hill) return !this.army.attacking && attackReady({ armySize: view.military.length, wave, timeMs: ctx.timeMs, notBeforeMs });
+    return hillWaveDue(ctx, hill, {
+      out: this.army.attacking,
+      army: view.military.filter((u) => !this.army.inWave(u)).length,
+      wave,
+      notBeforeMs,
+      opened: true,
+      underAttack: this.army.underAttack(view),
+    }, AI_EASY.hill);
   }
 
   /** §10.1 decision tree: one step per decision. */

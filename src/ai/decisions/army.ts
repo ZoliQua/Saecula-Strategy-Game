@@ -8,6 +8,11 @@ import { canAfford } from '../economy';
 export type ArmyMix = Readonly<Partial<Record<BaseUnitType, number>>>;
 type Sightings = Readonly<Partial<Record<UnitType, number>>>;
 
+/** Whether a sighted type counts as army (exact types: a cossack does; villagers, scouts, traders (M17) and kings (M19) do not). */
+export function isArmySighting(type: UnitType): boolean {
+  return type !== 'villager' && type !== 'scout' && type !== 'king' && tradePostType(type) === null;
+}
+
 /** Sighting share of each counter-relevant class (cavalry, archers, melee infantry). */
 export function enemyClassShares(seen: Sightings): Record<keyof typeof AI_COUNTERS.vs, number> {
   let total = 0;
@@ -15,8 +20,7 @@ export function enemyClassShares(seen: Sightings): Record<keyof typeof AI_COUNTE
   let archers = 0;
   let infantry = 0;
   for (const [type, n] of Object.entries(seen) as [UnitType, number][]) {
-    // Exact types: only a real scout is left out; a cossack counts as cavalry. Traders (M17) are no army.
-    if (type === 'villager' || type === 'scout' || tradePostType(type) !== null || n <= 0) continue;
+    if (!isArmySighting(type) || n <= 0) continue;
     total += n;
     if (CAVALRY_CLASS.includes(type)) cavalry += n;
     else if (ARROW_UNITS.includes(type)) archers += n;

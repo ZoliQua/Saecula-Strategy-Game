@@ -63,6 +63,13 @@ describe('buildMatchRecord', () => {
     expect(MatchRecordSchema.safeParse(JSON.parse(JSON.stringify(r))).success).toBe(true);
   });
 
+  it.each([['regicide', 'islands'], ['hill', 'meadow']] as const)('a %s match records its mode and cause and validates (M19)', (mode, template) => {
+    const { world, players, stats, setup } = fixture();
+    const r = buildMatchRecord({ matchId: 'match-m', createdAt: AT, setup: { ...setup, template, victory: mode }, players: players.all(), stats, world, durationMs: 480_000, end: { kind: 'victory', winnerId: 1, cause: mode } });
+    expect(r).toMatchObject({ outcome: 'victory', cause: mode, setup: { victory: mode } });
+    expect(MatchRecordSchema.safeParse(JSON.parse(JSON.stringify(r))).success).toBe(true);
+  });
+
   it('records the setup, players, final stats, score breakdown and timeline of a decided match', () => {
     const { world, players, stats, setup } = fixture();
     const r = buildMatchRecord({ matchId: 'match-1', createdAt: AT, setup, players: players.all(), stats, world, durationMs: 754_321, end: { kind: 'victory', winnerId: 1, cause: 'conquest' } });

@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { playerColor } from '../game/Player';
 import { paintPortrait } from '../iso/art/units/sheet';
+import { unitSheetType } from '../iso/art/units/sheetType';
 import { buildingTexture } from '../iso/buildingTextures';
 import type { AgeId, BuildingType, CivId, UnitType } from '../types';
 
@@ -39,7 +40,8 @@ export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type
 }
 
 /** HUD portrait of a unit type in a civ's look (front idle pose), in a player's colour (default: the human's). */
-export function unitThumbnail(type: UnitType, civ: CivId, teamColor: number = playerColor(1)): string {
+export function unitThumbnail(unitType: UnitType, civ: CivId, teamColor: number = playerColor(1)): string {
+  const type = unitSheetType(unitType, civ);
   const id = `unit:${type}~${civ}~${teamColor.toString(16)}`;
   const hit = cache.get(id);
   if (hit) return hit;

@@ -57,6 +57,9 @@ describe('gameOverRows', () => {
     // A human Wonder win leaves AIs standing.
     const wonder = [createPlayer({ id: 1, isHuman: true }), createPlayer({ id: 2 })];
     expect(decidedWinner({ kind: 'victory', winnerId: 1, cause: 'wonder' }, wonder)).toBe(1);
+    // A hill or a time defeat names its winner while others stand.
+    expect(decidedWinner({ kind: 'defeat', winnerId: 2, cause: 'hill' }, [...wonder, createPlayer({ id: 3 })])).toBe(2);
+    expect(decidedWinner({ kind: 'defeat', winnerId: 2, cause: 'time' }, [...wonder, createPlayer({ id: 3 })])).toBe(2);
   });
 });
 
@@ -85,5 +88,22 @@ describe('game over in teams (M16)', () => {
     expect(rows.map((r) => r.ally ?? false)).toEqual([false, true, false, false]);
     const ffa = gameOverRows([createPlayer({ id: 1, isHuman: true }), createPlayer({ id: 2 })], 1, 'hard');
     expect(ffa.every((r) => !('ally' in r))).toBe(true);
+  });
+});
+
+describe('decidedWinner in Regicide (M19)', () => {
+  const defeat = { kind: 'defeat', winnerId: 2, cause: 'regicide' } as const;
+  const players = (out: readonly number[]) => [1, 2, 3].map((id) => createPlayer({ id, isHuman: id === 1, defeated: out.includes(id) }));
+
+  it('the human kingless with two AIs standing: nobody is crowned', () => {
+    expect(decidedWinner(defeat, players([1]))).toBeNull();
+  });
+
+  it('one AI left standing: it won', () => {
+    expect(decidedWinner(defeat, players([1, 3]))).toBe(2);
+  });
+
+  it('human and the last enemy together: nobody', () => {
+    expect(decidedWinner({ ...defeat, winnerId: 0 }, players([1, 2, 3]))).toBeNull();
   });
 });
