@@ -122,7 +122,7 @@ export const hu = {
       conquest: 'Hódítás',
       conquest_wonder: 'Hódítás vagy Csoda',
       conquest_time: 'Hódítás vagy idő',
-      all: 'Mind',
+      all: 'Hódítás, Csoda vagy idő',
       regicide: 'Királygyilkos',
       hill: 'A domb ura',
     },

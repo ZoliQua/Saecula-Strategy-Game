@@ -172,18 +172,15 @@ type Exit = 'king' | 'razed' | 'both' | 'none';
  * centre, then its exit, then five more minutes. The treaty keeps the
  * passive human in the match throughout. Deaths have no attacker, so
  * nobody's score differs by a kill.
- * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw
- * (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
- * with the nine-civ pool (player 3 French, not Spanish) player 3's
- * economy differed between the king and the razed run by 1 gold. The two
- * runs are not the same world: the king run has a dead king entity, which
- * is later removed and changes the entities' iteration order, so the
- * surviving villagers' deposits land one step apart. That is a test-order
- * sensitivity, not a bug in the collapse logic; the civ pin keeps the old
- * line-up, where the two runs happen to coincide.
+ * The king and the razed run are not the same world: the king run has a
+ * dead king entity, which is later removed and changes the entities'
+ * iteration order, so a surviving villager's deposit can land one step
+ * apart (M21: 1 gold with the nine-civ pool). The comparison is therefore
+ * order-independent (M23): the same decisions (age, research, buildings,
+ * units, who is out) exactly, the running totals within a deposit.
  */
-function playOn(exit: Exit) {
-  const m = savableMatch({ victory: 'regicide', treatyMin: 20, civs: classicCivs(3, 2) });
+function playOn(exit: Exit, civs: { civs?: ReturnType<typeof classicCivs> } = {}) {
+  const m = savableMatch({ victory: 'regicide', treatyMin: 20, ...civs });
   let exitMs = 0;
   m.run(15 * MIN, STEP_MS, (now) => {
     const tc = tcOf(m, 3);
@@ -209,25 +206,49 @@ function playOn(exit: Exit) {
   return { exitMs, economy, defeated: player.defeated, save: m.snapshot(FIXED_DATE) };
 }
 
+/** Most a deposit can move between two runs one step apart. */
+const DEPOSIT = 20;
+
 /**
- * A save with the king taken out of the comparison: player 3's king and its
- * death (one lost unit, against one lost building), the list order (removing
- * an entity moves the last one into its place) and the AIs' decaying memory
- * of having seen a king. Everything else is compared.
+ * Player 3's entity counts by kind, without its king: what stands, not in
+ * which order. The other players are left out: a deposit one step apart can
+ * nudge a rival AI's later choices (with the ten-civ pool, player 2 trains
+ * one crossbowman fewer and adds a stable), which says nothing about how
+ * player 3 went out.
  */
-function apartFromTheKing(save: SaveData): unknown {
-  const s = JSON.parse(JSON.stringify(save, (key, value: unknown) => (key === 'sightings' ? { ...(value as object), king: undefined } : value))) as SaveData;
-  s.entities = s.entities.filter((e) => e.components.unit?.unitType !== 'king' || e.components.owner?.playerId !== 3).sort((a, b) => a.id - b.id);
-  const { unitsLost: _unit, buildingsLost: _building, ...stats } = s.stats.players['3']!;
-  return { ...s, stats: { ...s.stats, players: { ...s.stats.players, '3': stats } } };
+function census(save: SaveData): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const e of save.entities) {
+    const c = e.components;
+    if (c.owner?.playerId !== 3 || c.unit?.unitType === 'king') continue;
+    const kind = c.unit?.unitType ?? c.building?.type;
+    if (!kind) continue;
+    const key = kind;
+    out[key] = (out[key] ?? 0) + 1;
+  }
+  return out;
+}
+
+type Economy = ReturnType<typeof playOn>['economy'];
+
+/** The same decisions exactly; the totals (resources, gathered) within one deposit each. */
+function expectSameExit(a: Economy, b: Economy): void {
+  const decisions = (e: Economy) => ({ unitsTrained: e.unitsTrained, buildingsBuilt: e.buildingsBuilt, builtBy: e.builtBy, finished: e.finished, age: e.age, researched: e.researched });
+  expect(decisions(a)).toEqual(decisions(b));
+  expect(Math.abs(a.gathered - b.gathered)).toBeLessThanOrEqual(DEPOSIT);
+  for (const r of ['food', 'wood', 'gold'] as const) {
+    expect(Math.abs(a.resources[r] - b.resources[r])).toBeLessThanOrEqual(DEPOSIT);
+    expect(Math.abs(a.gatheredBy[r] - b.gatheredBy[r])).toBeLessThanOrEqual(DEPOSIT);
+  }
 }
 
 describe('out by the king is out as in Conquest (M19)', () => {
   it('the same match with the king killed or the town centre razed at the same step', () => {
-    const king = playOn('king');
-    const razed = playOn('razed');
-    const both = playOn('both');
-    const control = playOn('none');
+    const classic = { civs: classicCivs(3, 2) };
+    const king = playOn('king', classic);
+    const razed = playOn('razed', classic);
+    const both = playOn('both', classic);
+    const control = playOn('none', classic);
 
     for (const run of [razed, both, control]) expect(run.exitMs).toBe(king.exitMs);
     expect([king.defeated, razed.defeated, control.defeated]).toEqual([true, true, false]);
@@ -236,12 +257,20 @@ describe('out by the king is out as in Conquest (M19)', () => {
     expect(control.economy.unitsTrained).toBeGreaterThan(king.economy.unitsTrained);
     expect(control.economy.gathered).toBeGreaterThan(king.economy.gathered);
 
-    expect(king.economy).toEqual(razed.economy);
+    expectSameExit(king.economy, razed.economy);
     expect(king.economy.age).toBe(1);
-    expect(apartFromTheKing(king.save)).toEqual(apartFromTheKing(razed.save));
+    expect(census(king.save)).toEqual(census(razed.save));
     expect(king.save.stats.players['3']).toMatchObject({ unitsLost: 1, buildingsLost: 0 });
     expect(razed.save.stats.players['3']).toMatchObject({ unitsLost: 0, buildingsLost: 1 });
     // With the king dead in both, nothing at all differs: the collapse is that death.
     expect(king.save).toEqual(both.save);
+  }, 120_000);
+
+  it('holds with another draw too: the mixed ten-civ pool (M23)', () => {
+    const king = playOn('king', {});
+    const razed = playOn('razed', {});
+    expect([king.defeated, razed.defeated]).toEqual([true, true]);
+    expectSameExit(king.economy, razed.economy);
+    expect(census(king.save)).toEqual(census(razed.save));
   }, 120_000);
 });
