@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AI_COMMON, AI_KING, AI_MASTER } from '../config/aiBalance';
 import { createBuilding } from '../ecs/archetypes/building';
+import { createResourceNode } from '../ecs/archetypes/resource';
 import { MovementSystem } from '../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../ecs/systems/PathfindingSystem';
 import { chebyshev } from '../iso/coordinates';
@@ -107,6 +108,90 @@ describe.each(Object.entries(LEVELS))("%s: the AI's own king (M19)", (_, make) =
     s.world.addComponent(own, 'attackIntent', { targetId: king.id! });
     make().update(s.regicide(), 100);
     expect(own.attackIntent).toBeUndefined();
+  });
+});
+
+describe.each(Object.entries(LEVELS))('%s: the king is defended (M19 Regicide)', (_, make) => {
+  /** The AI's king by its town centre, `count` villagers working round it, and an enemy scout `tx` along. */
+  function raid(count: number, scoutTx = 9) {
+    const s = modeScene();
+    const king = s.unit('king', 7, 7);
+    for (let i = 0; i < 6; i++) createResourceNode(s.world, { tile: { tx: 14, ty: 2 + i }, type: 'wood' });
+    const villagers = Array.from({ length: count }, (_, i) => s.unit('villager', 9 + (i % 4), 3 + Math.floor(i / 4)));
+    const scout = s.unit('scout', scoutTx, 7, 1);
+    return { s, king, villagers, scout };
+  }
+  const guarding = (vs: readonly { attackIntent?: { targetId: number } }[], id: number) => vs.filter((v) => v.attackIntent?.targetId === id).length;
+
+  it('villagers turn on a scout by the king, two for it, the nearest first', () => {
+    const { s, villagers, scout } = raid(8);
+    make().update(s.regicide(), 100);
+    expect(guarding(villagers, scout.id!)).toBe(AI_KING.guardsPerFoe);
+    const nearest = [...villagers].sort((a, b) => chebyshev(a.position!, { tx: 7, ty: 7 }) - chebyshev(b.position!, { tx: 7, ty: 7 }));
+    expect(nearest.slice(0, AI_KING.guardsPerFoe).every((v) => v.attackIntent?.targetId === scout.id)).toBe(true);
+  });
+
+  it('at most maxGuards of them, however many come', () => {
+    const { s, villagers } = raid(12);
+    for (let i = 0; i < 5; i++) s.unit('scout', 9, 8 + i, 1);
+    make().update(s.regicide(), 100);
+    expect(villagers.filter((v) => v.attackIntent).length).toBe(AI_KING.maxGuards);
+  });
+
+  it('a home soldier answers the scout instead, and no villager goes', () => {
+    const { s, villagers, scout } = raid(4);
+    const guard = s.unit('swordsman', 6, 9);
+    make().update(s.regicide(), 100);
+    expect(guard.attackIntent?.targetId).toBe(scout.id);
+    expect(villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+  });
+
+  it('the villagers go back to work once it is gone', () => {
+    const { s, villagers, scout } = raid(4);
+    const ai = make();
+    ai.update(s.regicide(), 100);
+    expect(villagers.some((v) => v.attackIntent)).toBe(true);
+    s.world.remove(scout);
+    ai.update(s.regicide(1000), 100);
+    expect(villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+    expect(villagers.every((v) => v.gatherIntent)).toBe(true);
+  });
+
+  it('and once it runs beyond the guard radius', () => {
+    const { s, villagers, scout } = raid(4);
+    const ai = make();
+    ai.update(s.regicide(), 100);
+    scout.position = { tx: 7 + AI_KING.guardRadius + 1, ty: 20 };
+    ai.update(s.regicide(1000), 100);
+    expect(villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+  });
+
+  it('a scout far from the king is left alone', () => {
+    const { s, villagers } = raid(4, 7 + AI_KING.guardRadius + 1);
+    make().update(s.regicide(), 100);
+    expect(villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+  });
+
+  it('nobody is sent under the treaty, nor outside the mode', () => {
+    const one = raid(4);
+    make().update({ ...one.s.regicide(), treatyActive: true }, 100);
+    expect(one.villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+    const two = raid(4);
+    make().update(two.s.base, 100);
+    expect(two.villagers.filter((v) => v.attackIntent)).toHaveLength(0);
+  });
+
+  it('the threatened king keeps by its town centre, not off into the open', () => {
+    const { s, king } = raid(0, 8);
+    // Between the king and its town centre: the clearest tile at home lies away from both.
+    king.position = { tx: 9, ty: 9 };
+    s.world.remove(s.world.entities.find((e) => e.unit?.unitType === 'scout')!);
+    s.unit('scout', 8, 8, 1);
+    expect(AI_KING.rallyRadius).toBeLessThan(AI_KING.homeRadius);
+    make().update(s.regicide(), 100);
+    const to = headed(king);
+    expect(to).toBeDefined();
+    expect(Math.max(4 - to!.tx, 0, to!.tx - 6, 4 - to!.ty, to!.ty - 6)).toBeLessThanOrEqual(AI_KING.rallyRadius);
   });
 });
 

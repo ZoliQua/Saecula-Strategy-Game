@@ -66,9 +66,9 @@ export class EasyStrategy extends BaseStrategy {
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
-    controlKings(ctx, view, AI_EASY.king);
+    const kingFoes = controlKings(ctx, view, AI_EASY.king);
     assignIdleVillagers(ctx.world, view, AI_EASY.gather);
-    this.army.update(ctx, view);
+    this.army.update(ctx, view, kingFoes);
     this.naval.control(ctx, view);
     this.maybeAgeUp(ctx, view);
   }

@@ -26,9 +26,10 @@ export function clearance(at: TileCoord, threats: readonly KingThreat[], cap: nu
 
 /**
  * Where a threatened king steps, or null to stand (or to walk on to `heading`): of the tiles near
- * home it can walk to without passing next to a threat, the clearest with a way out (then the fewest
- * steps). Only for a tile `margin` clearer than where it is or heads, so it cannot jitter. The search
- * stays in the home's few hundred tiles and runs only under alarm. No RNG.
+ * home it can walk to without passing next to a threat, and within `rallyRadius` of the town centre
+ * or of one of its defenders (`rally`), the clearest with a way out (then the fewest steps). Only for
+ * a tile `margin` clearer than where it is or heads, so it cannot jitter. The search stays in the
+ * home's few hundred tiles and runs only under alarm. No RNG.
  */
 export function kingRefuge(
   map: NavGrid,
@@ -37,6 +38,7 @@ export function kingRefuge(
   home: KingHome,
   threats: readonly KingThreat[],
   tune: KingTuning,
+  rally: readonly TileCoord[] = [],
 ): TileCoord | null {
   if (clearance(from, threats, tune.safe) > tune.alarm) return null;
   const current = clearance(heading ?? from, threats, tune.safe);
@@ -59,6 +61,7 @@ export function kingRefuge(
       queue.push(next);
     }
     if (exits < tune.minExits || out(at) > tune.homeRadius) continue;
+    if (out(at) > tune.rallyRadius && !rally.some((r) => chebyshev(r, at) <= tune.rallyRadius)) continue;
     const clear = clearance(at, threats, tune.safe);
     if (clear > bestClear) {
       best = at;

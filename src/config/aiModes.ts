@@ -14,6 +14,14 @@ export interface KingTuning {
   readonly villagerRadius: number;
   /** A refuge has at least this many steps out: never a dead end. */
   readonly minExits: number;
+  /** A refuge is at most this far from the town centre's footprint or from one of the king's defenders. */
+  readonly rallyRadius: number;
+  /** Seen enemy units this close to the king (any armed one, scouts too) are fought by the home army. */
+  readonly guardRadius: number;
+  /** Villagers sent per attacker not matched by an own soldier near the king. */
+  readonly guardsPerFoe: number;
+  /** At most this many villagers defend the king at once. */
+  readonly maxGuards: number;
 }
 
 /** When an AI sends units to the hill beyond its usual waves. */
@@ -29,7 +37,7 @@ export interface HillTuning {
  * villager's town centre sees 4, the king 6); a margin of 2 makes a step back impossible while the
  * threats stand still.
  */
-export const AI_KING: KingTuning = { homeRadius: 7, alarm: 4, safe: 7, margin: 2, villagerRadius: 2, minExits: 3 };
+export const AI_KING: KingTuning = { homeRadius: 7, alarm: 4, safe: 7, margin: 2, villagerRadius: 2, minExits: 3, rallyRadius: 2, guardRadius: 8, guardsPerFoe: 2, maxGuards: 6 };
 
 /** How every AI holds a hill. Distances in tiles from the zone's centre unless said otherwise. */
 export const AI_HILL = {

@@ -174,11 +174,11 @@ export class MediumStrategy extends BaseStrategy {
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
-    controlKings(ctx, view, this.tune.king);
+    const kingFoes = controlKings(ctx, view, this.tune.king);
     // Repairs first (M18): a villager it calls off goes back to the economy just below.
     this.repair.update(ctx, view);
     assignIdleVillagers(ctx.world, view, this.gatherWeights(ctx, view));
-    this.army.update(ctx, view);
+    this.army.update(ctx, view, kingFoes);
     this.monks.control(ctx, view);
     this.naval.control(ctx, view);
     this.landing.update(ctx, view);

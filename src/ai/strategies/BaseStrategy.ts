@@ -195,7 +195,7 @@ export abstract class BaseStrategy implements AIStrategy {
     if (site.id === undefined || !site.position) return;
     const at = site.position;
     const free = view.villagers
-      .filter((v) => !v.buildCommand && v.position)
+      .filter((v) => !v.buildCommand && !v.attackIntent && v.position)
       .sort((a, b) => chebyshev(a.position!, at) - chebyshev(b.position!, at))
       .slice(0, count);
     for (const v of free) {

@@ -111,13 +111,13 @@ export class ArmyControl {
    * what it sees, otherwise marches on the target (or explores); a spent
    * wave falls back home (from the hill only once it is lost).
    */
-  update(ctx: AIContext, view: WorldView): void {
+  update(ctx: AIContext, view: WorldView, kingFoes: readonly Entity[] = []): void {
     const members = this.prune(view);
     if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) {
       const hill = hillGoal(ctx);
       if (!hill || holdLost(hill, view, this.wave.size)) this.retreat(ctx, view);
     }
-    this.defend(ctx, view);
+    this.defend(ctx, view, kingFoes);
     if (this.attacking) this.steerWave(ctx, view, members);
   }
 
@@ -126,18 +126,19 @@ export class ArmyControl {
     return view.threats.length > 0;
   }
 
-  /** Units not on the wave answer the nearest threat to the base. */
-  private defend(ctx: AIContext, view: WorldView): void {
-    if (view.threats.length === 0) return;
+  /** Units not on the wave answer the nearest threat to the base, or to the king (`kingFoes`, Regicide: scouts too). */
+  private defend(ctx: AIContext, view: WorldView, kingFoes: readonly Entity[]): void {
+    const threats = kingFoes.length === 0 ? view.threats : [...view.threats, ...kingFoes.filter((f) => !view.threats.includes(f))];
+    if (threats.length === 0) return;
     let logged = false;
     for (const u of view.military) {
       if (u.id === undefined || this.wave.has(u.id) || u.attackIntent || !u.position || this.isReserved(u)) continue;
       // A melee unit leaves a ship to the archers and towers (M14).
-      const threat = nearest(view.threats.filter((t) => canAttackTarget(u, t)), u.position);
+      const threat = nearest(threats.filter((t) => canAttackTarget(u, t)), u.position);
       if (threat?.id === undefined) continue;
       clearUnitOrders(ctx.world, u);
       ctx.world.addComponent(u, 'attackIntent', { targetId: threat.id });
-      if (!logged) this.log.add(ctx.timeMs, 'defend', String(view.threats.length));
+      if (!logged) this.log.add(ctx.timeMs, 'defend', String(threats.length));
       logged = true;
     }
   }

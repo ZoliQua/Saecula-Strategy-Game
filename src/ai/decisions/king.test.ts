@@ -84,6 +84,20 @@ describe('kingRefuge (M19)', () => {
     expect(to === null || to.tx <= 13).toBe(true);
   });
 
+  it('flees no farther than rallyRadius from the town centre or a defender', () => {
+    const out = (t: TileCoord) => Math.max(14 - t.tx, 0, t.tx - 16, 14 - t.ty, t.ty - 16);
+    const threats = [melee(13, 13)];
+    const alone = refuge(field(), { tx: 12, ty: 12 }, threats)!;
+    expect(out(alone)).toBeLessThanOrEqual(AI_KING.rallyRadius);
+    const wide = kingRefuge(field(), { tx: 12, ty: 12 }, null, TC, threats, { ...AI_KING, rallyRadius: AI_KING.homeRadius })!;
+    expect(out(wide)).toBeGreaterThan(AI_KING.rallyRadius);
+    // A defender out west: the king may join it there.
+    const defender = { tx: 8, ty: 8 };
+    const joined = kingRefuge(field(), { tx: 12, ty: 12 }, null, TC, threats, AI_KING, [defender])!;
+    expect(out(joined) <= AI_KING.rallyRadius || chebyshev(joined, defender) <= AI_KING.rallyRadius).toBe(true);
+    expect(joined).not.toEqual(alone);
+  });
+
   it('stands when it has nowhere to go', () => {
     const map = field();
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] as const) map.setBlocked(13 + dx, 15 + dy, true);
