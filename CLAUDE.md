@@ -2161,6 +2161,49 @@ meccsenkénti legfeljebb 6 nép (1.1) nem változik.
   megjegyzés) javításai a `947f0ba`-ban; a Királygyilkos-szimuláció pontos
   egyezésre váró ellenőrzésének törékenysége M21 utánra maradt.
 
+### M22 — Grafikai csiszolás: az új népek saját műhelyei és bástyái
+Ág: `feat/M22-art-polish` (az M21 ágára épül, amíg a PR #24 nincs merge-elve).
+Változat: kiadatlan. A tulajdonos 2026-11-26-án „Folytasd.”-dal a következő
+lépést kérte; a scope Claude döntése (az M21 záró átnézésének ismert grafikai
+gyengeségei, a grafikai minőség az első), a tulajdonos felülírhatja. Csak
+grafika: játékmenet, számok, mentés és AI nem változik.
+- **Saját műhelyek** (Claude döntése): az M21 a lengyel és az oszmán népnek
+  koronként csak néhány saját festőt adott, a többi épületet a közös római,
+  középkori vagy barokk festő rajzolja (az oszmán 1. kori lőtér és
+  kovácsműhely így olasz–spanyolos cseréptetős doboz). A katonai és műhely-
+  épületek (laktanya, lőtér, istálló, kovácsműhely) mindkét nép minden korában
+  saját festőt kapnak, a nép kor-stílusának jeleivel:
+
+  | Kor-stílus | Új festő |
+  |---|---|
+  | `byzantine` (oszmán 1.) | lőtér, kovácsműhely (sávos fal, alacsony kupola, árkád) |
+  | `seljuk` (oszmán 2.) | lőtér, kovácsműhely (faragott kő, kiugró kapuzat, kümbet-kúp) |
+  | `osmanli` (oszmán 3.) | lőtér, istálló, kovácsműhely (széles eresz, ólomkupola) |
+  | `biskupin` (lengyel 1.) | laktanya, lőtér, istálló, kovácsműhely (cölöpös faház, nádtető, deszkautca) |
+  | `krakow_gothic` (lengyel 2.) | kovácsműhely (téglagótika fehér kő díszítéssel) |
+  | `polish_attic` (lengyel 3.) | laktanya, lőtér, istálló, kovácsműhely (attika-pártázat, árkád) |
+
+  A méret (mezőszám) és a `maxHeight` keret a lecserélt festőé, így a
+  textúra-memória nem nő számottevően.
+- **Saját 3. kori bástya** (Claude döntése): a `zamosc_bastion` és az
+  `ottoman_bastion` ma főleg anyagában tér el a közös csillagerődtől. A lengyel
+  bástya fehér kő attika-pártázatot és oromdíszes kaput kap, az oszmán
+  ólomkupolás saroktornyokat (köşk) és félhold-csúcsdíszt; a `rumeli` tornyai
+  gyilokjárós (machikulás) koszorút és magasabb ólomsüveget, hogy ne a „kerek
+  torony + kúp” család legyenek. A csillagerőd-készlet (`walls/kits/starFort.ts`)
+  csak opcionális, alapból kikapcsolt kapcsolót kaphat.
+- **Tesztek:** minden új festő megfesthető, a vásznon belül marad, nincs takart
+  ablakfénye, a csapatszín látszik (a népek meglévő rajz-tesztjei); a lengyel és
+  az oszmán rögzítő hash-ek az új grafikára frissülnek; **minden más nép
+  rögzítése változatlan** (köztük a közös római, középkori, barokk és
+  csillagerőd-festőé).
+- Nem része: új épület- vagy egységtípus, egységviselet, a régi népek grafikája,
+  a lakó- és gazdasági épületek (ház, farm, fa- és bányatábor, piac, kikötő,
+  kolostor, öntöde), a Csodák.
+- Keret (10.): az M21 keretei; a `distinct6` és a Királygyilkos `--trade`
+  legnehezebb esete (M21: 258,0 MB, elfogadott szélső eset) legfeljebb 1 MB-tal
+  nőhet.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
