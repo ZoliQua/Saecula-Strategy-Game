@@ -17,3 +17,8 @@
 .campaign-objectives { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; color: var(--ink); }
 .campaign-objectives li::marker { color: var(--amber); }
 .campaign-start { display: inline-flex; align-items: center; gap: 10px; }
+/* list section titles (M20): the two chapters and the short scenarios */
+.campaign-section {
+  margin: 10px 4px 0; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+}
+.campaign-section:first-child { margin-top: 0; }

@@ -14,7 +14,7 @@ import { tryGenerateGameMap } from '../scenes/game/GameBootstrap';
 import { CampaignRunner } from '../scenes/game/CampaignRunner';
 import { MatchStats } from '../stats/MatchStats';
 import { resetUiStore, uiStore } from '../ui/store';
-import { DAMAGED_HOUSE_HP_FRACTION, MISSION_IDS, MISSIONS, missionSetup, SCENARIO_IDS, TUTORIAL_ID } from './missions';
+import { DAMAGED_HOUSE_HP_FRACTION, MISSION_IDS, MISSIONS, missionSetup, SCENARIO_IDS, SHORT_IDS, TUTORIAL_ID } from './missions';
 import { objectiveProgress, type Objective, type ObjectiveContext } from './objectives';
 import { objectiveHint, objectiveText, scenarioObjectiveText } from './objectiveText';
 import { ObjectiveTracker } from './ObjectiveTracker';
@@ -98,7 +98,7 @@ describe('tutorial mission (M18)', () => {
   beforeEach(() => resetUiStore());
 
   it('is the first scenario but outside the campaign chain; a valid setup (Hungarian, small meadow, 1 Easy AI, 20 min treaty) the save schema accepts', () => {
-    expect(SCENARIO_IDS).toEqual([TUTORIAL_ID, ...MISSION_IDS]);
+    expect(SCENARIO_IDS).toEqual([TUTORIAL_ID, ...MISSION_IDS, ...SHORT_IDS]);
     expect(MISSION_IDS as readonly string[]).not.toContain(TUTORIAL_ID);
     const setup = missionSetup(TUTORIAL_ID);
     expect(setup).toMatchObject({ mission: 'tutorial', civ: 'hungarian', template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'easy', treatyMin: 20, allies: 0 });
@@ -171,17 +171,17 @@ describe('tutorial mission (M18)', () => {
     const store = memory({ [CAMPAIGN_KEY]: JSON.stringify({ completed: ['first_monastery'] }) });
     const progress = new CampaignProgress(store);
     expect(progress.status(TUTORIAL_ID)).toBe('available');
-    expect(MISSION_IDS.map((id) => progress.status(id))).toEqual(['completed', 'available', 'locked']);
+    expect(MISSION_IDS.map((id) => progress.status(id))).toEqual(['completed', 'available', 'locked', 'locked', 'locked', 'locked']);
     const run = new CampaignRunner(createEcsWorld(), createPlayers('hungarian', ['english']), TUTORIAL_ID, { progress, notify: () => undefined });
     expect(run.finish(true)).toContain('alapokat');
     expect(progress.tutorialDone()).toBe(true);
     expect(progress.status(TUTORIAL_ID)).toBe('completed');
-    expect(MISSION_IDS.map((id) => progress.status(id))).toEqual(['completed', 'available', 'locked']);
+    expect(MISSION_IDS.map((id) => progress.status(id))).toEqual(['completed', 'available', 'locked', 'locked', 'locked', 'locked']);
     progress.markCompleted('border_guards');
     expect(new CampaignProgress(store).tutorialDone()).toBe(true);
     const fresh = new CampaignProgress(memory());
     fresh.markCompleted(TUTORIAL_ID);
-    expect(MISSION_IDS.map((id) => fresh.status(id))).toEqual(['available', 'locked', 'locked']);
+    expect(MISSION_IDS.map((id) => fresh.status(id))).toEqual(['available', 'locked', 'locked', 'locked', 'locked', 'locked']);
   });
 
   it('every tutorial step has its own title, built from the step', () => {

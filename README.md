@@ -164,6 +164,7 @@ each version contains.
 | M14 | Ships, docks, fishing and two water maps | ✅ 0.9.0 |
 | M18 | Tutorial, building repair, colour-blind team colours | 🔧 unreleased |
 | M19 | Regicide and King of the Hill game modes | 🔧 unreleased |
+| M20 | Campaign chapter 2 and three short scenarios | 🔧 unreleased |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, a long story campaign.

@@ -58,9 +58,10 @@ import {
  * (stats repairsDone, gatheredBy, builtBy), and the tutorial scenario id (setup.mission 'tutorial').
  * v13 (M19): the setup's victory enum gains regicide and hill, the unit-type enum the king, and the
  *   ownerless hill entity its component (hill: each team's time, the holder, contested).
+ * v14 (M20): the setup's mission enum gains the chapter-2 missions and the short scenarios.
  */
 
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 const nonNeg = num.nonnegative();
 /** Record keys are player or team ids in decimal. */

@@ -163,6 +163,7 @@ A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
 | M14 | Hajók, kikötő, halászat és két vízi térkép | ✅ 0.9.0 |
 | M18 | Oktató mód, épületjavítás, színtévesztő-barát színek | 🔧 kiadatlan |
 | M19 | Királygyilkos és A domb ura játékmód | 🔧 kiadatlan |
+| M20 | A kampány II. fejezete és három rövid küldetés | 🔧 kiadatlan |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, hosszú sztori-kampány.

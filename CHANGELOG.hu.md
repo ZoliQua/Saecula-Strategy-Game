@@ -12,6 +12,18 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
+- **A kampány II. fejezete:** a *Csodák kora* után három újabb küldetés,
+  sorban feloldva: *Új partok* (spanyol, Szigetvilág: kikötő, halászhajók,
+  gályák és a középkor), *A Hanza útjai* (német, szövetségessel és 20 perc
+  fegyverszünettel: piac, Hanza-kontor, kereskedőkocsik és 2000 arany) és
+  *A király feje* (francia, Királygyilkos két Nehéz AI ellen).
+- **Rövid küldetések:** három önálló, mindig elérhető küldetés, győzelem után
+  pipával: *A domb* (A domb ura), *Versenyfutás a Csodáért* és *Az utolsó
+  bástya* (tarts ki 15 percig két Nehéz AI ellen).
+- A kampánylista két fejezetre és a rövid küldetésekre tagolódik; a „Nyerd meg
+  a meccset” cél a küldetés győzelmi módját nevezi meg, az egyedi épület célja
+  a nép saját épületének nevét.
+- A mentések a 14-es verzióra lépnek.
 - **Királygyilkos:** új győzelmi mód tenger nélküli térképen: Mezőség, Vadon,
   Szigetek és Erődítmény (a többin tiltott, indoklással: a király lovas lapjai
   a hajókéival együtt túllépnék a vízi térképek textúra-keretét). Minden

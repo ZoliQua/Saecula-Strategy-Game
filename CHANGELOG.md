@@ -12,6 +12,18 @@ raises the patch version.
 
 ### Added
 
+- **Campaign chapter 2:** three more missions after *Age of Wonders*, unlocked
+  in order: *New Shores* (Spanish, Archipelago: a dock, fishing boats, galleys
+  and the Middle Ages), *The Hansa Roads* (German, with an ally and a
+  20-minute treaty: a market, the Hanseatic Kontor, trade carts and 2000 gold)
+  and *The King's Head* (French, Regicide against two Hard AIs).
+- **Short scenarios:** three standalone missions, always available, ticked
+  when won: *The Hill* (King of the Hill), *Race for the Wonder* and *The Last
+  Bastion* (hold 15 minutes against two Hard AIs).
+- The campaign list is split into the two chapters and the short scenarios;
+  a "win the match" objective names the mission's ways to win, and a landmark
+  objective names the nation's own landmark.
+- Saves move to version 14.
 - **Regicide:** a new victory mode on maps without sea: Meadow, Wilderness,
   Islands and Fortress (greyed out with the reason on the others: the king's
   mounted sheets together with the ship sheets would break the water-map
