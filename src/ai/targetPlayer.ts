@@ -13,14 +13,27 @@ import type { PlayerManager } from '../game/PlayerManager';
  *   standing player of the human's team;
  * - the human or its ally: the nearest standing enemy-team player.
  *
+ * - free-for-all Regicide / King of the Hill (`nearest`, M23; no teams, at
+ *   least 2 AIs): every player, the human included, takes the nearest
+ *   standing enemy (the human or another AI) by the same rule as below.
+ *   With one AI that is the human anyway (it falls back to the human when
+ *   nobody else stands, as before).
+ *
  * Standing = not marked defeated and owning a live (non-dying) town centre
  * (the conquest rule, VictoryChecker). "Nearest" is the Chebyshev distance
  * between town centres (each side's closest pair); ties go to the smaller
  * player id. Undefined when no candidate is standing.
  */
-export function chooseEnemyPlayer(players: PlayerManager, me: number, world: EcsWorld): number | undefined {
+export function chooseEnemyPlayer(players: PlayerManager, me: number, world: EcsWorld, nearest = false): number | undefined {
   const human = players.human();
-  if (!players.hasTeams() || !human) return human?.id;
+  if (!human) return undefined;
+  if (!players.hasTeams()) {
+    if (!nearest || players.ais().length < 2) return human.id;
+    const tcs = townCentres(world);
+    const standing = (id: number) => players.get(id)?.defeated !== true && (tcs.get(id)?.length ?? 0) > 0;
+    const candidates = players.all().filter((p) => p.id !== me && areEnemies(players, me, p.id)).map((p) => p.id).filter(standing);
+    return nearestOf(tcs.get(me) ?? [], candidates, tcs);
+  }
   const tcs = townCentres(world);
   const standing = (id: number) => players.get(id)?.defeated !== true && (tcs.get(id)?.length ?? 0) > 0;
   const humanSide = me === human.id || areAllies(players, me, human.id);
@@ -30,7 +43,11 @@ export function chooseEnemyPlayer(players: PlayerManager, me: number, world: Ecs
     .filter((p) => (humanSide ? areEnemies(players, me, p.id) : p.id === human.id || areAllies(players, p.id, human.id)))
     .map((p) => p.id)
     .filter(standing);
-  const mine = tcs.get(me) ?? [];
+  return nearestOf(tcs.get(me) ?? [], candidates, tcs);
+}
+
+/** The candidate whose town centres are nearest `mine` (ties: first, i.e. the smaller id); the first candidate when `mine` is empty. */
+function nearestOf(mine: readonly TileCoord[], candidates: readonly number[], tcs: Map<number, TileCoord[]>): number | undefined {
   if (mine.length === 0) return candidates[0];
   let best: number | undefined;
   let bestDist = Infinity;

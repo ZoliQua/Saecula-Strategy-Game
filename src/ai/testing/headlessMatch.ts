@@ -191,6 +191,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup), setup.allies);
   if (options.mission) applyMissionStart(players, options.mission);
   spawnNewMatch(world, players, { mapData: map, starts: generated.playerStarts, walls: generated.walls }, setup);
+  // M23: free-for-all picking needs two AIs; with one, the old fixed enemies (AI -> 1, human -> 2) stay.
+  const nearest = (hasRegicide(setup.victory) || hasHill(setup.victory)) && players.ais().length >= 2;
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     const personality = options.personality?.(p.id);
@@ -208,8 +210,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     players,
     ais,
     humanAi,
-    humanEnemy: options.humanEnemy ?? (players.hasTeams() ? () => chooseEnemyPlayer(players, 1, world) : () => 2),
-    enemyOf: options.enemyOf ?? defaultEnemyOf(players, world),
+    humanEnemy: options.humanEnemy ?? (players.hasTeams() || nearest ? () => chooseEnemyPlayer(players, 1, world, nearest) : () => 2),
+    enemyOf: options.enemyOf ?? defaultEnemyOf(players, world, nearest),
     startMs: 0,
     camera: { tx: options.size / 2, ty: options.size / 2, zoom: 1 },
     lightPhase: 0,
@@ -241,7 +243,7 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
     ais,
     humanAi: null,
     humanEnemy: () => 2,
-    enemyOf: defaultEnemyOf(r.players, r.world),
+    enemyOf: defaultEnemyOf(r.players, r.world, (hasRegicide(r.setup.victory) || hasHill(r.setup.victory)) && r.players.ais().length >= 2),
     startMs: r.gameTimeMs,
     camera: r.camera,
     lightPhase: r.lightPhase,
@@ -249,9 +251,9 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
   });
 }
 
-/** Whom each AI attacks by default: the human (player 1), or with allies the live game's choice (SystemRunner). */
-function defaultEnemyOf(players: PlayerManager, world: EcsWorld): (playerId: number) => number | undefined {
-  return players.hasTeams() ? (id) => chooseEnemyPlayer(players, id, world) : () => 1;
+/** Whom each AI attacks by default: the human (player 1), or with allies / in free-for-all Regicide and King of the Hill (`nearest`) the live game's choice (SystemRunner). */
+function defaultEnemyOf(players: PlayerManager, world: EcsWorld, nearest: boolean): (playerId: number) => number | undefined {
+  return players.hasTeams() || nearest ? (id) => chooseEnemyPlayer(players, id, world, nearest) : () => 1;
 }
 
 /** The AI context with `enemyPlayerId` only when there is one (undefined = every hostile, as in SystemRunner). */

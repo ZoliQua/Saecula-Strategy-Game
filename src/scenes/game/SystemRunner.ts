@@ -348,9 +348,11 @@ export class SystemRunner {
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
     const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(this.world, this.players, this.regicide) };
+    // Free-for-all Regicide / King of the Hill: every AI takes its nearest standing enemy (M23).
+    const nearest = this.regicide || base.hill !== undefined;
     for (const ai of this.aiPlayers) {
       // Whom this AI attacks, re-chosen every decision (M16 teams; without allies: the human).
-      const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world);
+      const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world, nearest);
       ai.update(enemy === undefined ? base : { ...base, enemyPlayerId: enemy }, delta);
     }
     this.population.update();
