@@ -96,7 +96,7 @@ export class HillClock {
   constructor() {
     this.icon = el('span', { class: 'hill-state-icon', 'aria-hidden': 'true' });
     this.state = el('span', { class: 'hill-state-text' });
-    this.note = el('div', { class: 'hill-note' });
+    this.note = el('div', { class: 'hill-note', 'aria-live': 'polite' });
     this.list = el('div', { class: 'hill-rows' });
     this.root = el(
       'section',
@@ -139,7 +139,7 @@ export class HillClock {
     view.rows.forEach((r, i) => {
       const row = this.rows.get(r.team) ?? this.addRow(r.team);
       this.update(row, r);
-      // Moved only when out of place (moving replays its entrance).
+      // Moved only when out of place (moving restarts a warned row's pulse).
       if (this.list.children[i] !== row.node) this.list.insertBefore(row.node, this.list.children[i] ?? null);
     });
   }

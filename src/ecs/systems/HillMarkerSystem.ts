@@ -10,12 +10,22 @@ import { tileToScreen, type TileCoord } from '../../iso/coordinates';
 import { tileDepth } from '../../iso/depth';
 import { FX_KEYS } from '../../iso/textures';
 import { FOG_UNEXPLORED, type FogOfWarData } from '../../map/FogOfWarData';
-import type { MapData } from '../../map/MapData';
-import { TERRAIN } from '../../map/TerrainTypes';
 import type { EcsWorld } from '../world';
 import { dashes, hillOutline } from './hillFx/ring';
 
 const M = HILL_MARK;
+
+/**
+ * The corners that get a standard, as tile directions from the centre, and
+ * whether its cloth flies to the screen's left: the back corner, the left
+ * and the right. None at the front, where it would stand over the zone's
+ * units.
+ */
+const CORNERS = [
+  { dx: -1, dy: -1, flyLeft: false },
+  { dx: -1, dy: 1, flyLeft: true },
+  { dx: 1, dy: -1, flyLeft: false },
+] as const;
 
 /** The cloth of each state: its texture, whether it waves, how high it hangs and where it is tied. */
 const CLOTH = {
@@ -26,6 +36,8 @@ const CLOTH = {
 
 interface Standard {
   readonly tile: TileCoord;
+  /** Its cloth is mirrored, to fly away from the zone. */
+  readonly flyLeft: boolean;
   readonly pole: Phaser.GameObjects.Image;
   readonly cloth: Phaser.GameObjects.Image;
   readonly swords: Phaser.GameObjects.Image;
@@ -40,9 +52,11 @@ interface Proxies {
 }
 
 /**
- * The hill in the world (M19): a ring on the ground round the zone and a
- * standard near each of its four corners, in the holder's colour. The
- * centre may be a tree or a rock, so nothing stands there. Render proxies
+ * The hill in the world (M19): a ring on the ground round the zone and
+ * three standards just past its back and side corners, in the holder's
+ * colour. They keep their isometric depth among the trees and the world
+ * outside, and cover no unit in the zone. Their tiles follow from the
+ * centre alone, so felling or a load never moves them. Render proxies
  * rebuilt from the world; they show the public state only (no unit) and
  * lie under the fog, whose unexplored land also hides the standards.
  */
@@ -53,7 +67,6 @@ export class HillMarkerSystem {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly world: EcsWorld,
-    private readonly map: MapData,
     private readonly players: PlayerManager,
     private readonly fog: FogOfWarData,
     /** The clocks wait (treaty): the ring stops breathing. */
@@ -71,7 +84,8 @@ export class HillMarkerSystem {
       this.drawRing(proxies, look);
       this.dress(proxies.standards, look);
     }
-    const breath = this.waiting() ? 0 : Math.sin((time / M.breatheMs) * Math.PI * 2);
+    // It breathes with a running clock: held, and no treaty.
+    const breath = look.status === 'held' && !this.waiting() ? Math.sin((time / M.breatheMs) * Math.PI * 2) : 0;
     proxies.glow.setAlpha((1 + M.breatheDepth * breath) / (1 + M.breatheDepth));
     const cloth = CLOTH[look.status];
     proxies.standards.forEach(({ tile, pole, cloth: image, swords }, i) => {
@@ -95,16 +109,18 @@ export class HillMarkerSystem {
   private create(centre: TileCoord): Proxies {
     const { depths } = M.ring;
     const scale = 1 / ART_SCALE;
-    const open = (t: TileCoord): boolean => this.map.isPassable(t.tx, t.ty) && this.map.getTile(t.tx, t.ty) === TERRAIN.grass;
-    const standards = standardTiles(centre, open).map((tile): Standard => {
+    const out = Math.floor(HILL.size / 2) + M.bannerOut;
+    const standards = CORNERS.map(({ dx, dy, flyLeft }): Standard => {
+      const tile = { tx: centre.tx + dx * out, ty: centre.ty + dy * out };
       const { sx, sy } = tileToScreen(tile);
       const depth = tileDepth(tile) + M.bannerDepth;
       const image = (key: string, above: number, lift: number) =>
         lit(this.scene.add.image(sx, sy, key).setScale(scale)).setPosition(sx, sy - lift).setDepth(depth + above * M.partDepth);
       return {
         tile,
+        flyLeft,
         pole: image(FX_KEYS.hillPole, 0, 0).setOrigin(0.5, M.pole.foot / M.pole.height),
-        cloth: image(FX_KEYS.hillFurled, 1, M.furled.lift),
+        cloth: image(FX_KEYS.hillFurled, 1, M.furled.lift).setFlipX(flyLeft),
         swords: image(FX_KEYS.hillSwords, 2, M.swords.lift).setOrigin(0.5, 0.5),
       };
     });
@@ -148,9 +164,11 @@ export class HillMarkerSystem {
 
   private dress(standards: readonly Standard[], { status, color }: HillLook): void {
     const { key, waves, lift, origin } = CLOTH[status];
-    for (const { tile, cloth } of standards) {
+    for (const { tile, flyLeft, cloth } of standards) {
       const { sx, sy } = tileToScreen(tile);
-      cloth.setTexture(key, waves ? 0 : undefined).setOrigin(origin[0], origin[1]).setPosition(sx, sy - lift);
+      // A flipped image keeps its box, so the origin moves over to the hoist.
+      const hoist = flyLeft ? 1 - origin[0] : origin[0];
+      cloth.setTexture(key, waves ? 0 : undefined).setOrigin(hoist, origin[1]).setPosition(sx, sy - lift);
       if (color === null) cloth.clearTint();
       else cloth.setTint(color);
     }
@@ -166,19 +184,4 @@ function trace(g: Phaser.GameObjects.Graphics, points: readonly TileCoord[], clo
     else g.lineTo(sx, sy);
   });
   if (closed) g.closePath();
-}
-
-/** For each corner of the zone, the open tile of its quarter nearest the corner (the corner itself if none). */
-function standardTiles(centre: TileCoord, open: (tile: TileCoord) => boolean): TileCoord[] {
-  const half = Math.floor(HILL.size / 2);
-  return ([[-1, -1], [1, -1], [1, 1], [-1, 1]] as const).map(([sx, sy]) => {
-    const corner = { tx: centre.tx + sx * half, ty: centre.ty + sy * half };
-    const away = (t: TileCoord): number => Math.abs(t.tx - corner.tx) + Math.abs(t.ty - corner.ty);
-    const quarter: TileCoord[] = [];
-    for (let dy = 1; dy <= half; dy++) {
-      for (let dx = 1; dx <= half; dx++) quarter.push({ tx: centre.tx + sx * dx, ty: centre.ty + sy * dy });
-    }
-    quarter.sort((a, b) => away(a) - away(b) || a.ty - b.ty || a.tx - b.tx);
-    return quarter.find(open) ?? corner;
-  });
 }

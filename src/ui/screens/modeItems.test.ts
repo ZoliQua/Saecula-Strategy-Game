@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { defaultSetupConfig, HILL_TEMPLATES, SPEED_CHOICES, TREATY_MINUTES, VICTORY_MODES, withSetup } from '../../game/GameSetupConfig';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { defaultSetupConfig, HILL_TEMPLATES, SPEED_CHOICES, TREATY_MINUTES, VICTORY_MODES, withSetup, type VictoryMode } from '../../game/GameSetupConfig';
 import { MAP_TEMPLATES } from '../../map/generator';
 import { alliesItems, parseChoice, speedItems, startResourceItems, treatyItems, victoryItems, victoryRowView, victoryWasReset } from './modeItems';
-import { nextEnabled } from './radioNav';
+import { installDomStub } from '../testing/domStub.testkit';
+import { Segmented } from './Segmented';
 import { segPlace } from './segLayout';
 
 describe('setup card mode rows (M16)', () => {
@@ -73,10 +74,44 @@ describe('victory row (M19)', () => {
     expect(victoryWasReset(false, hill, { template: 'fortress' }, withSetup(hill, { template: 'fortress' }))).toBe(false);
   });
 
-  it('the arrow keys skip the disabled hill both ways', () => {
-    const enabled = VICTORY_MODES.map((m) => !victoryRowView('islands', false).disabled.includes(m));
-    expect(nextEnabled(enabled, VICTORY_MODES.indexOf('regicide'), 1)).toBe(0);
-    expect(nextEnabled(enabled, 0, -1)).toBe(VICTORY_MODES.indexOf('regicide'));
+  describe('Segmented.setEnabled', () => {
+    afterEach(() => void vi.unstubAllGlobals());
+
+    function victorySeg() {
+      const dom = installDomStub();
+      const picked: string[] = [];
+      const seg: Segmented<VictoryMode> = new Segmented('victory', 'Victory', victoryItems(), 'regicide', (mode) => {
+        picked.push(mode);
+        seg.set(mode);
+      });
+      const buttons = dom.node(seg.root).all().filter((n) => n.tag === 'button');
+      const at = (mode: VictoryMode) => buttons[VICTORY_MODES.indexOf(mode)]!;
+      const press = (from: VictoryMode, key: string) => at(from).fire('keydown', { key });
+      for (const mode of victoryRowView('islands', false).disabled) seg.setEnabled(mode, false, 'why');
+      return { dom, seg, at, press, picked };
+    }
+
+    it('the arrow keys skip the disabled hill both ways', () => {
+      const { dom, at, press, picked } = victorySeg();
+      const first = VICTORY_MODES[0]!;
+      expect(at('hill').disabled).toBe(true);
+      expect(press('regicide', 'ArrowRight')).toBe(true);
+      expect([picked.at(-1), dom.active]).toEqual([first, at(first)]);
+      expect(at(first).getAttribute('aria-checked')).toBe('true');
+      expect(press(first, 'ArrowLeft')).toBe(true);
+      expect([picked.at(-1), dom.active]).toEqual(['regicide', at('regicide')]);
+      expect(press('regicide', 'Enter')).toBe(false);
+    });
+
+    it('switched on again, the arrow keys reach it and it needs no reason', () => {
+      const { dom, seg, at, press, picked } = victorySeg();
+      expect(at('hill').getAttribute('aria-describedby')).toBe('why');
+      seg.setEnabled('hill', true, 'why');
+      expect(at('hill').disabled).toBe(false);
+      expect(at('hill').getAttribute('aria-describedby')).toBeNull();
+      press('regicide', 'ArrowDown');
+      expect([picked.at(-1), dom.active]).toEqual(['hill', at('hill')]);
+    });
   });
 });
 

@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HILL } from '../../config/balance';
 import { HILL_HUD } from '../../config/visual';
 import type { HillClockRow, HillClocksInfo } from '../../game/hillClocks';
 import { hu } from '../../i18n/hu';
-import { hillClockView } from './HillClock';
+import type { UiStore } from '../store';
+import { installDomStub, type StubNode } from '../testing/domStub.testkit';
+import { HillClock, hillClockView } from './HillClock';
 
 const row = (over: Partial<HillClockRow> = {}): HillClockRow => ({
   team: 2, playerId: 2, civ: 'english', color: 0xd04a4a, own: false, holder: false, out: false, remainingMs: HILL.holdMs, ...over,
@@ -71,5 +73,69 @@ describe('hill clock view (M19)', () => {
 
   it('the tip states the goal from the balance table', () => {
     expect(hu.hill.tip).toContain(`${HILL.holdMs / 60_000} percig`);
+  });
+});
+
+describe('hill clock panel (M19)', () => {
+  afterEach(() => void vi.unstubAllGlobals());
+
+  function panel() {
+    const dom = installDomStub();
+    const clock = new HillClock();
+    const find = (name: string) => dom.node(clock.root).all().find((n) => n.classList.contains(name)) as StubNode;
+    const list = find('hill-rows');
+    const render = (rows: HillClockRow[], over: Partial<HillClocksInfo> = {}) => {
+      dom.writes.length = 0;
+      clock.render({ hill: info({ rows, ...over }) } as UiStore);
+    };
+    /** What was written inside the rows since the last render began. */
+    const written = () => dom.writes.filter((w) => list.contains(w.node) && w.node !== list);
+    const moved = () => written().filter((w) => w.what === 'moved').map((w) => w.node);
+    return { dom, find, list, render, written, moved };
+  }
+  const three = () => [human(), row(), row({ team: 3, playerId: 3, civ: 'german', color: 0x4ad06a })];
+
+  it('a new leader moves its row alone, and no row is made again', () => {
+    const { list, render, moved } = panel();
+    const [a, b, c] = three() as [HillClockRow, HillClockRow, HillClockRow];
+    render([a, b, c]);
+    const [first, second, third] = [...list.children];
+    render([c, a, b]);
+    expect(moved()).toEqual([third]);
+    expect(list.children).toEqual([third, first, second]);
+    render([c, b]);
+    expect(list.children).toEqual([third, second]);
+  });
+
+  it('rows in place are never moved, so a warning keeps pulsing', () => {
+    const { list, render, moved } = panel();
+    render([row({ remainingMs: 60_000 }), human()]);
+    const before = [...list.children];
+    render([row({ remainingMs: 59_000 }), human()]);
+    expect(moved()).toEqual([]);
+    expect(list.children).toEqual(before);
+  });
+
+  it('writes only what changed', () => {
+    const { list, render, written } = panel();
+    const [a, b, c] = three() as [HillClockRow, HillClockRow, HillClockRow];
+    render([a, b, c]);
+    render([a, b, c]);
+    expect(written()).toEqual([]);
+    render([a, { ...b, remainingMs: b.remainingMs - 1000 }, c]);
+    expect(written().map((w) => w.what).sort()).toEqual(['text', 'transform']);
+    for (const w of written()) expect(list.children[1]?.contains(w.node)).toBe(true);
+    render([a, { ...b, remainingMs: b.remainingMs - 1000, holder: true }, c]);
+    expect(written().map((w) => w.what)).toEqual(['class:holder']);
+  });
+
+  it('announces the near-win line once, not every second', () => {
+    const { dom, find, render } = panel();
+    const note = find('hill-note');
+    expect(note.getAttribute('aria-live')).toBe('polite');
+    render([row({ remainingMs: 60_000 })]);
+    expect(note.textContent).toBe(hu.hill.nearWin);
+    render([row({ remainingMs: 59_000 })]);
+    expect(dom.writes.filter((w) => w.node === note)).toEqual([]);
   });
 });

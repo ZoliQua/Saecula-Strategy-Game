@@ -67,13 +67,19 @@ export class Segmented<T extends string> {
     this.set(value);
   }
 
-  /** Switches one option on or off; the arrow keys skip it while off. */
-  setEnabled(value: T, on: boolean): void {
+  /**
+   * Switches one option on or off; the arrow keys skip it while off.
+   * `reasonId` is the element saying why, its description while off.
+   */
+  setEnabled(value: T, on: boolean, reasonId?: string): void {
     this.items.forEach((item, i) => {
       if (item.value !== value) return;
       this.enabled[i] = on;
       const b = this.buttons[i];
-      if (b) b.disabled = !on;
+      if (!b) return;
+      b.disabled = !on;
+      if (!on && reasonId) b.setAttribute('aria-describedby', reasonId);
+      else b.removeAttribute('aria-describedby');
     });
   }
 

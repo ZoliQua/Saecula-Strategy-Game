@@ -257,7 +257,7 @@ export class SystemRunner {
     const regicide = options.regicide === true;
     this.crowns = regicide ? new CrownSystem(scene, world, (e) => this.xray.raisedDepth(e)) : null;
     this.kingWatch = regicide ? new KingWatch(world, players, this.humanId, showHudNotice) : null;
-    this.hillMarker = new HillMarkerSystem(scene, world, mapData, players, this.fogData, this.treaty);
+    this.hillMarker = new HillMarkerSystem(scene, world, players, this.fogData, this.treaty);
     this.evictTimer = scene.time.addEvent({
       ...evictionTimer(restore !== undefined),
       loop: true,

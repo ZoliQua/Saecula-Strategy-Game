@@ -21,7 +21,8 @@ import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
  * the time-victory clock (time left and the leader) when the match has one,
  * and the treaty countdown (M16) when the match has a treaty, and the
  * human's market prices (M17; a trade also publishes them at once), and
- * the hill's state and clocks (M19) in a match that has one.
+ * the hill's state and clocks (M19) in a match that has one (published
+ * once more when the match ends).
  */
 export class HudSync {
   constructor(
@@ -65,7 +66,8 @@ export class HudSync {
     if (uiStore.getState().treatyLeftMs !== leftMs) uiStore.getState().setTreatyLeft(leftMs);
   }
 
-  private syncHill(): void {
+  /** The hill's state and clocks into the store (the match's end also publishes them at once). */
+  syncHill(): void {
     const hill = hillState(this.world);
     const next = hill && hillClocks(hill, this.players, (this.treatyLeftMs?.() ?? 0) > 0);
     if (!sameHillClocks(next, uiStore.getState().hill)) uiStore.getState().setHill(next);

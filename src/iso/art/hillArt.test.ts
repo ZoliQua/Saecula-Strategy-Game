@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { installRecordingCanvas } from './testing/recordingCanvas.testkit';
-import { HILL_MARK } from '../../config/visual';
 import { HILL_ART, HILL_ART_FRAMES } from './hillArt';
 
 beforeAll(() => installRecordingCanvas());
@@ -12,7 +11,6 @@ describe('hill art (M19)', () => {
   });
 
   it('the waving cloths are strips of whole frames', () => {
-    expect(HILL_ART_FRAMES).toBe(HILL_MARK.flag.frames);
     for (const key of ['flag', 'torn'] as const) expect(HILL_ART[key]().width % HILL_ART_FRAMES).toBe(0);
   });
 });

@@ -268,6 +268,12 @@ export const HILL_MARK = {
   /** One slow breath of the glow while the clocks run (real ms), and how far it swings round 1. */
   breatheMs: 2600,
   breatheDepth: 0.45,
+  /**
+   * The standards' tiles lie this far past the zone's back and side corners
+   * (each axis): far enough that no part covers a unit anywhere in the
+   * zone, walking ones included. At the front corner none would be.
+   */
+  bannerOut: 1,
   /** Over the tile's decor and trees (+0.1), under its units (+0.3). */
   bannerDepth: 0.15,
   /** Each part of a standard over the one before. */

@@ -443,6 +443,8 @@ export class GameScene extends Phaser.Scene {
     const state = this.victoryChecker.check();
     if (state.kind === 'playing') return;
     this.gameOverTriggered = true;
+    // The last copy is up to a second old: behind the card the winner's clock reads 0:00.
+    this.hudSync.syncHill();
     const winnerId = decidedWinner(state, this.players.all());
     this.recorder?.gameOver(MatchRecorder.endOf(state, winnerId));
     const data: GameOverData = {

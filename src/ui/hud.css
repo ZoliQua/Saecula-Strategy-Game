@@ -158,7 +158,8 @@
   background: repeating-linear-gradient(135deg, rgba(242, 239, 233, 0.16) 0 4px, rgba(0, 0, 0, 0.2) 4px 8px);
 }
 .hill-note { margin-top: 5px; font-size: 11px; font-weight: 500; line-height: 1.3; color: var(--amber-2); }
-.hill-note:empty { display: none; }
+/* Empty, it takes no room but stays rendered, so that the line arriving in it is announced. */
+.hill-note:empty { margin-top: 0; }
 .hill-rows { margin-top: 7px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; }
 .hill-rows.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hill-row {
