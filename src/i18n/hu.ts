@@ -682,7 +682,7 @@ export const hu = {
         title: 'A Hanza útjai',
         place: 'Németek · közepes Mezőség · 1 szövetséges, 2 közepes ellenfél · 20 perc fegyverszünet',
         briefing:
-          'A városok kereskedőszövetsége a te vezetésedet várja. Húsz perc békéd van, mielőtt a riválisok fegyvert ragadnak: építs piacot és Hanza-kontort, indíts kereskedőkocsikat a szövetséges piaca felé, és gyűjts kétezer aranyat.',
+          'A városok kereskedőszövetsége a te vezetésedet várja. A fegyverszünet alatt még béke van, de a riválisok utána fegyvert ragadnak: építs piacot és Hanza-kontort, indíts kereskedőkocsikat a szövetséges piaca felé, és töltsd meg a kincstárat.',
         victory: 'A kocsisorok megtelt ládákkal érkeznek, a kontor mérlege arannyal billen. A Hanza útjai a te városodba vezetnek.',
         defeat: 'A riválisok felégették a raktárakat. Erősítsd meg a várost a fegyverszünet alatt, és próbáld újra.',
       },
@@ -698,15 +698,15 @@ export const hu = {
         title: 'A domb',
         place: 'Rövid küldetés · Oroszok · kicsi Erődítmény · A domb ura · 1 közepes ellenfél',
         briefing:
-          'A vidék közepén álló dombot az uralja, aki elég sokáig tartja. Középkori sereggel indulsz: foglald el a dombot, és tartsd nyolc percig, mielőtt az ellenfél teszi meg.',
+          'A vidék közepén álló dombot az uralja, aki elég sokáig tartja. Középkori sereggel indulsz: foglald el a dombot, és tartsd elég sokáig, mielőtt az ellenfél teszi meg.',
         victory: 'A zászlód a dombtetőn lobog. A vidék a tiéd.',
         defeat: 'A domb másé lett. Vonulj fel hamarabb, és próbáld újra.',
       },
       wonder_race: {
         title: 'Versenyfutás a Csodáért',
-        place: 'Rövid küldetés · Finnek · kicsi Mezőség · 1 közepes ellenfél · a felvilágosodásban · 10 perc fegyverszünet',
+        place: 'Rövid küldetés · Finnek · kicsi Mezőség · 1 közepes ellenfél · a felvilágosodásban',
         briefing:
-          'A kincstár tele, de a szomszéd is Csodára gyűjt. Tíz perc békéd van: gyűjts, építs, és emeld fel a Csodát, mielőtt az ellenfél a magáét befejezi vagy a falaidat ostromolja.',
+          'A kincstár tele, de a szomszéd is Csodára gyűjt, és a serege már a határon áll. Gyűjts, védd a falakat, és emeld fel a Csodát, mielőtt az ellenfél a magáét befejezi vagy a városodat ostromolja.',
         victory: 'A Csoda áll, a szomszédok csodálattal néznek fel rá. Megnyerted a versenyt.',
         defeat: 'Az ellenfél gyorsabb volt. Állíts több falusit az építkezésre, és próbáld újra.',
       },
@@ -714,7 +714,7 @@ export const hu = {
         title: 'Az utolsó bástya',
         place: 'Rövid küldetés · Magyarok · kicsi Erődítmény · 2 nehéz ellenfél · középkorból indulva',
         briefing:
-          'Két sereg vonul a végvár ellen, felmentés tizenöt perc múlva érkezik. Erősítsd a falakat, építsd fel a Végvárat, és tartsd a városházát, amíg a felmentők megérkeznek.',
+          'Két sereg vonul a végvár ellen, a felmentés úton van. Erősítsd a falakat, építsd fel a Végvárat, és tartsd a városházát, amíg a felmentők megérkeznek.',
         victory: 'A felmentő sereg kürtje megszólal. A bástya kitartott.',
         defeat: 'A bástya elesett. Építs hamarabb védelmet, és próbáld újra.',
       },

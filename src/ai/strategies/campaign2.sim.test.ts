@@ -5,7 +5,13 @@ import { createBuilding } from '../../ecs/archetypes/building';
 import { hillState } from '../../game/hill';
 import { VictoryChecker } from '../../game/VictoryChecker';
 import { findPlacement } from '../decisions/placement';
-import { createRng } from '../../map/random';
+import { CampaignProgress } from '../../campaign/progress';
+import { parseSave } from '../../save/parse';
+import { CampaignRunner } from '../../scenes/game/CampaignRunner';
+import { resetUiStore } from '../../ui/store';
+import { resumeHeadlessMatch } from '../testing/headlessMatch';
+import { createRng, createStatefulRng, type StatefulRng } from '../../map/random';
+import { aiRngSeed, createStrategy } from '../createStrategy';
 import { createHeadlessMatch, type HeadlessMatch } from '../testing/headlessMatch';
 import type { AIStrategy } from '../AIPlayer';
 import { HardStrategy } from './HardStrategy';
@@ -131,6 +137,44 @@ describe('campaign chapter 2 and short scenarios (M20)', () => {
       expect(hillState(match.world)).not.toBeNull();
       match.run(5 * MIN, 100);
       expect(match.judge()).toEqual({ kind: 'playing' });
+    },
+    SIM_TIMEOUT_MS,
+  );
+
+  it.each(['hansa_roads', 'kings_head'] as const)(
+    '%s: a mid-match save keeps the scenario, its teams, treaty, kings and latched objectives, and plays on',
+    (id) => {
+      // A passive human (an AI-driven one cannot be saved), the AIs on stateful RNGs as in the live game.
+      const s = missionSetup(id);
+      const rngs = new Map<number, StatefulRng>();
+      const rng = (n: number): StatefulRng => rngs.get(n) ?? (rngs.set(n, createStatefulRng(aiRngSeed(s.seed, n))), rngs.get(n)!);
+      const match = createHeadlessMatch({ mission: id, seed: s.seed, size: SIZE[s.mapSize], aiCount: s.aiCount, strategy: (n) => createStrategy(s.difficulty, rng(n).next), rng, difficulty: () => s.difficulty });
+      const store = new Map<string, string>();
+      const progress = new CampaignProgress({ getItem: (k) => store.get(k) ?? null, setItem: (k, v) => void store.set(k, v) });
+      const run = new CampaignRunner(match.world, match.players, id, { progress, notify: () => undefined, stats: match.stats });
+      match.run(3 * MIN, 100, (t) => {
+        if (Math.round(t) % 1000 === 0) run.secondTick(t);
+      });
+      if (id === 'hansa_roads') {
+        // Latch the market objective: a finished market of the human by its town centre.
+        const tc = match.world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === 1)!;
+        createBuilding(match.world, { type: 'market', origin: findPlacement(match.map, tc.position!, 3, 3, { minRadius: 4, maxRadius: 20, clearance: 1 })!, playerId: 1, mapData: match.map });
+        run.secondTick(match.timeMs());
+        expect(run.state().done).toEqual([0]);
+      }
+      const before = run.state().done;
+      const kingsBefore = match.world.entities.filter((e) => e.unit?.unitType === 'king' && !e.dying).length;
+      const back = parseSave(JSON.stringify({ ...match.snapshot(new Date('2026-12-08T12:00:00.000Z')), campaign: run.state() }));
+      if (!back.ok) throw new Error(back.reason);
+      expect(back.save.setup).toMatchObject({ mission: id, allies: MISSIONS[id].setup.allies, treatyMin: MISSIONS[id].setup.treatyMin, victory: MISSIONS[id].setup.victory });
+      resetUiStore();
+      const again = resumeHeadlessMatch(back.save);
+      const run2 = new CampaignRunner(again.world, again.players, id, { done: back.save.campaign!.done, progress, notify: () => undefined, stats: again.stats });
+      expect(run2.state().done).toEqual(before);
+      expect(again.players.hasTeams()).toBe(match.players.hasTeams());
+      expect(again.world.entities.filter((e) => e.unit?.unitType === 'king' && !e.dying).length).toBe(kingsBefore);
+      again.run(MIN, 100);
+      expect(again.judge().kind).toBe('playing');
     },
     SIM_TIMEOUT_MS,
   );

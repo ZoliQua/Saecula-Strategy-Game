@@ -137,7 +137,7 @@ export const MISSIONS: Readonly<Record<ScenarioId, MissionDef>> = {
   },
   wonder_race: {
     id: 'wonder_race',
-    setup: { template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'medium', civ: 'finnish', aiCivs: 'mixed', seed: 8808, victory: 'conquest_wonder', ...MODE_DEFAULTS, treatyMin: 10 },
+    setup: { template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'medium', civ: 'finnish', aiCivs: 'mixed', seed: 8808, victory: 'conquest_wonder', ...MODE_DEFAULTS },
     start: { age: 3, bonus: { food: 1000, wood: 1200, gold: 800 } },
     objectives: [{ kind: 'ownBuildings', building: 'wonder', count: 1 }],
   },

@@ -43,7 +43,7 @@ describe('M20 scenarios', () => {
     expect(pick('hansa_roads')).toEqual(['german', 'meadow', 'medium', 3, 'medium', 'conquest', 1, 20, 2]);
     expect(pick('kings_head')).toEqual(['french', 'wilderness', 'medium', 2, 'hard', 'regicide', 0, 0, 2]);
     expect(pick('hill_rush')).toEqual(['russian', 'fortress', 'small', 1, 'medium', 'hill', 0, 0, 2]);
-    expect(pick('wonder_race')).toEqual(['finnish', 'meadow', 'small', 1, 'medium', 'conquest_wonder', 0, 10, 3]);
+    expect(pick('wonder_race')).toEqual(['finnish', 'meadow', 'small', 1, 'medium', 'conquest_wonder', 0, 0, 3]);
     expect(pick('last_stand')).toEqual(['hungarian', 'fortress', 'small', 2, 'hard', 'conquest', 0, 0, 2]);
   });
 });
