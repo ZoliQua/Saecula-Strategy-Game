@@ -2,12 +2,13 @@ import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { sentryBox, railFence } from '../baroqueParts';
 import { archedOpening, cornice, crest, R } from '../facade';
-import { atticRoof } from '../kits/atticParapet';
+import { atticHeight, atticRoof } from '../kits/atticParapet';
+import { anvil, bowRack } from '../kits/workshopProps';
 import { forgeLight, forgeMouth, lantern, target } from '../parts';
 import type { ArchStyle } from '../style';
 import type { BuildingArt } from '../types';
 import type { Block } from './biskupinParts';
-import { anvil, bowRack } from '../kits/workshopProps';
+import { stoneBandedStack } from './workParts';
 
 /*
  * Zamość workshops (Polish age 3, M22): the barracks, archery range,
@@ -60,7 +61,7 @@ function block(p: IsoPainter, s: ArchStyle, b: Block, wall: number, colour: numb
   p.rightFace(v0, v1, u1, 6, face(R, right), wall - 6);
   const tinted: ArchStyle = { ...s, palette: { ...c, plaster: colour } };
   atticRoof(p, tinted, u0, v0, u1, v1, wall, ATTIC_RISE, c.roof);
-  return wall + 23;
+  return wall + atticHeight(ATTIC_RISE);
 }
 
 /**
@@ -138,7 +139,7 @@ function paintBarracks(p: IsoPainter, s: ArchStyle, team: number): void {
     casements(p, s, w, R, 3, -h + 16, 8, 13);
   });
   // The square corner tower, its own crested attic high over the yard.
-  block(p, s, [0.26, 1.6, 0.8, 2.14], 108, shade(OCHRE, 0.94), (w, h) => {
+  const towerTop = block(p, s, [0.26, 1.6, 0.8, 2.14], 108, shade(OCHRE, 0.94), (w, h) => {
     archedOpening(p.ctx, w / 2 - 8, 16, 26, c.trim, 0x22170e, 1);
     p.door(w / 2 - 7, 14, 22, c.doors.gate);
     casements(p, s, w, 1, 1, -h + 46, 9, 14);
@@ -147,7 +148,7 @@ function paintBarracks(p: IsoPainter, s: ArchStyle, team: number): void {
     casements(p, s, w, R, 1, -h + 46, 9, 14);
     casements(p, s, w, R, 1, -h + 20, 9, 14);
   });
-  p.flag(0.53, 1.87, 131, 18, team, true);
+  p.flag(0.53, 1.87, towerTop, 18, team, true);
   // The drill yard: a red-and-white sentry box, lanterns at the arcade.
   sentryBox(p, 1.9, 2.3, 0xf2ece0, '#b8352a');
   lantern(p, 1.1, 1.42, 30, 1.1, 1.65);
@@ -217,27 +218,16 @@ function paintStable(p: IsoPainter, s: ArchStyle, team: number): void {
   p.flag(2.8, 0.25, 0, 40, team, true);
 }
 
-/** A brick forge stack with white stone dressings: two bands, a cornice cap; its smoke at the top. */
-function dressedStack(p: IsoPainter, s: ArchStyle, b: Block, h: number): void {
-  const c = s.palette;
-  const [u0, v0, u1, v1] = b;
-  p.box(u0, v0, u1, v1, 0, h - 6, { color: c.stack, detail: 'brick' });
-  const bands = (light: number) => (w: number) => {
-    p.ctx.fillStyle = css(shade(c.trim, light));
-    for (const y of [h * 0.45, h * 0.72]) p.ctx.fillRect(0, -y - 3, w, 5);
-  };
-  p.leftFace(u0, u1, v1, 0, bands(1), h - 6);
-  p.rightFace(v0, v1, u1, 0, bands(R), h - 6);
-  p.box(u0 - 0.03, v0 - 0.03, u1 + 0.03, v1 + 0.03, h - 6, h - 2, { color: c.trim }, c.trim);
-  p.box(u0 + 0.01, v0 + 0.01, u1 - 0.01, v1 - 0.01, h - 2, h, { color: shade(c.stack, 0.8) }, 0x2a2622);
-  p.addSmoke((u0 + u1) / 2, (v0 + v1) / 2, h);
-}
-
 function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
   p.footShadow();
   paving(p, 0.08, 0.08, 1.92, 1.92);
-  dressedStack(p, s, [1.46, 0.22, 1.66, 0.42], 118);
+  const [u0, v0, u1, v1] = [1.46, 0.22, 1.66, 0.42];
+  stoneBandedStack(p, s, [u0, v0, u1, v1], 118, [0.45, 0.72], c.stack, (top, left, right) => {
+    p.box(u0, v0, u1, v1, 0, top, { color: c.stack, detail: 'brick' });
+    p.leftFace(u0, u1, v1, 0, left, top);
+    p.rightFace(v0, v1, u1, 0, right, top);
+  });
   // The smithy: an apricot arcaded house, its second arch the forge.
   block(p, s, [0.24, 0.48, 1.42, 1.48], 52, c.plaster, (w, h) => {
     arcade(p, s, w, 1, 2, 30, (i, x, bw) => {

@@ -10,7 +10,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * blacksmith@1-3, barracks@3, archery_range@3 and stable@3 with the
  * Polish workshops (Biskupin, Kraków smithy, Zamość); its fix round
  * re-recorded stable@1, blacksmith@1 and blacksmith@3.
- * M22 Task 3 re-recorded wall@3 (the attic-crested Zamość bastion).
+ * M22 Task 3 re-recorded wall@3 (the attic-crested Zamość bastion); the M22
+ * final review re-recorded wall@3 (volume points on the crest pinnacles).
  */
 
 pinBuildings('polish', {
@@ -51,7 +52,7 @@ pinBuildings('polish', {
   'blacksmith@3': '5abfcc6e3b67a68b',
   'foundry@3': '67c99b8c3f7eb6ba',
   'tower@3': 'e6d60a6438b80085',
-  'wall@3': '58ea38b6f5d58503',
+  'wall@3': '88f2fc82fdeb255f',
   'wonder@3': '63bf8335ad41ae43',
   'wonder~s1': '2b094b221f34cb08',
   'wonder~s2': '7c604244b5d35810',

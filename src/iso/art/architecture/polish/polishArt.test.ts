@@ -7,9 +7,13 @@ import type { LitArt } from '../../lighting/normalLayer';
 import { css } from '../../palette';
 import { canonicalColor, hashPainting, installRecordingCanvas, type RecordedCanvas } from '../../testing/recordingCanvas.testkit';
 import { trimLitArt } from '../../trimArt';
+import { baroqueArt } from '../baroque';
 import { CHARGES } from '../charges';
+import { medievalArt } from '../medieval';
 import { ARCH_FAMILIES, ARCH_STYLES } from '../registry';
+import type { AgeArtSet } from '../types';
 import { WONDER_STAGES } from '../wonder';
+import { biskupinArt, krakowArt, zamoscArt } from './polish';
 import { POLISH_ATTIC, POLISH_BISKUPIN, POLISH_KRAKOW } from './polishStyles';
 
 const CIV: CivId = 'polish';
@@ -190,4 +194,27 @@ describe('Polish architecture (Biskupin, Kraków Gothic, attic Renaissance, Wawe
     // The same mine in each age's own palette.
     expect(new Set(AGES.map((age) => hashPainting(() => paintBuilding('landmark', TEAM, age, CIV, false).volume))).size).toBe(3);
   });
+});
+
+describe('polish M22 workshops keep the replaced painters\' canvas', () => {
+  // Texture memory: each M22 slot must keep the size and height budget of
+  // the shared medieval / baroque painter it replaces.
+  type Slot = Exclude<BuildingType, 'wonder'>;
+  const cases: readonly [string, AgeArtSet, AgeArtSet, readonly Slot[]][] = [
+    ['biskupin', biskupinArt(POLISH_BISKUPIN), medievalArt(POLISH_BISKUPIN), ['barracks', 'archery_range', 'stable', 'blacksmith']],
+    ['krakow', krakowArt(POLISH_KRAKOW), medievalArt(POLISH_KRAKOW), ['blacksmith']],
+    ['zamosc', zamoscArt(POLISH_ATTIC), baroqueArt(POLISH_ATTIC), ['barracks', 'archery_range', 'stable', 'blacksmith']],
+  ];
+  for (const [name, own, base, slots] of cases) {
+    for (const slot of slots) {
+      it(`${name} ${slot}: same size and maxHeight as the shared painter`, () => {
+        const mine = own[slot];
+        const shared = base[slot];
+        expect(mine).toBeDefined();
+        expect(shared).toBeDefined();
+        expect(mine?.size).toBe(shared?.size);
+        expect(mine?.maxHeight).toBe(shared?.maxHeight);
+      });
+    }
+  }
 });

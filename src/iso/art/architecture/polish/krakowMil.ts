@@ -2,6 +2,7 @@ import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { crest, R } from '../facade';
 import { needleSpire } from '../kits/needleSpire';
+import { anvil } from '../kits/workshopProps';
 import { forgeLight, forgeMouth, strawButt, torch } from '../parts';
 import { finial } from '../roofs';
 import type { ArchStyle } from '../style';
@@ -9,7 +10,7 @@ import { styledGable } from '../styledRoofs';
 import type { BuildingArt } from '../types';
 import type { Block } from './biskupinParts';
 import { brickBlock, buttressLeft, cornerPinnacles, diaper, lancet, stringCourse } from './krakowParts';
-import { anvil } from '../kits/workshopProps';
+import { stoneBandedStack } from './workParts';
 
 /*
  * Kraków's military buildings (Polish age 2): long diapered brick halls
@@ -138,26 +139,12 @@ function paintRange(p: IsoPainter, s: ArchStyle, team: number): void {
   p.ctx.stroke();
 }
 
-/** A tall square brick stack banded in white stone, from 0 to `h`, its smoke at the top. */
-function bandedStack(p: IsoPainter, s: ArchStyle, b: Block, h: number): void {
-  const c = s.palette;
-  const bands = [h * 0.42, h * 0.7];
-  // Broad limestone bands, read at play zoom.
-  const band = (light: number) => (w: number) => {
-    p.ctx.fillStyle = css(shade(c.trim, light));
-    for (const y of bands) p.ctx.fillRect(0, -y - 3, w, 5);
-  };
-  brickBlock(p, s, b, 0, h - 6, band(1), band(R));
-  p.box(b[0] - 0.03, b[1] - 0.03, b[2] + 0.03, b[3] + 0.03, h - 6, h - 2, { color: c.trim }, c.trim);
-  p.box(b[0] + 0.01, b[1] + 0.01, b[2] - 0.01, b[3] - 0.01, h - 2, h, { color: shade(c.brick, 0.8) }, 0x2a2622);
-  p.addSmoke((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, h);
-}
-
 function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
   p.footShadow();
   p.ground(0.08, 0.08, 1.92, 1.92, 0x9a8e7a);
-  bandedStack(p, s, [1.48, 0.2, 1.7, 0.42], 132);
+  const stack: Block = [1.48, 0.2, 1.7, 0.42];
+  stoneBandedStack(p, s, stack, 132, [0.42, 0.7], c.brick, (top, left, right) => brickBlock(p, s, stack, 0, top, left, right));
   // The hall, its steep plain-tile gable end facing the street.
   const hall: Block = [0.24, 0.3, 1.3, 1.3];
   brickBlock(p, s, hall, 0, 44, (w) => {

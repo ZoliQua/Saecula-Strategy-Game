@@ -4,6 +4,7 @@ import { pointedPath } from '../../architecture/ottoman/ottomanParts';
 import { OTTOMAN_OSMANLI } from '../../architecture/ottoman/ottomanStyles';
 import type { Ctx } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
+import { baked } from '../../lighting/normalLayer';
 import { css, shade } from '../../palette';
 import { starFortWall } from '../kits/starFort';
 import type { WallAgeStyle } from '../wallKit';
@@ -28,9 +29,14 @@ const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW |
 export const BASTION_PARAPET = 41;
 /** Height of the köşk's stone body over the parapet. */
 const KOSK_BODY = 12;
-/** The köşk's square body (tiles) and its dome radius. */
-const KOSK: readonly [number, number, number, number] = [0.3, 0.3, 0.8, 0.8];
-const DOME_R = 0.25;
+/**
+ * The köşk's square body (tiles) and its dome radius. It stands on the
+ * terreplein's left-hand (-u, +v) corner, off the kit's banner pole at the
+ * post centre, so the pole and the team flag (which flies to the right)
+ * stand clear beside the dome instead of merging with it.
+ */
+const KOSK: readonly [number, number, number, number] = [0.22, 0.42, 0.58, 0.78];
+const DOME_R = (KOSK[2] - KOSK[0]) / 2;
 /** Honey course of the banded ashlar. */
 const BAND = 0xc9a874;
 
@@ -83,7 +89,7 @@ function kosk(p: IsoPainter, z: number): void {
   const [u0, v0, u1, v1] = KOSK;
   p.box(u0, v0, u1, v1, z, z + KOSK_BODY, { color: O.ashlar, detail: 'stone' }, shade(O.stone, 0.8));
   p.leftFace(u0, u1, v1, z, (w, h) => arcadeFace(p.ctx, w, h, 1), KOSK_BODY);
-  p.rightFace(v0, v1, u1, z, (w, h) => arcadeFace(p.ctx, w, h, 0.78), KOSK_BODY);
+  p.rightFace(v0, v1, u1, z, (w, h) => arcadeFace(p.ctx, w, h, baked(0.78)), KOSK_BODY);
   const prev = p.material;
   p.material = 'slate';
   const uc = (u0 + u1) / 2;

@@ -1,12 +1,12 @@
 import { ellipse } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
+import { anvil, bowRack } from '../kits/workshopProps';
 import { forgeLight, haystack, logPile, post, strawButt } from '../parts';
 import type { ArchStyle } from '../style';
 import { archer } from '../towerParts';
 import type { BuildingArt } from '../types';
 import { breastwork, corduroy, cribRampart, oakWalls, reedHip, reedRoof, rowHouses, type Block } from './biskupinParts';
-import { anvil, bowRack } from '../kits/workshopProps';
 import { shieldRack } from './workParts';
 
 /*

@@ -39,8 +39,9 @@ export const RUN_ATTIC = RUN_PARAPET + RUN_ATTIC_H;
 export const BASTION_ATTIC = BASTION_PARAPET + BASTION_ATTIC_H;
 /** Attic wall thickness (tiles). */
 const T = 0.045;
-/** Crest size (px): lunette and pinnacle scale. */
+/** Crest size (px): lunette and pinnacle scale; a bastion's front crest is half a px larger. */
 const CREST = 6;
+const BASTION_CREST = CREST + 0.5;
 
 const KIT = starFortWall({
   scarp: A.brick,
@@ -52,6 +53,19 @@ const KIT = starFortWall({
   sentryRoof: STONE,
 });
 
+/** Height of a crest's end pinnacles over its coping, for size `size` (atticParapet.ts crest). */
+const crestRise = (size: number): number => size * 1.45;
+/** Tallest point of a run (its crest's end pinnacles), and of a straight run's bastion pier. */
+export const RUN_CREST_TOP = RUN_ATTIC + crestRise(CREST);
+export const BASTION_CREST_TOP = BASTION_ATTIC + crestRise(BASTION_CREST);
+
+/** A crest from (ua, va) to (ub, vb) at z, with volume points at its end pinnacles (shadows, canvas bounds). */
+function crestAt(p: IsoPainter, ua: number, va: number, ub: number, vb: number, z: number, light: number, size: number): void {
+  crest(p.ctx, p.p(ua, va, z), p.p(ub, vb, z), STONE, light, size);
+  p.addVolumePoint(ua, va, z + crestRise(size));
+  p.addVolumePoint(ub, vb, z + crestRise(size));
+}
+
 /** The attic along a run's front edge: a blind-arcaded white slab on the parapet, crested. */
 function runAttic(p: IsoPainter, arm: Arm): void {
   const half = 0.22 * arm.girth;
@@ -60,21 +74,21 @@ function runAttic(p: IsoPainter, arm: Arm): void {
   prism(p, a, b, T / 2, RUN_PARAPET, RUN_ATTIC, { color: ATTIC_WALL, top: STONE, face: (w, h, l) => blindArcade(p.ctx, w, h, ATTIC_WALL, STONE, l) });
   const fa = frontEdge(arm, arm.a, half);
   const fb = frontEdge(arm, arm.b, half);
-  crest(p.ctx, p.p(fa[0], fa[1], RUN_ATTIC), p.p(fb[0], fb[1], RUN_ATTIC), STONE, 1, CREST);
+  crestAt(p, fa[0], fa[1], fb[0], fb[1], RUN_ATTIC, 1, CREST);
 }
 
 /** The attic round a bastion's top (u0..u1 square at z): back crests low, front arcaded walls with crests. */
 function bastionAttic(p: IsoPainter, lo: number, hi: number, z: number, h: number, size: number): void {
   const ctx = p.ctx;
   const top = z + h;
-  crest(ctx, p.p(lo, hi, z + 1), p.p(lo, lo, z + 1), STONE, baked(0.86), size * 0.8);
-  crest(ctx, p.p(lo, lo, z + 1), p.p(hi, lo, z + 1), STONE, baked(0.8), size * 0.8);
+  crestAt(p, lo, hi, lo, lo, z + 1, baked(0.86), size * 0.8);
+  crestAt(p, lo, lo, hi, lo, z + 1, baked(0.8), size * 0.8);
   p.box(lo, hi - T, hi, hi, z, top, { color: ATTIC_WALL }, STONE);
   p.box(hi - T, lo, hi, hi, z, top, { color: ATTIC_WALL }, STONE);
   p.leftFace(lo, hi, hi, z, (w, hh) => blindArcade(ctx, w, hh, ATTIC_WALL, STONE, 1), h);
   p.rightFace(lo, hi, hi, z, (w, hh) => blindArcade(ctx, w, hh, ATTIC_WALL, STONE, baked(0.76)), h);
-  crest(ctx, p.p(lo, hi, top), p.p(hi, hi, top), STONE, 1.02, size);
-  crest(ctx, p.p(hi, hi, top), p.p(hi, lo, top), STONE, baked(0.78), size);
+  crestAt(p, lo, hi, hi, hi, top, 1.02, size);
+  crestAt(p, hi, hi, hi, lo, top, baked(0.78), size);
 }
 
 /** The salient's ornamented cap: a brick guérite with white quoins under a crested attic and a tall stone pinnacle. */
@@ -92,12 +106,12 @@ function salientCap(p: IsoPainter, z: number): void {
   const top = z + body;
   // Its own small attic: the walls hide the roof, the crest and corner pinnacles crown it.
   const ctx = p.ctx;
-  crest(ctx, p.p(u0, v1, top + 1), p.p(u0, v0, top + 1), STONE, baked(0.86), 4);
-  crest(ctx, p.p(u0, v0, top + 1), p.p(u1, v0, top + 1), STONE, baked(0.8), 4);
+  crestAt(p, u0, v1, u0, v0, top + 1, baked(0.86), 4);
+  crestAt(p, u0, v0, u1, v0, top + 1, baked(0.8), 4);
   p.box(u0, v1 - 0.03, u1, v1, top, top + 4, { color: ATTIC_WALL }, STONE);
   p.box(u1 - 0.03, v0, u1, v1, top, top + 4, { color: ATTIC_WALL }, STONE);
-  crest(ctx, p.p(u0, v1, top + 4), p.p(u1, v1, top + 4), STONE, 1.02, 4.5);
-  crest(ctx, p.p(u1, v1, top + 4), p.p(u1, v0, top + 4), STONE, baked(0.78), 4.5);
+  crestAt(p, u0, v1, u1, v1, top + 4, 1.02, 4.5);
+  crestAt(p, u1, v1, u1, v0, top + 4, baked(0.78), 4.5);
   // The centre finial: a tall stone obelisk with a ball, over the hidden roof.
   const [x, y] = p.p((u0 + u1) / 2, (v0 + v1) / 2, top + 3);
   pinnacle(ctx, x, y, 15, STONE, 1.02);
@@ -119,7 +133,7 @@ export const ZAMOSC_BASTION: WallAgeStyle = {
   post: (p: IsoPainter, arms: number) => {
     // The kit's bastion body only (as a straight run's pier), then its attic, then the corner's gun and ornamented cap.
     KIT.post(p, STRAIGHT[0]!);
-    bastionAttic(p, 0.22, 0.78, BASTION_PARAPET, BASTION_ATTIC_H, CREST + 0.5);
+    bastionAttic(p, 0.22, 0.78, BASTION_PARAPET, BASTION_ATTIC_H, BASTION_CREST);
     if (STRAIGHT.includes(arms)) return;
     gun(p, BASTION_PARAPET);
     salientCap(p, BASTION_PARAPET);

@@ -13,7 +13,7 @@ import { along, stations, type WallAgeStyle } from '../wallKit';
 import { breakwater, cribFace, stakeBreastwork, turretRing, type TurretRing } from './polishWallParts';
 import { ZAMOSC_BASTION } from './zamoscBastion';
 
-export { BASTION_ATTIC, BASTION_PARAPET, RUN_ATTIC, RUN_PARAPET } from './zamoscBastion';
+export { BASTION_ATTIC, BASTION_CREST_TOP, BASTION_PARAPET, RUN_ATTIC, RUN_CREST_TOP, RUN_PARAPET } from './zamoscBastion';
 
 /*
  * Polish walls (M21), one character per age, matched to the Polish
