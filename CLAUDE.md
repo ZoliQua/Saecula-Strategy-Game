@@ -1914,7 +1914,7 @@ csapatok, fegyverszünet, Királygyilkos, A domb ura) mutatják be.
 - **II. fejezet** (Claude döntése): a kampánylánc a 3. küldetés után három
   újjal folytatódik (4–6.), ugyanúgy sorban feloldva, újrajátszhatóan:
   4. *Új partok* (`new_shores`) — spanyol, közepes Szigetvilág, 1 Közepes AI
-     (francia). Célok: építs kikötőt; képezz 3 halászhajót; képezz 4 gályát;
+     (francia). Célok: építs kikötőt; képezz 3 halászhajót; képezz 2 gályát;
      lépj a középkorba.
   5. *A Hanza útjai* (`hansa_roads`) — német, közepes Mezőség, 3 AI: 1
      szövetséges és 2 ellenséges Közepes, 20 perc fegyverszünet, 2. korból
@@ -1930,8 +1930,8 @@ csapatok, fegyverszünet, Királygyilkos, A domb ura) mutatják be.
   - *A domb* (`hill_rush`) — orosz, kicsi Erődítmény, A domb ura, 1 Közepes
     AI, 2. korból. Cél: nyerd meg a meccset.
   - *Versenyfutás a Csodáért* (`wonder_race`) — finn, kicsi Mezőség, 1
-    Közepes AI, 3. korból, magas kezdő nyersanyaggal, 20 perc
-    fegyverszünettel, „Hódítás vagy Csoda” móddal. Cél: építs fel egy Csodát
+    Közepes AI, 3. korból, többlet-nyersanyaggal (a Csoda árának kb.
+    kétharmada), 10 perc fegyverszünettel, „Hódítás vagy Csoda” móddal. Cél: építs fel egy Csodát
     (az ellenfél Csodája a szokásos Csoda-győzelemmel nyerhet).
   - *Az utolsó bástya* (`last_stand`) — magyar, kicsi Erődítmény, 2 Nehéz AI,
     2. korból, többlet-nyersanyaggal. Cél: tarts ki 15 percig.
