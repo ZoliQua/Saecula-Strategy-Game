@@ -57,8 +57,8 @@ in English and Hungarian.
   army across the water by transport (the AI does it too).
 - 🏆 **Three victory conditions** — Conquest, holding a Wonder for ten minutes,
   or the best score when the 60-minute time limit runs out.
-- 👑 **Two game modes** — Regicide (guard your king; lose it and you are out)
-  and King of the Hill (hold the marked hill at the map centre for eight
+- 👑 **Two game modes** — Regicide (guard your king; lose it and you are out;
+  on maps without sea) and King of the Hill (hold the marked hill at the map centre for eight
   minutes), both played by the AI too.
 - 🤝 **Teams and match options** — fight with allied AIs against an enemy
   team (shared vision, team victory), add a 10- or 20-minute treaty, start

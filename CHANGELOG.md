@@ -12,12 +12,14 @@ raises the patch version.
 
 ### Added
 
-- **Regicide:** a new victory mode. Every player starts with a king next to
-  the town centre; a player is out when the king dies (a king riding a
-  transport is alive) or the last town centre falls. Losing the king brings
-  that player's town centres down with it. The king cannot be trained, does
-  not fight or count toward population, cannot be converted, can be healed and
-  can board a transport. It wears a crown over its head and on the minimap,
+- **Regicide:** a new victory mode on maps without sea: Meadow, Wilderness,
+  Islands and Fortress (greyed out with the reason on the others: the king's
+  mounted sheets together with the ship sheets would break the water-map
+  texture budget). Every player starts with a king next to the town centre; a
+  player is out when the king dies or the last town centre falls. Losing the
+  king brings that player's town centres down with it. The king cannot be
+  trained, does not fight or count toward population, cannot be converted and
+  can be healed. It wears a crown over its head and on the minimap,
   and you are told when your king is under attack and when any king falls.
 - **King of the Hill:** a new victory mode on Meadow, Wilderness and Fortress
   maps (greyed out with the reason on the others). A marked 7×7 hill near the

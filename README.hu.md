@@ -56,7 +56,7 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
   szállítóhajón kel át a vízen (az AI is így tesz).
 - 🏆 **Három győzelmi feltétel** — hódítás, egy Csoda megtartása tíz percig,
   vagy a legtöbb pont, amikor lejár a 60 perces időkorlát.
-- 👑 **Két játékmód** — Királygyilkos (védd a királyodat; ha elesik, kiesel) és
+- 👑 **Két játékmód** — Királygyilkos (védd a királyodat; ha elesik, kiesel; tenger nélküli térképen) és
   A domb ura (tartsd nyolc percig a térkép közepén megjelölt dombot); az AI is
   játssza mindkettőt.
 - 🤝 **Csapatok és meccs-beállítások** — gépi szövetségesekkel egy ellenséges

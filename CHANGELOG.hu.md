@@ -12,11 +12,13 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
-- **Királygyilkos:** új győzelmi mód. Minden játékos egy királlyal indul a
-  városháza mellett; kiesik, akinek meghal a királya (a szállítóhajón utazó
-  király él), vagy elesik az utolsó városházája. A király elvesztésével a
+- **Királygyilkos:** új győzelmi mód tenger nélküli térképen: Mezőség, Vadon,
+  Szigetek és Erődítmény (a többin tiltott, indoklással: a király lovas lapjai
+  a hajókéival együtt túllépnék a vízi térképek textúra-keretét). Minden
+  játékos egy királlyal indul a városháza mellett; kiesik, akinek meghal a
+  királya, vagy elesik az utolsó városházája. A király elvesztésével a
   játékos városházái is összedőlnek. A király nem képezhető, nem harcol, nem
-  foglal népességet, nem téríthető, gyógyítható és hajóra szállhat. Korona
+  foglal népességet, nem téríthető és gyógyítható. Korona
   jelzi a feje fölött és a minimapen; értesítés szól, ha a királyodat
   támadják, és ha bármelyik király elesik.
 - **A domb ura:** új győzelmi mód Mezőség, Vadon és Erődítmény térképen (a
