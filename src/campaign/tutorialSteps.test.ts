@@ -159,7 +159,7 @@ describe('tutorial save and load (M18)', () => {
 });
 
 describe('campaign list (M18)', () => {
-  it('lists the tutorial first with its badge and status, then the missions numbered 1–3', () => {
+  it('lists the tutorial first with its badge and status, then the missions numbered 1–6, then the short scenarios (M20)', () => {
     const status = (done: boolean) => (id: ScenarioId): MissionStatus => (id === TUTORIAL_ID ? (done ? 'completed' : 'available') : id === 'first_monastery' ? 'available' : 'locked');
     const rows = campaignRows(status(true));
     expect(rows.map((r) => [r.id, r.badge, r.status])).toEqual([
@@ -167,9 +167,15 @@ describe('campaign list (M18)', () => {
       ['first_monastery', '1', 'available'],
       ['border_guards', '2', 'locked'],
       ['age_of_wonders', '3', 'locked'],
+      ['new_shores', '4', 'locked'],
+      ['hansa_roads', '5', 'locked'],
+      ['kings_head', '6', 'locked'],
+      ['hill_rush', 'R1', 'locked'],
+      ['wonder_race', 'R2', 'locked'],
+      ['last_stand', 'R3', 'locked'],
     ]);
     expect(rows[0]).toMatchObject({ title: 'Első lépések', statusText: 'Teljesítve' });
     expect(campaignRows(status(false))[0]?.statusText).toBe('Elérhető');
-    expect(rows.slice(1).map((r) => r.id)).toEqual([...MISSION_IDS]);
+    expect(rows.slice(1, 7).map((r) => r.id)).toEqual([...MISSION_IDS]);
   });
 });

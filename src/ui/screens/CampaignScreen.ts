@@ -1,10 +1,10 @@
 import { audio } from '../../audio/AudioManager';
-import { MISSION_IDS, MISSIONS, TUTORIAL_ID, type MissionId, type ScenarioId } from '../../campaign/missions';
+import { MISSIONS, type ScenarioId } from '../../campaign/missions';
 import { missionText, scenarioObjectiveText } from '../../campaign/objectiveText';
 import type { MissionStatus } from '../../campaign/progress';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
-import { campaignRows } from './campaignRows';
+import { campaignSections, scenarioKicker, type CampaignRow } from './campaignRows';
 import { bindModalKeys, GLYPHS } from './modalKeys';
 import '../hud.css';
 import '../screens.css';
@@ -73,25 +73,31 @@ export class CampaignScreen {
 
   private showList(): void {
     this.briefing = null;
-    const rows = campaignRows(this.status).map((r, i) => {
-      const st = r.status;
-      const row = el(
-        'button',
-        { class: `slot-row campaign-row ${st}`, type: 'button', style: `--i:${i}`, disabled: st === 'locked', 'data-mission': r.id, title: st === 'locked' ? hu.campaign.lockedHint : r.title },
-        el('span', { class: 'slot-badge' }, r.badge),
-        el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, r.title), el('span', { class: 'slot-detail' }, r.place)),
-        el('span', { class: `campaign-status ${st}` }, r.statusText),
-      );
-      row.addEventListener('click', () => this.showBriefing(r.id));
-      return row;
+    let i = 0;
+    const items = campaignSections(this.status).flatMap((section) => {
+      const head = section.title ? [el('div', { class: 'campaign-section', role: 'heading', 'aria-level': '3' }, section.title)] : [];
+      return [...head, ...section.rows.map((r) => this.listRow(r, i++))];
     });
     const back = this.backButton(() => this.handlers.onBack());
     this.body.replaceChildren(
       el('p', { class: 'campaign-intro' }, hu.campaign.intro),
-      el('div', { class: 'slots-list entering' }, ...rows),
+      el('div', { class: 'slots-list entering' }, ...items),
       el('div', { class: 'slots-foot' }, back, el('span', { class: 'pause-foot' }, el('kbd', {}, 'Esc'), el('span', {}, hu.common.back))),
     );
     (this.body.querySelector<HTMLElement>('.campaign-row:not([disabled])') ?? back).focus({ preventScroll: true });
+  }
+
+  private listRow(r: CampaignRow, i: number): HTMLElement {
+    const st = r.status;
+    const row = el(
+      'button',
+      { class: `slot-row campaign-row ${st}`, type: 'button', style: `--i:${i}`, disabled: st === 'locked', 'data-mission': r.id, title: st === 'locked' ? hu.campaign.lockedHint : r.title },
+      el('span', { class: 'slot-badge' }, r.badge),
+      el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, r.title), el('span', { class: 'slot-detail' }, r.place)),
+      el('span', { class: `campaign-status ${st}` }, r.statusText),
+    );
+    row.addEventListener('click', () => this.showBriefing(r.id));
+    return row;
   }
 
   private showBriefing(id: ScenarioId): void {
@@ -99,7 +105,7 @@ export class CampaignScreen {
     audio().playSFX('ui_click');
     this.briefing = id;
     const t = missionText(id);
-    const number = id === TUTORIAL_ID ? hu.campaign.tutorial.kicker : hu.campaign.missionNumber(MISSION_IDS.indexOf(id as MissionId) + 1);
+    const number = scenarioKicker(id);
     const start = el(
       'button',
       { class: 'btn btn-primary campaign-start', type: 'button' },
