@@ -12,6 +12,26 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
+- **Királygyilkos:** új győzelmi mód. Minden játékos egy királlyal indul a
+  városháza mellett; kiesik, akinek meghal a királya (a szállítóhajón utazó
+  király él), vagy elesik az utolsó városházája. A király elvesztésével a
+  játékos városházái is összedőlnek. A király nem képezhető, nem harcol, nem
+  foglal népességet, nem téríthető, gyógyítható és hajóra szállhat. Korona
+  jelzi a feje fölött és a minimapen; értesítés szól, ha a királyodat
+  támadják, és ha bármelyik király elesik.
+- **A domb ura:** új győzelmi mód Mezőség, Vadon és Erődítmény térképen (a
+  többin tiltott, indoklással). A térkép közepe közelében egy megjelölt 7×7-es
+  dombra nem lehet építeni; amíg csak egy csapat harcoló egységei (falusi nem)
+  állnak rajta, annak a csapatnak az órája halad, és az nyer, amelyik
+  összesen 8 percig tartja. Vitatott vagy üres dombon, és fegyverszünet alatt
+  minden óra áll. A domb gyűrűje és zászlói a birtokos színét veszik fel, egy
+  HUD-panel minden csapat óráját mutatja. A hódítás mindkét új módban nyer, a
+  Csoda- és az időgyőzelem nem.
+- Az AI minden szinten játssza mindkét módot, csalás nélkül: a királyát otthon
+  és a látott veszélytől távol tartja, a látott ellenséges királyt támadja
+  elsőként, A domb urában a dombra vonul és megtartja, és korábban indul, ha
+  egy ellenfél órája a felén túl jár, kisebb sereggel is.
+- A mentések a 13-as verzióra lépnek.
 - **Oktató mód:** lépésenkénti első küldetés a kampánylista élén (fa, ház,
   étel, hat falusi, laktanya, három kardforgató, egy sérült ház javítása,
   középkor), minden lépés alatt rövid tippel, amely a beállított parancs-klikket

@@ -57,6 +57,9 @@ in English and Hungarian.
   army across the water by transport (the AI does it too).
 - 🏆 **Three victory conditions** — Conquest, holding a Wonder for ten minutes,
   or the best score when the 60-minute time limit runs out.
+- 👑 **Two game modes** — Regicide (guard your king; lose it and you are out)
+  and King of the Hill (hold the marked hill at the map centre for eight
+  minutes), both played by the AI too.
 - 🤝 **Teams and match options** — fight with allied AIs against an enemy
   team (shared vision, team victory), add a 10- or 20-minute treaty, start
   with normal, high or deathmatch resources, and play at 1×, 1.5× or 2× speed.
@@ -160,6 +163,7 @@ each version contains.
 | M13 | A three-mission campaign | ✅ 0.8.0 |
 | M14 | Ships, docks, fishing and two water maps | ✅ 0.9.0 |
 | M18 | Tutorial, building repair, colour-blind team colours | 🔧 unreleased |
+| M19 | Regicide and King of the Hill game modes | 🔧 unreleased |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, a long story campaign.
