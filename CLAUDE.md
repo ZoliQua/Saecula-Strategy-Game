@@ -1904,6 +1904,62 @@ tulajdonos felülírhatja.
   Királygyilkos, a király-őrök és a javító falusik egymástól elvett falusijai,
   és a lovag-lapok textúra-többlete tengeres térképen.
 
+### M20 — Kampány II. fejezet és rövid küldetések
+Ág: `feat/M20-campaign-2` (a `main`-ből, az M18, a ködjavítás és az M19
+merge-e után). Változat: kiadatlan (az 1.0.0 utáni MINOR kiadásba kerül). Az
+indítást a tulajdonos 2026-11-23-án jóváhagyta; a scope Claude döntése, a
+tulajdonos felülírhatja. Új célfajta, új térkép és új grafika nincs: a
+küldetések az M14–M19 meglévő funkcióit (hajók, kereskedelem, egyedi épület,
+csapatok, fegyverszünet, Királygyilkos, A domb ura) mutatják be.
+- **II. fejezet** (Claude döntése): a kampánylánc a 3. küldetés után három
+  újjal folytatódik (4–6.), ugyanúgy sorban feloldva, újrajátszhatóan:
+  4. *Új partok* (`new_shores`) — spanyol, közepes Szigetvilág, 1 Közepes AI
+     (francia). Célok: építs kikötőt; képezz 3 halászhajót; képezz 4 gályát;
+     lépj a középkorba.
+  5. *A Hanza útjai* (`hansa_roads`) — német, közepes Mezőség, 3 AI: 1
+     szövetséges és 2 ellenséges Közepes, 20 perc fegyverszünet, 2. korból
+     indulva. Célok: építs piacot; építsd fel a Hanza-kontort (a nép egyedi
+     épülete); képezz 3 kereskedőkocsit; gyűjts 2000 aranyat (a `gathered`
+     cél: bányászat és kereskedelem együtt).
+  6. *A király feje* (`kings_head`) — francia, közepes Vadon, Királygyilkos,
+     2 Nehéz AI (vegyes népek), 2. korból, többlet-nyersanyaggal. Cél: nyerd
+     meg a meccset (királygyilkosság vagy hódítás).
+- **Rövid küldetések** (Claude döntése): egy új, a lánctól független
+  szakasz a kampánylistán; mindegyik mindig elérhető, nem zár és nem old fel
+  semmit, a teljesítése pipát kap (mint az oktató mód). Rövidek (10–20 perc):
+  - *A domb* (`hill_rush`) — orosz, kicsi Erődítmény, A domb ura, 1 Közepes
+    AI, 2. korból. Cél: nyerd meg a meccset.
+  - *Versenyfutás a Csodáért* (`wonder_race`) — finn, kicsi Mezőség, 1
+    Közepes AI, 3. korból, magas kezdő nyersanyaggal, 20 perc
+    fegyverszünettel, „Hódítás vagy Csoda” móddal. Cél: építs fel egy Csodát
+    (az ellenfél Csodája a szokásos Csoda-győzelemmel nyerhet).
+  - *Az utolsó bástya* (`last_stand`) — magyar, kicsi Erődítmény, 2 Nehéz AI,
+    2. korból, többlet-nyersanyaggal. Cél: tarts ki 15 percig.
+- **Kampánylista:** három szakaszcím („I. fejezet”, „II. fejezet”, „Rövid
+  küldetések”); a láncküldetések számozása 1–6 folytatólagos, a rövid
+  küldetések jelvényt kapnak. A „Nyerd meg a meccset” cél szövege a küldetés
+  győzelmi módját nevezi meg (hódítás vagy Csoda / királygyilkosság vagy
+  hódítás / a domb vagy hódítás).
+- **Előrehaladás:** a `isorts.campaign.v1` új, opcionális mezője a teljesített
+  rövid küldetések listája (a régi adat változatlanul olvasható, sérült adatnál
+  alapállapot, mint eddig).
+- **Mentés:** `schemaVersion` 14 (a küldetés-azonosító enum bővül),
+  migrációval, valódi v13-mentéssel. A játéknapló a régi rekordokat
+  változatlanul olvassa.
+- **Tesztek:** minden új küldetés beállítása érvényes (`victoryAllowed`, a
+  szövetségesek száma, a fegyverszünet), a rögzített mag játszható térképet ad
+  (Szigetvilágon kikötőhely és hal); az előrehaladás (lánc 1–6, rövid
+  küldetések, régi adat); a lista szakaszai és számozása; a győzelmi módhoz
+  igazodó célszöveg; mentés oda-vissza új küldetéssel és v13 → v14 migráció;
+  fej nélküli szimulációk AI vezérelte emberi hellyel: a 4. és az 5. küldetés
+  céljai elérhetők, *Az utolsó bástya* 15 percét egy Nehéz AI kitartja, a
+  *Versenyfutás* Csodája felépíthető (ha az AI nem épít, a teszt rendeli el).
+- Nem része: új célfajta, szkriptelt események, szinkronhang, küldetés-
+  szerkesztő, egyedi térkép, III. fejezet, küldetésenkénti nehézségválasztás,
+  csapat-kampány a 5. küldetésen túl.
+- Keret (10.): az M19 keretei (új textúra nincs; a Királygyilkos csak
+  szárazföldi térképen, a Szigetvilág a 400 MB-os vízi kereten belül).
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
