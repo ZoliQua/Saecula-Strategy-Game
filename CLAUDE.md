@@ -1868,6 +1868,41 @@ tulajdonos felülírhatja.
   Beltenger térképen a legtávolabbi és a legközelebbi játékos gyalogtávjának
   aránya 3–6 játékossal mediánban 1,4–4,7, ezért maradnak ki. A Szigetvilágnak
   nincs közös szárazföldje.
+- **Állapot (2026-12-06):** kész. Királygyilkos: `src/game/regicide.ts` (élő
+  király, kezdőhely, a városházák összedőlése pont nélkül), a király a nép
+  lovag-helyének lapjával (`src/iso/art/units/sheetType.ts`), korona a feje fölött
+  és a minimapen, értesítések (`KingWatch`); csak Mezőség, Vadon, Szigetek és
+  Erődítmény sablonon (`REGICIDE_TEMPLATES`; a többin a választó tiltott,
+  indoklással, sablonváltáskor visszaáll). A domb ura: `src/game/hill.ts`,
+  `HillSystem`, talajgyűrű és három zászló a zónán kívül (egységet nem takar),
+  óra-sáv a HUD-on (2 perccel a vége előtt kiemelve), jel a minimapen, építési
+  tilalom (`MapData.forbidBuilding`, nem mentett). AI: `KingPlay`, `HillPlay`,
+  `config/aiModes.ts` (`AI_KING`, `AI_HILL`); a király otthon marad, a látott
+  portya elől a városháza felé húzódik, és ha az otthoni sereg kevés, legfeljebb 6
+  falusi védi (a javító falusikat nem veszi el). `schemaVersion` 13 valódi
+  v12-mentéssel. Szimulációk (Nehéz–Nehéz, 64×64, 12 mag): A domb ura mindig
+  eldől 60 percen belül, medián 14,4 (Mezőség), 14,4 (Vadon), 14,1 perc
+  (Erődítmény); Királygyilkos medián 19,7 (Mezőség), 19,4 (Erődítmény), 15,7 perc
+  (Szigetek, 12-ből 10 a király, 2 hódítás), egyik sem 10 perc előtt (a király
+  védelme előtt a nyitó portya 6–6,5 percnél megölte). A régi módok meccsei
+  bitre azonosak (54 meccs hash-e), a körmérkőzés (`BALANCE=1`) mind a 16
+  eredménye azonos az M18-cal. Mérve: textúra `distinct6` 173,6 MB (M18 kódján
+  ugyanazzal a módszerrel 173,4), A domb ura +0 MB; Királygyilkos `distinct6`
+  (Szigetek) csúcs 210,2 MB, `--trade`-del 249,6 MB ≤ 256 MB; `naval6 --ships
+  --trade` 392,8 MB ≤ 400 MB (tengeres térképen Királygyilkos nincs: a mérés ott
+  437,0 MB-ot adott, ezért döntött úgy a tulajdonos, hogy a mód kimarad);
+  JS-bundle 0,78 MB gzip; a teljes tesztcsomag 4023 teszt. Böngésző-smoke (5196,
+  fej nélküli Chrome): mindkét mód beállítása (tiltott és visszaálló választó),
+  indítás, mentés és betöltés, győzelmi és vereség-kártya, egy Nehéz AI elleni
+  meccsen a király a 7., a domb a 13,6. percben veszett el, konzolhiba nélkül.
+  Ismert korlátok (nem javítva): A domb urát 1v1-ben jellemzően a nyitó harc
+  dönti el kb. 14 percnél; 6 játékos mindenki-mindenki ellen a domb 10-ből 8-szor
+  dől el 60 percen belül, a Királygyilkos kb. 6 perc alatt (öt AI portyázik az
+  emberre). Minden feladatot független átnézés követett; javítva: az ideiglenes
+  „kiesett városháza” tiltás helyett a városházák összedőlése (tulajdonosi
+  döntés), az egységeket takaró zászlók, a nyitó portyával eldőlő
+  Királygyilkos, a király-őrök és a javító falusik egymástól elvett falusijai,
+  és a lovag-lapok textúra-többlete tengeres térképen.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
