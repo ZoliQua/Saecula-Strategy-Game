@@ -141,11 +141,11 @@ describe('civ bonuses', () => {
     expect(unitBonuses(civ('polish', 'wheelbarrow'), 'villager').speedMultiplier).toBeCloseTo(1.1 * 1.1, 10);
   });
 
-  it('Ottoman barracks, archery range and stable train 15 % faster, stacking with conscription; other buildings do not', () => {
+  it('Ottoman barracks, archery range and stable train 10 % faster (M21 tuning; 15 % before), stacking with conscription; other buildings do not', () => {
     const ot = civ('ottoman');
     for (const b of ['barracks', 'archery_range', 'stable'] as const) {
-      expect(trainSpeedMultiplier(ot, b)).toBeCloseTo(1.15, 10);
-      expect(trainSpeedMultiplier(civ('ottoman', 'conscription'), b)).toBeCloseTo(1.15 * 1.25, 10);
+      expect(trainSpeedMultiplier(ot, b)).toBeCloseTo(1.1, 10);
+      expect(trainSpeedMultiplier(civ('ottoman', 'conscription'), b)).toBeCloseTo(1.1 * 1.25, 10);
     }
     expect(trainSpeedMultiplier(ot, 'town_center')).toBe(1);
     expect(trainSpeedMultiplier(ot, 'dock')).toBe(1);

@@ -36,7 +36,7 @@ describe('civ registry', () => {
     expect(CIV_DEFS.ottoman).toMatchObject({
       heraldry: { primary: 0xc8102e, secondary: 0xf2efe6, accent: 0x1f7a3a },
       uniqueUnit: 'janissary',
-      bonus: { kind: 'trainSpeed', bonus: 0.15 },
+      bonus: { kind: 'trainSpeed', bonus: 0.1 },
       landmark: { kind: 'sauna' },
     });
   });

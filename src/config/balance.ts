@@ -47,7 +47,7 @@ export const CIV_BONUS = {
   infantrySpeed: 0.1,
   // M21
   villagerSpeed: 0.1,
-  trainSpeed: 0.15,
+  trainSpeed: 0.1,
 } as const;
 
 /** How far (tiles) from where a walled-off attacker is stuck it looks for an enemy wall / building to breach. */
@@ -202,15 +202,16 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     range: 3, speed: 1.15, los: 8, cost: c(0, 30, 40), trainTime: 32,
     trainers: ['archery_range', 'barracks'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'archer',
   },
-  // M21: starting stats; Task 6 tunes them.
+  // M21. Tuned (Task 6): the janissary's starting HP 45 / pierce armour 1 / 30 food 45 gold beat the
+  // crossbowman by +879 in the duel (rule a: at most 750) and beat the swordsman, a crossbowman counter.
   winged_hussar: {
     age: 3, hp: 110, meleeAtk: 14, pierceAtk: 0, meleeDef: 1, pierceDef: 2,
     range: 1, speed: 1.6, los: 5, cost: c(70, 0, 80), trainTime: 30,
     trainers: ['stable'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'cavalry',
   },
   janissary: {
-    age: 2, hp: 45, meleeAtk: 0, pierceAtk: 6, meleeDef: 0, pierceDef: 1,
-    range: 5, speed: 1.0, los: 7, cost: c(30, 0, 45), trainTime: 26,
+    age: 2, hp: 42, meleeAtk: 0, pierceAtk: 6, meleeDef: 0, pierceDef: 0,
+    range: 5, speed: 1.0, los: 7, cost: c(30, 0, 50), trainTime: 26,
     trainers: ['archery_range'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'crossbowman',
   },
   // M11: no attack (no attacker component); heals and converts instead (MONK).

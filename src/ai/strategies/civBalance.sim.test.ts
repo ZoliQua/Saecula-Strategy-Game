@@ -17,8 +17,8 @@ const CAP_MIN = 40;
  * `BALANCE=1 npx vitest run src/ai/strategies/civBalance.sim.test.ts` (Hard about 8–9 min,
  * Master about 6 min; add `-t Hard` / `-t Master` to run one, PRINT_SIM=1 to log every game).
  *
- * Every ordered pair of the eight civs plays a 1v1 on a 64×64 meadow per seed, so each civ plays
- * 14 games per seed, from both sides. The human slot (player 1) is driven by the same strategy
+ * Every ordered pair of the civs (eight until M21, ten since) plays a 1v1 on a 64×64 meadow per seed, so each civ plays
+ * 14 (18 with ten civs) games per seed, from both sides. The human slot (player 1) is driven by the same strategy
  * class as the AI (player 2); each side attacks the other. As in a live game, only the AI slot
  * carries the difficulty's gather handicap (applyDifficulty gives a human 1); every civ plays each
  * opponent from both slots, so the slot bias cancels per civ. RNGs:
@@ -42,6 +42,17 @@ const CAP_MIN = 40;
  * half a game, so the legionary keeps HP 45. The M9 branch's landsknecht HP 68 changes no game
  * (every result identical), and with both-sided duels the HP 70 landsknecht passes rule (a)
  * (+698 of the 750 limit), so it keeps HP 70.
+ *
+ * M21 (ten civs: 9 opponents per seed and slot, Hard 72 games per civ over 4 seeds, Master 36 over 2,
+ * water 36 over 2; bands Hard 27.8–44.2 of 72, Master 11.6–24.4 of 36). About 15–18 min Hard,
+ * 10 min Master, 21 min water. With the starting Ottoman bonus (training +15 %) Ottoman Hard was
+ * 47/72 (65 %, fails); the janissary barely moves it (46.5 with it at 35 food / 50 gold), the
+ * bonus does: with training +10 % Ottoman Hard is 33.5/72.
+ * Final (janissary HP 42 / pierce armour 0 / 30 food 50 gold, Ottoman training +10 %), wins/72 —
+ * Hard: HU 42, EN 34, DE 32.5, FR 33, ES 34, IT 39, RU 40.5, FI 34, PL 37.5, OT 33.5 (6 draws).
+ * Master, wins/36: HU 13.5, EN 17.5, DE 20.5, FR 20.5, ES 20, IT 16.5, RU 18, FI 20.5, PL 17,
+ * OT 16 (9 draws). Water, wins/36: HU 22, EN 23, DE 18.5, FR 17, ES 17, IT 13.5, RU 20, FI 17,
+ * PL 10 (28 %), OT 22 (5 draws).
  */
 
 /** The map a round-robin plays on: the 64×64 meadow, or (BALANCE=water) a water map. */
@@ -153,17 +164,18 @@ const meadow = !!BALANCE && BALANCE !== 'water';
 describe('civ round-robin (BALANCE=1)', () => {
   it.skipIf(!meadow)('Hard: every civ wins 40–60 %, within one game (seeds 3, 7, 11, 19)', () => {
     report('hard', roundRobin('hard', [3, 7, 11, 19]), 0.4, 0.6);
-  }, 1_200_000);
+  }, 1_800_000);
 
   it.skipIf(!meadow)('Master: every civ wins 35–65 %, within one game (seeds 3, 7)', () => {
     report('master', roundRobin('master', [3, 7]), 0.35, 0.65);
-  }, 1_200_000);
+  }, 1_800_000);
 });
 
 describe('civ round-robin on water (BALANCE=water)', () => {
   it.skipIf(BALANCE !== 'water')('Hard on a 96×96 Beltenger: per-civ win rates (seeds 3, 7)', () => {
     const tally = roundRobin('hard', [3, 7], WATER);
     print('hard inland_sea 96×96 round-robin', tally);
-    for (const [civ, t] of tally) expect(t.games, civ).toBe(28);
-  }, 1_200_000);
+    const games = 2 * 2 * (tally.size - 1);
+    for (const [civ, t] of tally) expect(t.games, civ).toBe(games);
+  }, 1_800_000);
 });
