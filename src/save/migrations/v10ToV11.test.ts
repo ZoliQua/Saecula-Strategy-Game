@@ -20,7 +20,6 @@ describe('v10 → v11 migration', () => {
     expect(v10ToV11(data)).toEqual(expected);
     expect(data.players[0]).toEqual({ id: 1, civ: 'hungarian' });
     expect(migrate(data, 11)).toEqual({ ok: true, data: { ...expected, schemaVersion: 11 } });
-    expect(SCHEMA_VERSION).toBe(11);
   });
 
   it('leaves players that are not a list or not objects for the schema to reject', () => {

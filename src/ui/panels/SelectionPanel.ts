@@ -117,7 +117,7 @@ export class SelectionPanel {
       if (sel.carrying) rows.push([sel.carrying.type, hu.hud.carrying, `${sel.carrying.amount}`]);
       if (sel.cargo !== undefined) rows.push(['pop', hu.hud.cargo, cargoLine(sel.cargo)]);
       const nodes: Node[] = [
-        head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, relation), more),
+        head(hu.units[sel.unitType], sel.repairing ? hu.hud.repairing : hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, relation), more),
         bar(sel.hp.current, sel.hp.max, hu.hud.hp),
         stats(rows),
       ];

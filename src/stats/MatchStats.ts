@@ -5,22 +5,32 @@ import { gameEvents } from '../game/events';
 import { houseBonus } from '../game/modifiers';
 import type { PlayerManager } from '../game/PlayerManager';
 import { computePopulation } from '../game/population';
-import type { AgeId } from '../types';
+import type { AgeId, BuildingType, Resources } from '../types';
 import { score, victimValue } from './score';
 
 /** One player's running match statistics (M7 Decision 8). */
 export interface PlayerMatchStats {
   /** Resources delivered, all types summed. */
   gathered: number;
+  /**
+   * Resources delivered, by type (M18: the tutorial's gathered objectives).
+   * Gathered income as credit.ts counts it: gold includes trade and the
+   * landmark mint; market exchange is never counted.
+   */
+  gatheredBy: Resources;
   /** Cost of the enemy units and buildings this player destroyed. */
   killValue: number;
   unitsTrained: number;
   unitsLost: number;
   buildingsBuilt: number;
+  /** Buildings finished through construction, by type (M18: the tutorial's built objective; start buildings are not counted). */
+  builtBy: Partial<Record<BuildingType, number | undefined>>;
   /** Buildings destroyed by an enemy (a voluntary delete is not a loss). */
   buildingsLost: number;
   /** Game time each later age was reached at, in order (age 2, then 3). */
   ageUpAtMs: number[];
+  /** Buildings this player's villagers repaired back to full HP (M18; the one that restored the last HP). */
+  repairsDone: number;
 }
 
 /** A timeline point: every player's score and population, in player id order. */
@@ -39,10 +49,10 @@ export interface MatchStatsSnapshot {
 
 /** Fresh counters. */
 export function zeroStats(): PlayerMatchStats {
-  return { gathered: 0, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [] };
+  return { gathered: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, builtBy: {}, buildingsLost: 0, ageUpAtMs: [], repairsDone: 0 };
 }
 
-const copyStats = (s: PlayerMatchStats): PlayerMatchStats => ({ ...s, ageUpAtMs: [...s.ageUpAtMs] });
+const copyStats = (s: PlayerMatchStats): PlayerMatchStats => ({ ...s, gatheredBy: { ...s.gatheredBy }, builtBy: { ...s.builtBy }, ageUpAtMs: [...s.ageUpAtMs] });
 
 /**
  * The match statistics of every player: counted from the stats events
@@ -78,13 +88,24 @@ export class MatchStats {
     const mine = (w: EcsWorld): boolean => w === this.world;
     const offs = [
       gameEvents.on('resourcesDelivered', (e) => {
-        if (mine(e.world)) this.edit(e.playerId, (s) => (s.gathered += e.amount));
+        if (!mine(e.world)) return;
+        this.edit(e.playerId, (s) => {
+          s.gathered += e.amount;
+          s.gatheredBy[e.resource] += e.amount;
+        });
       }),
       gameEvents.on('unitTrained', (e) => {
         if (mine(e.world)) this.edit(e.playerId, (s) => s.unitsTrained++);
       }),
       gameEvents.on('buildingCompleted', (e) => {
-        if (mine(e.world)) this.edit(e.playerId, (s) => s.buildingsBuilt++);
+        if (!mine(e.world)) return;
+        this.edit(e.playerId, (s) => {
+          s.buildingsBuilt++;
+          s.builtBy[e.buildingType] = (s.builtBy[e.buildingType] ?? 0) + 1;
+        });
+      }),
+      gameEvents.on('buildingRepaired', (e) => {
+        if (mine(e.world)) this.edit(e.playerId, (s) => s.repairsDone++);
       }),
       // A conversion counts as a kill for the converter and a lost unit for the victim (M11).
       gameEvents.on('unitConverted', (e) => {

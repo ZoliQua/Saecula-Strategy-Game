@@ -16,6 +16,7 @@ import { MediumStrategy } from './strategies/MediumStrategy';
 import { NullStrategy } from './strategies/NullStrategy';
 import { ThoughtLog } from './thoughts';
 import { LandingControl } from './LandingControl';
+import { RepairPlay } from './RepairPlay';
 import { TradePlay, type TradeActions } from './TradePlay';
 import { MonkPlay, type MonkActions } from './MonkPlay';
 import { WonderPlay, type WonderActions } from './WonderPlay';
@@ -50,6 +51,7 @@ const MEDIUM: Inventory = {
   monks: 'saved',
   trade: 'saved',
   naval: 'excluded: NavalPlay reads the world (no state of its own)',
+  repair: 'excluded: RepairPlay reads the world (repairIntent) and the clock (no state of its own)',
   landing: 'saved',
   walkable: 'excluded: a cache of the walkability check, recomputed on demand',
   pressure: 'saved',
@@ -84,6 +86,7 @@ function cases(): [string, object, Inventory][] {
     ['WonderPlay', new WonderPlay(AI_MEDIUM.wonder, noWonder), { site: 'saved', tune: CONFIG, act: CONFIG }],
     ['MonkPlay', new MonkPlay(AI_MEDIUM.monks, {} as MonkActions), { avoid: 'saved', tune: CONFIG, act: CONFIG }],
     ['TradePlay', new TradePlay(AI_MEDIUM.trade, {} as TradeActions), { lastSellMs: 'saved', tune: CONFIG, act: CONFIG }],
+    ['RepairPlay', new RepairPlay(AI_MEDIUM.repair), { tune: CONFIG }],
     ['LandingControl', new LandingControl(log, () => undefined), { members: 'saved', transports: 'saved', target: 'saved', phase: 'saved', sinceMs: 'saved', log: LOG, launchWave: CONFIG }],
     [
       'AIPlayer',

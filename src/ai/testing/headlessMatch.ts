@@ -1,10 +1,11 @@
-import { applyMissionStart } from '../../campaign/missionStart';
-import { missionSetup, type MissionId } from '../../campaign/missions';
+import { applyMissionStart, spawnMissionExtras } from '../../campaign/missionStart';
+import { missionSetup, type ScenarioId } from '../../campaign/missions';
 import { DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
+import { RepairSystem } from '../../ecs/systems/RepairSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
@@ -78,7 +79,7 @@ export interface HeadlessMatchOptions {
   /** The match can be won by a Wonder: WonderSystem runs and the AIs play for Wonders (default false). */
   readonly wonderVictory?: boolean;
   /** A campaign mission (M13): its fixed setup and start state replace the options' (seed, size and AI count must match it). */
-  readonly mission?: MissionId;
+  readonly mission?: ScenarioId;
   /** The match ends on score at the time limit: the AIs see the limit (default false). */
   readonly timeVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
@@ -167,6 +168,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
   spawnPresetWalls(world, players, map, generated.walls);
+  if (options.mission) spawnMissionExtras(world, players, map, options.mission);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     const personality = options.personality?.(p.id);
@@ -264,6 +266,8 @@ function assemble(parts: MatchParts): HeadlessMatch {
   let now = parts.startMs;
   // The treaty (M16): from the setup and this match's clock, like the live runner.
   const treaty: TreatyGate = () => treatyActive(setup, now);
+  // Game time for hit buildings (M18: no repair under fire), like the live runner.
+  const gameNow = (): number => now;
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
@@ -271,12 +275,13 @@ function assemble(parts: MatchParts): HeadlessMatch {
     landmarks: new LandmarkSystem(world, players),
     farms: new FarmRegenSystem(world),
     construction: new ConstructionSystem(world, map, paths, players),
+    repair: new RepairSystem(world, map, paths, players, { now: gameNow }),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor, players, treaty),
-    combat: new CombatSystem(world, map, players, paths, treaty),
+    combat: new CombatSystem(world, map, players, paths, treaty, gameNow),
     monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths, players, treaty),
-    projectiles: new ProjectileSystem(world, players, treaty),
+    projectiles: new ProjectileSystem(world, players, treaty, gameNow),
     movement: new MovementSystem(world, players, map),
     transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),
@@ -293,6 +298,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.trade.update(dt);
     systems.farms.update(dt);
     systems.construction.update(dt);
+    systems.repair.update(dt);
     systems.training.update(dt);
     systems.research.update(dt);
     systems.towers.update(dt);

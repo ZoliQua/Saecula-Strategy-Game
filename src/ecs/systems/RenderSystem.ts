@@ -5,7 +5,7 @@ import { LightManager, lit } from '../../iso/art/lighting/LightManager';
 import { frameIndex, headingSlot, unitSheetLayout } from '../../iso/art/units/layout';
 import { forgetUnitArt, pumpUnitArt } from '../../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../../iso/art/units/unitSprite';
-import { PLAYER_COLORS } from '../../game/Player';
+import { playerColor } from '../../game/Player';
 import { wonderStage } from '../../iso/art/architecture/wonder';
 import {
   BUILDING_LIGHT,
@@ -204,7 +204,7 @@ export class RenderSystem {
           const shownAge = ((this.shownLook.get(entity) ?? 1) % 4) as AgeId;
           const show = visible && !entity.underConstruction && !entity.dying;
           const owner = entity.owner?.playerId ?? 1;
-          this.banners.sync(entity, sprite, this.joins.pieceOf(entity), shownAge, this.civOf(owner), teamColor(owner), show);
+          this.banners.sync(entity, sprite, this.joins.pieceOf(entity), shownAge, this.civOf(owner), playerColor(owner), show);
         }
       }
       applyDying(sprite, entity);
@@ -220,7 +220,7 @@ export class RenderSystem {
         const owner = entity.owner?.playerId ?? 1;
         if (this.unitOwner.get(entity) !== owner) {
           this.unitOwner.set(entity, owner);
-          unit.team.setTint(teamColor(owner));
+          unit.team.setTint(playerColor(owner));
         }
         syncTeamSprite(unit);
         this.applyHitFlash(entity, unit, now);
@@ -240,7 +240,7 @@ export class RenderSystem {
     }
     this.hitUntil.delete(entity);
     unit.body.clearTint();
-    unit.team.setTint(teamColor(entity.owner?.playerId ?? 1));
+    unit.team.setTint(playerColor(entity.owner?.playerId ?? 1));
   }
 
   private ensureSprite(entity: Renderable): Phaser.GameObjects.Sprite {
@@ -249,7 +249,7 @@ export class RenderSystem {
     if (entity.unit) {
       // A converted unit keeps its original civ's look (M11).
       const civ = entity.originCiv?.civ ?? this.civOf(playerId);
-      const pair = createUnitSprites(this.scene, entity.unit.unitType, civ, teamColor(playerId));
+      const pair = createUnitSprites(this.scene, entity.unit.unitType, civ, playerColor(playerId));
       this.units.set(entity, pair);
       this.unitOwner.set(entity, playerId);
       sprite = pair.body;
@@ -380,6 +380,3 @@ export class RenderSystem {
   }
 }
 
-function teamColor(playerId: number): number {
-  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
-}

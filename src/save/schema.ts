@@ -15,9 +15,9 @@ import {
   VICTORY_MODES,
   type GameSetupConfig,
 } from '../game/GameSetupConfig';
-import { MISSION_IDS } from '../campaign/missions';
+import { SCENARIO_IDS } from '../campaign/missions';
 import { MAP_TEMPLATES } from '../map/generator';
-import { DIRECTIONS } from '../types';
+import { DIRECTIONS, type BuildingType } from '../types';
 import { AIPlayerStateSchema } from './aiSchema';
 import {
   ageId,
@@ -53,9 +53,12 @@ import {
  * v11 (M17): the market building and each player's market prices (marketPrices); the trade
  *   cart and trade ship and their components (tradeHome, tradeRoute); the landmark building
  *   and each player's landmark carry (landmarkCarry).
+ * v12 (M18): a villager's repair order (repairIntent), a building's last-damage game time
+ * (building.damagedAtMs; absent = never damaged, as in every v11 save), each player's repair count and gathered-by-type
+ * (stats repairsDone, gatheredBy, builtBy), and the tutorial scenario id (setup.mission 'tutorial').
  */
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -87,9 +90,13 @@ const COMPONENT_SHAPE = {
       .optional(),
     gatherIntent: z.object({ nodeId: int }).strict().optional(),
     resourceDropoff: z.object({ accepts: z.array(resourceType).readonly() }).strict().optional(),
-    building: z.object({ type: buildingType, footprint, minStyleAge: ageId.optional() }).strict().optional(),
+    building: z.object({ type: buildingType, footprint, minStyleAge: ageId.optional(), damagedAtMs: nonNeg.optional() }).strict().optional(),
     underConstruction: z.object({ totalTime: num, elapsed: num }).strict().optional(),
     buildCommand: z.object({ targetId: int }).strict().optional(),
+    repairIntent: z
+      .object({ targetId: int, costCarry: z.object({ food: nonNeg, wood: nonNeg, gold: nonNeg }).strict(), hpCarry: nonNeg })
+      .strict()
+      .optional(),
     trainingQueue: z
       .object({
         entries: z.array(z.object({ unitType, elapsed: num, totalTime: num }).strict()),
@@ -157,7 +164,7 @@ export const GameSetupConfigSchema = z
     aiCivs: z.union([z.literal('mixed'), civId]),
     seed: int,
     victory: enumOf(VICTORY_MODES),
-    mission: enumOf(MISSION_IDS).optional(),
+    mission: enumOf(SCENARIO_IDS).optional(),
     allies: int.min(0).max(MAX_AI - 1),
     treatyMin: numberOf(TREATY_MINUTES),
     startResources: enumOf(START_RESOURCE_IDS),
@@ -212,14 +219,25 @@ const count = int.nonnegative();
 export const PlayerMatchStatsSchema = z
   .object({
     gathered: nonNeg,
+    gatheredBy: z.object({ food: nonNeg, wood: nonNeg, gold: nonNeg }).strict(),
     killValue: nonNeg,
     unitsTrained: count,
     unitsLost: count,
     buildingsBuilt: count,
+    // A partial record: only the types built so far have a key (enumOf keys would infer a full record).
+    builtBy: z.record(buildingType, count) as unknown as z.ZodType<Partial<Record<BuildingType, number | undefined>>>,
     buildingsLost: count,
     ageUpAtMs: z.array(nonNeg),
+    repairsDone: count,
   })
   .strict();
+
+/** The match log's counters: a record stored before M18 has no repair count (0), gathered-by-type (zeros) nor built-by-type (none). */
+export const StoredPlayerMatchStatsSchema = PlayerMatchStatsSchema.extend({
+  repairsDone: count.default(0),
+  gatheredBy: PlayerMatchStatsSchema.shape.gatheredBy.default({ food: 0, wood: 0, gold: 0 }),
+  builtBy: PlayerMatchStatsSchema.shape.builtBy.default({}),
+});
 
 /** A score / population timeline point (player id order). */
 export const TimelineSampleSchema = z.object({ tMs: nonNeg, scores: z.array(num), pops: z.array(nonNeg) }).strict();

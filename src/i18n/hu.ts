@@ -3,6 +3,15 @@ import { CIV_BONUS, LANDMARK, NAVAL } from '../config/balance';
 /** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
 const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
 
+/** What a tutorial hint is filled with (hu.campaign.tutorial.hints). */
+export interface TutorialHintArgs {
+  /** The command click as set (hu.campaign.tutorial.command). */
+  readonly cmd: string;
+  /** The age-up's food and gold cost. */
+  readonly ageFood: number;
+  readonly ageGold: number;
+}
+
 export const hu = {
   title: 'Saecula',
   subtitle: 'Izometrikus történelmi stratégia',
@@ -279,6 +288,8 @@ export const hu = {
     /** The top bar's population counter opens the side panel's villager view. */
     populationTip: 'Népesség · kattints: mit csinálnak a falusiak',
     underConstruction: 'Építés alatt',
+    /** A selected villager's role line while it repairs a building (M18). */
+    repairing: 'Javít',
     enemy: 'Ellenség',
     /** An allied player's unit or building (M16). */
     ally: 'Szövetséges',
@@ -522,7 +533,7 @@ export const hu = {
   campaign: {
     kicker: 'Saecula krónikája',
     title: 'Kampány',
-    intro: 'Három küldetés Rómától a felvilágosodásig. Mindegyik a következőt nyitja meg; a teljesítetteket újrajátszhatod.',
+    intro: 'Kezdd az oktató küldetéssel, ha most ismerkedsz a játékkal. Utána három küldetés vezet Rómától a felvilágosodásig: mindegyik a következőt nyitja meg, a teljesítetteket újrajátszhatod.',
     missionNumber: (n: number) => `${n}. küldetés`,
     status: { locked: 'Zárolva', available: 'Elérhető', completed: 'Teljesítve' },
     lockedHint: 'Előbb teljesítsd az előző küldetést.',
@@ -536,9 +547,49 @@ export const hu = {
       ownUnits: (name: string, n: number) => `Képezz ${n} egységet: ${name}`,
       survive: (min: number) => `Tarts ki ${min} percig (a városházád álljon)`,
       winMatch: 'Nyerd meg a meccset (hódítás vagy Csoda)',
+      built: (name: string, n: number) => (n === 1 ? `Építs egy új épületet: ${name}` : `Építs ${n} új épületet: ${name}`),
+      gathered: (resource: string, n: number) => `Gyűjts ${n} egységnyi nyersanyagot: ${resource}`,
+      repaired: (n: number) => (n === 1 ? 'Javíts meg egy sérült épületet' : `Javíts meg ${n} sérült épületet`),
     },
     /** The objective's progress, e.g. "1 / 2" (minutes for a survive objective). */
     progress: (have: number, need: number) => `${have} / ${need}`,
+    /** The step-by-step tutorial (M18): the first row of the campaign list, outside the mission chain. */
+    tutorial: {
+      title: 'Első lépések',
+      place: 'Oktató küldetés · Magyarok · kicsi Mezőség · 20 perc fegyverszünet',
+      /** The list row's badge (in place of a mission number). */
+      badge: 'Okt.',
+      kicker: 'Oktató küldetés',
+      briefing:
+        'Ez a küldetés lépésről lépésre megtanítja a játék alapjait: nyersanyaggyűjtés, építés, kiképzés, javítás és korváltás. A célok egymás után jönnek, mindegyik alatt egy tipp mondja meg, mit és hol kell kattintani. Húsz perc fegyverszünet van: addig senki sem támadhat.',
+      victory: 'Megtanultad az alapokat: a falu él, a sereg áll, és beléptél a középkorba. Indulhat a kampány!',
+      defeat: 'A falu elesett. Semmi baj: indítsd újra az oktató küldetést, és haladj a tippek szerint.',
+      /** The tutorial's objective lines, one per step, given the step's need (in place of the generic objective lines). */
+      steps: [
+        (n: number) => `Gyűjts ${n} fát`,
+        () => 'Építs egy házat',
+        (n: number) => `Gyűjts ${n} ételt`,
+        (n: number) => `Legyen ${n} falusid`,
+        () => 'Építs laktanyát',
+        (n: number) => `Képezz ${n} kardforgatót`,
+        () => 'Javítsd meg a sérült házat',
+        () => 'Lépj a középkorba',
+      ] as readonly ((need: number) => string)[],
+      /** The command click as the controls are set: the right click, and the gesture's left click when one is set (a verb phrase). */
+      command: (gestureKey: string | null) => (gestureKey === null ? 'kattints jobb gombbal' : `kattints jobb gombbal (vagy ${gestureKey}+klikkel)`),
+      /** One hint per step, in objective order: `cmd` is `command(...)`, `age` the age-up's food and gold cost. */
+      hints: [
+        ({ cmd }: TutorialHintArgs) => `Jelölj ki egy falusit bal klikkel, majd ${cmd} egy fára: a falusi kivágja, és a fát a városházára hordja.`,
+        () => 'Jelölj ki egy falusit, a parancspanelen válaszd a Házat, és tedd le bal klikkel egy szabad, füves helyre.',
+        ({ cmd }: TutorialHintArgs) => `Küldj falusit a bogyós bokrokhoz (${cmd} a bokorra), vagy építs farmot: az étel is a városházára kerül.`,
+        () => 'Jelöld ki a városházát bal klikkel, és a parancspanelen képezz falusiakat (ételbe kerülnek).',
+        () => 'Jelölj ki egy falusit, a parancspanelen válaszd a Laktanyát, és tedd le bal klikkel egy szabad helyre.',
+        () => 'Jelöld ki a laktanyát bal klikkel, és képezz kardforgatókat (ételbe és aranyba kerülnek).',
+        ({ cmd }: TutorialHintArgs) => `Jelölj ki egy falusit, majd ${cmd} a sérült házra (kalapács-kurzor): a falusi megjavítja. A javítás nyersanyagba kerül.`,
+        ({ cmd, ageFood, ageGold }: TutorialHintArgs) =>
+          `A korváltás ${ageFood} ételbe és ${ageGold} aranyba kerül. Aranyért küldj falusiakat az aranyérhez (${cmd} az aranyra), majd jelöld ki a városházát, és a parancspanelen indítsd a korváltást a középkorba.`,
+      ] as readonly ((args: TutorialHintArgs) => string)[],
+    },
     missions: {
       first_monastery: {
         title: 'Az első kolostor',
@@ -604,12 +655,17 @@ export const hu = {
   settings: {
     title: 'Beállítások',
     /** Kicker over the title. */
-    kicker: 'Hang és irányítás',
+    kicker: 'Hang, irányítás és megjelenítés',
     audio: 'Hang',
     volumes: { master: 'Fő hangerő', music: 'Zene', sfx: 'Hangeffektek', notifications: 'Értesítések' },
     mute: 'Némítás',
     keys: 'Billentyűk',
-    tabs: { audio: 'Hang', controls: 'Irányítás' },
+    tabs: { audio: 'Hang', controls: 'Irányítás', display: 'Megjelenítés' },
+    /** The display tab (M18): team colours. */
+    teamColors: 'Csapatszínek',
+    teamPalette: 'Színkészlet',
+    teamPalettes: { default: 'Alapértelmezett', colorblind: 'Színtévesztő-barát' },
+    teamPaletteNote: 'A következő meccstől érvényes.',
     mouse: 'Egér és érintőpad',
     actions: {
       panUp: 'Kamera fel',
@@ -659,6 +715,10 @@ export const hu = {
     sameAsHome: 'Ez a kocsi (hajó) saját piaca: válassz egy másikat.',
     noHome: 'Nincs kész saját piac (kikötő), ahonnan az útvonal indulhatna.',
     unreachable: 'Oda nem lehet eljutni: a piac (kikötő) másik szigeten vagy másik vízen van, vagy el van zárva.',
+  },
+  /** Building repair (M18). */
+  repair: {
+    outOfResources: 'Elfogyott a nyersanyag a javításhoz.',
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

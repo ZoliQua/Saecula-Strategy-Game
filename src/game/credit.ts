@@ -24,7 +24,7 @@ export function creditGathered(
   const player = players?.get(playerId);
   if (player) {
     player.resources[type] += amount;
-    gameEvents.emit('resourcesDelivered', { world, playerId, amount });
+    gameEvents.emit('resourcesDelivered', { world, playerId, resource: type, amount });
   }
   if (playerId === HUMAN_PLAYER_ID) {
     const state = uiStore.getState();

@@ -162,3 +162,14 @@ describe('allies in the selection (M16)', () => {
     expect(selectionRingColor(undefined, isAlly)).not.toBe(enemy);
   });
 });
+
+describe('a repairing villager (M18)', () => {
+  it('is marked repairing, and the mark changes the key', () => {
+    const v = { id: 3, position: { tx: 1, ty: 1 }, unit: { unitType: 'villager' }, health: { current: 25, max: 25 }, selectable: { selected: true }, owner: { playerId: 1 } } as Entity;
+    const idle = snapshot(v);
+    const busy = snapshot({ ...v, repairIntent: { targetId: 7, costCarry: { food: 0, wood: 0, gold: 0 }, hpCarry: 0 } });
+    expect(idle && idle.kind === 'unit' ? idle.repairing : null).toBeUndefined();
+    expect(busy && busy.kind === 'unit' ? busy.repairing : null).toBe(true);
+    expect(infoKey(busy)).not.toBe(infoKey(idle));
+  });
+});

@@ -1,4 +1,4 @@
-import { MISSION_IDS, type MissionId } from '../campaign/missions';
+import { SCENARIO_IDS, type ScenarioId } from '../campaign/missions';
 import { GAME_SPEEDS, START_RESOURCES, TREATY, type StartResourcesId } from '../config/balance';
 import { AVAILABLE_CIVS, DEFAULT_CIV } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
@@ -72,7 +72,7 @@ export interface GameSetupConfig {
   /** Victory conditions in play. */
   readonly victory: VictoryMode;
   /** A campaign mission (M13): the match is that mission's fixed setup with its objectives. */
-  readonly mission?: MissionId | undefined;
+  readonly mission?: ScenarioId | undefined;
   /** AIs on the human's team (players 2..1 + allies), 0..aiCount - 1 (M16; 0 = everyone is an enemy). */
   readonly allies: number;
   /** Treaty length in game minutes (M16; 0 = none). */
@@ -150,7 +150,7 @@ export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig
     treatyMin: TREATY_MINUTES.includes(next.treatyMin) ? next.treatyMin : MODE_DEFAULTS.treatyMin,
     startResources: START_RESOURCE_IDS.includes(next.startResources) ? next.startResources : MODE_DEFAULTS.startResources,
     speed: SPEED_CHOICES.includes(next.speed) ? next.speed : MODE_DEFAULTS.speed,
-    ...(next.mission !== undefined && (MISSION_IDS as readonly string[]).includes(next.mission) ? { mission: next.mission } : {}),
+    ...(next.mission !== undefined && (SCENARIO_IDS as readonly string[]).includes(next.mission) ? { mission: next.mission } : {}),
   };
 }
 
