@@ -9,10 +9,17 @@ describe('civ registry', () => {
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes the eight classic civs available: the setup picker lists every one as playable', () => {
-    // M21 Task 5 makes the Polish and Ottoman civs available once their art lands; then this is CIV_IDS again.
-    expect(AVAILABLE_CIVS).toEqual(CLASSIC_CIVS);
-    for (const id of CLASSIC_CIVS) expect(CIV_DEFS[id].available, id).toBe(true);
+  it('makes the eight classic civs and Polish available: the setup picker lists every one as playable', () => {
+    // M21 Task 5 makes the Ottoman civ available once its art lands; then this is CIV_IDS again.
+    expect(AVAILABLE_CIVS).toEqual([...CLASSIC_CIVS, 'polish']);
+    for (const id of AVAILABLE_CIVS) expect(CIV_DEFS[id].available, id).toBe(true);
+    expect(CIV_DEFS.ottoman.available).toBe(false);
+  });
+
+  it('gives Polish its own architecture, walls and unit look in every age', () => {
+    expect(CIV_DEFS.polish.architecture).toEqual({ 1: 'biskupin', 2: 'krakow_gothic', 3: 'polish_attic' });
+    expect(CIV_DEFS.polish.wallStyle).toEqual({ 1: 'box_rampart', 2: 'barbican_curtain', 3: 'zamosc_bastion' });
+    expect(CIV_DEFS.polish.unitLook).toBe('polish');
   });
 
   it('gives the Polish and Ottoman civs their heraldry, unique unit, bonus and landmark', () => {
@@ -37,7 +44,7 @@ describe('civ registry', () => {
   });
 
   it('gives every civ its own walls and unit look (no Hungarian stub left)', () => {
-    // Narrowed to the available civs: the Polish and Ottoman rows borrow the Hungarian art until Task 5 restores CIV_IDS here.
+    // Narrowed to the available civs: the Ottoman row borrows the Hungarian art until Task 5 restores CIV_IDS here.
     const others = AVAILABLE_CIVS.filter((id) => id !== 'hungarian');
     for (const id of others) {
       expect(CIV_DEFS[id].wallStyle, id).not.toEqual(CIV_DEFS.hungarian.wallStyle);
@@ -94,7 +101,7 @@ describe('civ registry', () => {
 
 describe('menuDioramaCivs', () => {
   it('pairs the menu civ with the other playable civs today, one per visit', () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7].map((visit) => menuDioramaCivs(visit))).toEqual([
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((visit) => menuDioramaCivs(visit))).toEqual([
       [MENU_CIV, 'english'],
       [MENU_CIV, 'german'],
       [MENU_CIV, 'french'],
@@ -102,6 +109,7 @@ describe('menuDioramaCivs', () => {
       [MENU_CIV, 'italian'],
       [MENU_CIV, 'russian'],
       [MENU_CIV, 'finnish'],
+      [MENU_CIV, 'polish'],
       [MENU_CIV, 'english'],
     ]);
   });

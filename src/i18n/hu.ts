@@ -85,7 +85,7 @@ export const hu = {
       italian: 'Téglatornyok fecskefarkú pártázattal, árkádok, terrakotta kupolák',
       russian: 'Gerendaházak, sátortetős tornyok, aranyló hagymakupolák',
       finnish: 'Tőzegtetős faházak, gránitvár harangtoronnyal, vörös deszkaházak',
-      polish: 'Nádtetős sorházak, krakkói téglagótika, csipkés attikák',
+      polish: 'Nádtetős sorházak, téglagótika egyenlőtlen ikertoronnyal, csipkés attikák',
       ottoman: 'Sávos falak, ólomkupolák, ceruzavékony minaretek',
     },
     /** The permanent bonus of each civ, one line under its description (M8); percentages come from CIV_BONUS. */

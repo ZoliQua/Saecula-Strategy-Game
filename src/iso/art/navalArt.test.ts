@@ -47,7 +47,7 @@ describe('naval art', () => {
   });
 
   it('the civs paint their ships differently (hull palette), and the four ships differ', () => {
-    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman civs borrow Hungarian art until M21 Task 5 restores CIV_IDS here.
+    // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
     const galleys = new Set(AVAILABLE_CIVS.map((civ) => unitPixelsHash('galley', civ)));
     expect(galleys.size).toBe(AVAILABLE_CIVS.length);
     expect(new Set(SHIPS.map((t) => unitPixelsHash(t, 'english'))).size).toBe(SHIPS.length);

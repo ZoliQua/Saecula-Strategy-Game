@@ -29,7 +29,7 @@ describe('landmark art', () => {
   });
 
   it('every civ has its own landmark painter (no shared placeholder)', () => {
-    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman civs borrow Hungarian art until M21 Task 5 restores CIV_IDS here.
+    // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
     expect(new Set(AVAILABLE_CIVS.map((civ) => registry.LANDMARK_ART[civ])).size).toBe(AVAILABLE_CIVS.length);
   });
 

@@ -31,7 +31,7 @@ describe('landmark art: Spanish, Italian, Russian, Finnish', () => {
   });
 
   it.each(CIVS)('%s: has its own painter, shared with no other civ', (civ) => {
-    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman entries borrow these painters until M21 Tasks 2 and 4 replace them.
+    // Narrowed to AVAILABLE_CIVS: the Ottoman entry borrows these painters until M21 Task 4 replaces it.
     const others = AVAILABLE_CIVS.filter((c) => c !== civ);
     for (const other of others) expect(registry.LANDMARK_ART[civ]).not.toBe(registry.LANDMARK_ART[other]);
   });

@@ -48,7 +48,7 @@ describe('civ previews', () => {
   });
 
   const load = () => import('./civPreview');
-  const ORDER: readonly CivId[] = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish'];
+  const ORDER: readonly CivId[] = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish', 'polish'];
 
   it('paints a civ in two calls and keeps only its data URLs', async () => {
     const preview = await load();

@@ -63,9 +63,12 @@ export type WallStyleId =
   | 'kremlin'
   | 'hillfort'
   | 'granite_curtain'
-  | 'granite_bastion';
+  | 'granite_bastion'
+  | 'box_rampart'
+  | 'barbican_curtain'
+  | 'zamosc_bastion';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish' | 'polish';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -216,12 +219,12 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     bonus: { kind: 'infantrySpeed', bonus: CIV_BONUS.infantrySpeed },
     landmark: { kind: 'sauna' },
   },
-  // White eagle on red: red, white, gold. Architecture is its own (M21 Task 2); walls and units stay Hungarian until Task 3.
+  // White eagle on red: red, white, gold. Biskupin / Kraków Gothic / Polish attic buildings; box rampart, barbican curtain with turret-crowned towers and a brick Zamość bastion trace; Polish unit liveries.
   polish: {
-    available: false,
+    available: true,
     architecture: { 1: 'biskupin', 2: 'krakow_gothic', 3: 'polish_attic' },
-    wallStyle: HUNGARIAN_WALLS,
-    unitLook: 'hungarian',
+    wallStyle: { 1: 'box_rampart', 2: 'barbican_curtain', 3: 'zamosc_bastion' },
+    unitLook: 'polish',
     heraldry: { primary: 0xdc143c, secondary: 0xf2efe6, accent: 0xd4a017 },
     uniqueUnit: 'winged_hussar',
     bonus: { kind: 'villagerSpeed', bonus: CIV_BONUS.villagerSpeed },

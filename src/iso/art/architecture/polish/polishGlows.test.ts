@@ -15,14 +15,15 @@ import { installRecordingCanvas } from '../../testing/recordingCanvas.testkit';
  * grazes keep their glow, as in allCivsGlows.test.ts; the ceilings below
  * hold them, both in layouts inherited from the shared families (the
  * medieval barracks' first upper light behind its corner tower, the
- * shared foundry's front light behind its furnace). M21 Task 5 carries
- * them into allCivsGlows' GRAZED_CEILINGS when it restores every civ. The types tested
+ * shared foundry's front light behind its furnace). allCivsGlows'
+ * GRAZED_CEILINGS holds the same ceilings since Polish became available
+ * (M21 Task 3). The types tested
  * are every building type whose Polish art records a glow in some age,
  * not a fixed list.
  */
 
 /** Grazed windows (centre visible, under half covered) by building and age; everything else has none. */
-const GRAZED: Readonly<Record<string, number>> = { 'barracks@1': 1, 'barracks@2': 1, 'foundry@1': 1, 'foundry@2': 1, 'foundry@3': 1 };
+const GRAZED: Readonly<Record<string, number>> = { 'barracks@1': 1, 'foundry@1': 1, 'foundry@2': 1, 'foundry@3': 1 };
 
 function expectNoneHidden(key: string, hits: ReturnType<typeof occludedGlows>): void {
   expect(hits.length, key).toBeLessThanOrEqual(GRAZED[key] ?? 0);

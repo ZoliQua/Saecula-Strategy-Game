@@ -22,8 +22,8 @@ const drawCalls = (canvas: HTMLCanvasElement): number => (canvas as unknown as R
 
 describe('all civs', () => {
   it('are all available', () => {
-    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman civs borrow Hungarian art until M21 Task 5 restores CIV_IDS here.
-    expect(AVAILABLE_CIVS.length).toBe(8);
+    // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
+    expect(AVAILABLE_CIVS.length).toBe(9);
     for (const civ of AVAILABLE_CIVS) expect(CIV_DEFS[civ].available, civ).toBe(true);
   });
 

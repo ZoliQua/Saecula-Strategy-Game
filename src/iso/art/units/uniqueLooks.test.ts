@@ -48,7 +48,7 @@ const sheetArea = (type: UnitType, civ: CivId): number => {
 };
 
 describe('unique unit looks', () => {
-  // Narrowed to AVAILABLE_CIVS: the winged hussar and the janissary get their looks in M21 Tasks 3 and 5, which restore CIV_IDS here.
+  // Narrowed to AVAILABLE_CIVS: the janissary gets its look in M21 Task 5, which restores CIV_IDS here.
   it.each(AVAILABLE_CIVS)('%s: the unique unit has its own look, of the base unit’s kind', (civ) => {
     const type = uniqueOf(civ);
     const look = LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type];

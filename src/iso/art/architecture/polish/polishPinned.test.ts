@@ -4,8 +4,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Pixel-identity guard for the Polish building art: every building
  * type x age and every Wonder stage (testing/pinnedArt.testkit.ts), so
  * later kit and family changes cannot silently change Polish.
- * Recorded at M21 Task 2's final art. wall@1-3 still paint the
- * Hungarian walls; M21 Task 3 re-records them with the Polish walls.
+ * Recorded at M21 Task 2's final art; M21 Task 3 re-recorded wall@1-3
+ * with the Polish walls (box rampart, barbican curtain, Zamość bastion).
  */
 
 pinBuildings('polish', {
@@ -20,7 +20,7 @@ pinBuildings('polish', {
   'blacksmith@1': '9fbf4cdf2086b8fe',
   'foundry@1': 'b7ed0076c70f1553',
   'tower@1': '47bc003032e21e41',
-  'wall@1': 'c350d436a398a5da',
+  'wall@1': '70706bac5976713e',
   'wonder@1': 'df12a9524a3e09c2',
   'town_center@2': '44b9983f0a1112bd',
   'house@2': '677380fe667a638c',
@@ -33,7 +33,7 @@ pinBuildings('polish', {
   'blacksmith@2': '2895a23d5a424158',
   'foundry@2': 'b6d59bd4b539ba2d',
   'tower@2': '067a698322fe47a4',
-  'wall@2': 'f6657196ed73c743',
+  'wall@2': 'd45af7686fd44019',
   'wonder@2': '09c3a6f4cc503073',
   'town_center@3': 'b1d57fb700a036f7',
   'house@3': '6869c0980147654e',
@@ -46,7 +46,7 @@ pinBuildings('polish', {
   'blacksmith@3': 'ba72ddb6369759ea',
   'foundry@3': '67c99b8c3f7eb6ba',
   'tower@3': 'e6d60a6438b80085',
-  'wall@3': '238a002c4881fa22',
+  'wall@3': '26adbbdcfe9b581f',
   'wonder@3': '63bf8335ad41ae43',
   'wonder~s1': '2b094b221f34cb08',
   'wonder~s2': '7c604244b5d35810',

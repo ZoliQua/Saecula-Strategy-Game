@@ -106,6 +106,11 @@ const GRAZED_CEILINGS: Readonly<Record<string, number>> = {
   'russian wonder@2': 2,
   'russian foundry@3': 1,
   'russian wonder@3': 2,
+  // M21 Polish: the medieval barracks' first upper light behind its corner tower, the shared foundry's front light behind its furnace.
+  'polish barracks@1': 1,
+  'polish foundry@1': 1,
+  'polish foundry@2': 1,
+  'polish foundry@3': 1,
 };
 
 let buildings: typeof import('./buildings');
@@ -129,11 +134,11 @@ describe('no lit window glows behind a later solid', () => {
   });
 
   it('every M5 civ drops hidden glows; the pin-locked Hungarian and English styles keep theirs', () => {
-    // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman civs borrow Hungarian art until M21 Task 5 restores CIV_IDS here.
+    // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
     expect(AVAILABLE_CIVS.filter((civ) => !dropsHidden(civ))).toEqual(['hungarian', 'english']);
   });
 
-  // Narrowed to AVAILABLE_CIVS: the Polish and Ottoman civs borrow Hungarian art until M21 Task 5 restores CIV_IDS here.
+  // Narrowed to AVAILABLE_CIVS: the Ottoman civ borrows Hungarian art until M21 Task 5 restores CIV_IDS here.
   it.each(AVAILABLE_CIVS)('%s: no hidden glow beyond its ceiling, and none hidden at its centre where the style drops them', (civ) => {
     const ceilings = dropsHidden(civ) ? GRAZED_CEILINGS : PRE_M5_CEILINGS;
     for (const [key, paint] of paintings(civ)) {
@@ -147,7 +152,7 @@ describe('no lit window glows behind a later solid', () => {
     }
   });
 
-  // Narrowed to AVAILABLE_CIVS: it flips dropHiddenGlows on the civ's styles, which for the Polish and Ottoman civs are still the Hungarian ones (M21 Task 5 restores CIV_IDS here).
+  // Narrowed to AVAILABLE_CIVS: it flips dropHiddenGlows on the civ's styles, which for the Ottoman civ are still the Hungarian ones (M21 Task 5 restores CIV_IDS here).
   it.each(AVAILABLE_CIVS.filter((civ) => civ !== 'hungarian' && civ !== 'english'))('%s: GlowCover drops only glows the checker finds hidden (no visible window goes dark)', (civ) => {
     const civStyles = AGES.map((age) => styles.ARCH_STYLES[CIV_DEFS[civ].architecture[age]] as { dropHiddenGlows?: boolean });
     const key = (g: unknown): string => {

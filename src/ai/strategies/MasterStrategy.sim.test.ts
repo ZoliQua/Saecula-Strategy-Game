@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../../map/random';
-import { createHeadlessMatch } from '../testing/headlessMatch';
+import { classicCivs, createHeadlessMatch } from '../testing/headlessMatch';
 import { HardStrategy } from './HardStrategy';
 import { MasterStrategy } from './MasterStrategy';
 
 const MIN = 60_000;
 
-/** Mesteri alone (player 2, master handicap) against the passive human: when it reached ages 2 and 3. */
+/**
+ * Mesteri alone (player 2, master handicap) against the passive human: when it reached ages 2 and 3.
+ * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
+ * with the nine-civ pool seed 4 reached age 3 at 20.40 min.
+ */
 function alone(seed: number): { age2: number; age3: number; recent: string } {
   const master = new MasterStrategy(createRng(seed * 31 + 2));
-  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => master, difficulty: () => 'master' });
+  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, civs: classicCivs(seed, 1), strategy: () => master, difficulty: () => 'master' });
   const ai = match.players.get(2)!;
   let age2 = Infinity;
   let age3 = Infinity;

@@ -234,10 +234,10 @@ const CIV_RNG_SALT = 0x5bd1e995;
 /**
  * The civs of a match from its config: the same seed always gives the same
  * line-up. A campaign mission draws from the eight pre-M21 civs
- * (CLASSIC_CIVS), so every mission keeps its line-up.
+ * (CLASSIC_CIVS), so every mission keeps its line-up; `pool` overrides
+ * the draw's pool (simulation tests that keep their pre-M21 line-up).
  */
-export function matchCivs(config: GameSetupConfig): { human: CivId; ais: CivId[] } {
-  const pool = config.mission ? CLASSIC_CIVS : AVAILABLE_CIVS;
+export function matchCivs(config: GameSetupConfig, pool: readonly CivId[] = config.mission ? CLASSIC_CIVS : AVAILABLE_CIVS): { human: CivId; ais: CivId[] } {
   return { human: config.civ, ais: assignCivs(config, createRng(config.seed ^ CIV_RNG_SALT), pool) };
 }
 

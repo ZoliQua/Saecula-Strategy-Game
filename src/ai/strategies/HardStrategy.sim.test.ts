@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../../map/random';
 import type { AIStrategy } from '../AIPlayer';
-import { createHeadlessMatch } from '../testing/headlessMatch';
+import { classicCivs, createHeadlessMatch } from '../testing/headlessMatch';
 import { EasyStrategy } from './EasyStrategy';
 import { HardStrategy } from './HardStrategy';
 import { MediumStrategy } from './MediumStrategy';
@@ -22,6 +22,8 @@ interface Duel {
  * Hard (player 2) against `rival` (player 3) on a 64×64 meadow, pitted
  * against each other; the passive human (player 1) just sits there.
  * Hard gets its difficulty handicap (+20% gather), the rival none.
+ * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
+ * with the nine-civ pool seed 4's first attack left at 5.02 min.
  */
 function duel(seed: number, rival: (rng: () => number) => AIStrategy, minutes = 25): Duel {
   const hard = new HardStrategy(createRng(seed * 31 + 2));
@@ -29,6 +31,7 @@ function duel(seed: number, rival: (rng: () => number) => AIStrategy, minutes = 
     seed,
     size: 64,
     aiCount: 2,
+    civs: classicCivs(seed, 2),
     strategy: (id) => (id === 2 ? hard : rival(createRng(seed * 31 + id))),
     enemyOf: (id) => (id === 2 ? 3 : 2),
     difficulty: (id) => (id === 2 ? 'hard' : 'easy'),

@@ -106,8 +106,8 @@ describe('Polish architecture (Biskupin, Kraków Gothic, attic Renaissance, Wawe
     expect(POLISH_ATTIC.roof.form).toBe('attic');
     expect(CHARGES.white_eagle).toBeTypeOf('function');
     expect(CIV_DEFS.polish.architecture).toEqual({ 1: 'biskupin', 2: 'krakow_gothic', 3: 'polish_attic' });
-    // Walls and units land in M21 Task 3; until then the civ stays unavailable.
-    expect(CIV_DEFS.polish.available).toBe(false);
+    // Walls and units landed in M21 Task 3, which made the civ available.
+    expect(CIV_DEFS.polish.available).toBe(true);
   });
 
   it('seed salts are unique across every registered style', () => {
