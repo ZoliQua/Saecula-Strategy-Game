@@ -268,7 +268,13 @@ export type ArchFamily =
   /** Medieval layouts in brick and plain tile with St Mary's uneven twin towers as town centre, a brick Gothic tower and town house (Polish age 2). */
   | 'krakow'
   /** Baroque layouts under crested attic parapets with arcaded Zamość houses, a Zamość town hall and Wawel as Wonder (Polish age 3). */
-  | 'zamosc';
+  | 'zamosc'
+  /** Roman workplaces with banded opus mixtum halls under saucer domes, a domed church-hall town centre and a Theodosian tower (Ottoman age 1). */
+  | 'byzantine'
+  /** Medieval workplaces in honey ashlar with a caravanserai town centre, pishtaq portals and conical kümbet towers (Ottoman age 2). */
+  | 'seljuk'
+  /** Baroque layouts under wide-eaved low hips with a lead-domed mosque and pencil minaret, cumba houses, domed halls and the Süleymaniye (Ottoman age 3). */
+  | 'osmanli';
 
 /**
  * Families whose painters size their canvases from the style
@@ -276,7 +282,7 @@ export type ArchFamily =
  * civ styles ride. Bespoke families size their own canvases, so they
  * must fit whatever headroom a style sets (style.test.ts).
  */
-export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles', 'petrine', 'biskupin', 'krakow', 'zamosc'];
+export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles', 'petrine', 'biskupin', 'krakow', 'zamosc', 'byzantine', 'seljuk', 'osmanli'];
 
 export interface ArchStyle {
   readonly id: ArchStyleId;

@@ -37,7 +37,10 @@ export type ArchStyleId =
   | 'gustavian'
   | 'biskupin'
   | 'krakow_gothic'
-  | 'polish_attic';
+  | 'polish_attic'
+  | 'byzantine'
+  | 'seljuk'
+  | 'osmanli';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId =
   | 'palisade'
@@ -230,10 +233,10 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     bonus: { kind: 'villagerSpeed', bonus: CIV_BONUS.villagerSpeed },
     landmark: { kind: 'mint' },
   },
-  // White crescent and star on red: red, white, green. Art is the Hungarian set until the M21 art tasks replace it.
+  // White crescent and star on red: red, white, green. Byzantine / Seljuk / Osmanlı buildings; walls and units are the Hungarian set until M21 Task 5.
   ottoman: {
     available: false,
-    architecture: HUNGARIAN_ARCH,
+    architecture: { 1: 'byzantine', 2: 'seljuk', 3: 'osmanli' },
     wallStyle: HUNGARIAN_WALLS,
     unitLook: 'hungarian',
     heraldry: { primary: 0xc8102e, secondary: 0xf2efe6, accent: 0x1f7a3a },

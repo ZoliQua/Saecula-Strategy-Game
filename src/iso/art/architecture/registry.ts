@@ -34,6 +34,9 @@ import { comuneArt } from './italian/comune';
 import { etruriaArt } from './italian/etruria';
 import { ITALIAN_COMUNE, ITALIAN_ETRURIA, ITALIAN_RINASCIMENTO } from './italian/italianStyles';
 import { rinascimentoArt } from './italian/rinascimento';
+import { hamamArt } from './ottoman/hamam';
+import { byzantineArt, osmanliArt, seljukArt } from './ottoman/ottoman';
+import { OTTOMAN_BYZANTINE, OTTOMAN_OSMANLI, OTTOMAN_SELJUK } from './ottoman/ottomanStyles';
 import { biskupinArt, krakowArt, zamoscArt } from './polish/polish';
 import { POLISH_ATTIC, POLISH_BISKUPIN, POLISH_KRAKOW } from './polish/polishStyles';
 import { saltMineArt } from './polish/saltMine';
@@ -93,6 +96,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   biskupin: POLISH_BISKUPIN,
   krakow_gothic: POLISH_KRAKOW,
   polish_attic: POLISH_ATTIC,
+  byzantine: OTTOMAN_BYZANTINE,
+  seljuk: OTTOMAN_SELJUK,
+  osmanli: OTTOMAN_OSMANLI,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -119,6 +125,9 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   biskupin: biskupinArt,
   krakow: krakowArt,
   zamosc: zamoscArt,
+  byzantine: byzantineArt,
+  seljuk: seljukArt,
+  osmanli: osmanliArt,
 };
 
 /**
@@ -137,8 +146,7 @@ export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>
   russian: ostrogArt,
   finnish: saunaArt,
   polish: saltMineArt,
-  // M21 placeholder: Task 4 replaces it with the hamam.
-  ottoman: saunaArt,
+  ottoman: hamamArt,
 };
 
 /**
