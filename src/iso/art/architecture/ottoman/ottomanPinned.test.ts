@@ -9,6 +9,7 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * M22 Task 1 re-recorded archery_range@1-3, blacksmith@1-3 and stable@3
  * with the Ottoman workshops (ottomanWorkshops.ts); its fix round 1 re-recorded
  * archery_range@1-3, blacksmith@1, blacksmith@3 and stable@3 (silhouettes, forge stack).
+ * M22 Task 3 re-recorded wall@2-3 (machicolated Rumeli towers, domed köşk bastions).
  */
 
 pinBuildings('ottoman', {
@@ -36,7 +37,7 @@ pinBuildings('ottoman', {
   'blacksmith@2': '1ffe04e7190d2f83',
   'foundry@2': '3e2ea4c6e8a4daa5',
   'tower@2': 'c6736b9e5362e420',
-  'wall@2': 'd6907ccf056f68a9',
+  'wall@2': 'c275d8d780b75e36',
   'wonder@2': '40eb9b1e74a2e513',
   'town_center@3': '2180840002eb1cb6',
   'house@3': '0ec349c3530ab1ef',
@@ -49,7 +50,7 @@ pinBuildings('ottoman', {
   'blacksmith@3': '20811b06b94763fa',
   'foundry@3': '2dd5e0fe471d7103',
   'tower@3': '4ab6eefa900bf6de',
-  'wall@3': 'a08ed6648000ae75',
+  'wall@3': '09a1c01ff9e8f2c3',
   'wonder@3': '40eb9b1e74a2e513',
   'wonder~s1': 'c277d3d542de1a44',
   'wonder~s2': '8ed937621cbdddc4',

@@ -31,6 +31,8 @@ export interface StarFortMaterials {
   readonly sentryRoof: number;
   /** The guérite's cap: a low lead hip (default) or a tall tiled needle. */
   readonly sentryCap?: 'hip' | 'needle';
+  /** Optional extra coursing painted over the scarp body (runs and bastions) under the cordon; default none. */
+  readonly scarpFace?: (ctx: Ctx, w: number, h: number, light: number) => void;
 }
 
 const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW | WALL_SE];
@@ -125,14 +127,21 @@ export function starFortWall(m: StarFortMaterials): WallAgeStyle {
     arm: (p, arm) => {
       const g = arm.girth;
       prism(p, arm.a, arm.b, 0.44 * g, 0, 7, { color: m.glacis, top: m.glacisTop, batter: 0.15, face: (w, h, l) => glacisFace(p.ctx, w, h, l, m.glacisTop) });
-      prism(p, arm.a, arm.b, 0.29 * g, 7, 27, { ...scarp, batter: 0.07 });
+      const body = m.scarpFace;
+      prism(p, arm.a, arm.b, 0.29 * g, 7, 27, body ? { ...scarp, batter: 0.07, face: (w, h, l) => body(p.ctx, w, h, l) } : { ...scarp, batter: 0.07 });
       prism(p, arm.a, arm.b, 0.235 * g, 27, 30, { color: m.dressing, top: m.coping, face: (w, h) => cordonFace(p.ctx, w, h) });
       prism(p, arm.a, arm.b, 0.22 * g, 30, 37.5, { ...scarp, top: m.coping, batter: 0.03, face: (w, h, l) => embrasures(p.ctx, w, h, l, m.coping) });
     },
     post: (p, arms) => {
       padShadow(p, 0.44);
       frustum(p, 0.02, 0.02, 0.98, 0.98, 0, 7, 0.14, { color: m.glacis, top: m.glacisTop, face: (w, h, l) => glacisFace(p.ctx, w, h, l, m.glacisTop) });
-      frustum(p, 0.15, 0.15, 0.85, 0.85, 7, 30, 0.075, { ...scarp, face: (w, h, l) => quoins(p.ctx, w, h, l, m.dressing) });
+      frustum(p, 0.15, 0.15, 0.85, 0.85, 7, 30, 0.075, {
+        ...scarp,
+        face: (w, h, l) => {
+          m.scarpFace?.(p.ctx, w, h, l);
+          quoins(p.ctx, w, h, l, m.dressing);
+        },
+      });
       frustum(p, 0.21, 0.21, 0.79, 0.79, 30, 33, 0, { color: m.dressing, top: m.coping, face: (w, h) => cordonFace(p.ctx, w, h) });
       frustum(p, 0.22, 0.22, 0.78, 0.78, 33, 41, 0.02, { ...scarp, top: m.coping, face: (w, h, l) => embrasures(p.ctx, w, h, l, m.coping) });
       // Corner and end bastions mount a gun and a guérite on their salient; rhythm piers of a straight run carry only the flag.

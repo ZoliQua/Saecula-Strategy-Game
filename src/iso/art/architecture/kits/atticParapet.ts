@@ -33,7 +33,7 @@ export function atticHeight(rise: number): number {
 }
 
 /** Blind arcade of round-headed niches along a parapet face (face-local, width w, height h). */
-function blindArcade(ctx: Ctx, w: number, h: number, wall: number, trim: number, light: number): void {
+export function blindArcade(ctx: Ctx, w: number, h: number, wall: number, trim: number, light: number): void {
   // Cornice band at the foot of the attic.
   ctx.fillStyle = css(shade(trim, light * 1.02));
   ctx.fillRect(0, -3, w, 3);
@@ -66,7 +66,7 @@ function blindArcade(ctx: Ctx, w: number, h: number, wall: number, trim: number,
 }
 
 /** A pinnacle (small obelisk with a ball) standing at screen point (x, y), `h` px tall. */
-function pinnacle(ctx: Ctx, x: number, y: number, h: number, color: number, light: number): void {
+export function pinnacle(ctx: Ctx, x: number, y: number, h: number, color: number, light: number): void {
   const w = Math.max(1.6, h * 0.28);
   ctx.fillStyle = css(shade(color, light));
   ctx.beginPath();
@@ -85,7 +85,7 @@ function pinnacle(ctx: Ctx, x: number, y: number, h: number, color: number, ligh
  * Crest along a parapet top from a to b (screen points): lunettes
  * between small pinnacles, taller pinnacles at both ends.
  */
-function crest(ctx: Ctx, a: Pt, b: Pt, color: number, light: number, size: number): void {
+export function crest(ctx: Ctx, a: Pt, b: Pt, color: number, light: number, size: number): void {
   const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
   const n = Math.max(2, Math.round(len / 9));
   for (let i = 0; i < n; i++) {
