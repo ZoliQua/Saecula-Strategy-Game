@@ -7,7 +7,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Recorded at M21 Task 4's final art; M21 Task 5 re-recorded wall@1-3
  * with the Ottoman walls (opus mixtum, Rumelihisarı, ashlar bastion trace).
  * M22 Task 1 re-recorded archery_range@1-3, blacksmith@1-3 and stable@3
- * with the Ottoman workshops (ottomanWorkshops.ts).
+ * with the Ottoman workshops (ottomanWorkshops.ts); its fix round 1 re-recorded
+ * archery_range@1-3, blacksmith@1, blacksmith@3 and stable@3 (silhouettes, forge stack).
  */
 
 pinBuildings('ottoman', {
@@ -17,9 +18,9 @@ pinBuildings('ottoman', {
   'lumber_camp@1': '9afe9986512283a6',
   'mining_camp@1': '6676b5a8b19784b4',
   'barracks@1': '018a2b46b2902ca2',
-  'archery_range@1': '0287de5869a37b48',
+  'archery_range@1': 'fa10812d13563d41',
   'stable@1': '403709bd9c468f2f',
-  'blacksmith@1': '3b587b70cb8bb4d7',
+  'blacksmith@1': '0b5c6e908a2e246c',
   'foundry@1': 'ba9dc40cd65ecd95',
   'tower@1': '9d08f8cd45061aeb',
   'wall@1': '4eb1b44a27c07476',
@@ -30,7 +31,7 @@ pinBuildings('ottoman', {
   'lumber_camp@2': '266261de3ffbcc66',
   'mining_camp@2': '2389975a5776423e',
   'barracks@2': 'ed15c82bb32b2415',
-  'archery_range@2': 'a6cffe244a9727a0',
+  'archery_range@2': '7c269efae068ab28',
   'stable@2': '9b947a583d94303e',
   'blacksmith@2': '1ffe04e7190d2f83',
   'foundry@2': '3e2ea4c6e8a4daa5',
@@ -43,9 +44,9 @@ pinBuildings('ottoman', {
   'lumber_camp@3': 'eac982939ea82a35',
   'mining_camp@3': '39615a0c5881ee0a',
   'barracks@3': '1f50dabe3fa7e908',
-  'archery_range@3': '935ef53a2dad4ffe',
-  'stable@3': '9a0a62fdc69d1a73',
-  'blacksmith@3': '6cb832e838e11120',
+  'archery_range@3': '7a180b979105ce5c',
+  'stable@3': '74b53b79c961706b',
+  'blacksmith@3': '20811b06b94763fa',
   'foundry@3': '2dd5e0fe471d7103',
   'tower@3': '4ab6eefa900bf6de',
   'wall@3': 'a08ed6648000ae75',

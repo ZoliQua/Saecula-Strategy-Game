@@ -118,7 +118,7 @@ function paintByzantineRange(p: IsoPainter, s: ArchStyle, team: number): void {
     crest(p.ctx, s, w / 2, -44, 5, team);
   });
   terrace(p, bay, 58, c.roof, c.stone);
-  leadDome(p, 0.55, 1.55, 0.27, 58, c.metal, { rise: 0.62, drum: 11, drumColor: c.stone, windows: 5, seams: 7 });
+  leadDome(p, 0.55, 1.55, 0.27, 58, c.metal, { rise: 0.62, drum: 16, drumColor: c.stone, windows: 5, seams: 7 });
   torch(p, 0.87, 1.87, 30, 0.95, 2.05);
   bowRack(p, 1.25, 1.55, 1.95, c.timber);
   for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);
@@ -142,7 +142,7 @@ function paintByzantineSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   const forge: Block = [1.25, 0.3, 1.75, 0.95];
   bandedBlock(p, s, forge, 0, 44, (w) => forgeMouth(p, w / 2 - 9, 18, 24), (w) => arched(p, s, w / 2 - 3, -20, 6, 11, R, false));
   terrace(p, forge, 44, c.roof, c.stone);
-  leadDome(p, 1.5, 0.62, 0.23, 44, c.metal, { rise: 0.6, drum: 8, drumColor: c.stone, seams: 5 });
+  leadDome(p, 1.5, 0.62, 0.23, 44, c.metal, { rise: 0.62, drum: 13, drumColor: c.stone, seams: 5 });
   forgeLight(p, 1.5, 1.15);
   anvil(p, 1.55, 1.3);
   p.flag(0.22, 1.8, 0, 26, team);
@@ -165,11 +165,11 @@ function paintSeljukRange(p: IsoPainter, s: ArchStyle, team: number): void {
   lowHip(p, s, hall, 44, 26);
   // The portal opening on the field, towering over the hall.
   const portal: Block = [1.6, 0.5, 1.9, 1.05];
-  portalRight(p, s, portal, 76);
-  terrace(p, portal, 76, c.roof, c.ashlar);
-  p.leftFace(portal[0], portal[2], portal[3], 0, (w) => crest(p.ctx, s, w / 2, -60, 4, team), 76);
+  portalRight(p, s, portal, 84);
+  terrace(p, portal, 84, c.roof, c.ashlar);
+  p.leftFace(portal[0], portal[2], portal[3], 0, (w) => crest(p.ctx, s, w / 2, -68, 4, team), 84);
   // A kümbet before the hall.
-  kumbet(p, s, 0.6, 1.75, 0.24, 0, 52, 40);
+  kumbet(p, s, 0.6, 1.75, 0.25, 0, 66, 46);
   bowRack(p, 1.35, 1.55, 1.95, c.timber);
   for (const [u, v] of [[2.5, 0.55], [2.55, 1.35], [2.5, 2.15]] as const) strawButt(p, u, v);
   p.flag(0.4, 2.6, 0, 38, team, true);
@@ -215,11 +215,11 @@ function paintOsmanliRange(p: IsoPainter, s: ArchStyle, team: number): void {
   wideHip(p, s, hall, 42, 30);
   // The domed kiosk (köşk) on columns at the head of the field.
   const k: Block = [1.82, 0.3, 2.3, 0.78];
-  p.box(k[0] - 0.04, k[1] - 0.04, k[2] + 0.04, k[3] + 0.04, 0, 5, { color: c.ashlar }, c.ashlar);
-  for (const [u, v] of [[k[0], k[1]], [k[2], k[1]], [k[0], k[3]]] as const) column(p, u, v, 5, 32, 2.4, c.trim);
-  column(p, k[2], k[3], 5, 32, 2.4, c.trim);
-  p.box(k[0] - 0.06, k[1] - 0.06, k[2] + 0.06, k[3] + 0.06, 32, 37, { color: c.trim }, c.trim);
-  leadDome(p, 2.06, 0.54, 0.22, 37, c.metal, { rise: 0.9, drum: 4, drumColor: c.trim, seams: 5, alem: true });
+  p.box(k[0] - 0.04, k[1] - 0.04, k[2] + 0.04, k[3] + 0.04, 0, 7, { color: c.ashlar }, c.ashlar);
+  for (const [u, v] of [[k[0], k[1]], [k[2], k[1]], [k[0], k[3]]] as const) column(p, u, v, 7, 58, 2.8, c.trim);
+  column(p, k[2], k[3], 7, 58, 2.8, c.trim);
+  p.box(k[0] - 0.06, k[1] - 0.06, k[2] + 0.06, k[3] + 0.06, 58, 64, { color: c.trim }, c.trim);
+  leadDome(p, 2.06, 0.54, 0.27, 64, c.metal, { rise: 0.95, drum: 6, drumColor: c.trim, seams: 5, alem: true });
   // Record stones of famous shots, and the targets.
   recordStone(p, 1.8, 1.9, 30, c.trim);
   recordStone(p, 2.05, 2.4, 26, c.trim);
@@ -243,11 +243,11 @@ function paintOsmanliStable(p: IsoPainter, s: ArchStyle, team: number): void {
     }
   });
   wideHip(p, s, hall, 44, 34);
-  // Lead-domed ventilation cupola on the ridge.
-  leadDome(p, 1.42, 1.05, 0.13, 44 + 34 * s.roof.pitch - 4, c.metal, { rise: 0.9, drum: 9, drumColor: c.trim, windows: 3, seams: 4, alem: true });
-  // The domed gate pavilion with the owner's banners.
-  const gate: Block = [2.5, 0.72, 2.86, 1.38];
-  ashlarBlock(p, s, gate, 0, 62, (w) => pointedWindow(p, c.trim, w / 2 - 3, -30, 6, 12, 1, false), (w) => {
+  // A row of lead-domed ventilation cupolas along the ridge (back to front).
+  for (const u of [0.95, 1.42, 1.89]) leadDome(p, u, 1.05, 0.2, 52, c.metal, { rise: 0.9, drum: 14, drumColor: c.trim, windows: 3, seams: 5, alem: true });
+  // The domed gate tower at the hall's back-right end, with the owner's banners: it breaks the roofline.
+  const gate: Block = [2.42, 0.22, 2.86, 0.86];
+  ashlarBlock(p, s, gate, 0, 92, (w) => pointedWindow(p, c.trim, w / 2 - 3, -64, 6, 12, 1, false), (w) => {
     ctx.fillStyle = css(shade(c.trim, R));
     pointedPath(ctx, w / 2 - 12, 0, 24, 40);
     ctx.fill();
@@ -257,14 +257,14 @@ function paintOsmanliStable(p: IsoPainter, s: ArchStyle, team: number): void {
     p.door(w / 2 - 9, 18, 26, c.doors.gate);
     for (const bx of [3, w - 10]) {
       ctx.fillStyle = css(team);
-      ctx.fillRect(bx, -52, 7, 20);
+      ctx.fillRect(bx, -66, 7, 22);
       ctx.fillStyle = css(shade(team, 0.7));
-      ctx.fillRect(bx, -34, 7, 2);
+      ctx.fillRect(bx, -46, 7, 2);
     }
   });
-  terrace(p, gate, 62, c.metal, c.ashlar);
-  leadDome(p, 2.68, 1.05, 0.2, 62, c.metal, { rise: 0.9, drum: 6, drumColor: c.ashlar, seams: 6, alem: true });
-  lantern(p, 2.86, 0.8, 38, 3.0, 0.8);
+  terrace(p, gate, 92, c.metal, c.ashlar);
+  leadDome(p, 2.64, 0.54, 0.23, 92, c.metal, { rise: 0.9, drum: 6, drumColor: c.ashlar, seams: 6, alem: true });
+  lantern(p, 2.86, 0.95, 40, 3.0, 0.95);
   // Fountain (çeşme) with its trough, and hay.
   const f: Block = [1.35, 2.15, 1.85, 2.28];
   ashlarBlock(p, s, f, 0, 24, (w) => {
@@ -282,7 +282,8 @@ function paintOsmanliSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
   p.footShadow();
   p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
-  chimney(p, 1.58, 0.3, 1.74, 0.46, 0, 118, { color: c.ashlar, detail: 'stone' });
+  // A squat, sooty brick forge stack (not a slender pale shaft, which would read as a minaret).
+  chimney(p, 1.52, 0.28, 1.74, 0.5, 0, 94, { color: shade(c.brick, 0.72), detail: 'brick' });
   const hall: Block = [0.3, 0.55, 1.3, 1.55];
   ashlarBlock(p, s, hall, 0, 40, (w) => {
     pointedWindow(p, c.trim, w * 0.16, -14, 8, 13, 1);
