@@ -3,11 +3,11 @@ import { css, shade } from '../../palette';
 import { sentryBox, railFence } from '../baroqueParts';
 import { archedOpening, cornice, crest, R } from '../facade';
 import { atticRoof } from '../kits/atticParapet';
-import { chimney, forgeLight, forgeMouth, lantern, target } from '../parts';
+import { forgeLight, forgeMouth, lantern, target } from '../parts';
 import type { ArchStyle } from '../style';
 import type { BuildingArt } from '../types';
 import type { Block } from './biskupinParts';
-import { anvil, bowRack } from './workParts';
+import { anvil, bowRack } from '../kits/workshopProps';
 
 /*
  * Zamość workshops (Polish age 3, M22): the barracks, archery range,
@@ -22,7 +22,7 @@ import { anvil, bowRack } from './workParts';
  * - stable: a blue stall hall of arched doors with a taller gate
  *   pavilion in the middle of its front;
  * - smithy: an apricot arcaded house, one arch the glowing forge, a
- *   tall brick stack through the attic.
+ *   tall brick stack with white stone bands beside the attic.
  * Sizes and height budgets are those of the baroque painters they replace.
  */
 
@@ -217,11 +217,27 @@ function paintStable(p: IsoPainter, s: ArchStyle, team: number): void {
   p.flag(2.8, 0.25, 0, 40, team, true);
 }
 
+/** A brick forge stack with white stone dressings: two bands, a cornice cap; its smoke at the top. */
+function dressedStack(p: IsoPainter, s: ArchStyle, b: Block, h: number): void {
+  const c = s.palette;
+  const [u0, v0, u1, v1] = b;
+  p.box(u0, v0, u1, v1, 0, h - 6, { color: c.stack, detail: 'brick' });
+  const bands = (light: number) => (w: number) => {
+    p.ctx.fillStyle = css(shade(c.trim, light));
+    for (const y of [h * 0.45, h * 0.72]) p.ctx.fillRect(0, -y - 3, w, 5);
+  };
+  p.leftFace(u0, u1, v1, 0, bands(1), h - 6);
+  p.rightFace(v0, v1, u1, 0, bands(R), h - 6);
+  p.box(u0 - 0.03, v0 - 0.03, u1 + 0.03, v1 + 0.03, h - 6, h - 2, { color: c.trim }, c.trim);
+  p.box(u0 + 0.01, v0 + 0.01, u1 - 0.01, v1 - 0.01, h - 2, h, { color: shade(c.stack, 0.8) }, 0x2a2622);
+  p.addSmoke((u0 + u1) / 2, (v0 + v1) / 2, h);
+}
+
 function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
   p.footShadow();
   paving(p, 0.08, 0.08, 1.92, 1.92);
-  chimney(p, 1.46, 0.22, 1.66, 0.42, 0, 118, { color: c.stack, detail: 'brick' });
+  dressedStack(p, s, [1.46, 0.22, 1.66, 0.42], 118);
   // The smithy: an apricot arcaded house, its second arch the forge.
   block(p, s, [0.24, 0.48, 1.42, 1.48], 52, c.plaster, (w, h) => {
     arcade(p, s, w, 1, 2, 30, (i, x, bw) => {
@@ -234,7 +250,7 @@ function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
     casements(p, s, w, R, 2, -h + 14, 7, 11, (i) => i === 0);
   });
   forgeLight(p, 1.1, 1.75);
-  anvil(p, 1.25, 1.62);
+  anvil(p, 1.25, 1.62, 0.3);
   lantern(p, 0.3, 1.5, 30, 0.3, 1.7);
   p.flag(1.84, 0.2, 0, 30, team);
 }

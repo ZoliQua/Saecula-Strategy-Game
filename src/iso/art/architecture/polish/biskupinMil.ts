@@ -6,7 +6,8 @@ import type { ArchStyle } from '../style';
 import { archer } from '../towerParts';
 import type { BuildingArt } from '../types';
 import { breastwork, corduroy, cribRampart, oakWalls, reedHip, reedRoof, rowHouses, type Block } from './biskupinParts';
-import { anvil, bowRack, shieldRack } from './workParts';
+import { anvil, bowRack } from '../kits/workshopProps';
+import { shieldRack } from './workParts';
 
 /*
  * Biskupin workshops (Polish age 1, M22): the barracks, archery range,
@@ -16,10 +17,11 @@ import { anvil, bowRack, shieldRack } from './workParts';
  * - barracks: the warriors' terraces on their plank street, a drill
  *   yard with a rack of round team shields, and a crib-built lookout at
  *   the corner of the rampart;
- * - archery range: an open reed shooting shed, straw butts backed by a
- *   stretch of crib rampart, the archers' terrace and a bow rack;
+ * - archery range: a long open reed shooting shed, straw butts backed
+ *   by a stretch of crib rampart, and a bow rack;
  * - stable: a long log byre with wide stall doors under one reed roof, a
- *   granary on stilts, a staked paddock, hay and a hollow-log trough;
+ *   tall granary on stilts at its corner, a staked paddock, hay and a
+ *   hollow-log trough;
  * - smithy: a small oak workshop and a clay bloomery shaft glowing at
  *   its mouth, with charcoal, an anvil and a tub.
  * Sizes and height budgets are those of the medieval painters they replace.
@@ -127,19 +129,19 @@ function paintStable(p: IsoPainter, s: ArchStyle, team: number): void {
   }, 28);
   const ridge = reedRoof(p, s, b, 28, 50, 'u', 0.14);
   p.addVolumePoint(1.4, 0.8, ridge);
+  // A tall granary on stilts at the left corner, its reed hip standing out of the byre's long outline.
+  const g: Block = [0.2, 2.2, 0.8, 2.8];
+  for (const [u, v] of [[g[0] + 0.04, g[1] + 0.04], [g[2] - 0.04, g[1] + 0.04], [g[0] + 0.04, g[3] - 0.04], [g[2] - 0.04, g[3] - 0.04]] as const) post(p, u, v, 0, 34, 3, c.timber);
+  p.box(g[0], g[1], g[2], g[3], 34, 54, { color: c.board, detail: 'planks' });
+  reedHip(p, s, [g[0] - 0.06, g[1] - 0.06, g[2] + 0.06, g[3] + 0.06], 54, 34, 0.06);
+  logPile(p, 0.5, 1.72, 4, shade(c.darkWood, 0.95), 0xd9b88a);
   // The staked paddock with a hollow-log trough and hay.
-  p.ground(0.3, 1.5, 2.0, 2.86, shade(0x9a8c64, 1.08), 0.5);
-  breastwork(p, s, 0.3, 1.5, 0.3, 2.86, 0, 11);
-  p.box(0.8, 1.76, 1.45, 1.9, 0, 7, { color: c.darkWood, detail: 'logs' }, 0x4f7f9a);
-  haystack(p, 1.0, 2.42, 10, 18);
-  haystack(p, 1.55, 2.5, 9, 15);
-  breastwork(p, s, 0.3, 2.86, 2.0, 2.86, 0, 11);
-  // A granary on stilts under its own reed hip.
-  const g: Block = [2.2, 1.62, 2.8, 2.22];
-  for (const [u, v] of [[g[0] + 0.04, g[1] + 0.04], [g[2] - 0.04, g[1] + 0.04], [g[0] + 0.04, g[3] - 0.04], [g[2] - 0.04, g[3] - 0.04]] as const) post(p, u, v, 0, 22, 3, c.timber);
-  p.box(g[0], g[1], g[2], g[3], 22, 40, { color: c.board, detail: 'planks' });
-  reedHip(p, s, [g[0] - 0.06, g[1] - 0.06, g[2] + 0.06, g[3] + 0.06], 40, 30, 0.06);
-  logPile(p, 2.5, 2.62, 4, shade(c.darkWood, 0.95), 0xd9b88a);
+  p.ground(1.0, 1.5, 2.86, 2.86, shade(0x9a8c64, 1.08), 0.5);
+  breastwork(p, s, 1.0, 1.5, 1.0, 2.86, 0, 11);
+  p.box(1.6, 1.76, 2.25, 1.9, 0, 7, { color: c.darkWood, detail: 'logs' }, 0x4f7f9a);
+  haystack(p, 1.8, 2.42, 10, 18);
+  haystack(p, 2.35, 2.5, 9, 15);
+  breastwork(p, s, 1.0, 2.86, 2.86, 2.86, 0, 11);
   p.flag(2.88, 0.2, 0, 34, team);
 }
 
@@ -172,6 +174,13 @@ function bloomery(p: IsoPainter, u: number, v: number, h: number, r: number): vo
     ctx.ellipse(x, yy, rr * 0.98, rr * 0.45, 0, 0.1, Math.PI - 0.1);
     ctx.stroke();
   }
+  // A flared clay lip round the throat, so the top reads as a furnace.
+  ellipse(ctx, x, top, rt * 1.35, rt * 0.62);
+  ctx.fillStyle = '#a57b50';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(70,46,26,.6)';
+  ctx.lineWidth = 0.9;
+  ctx.stroke();
   // The open throat, glowing.
   ellipse(ctx, x, top, rt, rt * 0.5);
   ctx.fillStyle = '#2a120a';
@@ -221,9 +230,9 @@ function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   ellipse(ctx, mx, my - 2, 13, 6);
   ctx.fillStyle = '#26211d';
   ctx.fill();
-  bloomery(p, 1.68, 0.44, 66, 17);
-  forgeLight(p, 1.7, 0.78);
-  anvil(p, 1.45, 1.36);
+  bloomery(p, 1.75, 0.32, 88, 18);
+  forgeLight(p, 1.78, 0.66);
+  anvil(p, 1.45, 1.36, 0.3);
   logPile(p, 0.4, 1.66, 4, shade(c.darkWood, 0.95), 0xd9b88a);
   p.flag(1.84, 1.84, 0, 26, team);
 }

@@ -3,8 +3,9 @@ import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { crest, R } from '../facade';
 import { leadDome } from '../kits/leadDome';
+import { anvil, bowRack } from '../kits/workshopProps';
 import { lowHip } from '../kits/lowHip';
-import { chimney, column, forgeLight, forgeMouth, lantern, post, strawButt, target, torch } from '../parts';
+import { chimney, column, forgeLight, forgeMouth, lantern, strawButt, target, torch } from '../parts';
 import type { ArchStyle } from '../style';
 import type { BuildingArt } from '../types';
 import { arched } from './byzantine';
@@ -28,53 +29,6 @@ import { lancet, portalLeft, portalRight } from './seljuk';
  *   fountain trough; the smithy's forge is a domed house.
  * Sizes and height budgets are those of the painters they replace.
  */
-
-/** Anvil on its block with a quenching tub beside it, at (u, v). */
-function anvil(p: IsoPainter, u: number, v: number): void {
-  const ctx = p.ctx;
-  const [x, y] = p.p(u, v, 0);
-  ctx.fillStyle = '#5a3b20';
-  ctx.fillRect(x - 5, y - 8, 10, 8);
-  ctx.fillStyle = '#34343a';
-  ctx.fillRect(x - 9, y - 12, 18, 4.5);
-  ctx.fillRect(x - 3, y - 9, 6, 2);
-  const [bx, by] = p.p(u + 0.12, v + 0.36, 0);
-  ctx.fillStyle = '#6b4526';
-  ctx.fillRect(bx - 6, by - 9, 12, 9);
-  ellipse(ctx, bx, by - 9, 6, 3);
-  ctx.fillStyle = css(0x24303a);
-  ctx.fill();
-}
-
-/** Rack of strung bows on two posts along v from (u, v0) to (u, v1). */
-function bowRack(p: IsoPainter, u: number, v0: number, v1: number, wood: number): void {
-  const ctx = p.ctx;
-  post(p, u, v0, 0, 22, 2.2, wood);
-  post(p, u, v1, 0, 22, 2.2, wood);
-  const a = p.p(u, v0, 20);
-  const b = p.p(u, v1, 20);
-  ctx.strokeStyle = css(wood);
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(a[0], a[1]);
-  ctx.lineTo(b[0], b[1]);
-  ctx.stroke();
-  for (let k = 1; k < 4; k++) {
-    const x = a[0] + ((b[0] - a[0]) * k) / 4;
-    const y = a[1] + ((b[1] - a[1]) * k) / 4;
-    ctx.strokeStyle = '#4a2e18';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.arc(x + 3, y + 8, 8, Math.PI * 0.6, Math.PI * 1.4);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(235,225,200,.8)';
-    ctx.lineWidth = 0.6;
-    ctx.beginPath();
-    ctx.moveTo(x - 1.6, y + 0.6);
-    ctx.lineTo(x - 1.6, y + 15.4);
-    ctx.stroke();
-  }
-}
 
 /** Ottoman record stone (nişan taşı): a slender marble stele with a turban top, at (u, v). */
 function recordStone(p: IsoPainter, u: number, v: number, h: number, stone: number): void {

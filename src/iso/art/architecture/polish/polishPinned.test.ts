@@ -8,7 +8,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * with the Polish walls (box rampart, barbican curtain, Zamość bastion).
  * M22 Task 2 re-recorded barracks@1, archery_range@1, stable@1,
  * blacksmith@1-3, barracks@3, archery_range@3 and stable@3 with the
- * Polish workshops (Biskupin, Kraków smithy, Zamość).
+ * Polish workshops (Biskupin, Kraków smithy, Zamość); its fix round
+ * re-recorded stable@1, blacksmith@1 and blacksmith@3.
  */
 
 pinBuildings('polish', {
@@ -19,8 +20,8 @@ pinBuildings('polish', {
   'mining_camp@1': 'ee5944898873fee4',
   'barracks@1': 'e3a800b58dcd4ca1',
   'archery_range@1': 'a959db437631fcfa',
-  'stable@1': 'f7995e67097e8828',
-  'blacksmith@1': '38b5f254e14bf476',
+  'stable@1': '4ed881ecc435d308',
+  'blacksmith@1': '2a899f92561f0803',
   'foundry@1': 'b7ed0076c70f1553',
   'tower@1': '47bc003032e21e41',
   'wall@1': '70706bac5976713e',
@@ -46,7 +47,7 @@ pinBuildings('polish', {
   'barracks@3': '83ddd257a85f7c27',
   'archery_range@3': '91181fea914dde63',
   'stable@3': '9e162219ebff515d',
-  'blacksmith@3': 'c339c7b699308292',
+  'blacksmith@3': '5abfcc6e3b67a68b',
   'foundry@3': '67c99b8c3f7eb6ba',
   'tower@3': 'e6d60a6438b80085',
   'wall@3': '26adbbdcfe9b581f',

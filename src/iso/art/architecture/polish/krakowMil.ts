@@ -9,7 +9,7 @@ import { styledGable } from '../styledRoofs';
 import type { BuildingArt } from '../types';
 import type { Block } from './biskupinParts';
 import { brickBlock, buttressLeft, cornerPinnacles, diaper, lancet, stringCourse } from './krakowParts';
-import { anvil } from './workParts';
+import { anvil } from '../kits/workshopProps';
 
 /*
  * Kraków's military buildings (Polish age 2): long diapered brick halls
@@ -179,7 +179,7 @@ function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
   p.material = 'tile';
   styledGable(p, s, forge[0], forge[1], forge[2], forge[3], 36, 18, c.roof, c.brick, 'u', 0.05);
   forgeLight(p, 1.5, 1.25);
-  anvil(p, 1.5, 1.38);
+  anvil(p, 1.5, 1.38, 0.3);
 }
 
 export function krakowSmithy(s: ArchStyle): BuildingArt {
