@@ -2052,14 +2052,15 @@ meccsenkénti legfeljebb 6 nép (1.1) nem változik.
   - egyedi egység: **Janicsár (`janissary`)**, a `crossbowman`-t váltja le
     (2. kor, lőtér): elit íjász — több életerő és támadás, a hosszúíjásznál
     rövidebb lőtáv, aranyba kerül (a nyíl-egység osztályába tartozik);
-  - népbónusz: a laktanya, a lőtér és az istálló 15 %-kal gyorsabban képez
+  - népbónusz: a laktanya, a lőtér és az istálló 10 %-kal gyorsabban képez
+    (a tervezett 15 % a körmérkőzésen túl erősnek bizonyult, lásd Állapot)
     (`trainSpeed`, a Sorozással szorzódik);
   - egyedi épület: **Hamam** (kupolás fürdő üvegszemes kupolákkal): a
     közelében álló saját egységeket gyógyítja (`sauna`, mint a finn Szauna).
 - **Új mechanika nincs:** minden hatás-fajta (`villagerSpeed`, `trainSpeed`,
   `mint`, `sauna`) és minden épület- és egységtípus a meglévő; a két új
-  egyedi egység az M8 leváltási szabálya szerint működik (népenként továbbra
-  is legfeljebb 10 szárazföldi egységlap). A kikötő, a kolostor, a piac és a
+  egyedi egység az M8 leváltási szabálya szerint működik (egy alap egység lapját
+  váltja, újat nem ad: a népenkénti egységlapok száma nem nő). A kikötő, a kolostor, a piac és a
   hajótest a nép stílusának palettájából jön (meglévő közös festők); a király
   a nép lovag-lapját használja (M19).
 - **Új nép felvétele:** az M5 ellenőrzőlistája szerint (1–6. pont), a népek
@@ -2102,6 +2103,62 @@ meccsenkénti legfeljebb 6 nép (1.1) nem változik.
   legfeljebb ~1 s betöltési többlet; JS-bundle < 2 MB gzip. Ha egy mérés
   túllép, előbb a nép grafikáján csökkentünk (rajzolási részletek, nem
   felbontás), és jelentjük.
+- **Állapot (2026-12-12):** kész. Lengyel és oszmán nép (`available: true`)
+  saját építészettel (`biskupin`, `krakow_gothic`, `polish_attic`; `byzantine`,
+  `seljuk`, `osmanli`; közös készletek: `kits/leadDome.ts`, `kits/minaret.ts`),
+  Csodával (Wawel, Szulejmán-mecset), falakkal, egységviselettel, egyedi
+  egységgel (szárnyas huszár, janicsár) és egyedi épülettel (sóbánya, hamam);
+  `schemaVersion` 15 valódi v14-mentéssel; a skirmish „Vegyes” sorsolása 10
+  népből húz, a kampány a `CLASSIC_CIVS`-ből (a 10 küldetés sorsolása és a régi
+  népek meccsei bitre azonosak, a záró átnézés ellenőrizte). Hangolás (Claude
+  döntése a mérés után): janicsár életerő 45 → 42, szúróvédelem 1 → 0, ár
+  30 étel / 45 arany → 30 / 50; az oszmán képzési bónusz 15 → **10 %** (15 %-kal
+  az oszmán Nehéz szinten 47/72 volt); a szárnyas huszár és a lengyel bónusz
+  változatlan. Párviadal (22/22): janicsár–számszeríjász +251, a kardforgatótól
+  (−360) és a felderítőtől (−491) kikap; szárnyas huszár–könnyűlovas −28.
+  Körmérkőzés (10 nép):
+
+  | Nép | Nehéz /72 | Mesteri /36 | Beltenger /36 |
+  |---|---|---|---|
+  | magyar | 42 | 13,5 | 22 |
+  | angol | 34 | 17,5 | 23 |
+  | német | 32,5 | 20,5 | 18,5 |
+  | francia | 33 | 20,5 | 17 |
+  | spanyol | 34 | 20 | 17 |
+  | olasz | 39 | 16,5 | 13,5 |
+  | orosz | 40,5 | 18 | 20 |
+  | finn | 34 | 20,5 | 17 |
+  | lengyel | 37,5 | 17 | 10 (28 %) |
+  | oszmán | 33,5 | 16 | 22 |
+
+  Mind sávon belül (Nehéz 27,8–44,2, Mesteri 11,6–24,4, vízen 25–75 %);
+  szélhez közel: a magyar Nehéz 42 és a lengyel vízi 28 %. Döntetlen 6 / 9 / 5;
+  futásidő kb. 15, 10 és 21 perc. Szimuláció (`newCivs.sim.test.ts`): a lengyel
+  AI (2. mag) 19,3 percnél 3. kor, 21,6 percnél sóbánya, 23,2 percnél első
+  szárnyas huszár; az oszmán (5. mag) 12,2 percnél első janicsár, 18,7 percnél
+  3. kor, 21,7 percnél hamam. A keverék-érzékeny szimulációk (Mesteri, Nehéz
+  korverseny) a `classicCivs` segéddel a régi népeken futnak. Mérve (1280×720,
+  swiftshader): `distinct6` 164,8–166,8 MB; Királygyilkos `distinct6 --trade`
+  (Szigetek) a legnehezebb népsorral (magyar, angol, lengyel, francia, orosz,
+  német) **258,0 MB** a 0,65-ös nagyításon, **2 MB-tal a 256 MB-os keret
+  fölött**; ugyanez csak régi népekkel (a lengyel helyett spanyol) 255,5 MB, a
+  népek grafikája a kettőben 220,7, illetve 220,2 MB — a túllépés a terep-
+  gyorsítótár 0,65-ös ingadozása egy már az M21 előtt is a keret szélén álló
+  esetben (az M19 egy könnyebb népsort mért: 249,6 MB). **Tulajdonosi döntés
+  (2026-11-26): elfogadva**, ismert szélső esetként, a keret nem változik.
+  `naval6 --ships --trade` 396,5 MB ≤ 400 MB (M19: 392,8); JS-bundle 0,82 MB gzip
+  (M19: 0,78). A népenkénti betöltési többletet nem mértük: a mérés idején a gép
+  terhelése (load average 50–150) a futásokat 30 s-mal is szórta. Böngésző-smoke
+  (5196, fej nélküli Chrome): a beállítóképernyő 10 népkártyája 1280×720-on és
+  1400×900-on; lengyelként ház, 3. kor, szárnyas huszár az istállóban (könnyűlovas
+  nem), sóbánya (29 arany/perc); oszmánként janicsár a lőtéren (számszeríjász
+  nem), hamam gyógyít; egy régi mentés importja betölt; `smoke:input` 5/5;
+  konzolhiba nélkül. Ismert grafikai gyengeségek: a lengyel és az oszmán 3. kori
+  bástya főleg anyagában tér el a közös csillagerődtől, az oszmán 1–2. kori
+  műhelyek átszínezett körvonalak, a Rumeli-tornyok a „kerek torony + kúp”
+  családba tartoznak (ezüstös kúppal). A záró átnézés (Ready with fixes, 5 apró
+  megjegyzés) javításai a `947f0ba`-ban; a Királygyilkos-szimuláció pontos
+  egyezésre váró ellenőrzésének törékenysége M21 utánra maradt.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét

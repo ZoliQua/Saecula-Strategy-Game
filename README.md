@@ -3,7 +3,7 @@
 # ⬢ Saecula
 
 **An isometric historical real-time strategy game that runs in your browser.**
-Three ages · eight nations · AI rivals — from Rome to the Enlightenment.
+Three ages · ten nations · AI rivals — from Rome to the Enlightenment.
 
 [![Version](https://img.shields.io/badge/version-0.9.2-f5a857)](CHANGELOG.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
@@ -38,16 +38,17 @@ in English and Hungarian.
 
 - 🏛️ **Three ages** — Roman era, Middle Ages, Enlightenment. Each age brings
   new buildings and units, and every town visibly changes as it ages up.
-- 🛡️ **Eight nations** — Hungarian, English, German, French, Spanish, Italian,
-  Russian and Finnish. Each nation has its own architecture in each age, its
-  own walls, unit gear and its own Wonder (Speyer, Versailles, the Alhambra,
-  Florence, St Basil's, Petäjävesi…).
+- 🛡️ **Ten nations** — Hungarian, English, German, French, Spanish, Italian,
+  Russian, Finnish, Polish and Ottoman. Each nation has its own architecture
+  in each age, its own walls, unit gear and its own Wonder (Speyer, Versailles,
+  the Alhambra, Florence, St Basil's, Petäjävesi, Wawel, the Süleymaniye…).
 - ⚔️ **Fifteen unit types** — villagers, scouts, swordsmen, archers, knights,
   pikemen, crossbowmen, musketeers, cannons, cavalry and monks, and four
   ships: fishing boats, transports, galleys and frigates.
 - 🎖️ **Unique units and bonuses** — every nation replaces one base unit with
   its own (hussar, longbowman, landsknecht, mousquetaire, conquistador,
-  legionary, cossack, sissi) and has a permanent bonus.
+  legionary, cossack, sissi, winged hussar, janissary) and has a permanent
+  bonus.
 - 🤖 **AI rivals** — four difficulty levels (Easy to Master) and three
   personalities (rusher, economist, defender), with no cheating.
 - 🗺️ **Seven map types** — Meadow, Wilderness, Islands, Fortress, Random and
@@ -67,7 +68,8 @@ in English and Hungarian.
   gold at shifting prices, send trade carts and trade ships between friendly
   markets and docks, and raise your nation's own landmark (a frontier castle,
   a royal dockyard, a Hanseatic kontor, an academy, a mint, a bank palazzo, a
-  log fortress or a lakeside sauna), each with its own effect.
+  log fortress, a lakeside sauna, a salt mine or a hamam), each with its own
+  effect.
 - 🌗 **Living world** — dynamic 2D lighting with normal maps, a day–night cycle,
   cast shadows, fog of war, construction and collapse animations.
 - 🎵 **Procedural audio** — positional sound effects and generative music per
@@ -165,6 +167,7 @@ each version contains.
 | M18 | Tutorial, building repair, colour-blind team colours | 🔧 unreleased |
 | M19 | Regicide and King of the Hill game modes | 🔧 unreleased |
 | M20 | Campaign chapter 2 and three short scenarios | 🔧 unreleased |
+| M21 | Two new nations: Polish and Ottoman | 🔧 unreleased |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, a long story campaign.

@@ -3,7 +3,7 @@
 # ⬢ Saecula
 
 **Izometrikus, történelmi, valós idejű stratégiai játék a böngésződben.**
-Három kor · nyolc nép · AI ellenfelek — Rómától a felvilágosodásig.
+Három kor · tíz nép · AI ellenfelek — Rómától a felvilágosodásig.
 
 [![Verzió](https://img.shields.io/badge/verzi%C3%B3-0.9.2-f5a857)](CHANGELOG.hu.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
@@ -37,16 +37,17 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
 
 - 🏛️ **Három kor** — római kor, középkor, felvilágosodás. Minden kor új
   épületeket és egységeket hoz, és a város a korváltáskor láthatóan átalakul.
-- 🛡️ **Nyolc nép** — magyar, angol, német, francia, spanyol, olasz, orosz és
-  finn. Minden népnek koronként saját építészete, falai, egységviselete és
-  saját Csodája van (Speyer, Versailles, Alhambra, Firenze, Szent Vazul,
-  Petäjävesi…).
+- 🛡️ **Tíz nép** — magyar, angol, német, francia, spanyol, olasz, orosz,
+  finn, lengyel és oszmán. Minden népnek koronként saját építészete, falai,
+  egységviselete és saját Csodája van (Speyer, Versailles, Alhambra, Firenze,
+  Szent Vazul, Petäjävesi, Wawel, Szülejmán-mecset…).
 - ⚔️ **Tizenöt egységtípus** — falusi, felderítő, kardforgató, íjász, lovag,
   lándzsás, számszeríjász, muskétás, ágyú, könnyűlovas és szerzetes, valamint
   négy hajó: halászhajó, szállítóhajó, gálya és fregatt.
 - 🎖️ **Egyedi egységek és bónuszok** — minden nép egyik alap egységét a
   sajátjára váltja (huszár, hosszúíjász, landsknecht, királyi muskétás,
-  konkvisztádor, légiós, kozák, sissi), és állandó bónusza van.
+  konkvisztádor, légiós, kozák, sissi, szárnyas huszár, janicsár), és állandó
+  bónusza van.
 - 🤖 **AI ellenfelek** — négy nehézségi szint (Könnyűtől Mesteriig) és három
   személyiség (rohamozó, gazdálkodó, védekező), csalás nélkül.
 - 🗺️ **Hét térképtípus** — Mezőség, Vadon, Szigetek, Erődítmény, Véletlen és
@@ -65,7 +66,8 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
 - 💰 **Kereskedelem és egyedi épületek** — piac, ahol az ételt és a fát változó
   áron aranyra cserélheted, kereskedőkocsik és -hajók baráti piacok és kikötők
   között, és néped saját egyedi épülete (végvár, királyi hajógyár, Hanza-kontor,
-  akadémia, pénzverde, bankház, osztrog vagy tóparti szauna), mindegyik saját
+  akadémia, pénzverde, bankház, osztrog, tóparti szauna, sóbánya vagy hamam),
+  mindegyik saját
   hatással.
 - 🌗 **Élő világ** — dinamikus 2D fények normal map-ekkel, napszakváltás,
   vetett árnyékok, háborús köd, építési és összeomlási animációk.
@@ -164,6 +166,7 @@ A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
 | M18 | Oktató mód, épületjavítás, színtévesztő-barát színek | 🔧 kiadatlan |
 | M19 | Királygyilkos és A domb ura játékmód | 🔧 kiadatlan |
 | M20 | A kampány II. fejezete és három rövid küldetés | 🔧 kiadatlan |
+| M21 | Két új nép: lengyel és oszmán | 🔧 kiadatlan |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, hosszú sztori-kampány.

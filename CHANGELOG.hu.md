@@ -12,6 +12,22 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
+- **Két új nép, lengyel és oszmán** (összesen tíz). Mindkettőnek saját
+  építészete van mindhárom korban, saját falai, egységviselete, Csodája és
+  egyedi épülete:
+  - **Lengyel:** biskupini sorházak, krakkói téglagótika az egyenlőtlen
+    ikertoronnyal, reneszánsz attika-pártázat; a Wawel; a *szárnyas huszár*
+    váltja a könnyűlovast (3. kor); a falusiak 10 %-kal gyorsabbak; a
+    wieliczkai sóbánya aranyat termel.
+  - **Oszmán:** bizánci sávos falak és lapos kupolák, szeldzsuk kapuzatok és
+    kümbet-kúpok, klasszikus ólomkupolák és ceruza-minaretek; a
+    Szülejmán-mecset; a *janicsár* váltja a számszeríjászt (2. kor); a
+    laktanya, a lőtér és az istálló 10 %-kal gyorsabban képez; a hamam
+    gyógyítja a közeli egységeket.
+- A „Vegyes” AI-sorsolás mind a tíz népből húz, így ugyanaz a mag más
+  AI-népeket adhat, mint korábban (a térkép változatlan). A kampány küldetései
+  a régi felállással futnak, a betöltött mentés a saját népeit tartja meg.
+- A mentés 15-ös verzióra lép.
 - **A kampány II. fejezete:** a *Csodák kora* után három újabb küldetés,
   sorban feloldva: *Új partok* (spanyol, Szigetvilág: kikötő, halászhajók,
   gályák és a középkor), *A Hanza útjai* (német, szövetségessel és 20 perc

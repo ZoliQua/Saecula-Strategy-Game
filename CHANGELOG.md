@@ -12,6 +12,20 @@ raises the patch version.
 
 ### Added
 
+- **Two new nations, Polish and Ottoman** (ten in all). Each has its own
+  architecture in all three ages, walls, unit gear, Wonder and landmark:
+  - **Polish:** Biskupin row houses, Kraków brick Gothic with the uneven twin
+    towers, Renaissance attic parapets; the Wawel; the *winged hussar*
+    replaces the cavalry (age 3); villagers move 10 % faster; the Wieliczka
+    salt mine produces gold.
+  - **Ottoman:** banded Byzantine walls and saucer domes, Seljuk portals and
+    kümbet cones, classical lead domes and pencil minarets; the Süleymaniye;
+    the *janissary* replaces the crossbowman (age 2); barracks, archery range
+    and stable train 10 % faster; the hamam heals nearby units.
+- The mixed ("Vegyes") AI draw picks from all ten nations, so the same seed
+  can give other AI nations than before (the map is unchanged). Campaign
+  missions keep their old line-ups, and a loaded save keeps its own nations.
+- Saves move to version 15.
 - **Campaign chapter 2:** three more missions after *Age of Wonders*, unlocked
   in order: *New Shores* (Spanish, Archipelago: a dock, fishing boats, galleys
   and the Middle Ages), *The Hansa Roads* (German, with an ally and a
