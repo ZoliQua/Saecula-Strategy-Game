@@ -119,8 +119,9 @@ export interface HeadlessMatch {
   readonly timeMs: () => number;
   /**
    * The match judged as the game judges it, campaign objectives aside: this
-   * marks the defeated; the first decided result stands. Regicide and King
-   * of the Hill also judge after every step, as every frame of the game does.
+   * marks the defeated (Regicide: and brings down a kingless one's town
+   * centres); the first decided result stands. Regicide and King of the
+   * Hill also judge after every step, as every frame of the game does.
    */
   judge(): VictoryState;
   /** The match as a save; needs every AI built with an `rng` and no AI-driven human. */

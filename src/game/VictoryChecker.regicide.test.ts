@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WONDER_HOLD_MS } from '../config/balance';
+import { BUILDING_DEATH_TTL_MS, WONDER_HOLD_MS } from '../config/balance';
 import { createBuilding } from '../ecs/archetypes/building';
 import { createUnit } from '../ecs/archetypes/createUnit';
 import type { CargoUnit, Entity } from '../ecs/components';
@@ -7,6 +7,7 @@ import { createEcsWorld } from '../ecs/world';
 import { chooseEnemyPlayer } from '../ai/targetPlayer';
 import { MapData } from '../map/MapData';
 import { TERRAIN } from '../map/TerrainTypes';
+import { decidedWinner } from './gameOverStats';
 import { applyDamage, killEntity } from './kill';
 import { createPlayer } from './Player';
 import { PlayerManager } from './PlayerManager';
@@ -34,6 +35,11 @@ function setup({ count = 2, allies = 0, victory = 'regicide' as VictoryMode } = 
     killKing: (id: number) => killEntity(world, kings.get(id)!),
     razeTc: (id: number) => killEntity(world, tcs.get(id)!),
     kings,
+    tcs,
+    addTc: (id: number, underConstruction = false) =>
+      createBuilding(world, { type: 'town_center', origin: { tx: id * 9, ty: underConstruction ? 24 : 16 }, playerId: id, mapData: map, underConstruction }) as Mortal,
+    /** Owners of the collapsing town centres, one entry each. */
+    fallen: () => world.entities.filter((e) => e.building?.type === 'town_center' && e.dying).map((e) => e.owner!.playerId).sort(),
     out: () => players.all().filter((p) => p.defeated).map((p) => p.id),
   };
 }
@@ -45,7 +51,7 @@ describe('Regicide elimination (M19)', () => {
     expect(out()).toEqual([]);
   });
 
-  it('losing the king eliminates, town centre standing', () => {
+  it('losing the king eliminates', () => {
     const m = setup({ count: 3 });
     m.killKing(3);
     expect(m.checker.check()).toEqual({ kind: 'playing' });
@@ -172,11 +178,130 @@ describe('Regicide results and causes (M19)', () => {
     expect(m.out()).toEqual([1]);
   });
 
-  it('teams: a kingless player with a town centre is no target any more', () => {
+  it('teams: a kingless player is no target any more', () => {
     const m = setup({ count: 4, allies: 1 });
     expect(chooseEnemyPlayer(m.players, 2, m.world)).toBe(3);
     m.killKing(3);
     m.checker.check();
     expect(chooseEnemyPlayer(m.players, 2, m.world)).toBe(4);
+  });
+});
+
+describe('the town centres collapse when the king falls (M19)', () => {
+  it('every one, a site too, in the check that eliminates', () => {
+    const m = setup({ count: 3 });
+    const second = m.addTc(3);
+    const site = m.addTc(3, true);
+    m.killKing(3);
+    expect(m.fallen()).toEqual([]);
+    expect(m.checker.check()).toEqual({ kind: 'playing' });
+    for (const tc of [m.tcs.get(3)!, second, site]) {
+      expect(tc.dying).toEqual({ ttlMs: BUILDING_DEATH_TTL_MS });
+      expect(tc.health.current).toBe(0);
+    }
+    expect(m.fallen()).toEqual([3, 3, 3]);
+  });
+
+  it('only town centres, and only of that player', () => {
+    const m = setup({ count: 3 });
+    const barracks = createBuilding(m.world, { type: 'barracks', origin: { tx: 40, ty: 40 }, playerId: 3, mapData: m.map });
+    const knight = createUnit(m.world, { type: 'knight', tile: { tx: 45, ty: 45 }, playerId: 3 });
+    m.killKing(3);
+    m.checker.check();
+    expect(m.fallen()).toEqual([3]);
+    expect([barracks.dying, knight.dying]).toEqual([undefined, undefined]);
+  });
+
+  it('once: a later check restarts no collapse', () => {
+    const m = setup({ count: 3 });
+    m.killKing(3);
+    m.checker.check();
+    const tc = m.tcs.get(3)!;
+    tc.dying!.ttlMs -= 500;
+    m.checker.check();
+    expect(tc.dying).toEqual({ ttlMs: BUILDING_DEATH_TTL_MS - 500 });
+  });
+
+  it('a town centre razed in the same tick keeps its own collapse, the others join', () => {
+    const m = setup({ count: 3 });
+    const second = m.addTc(3);
+    m.razeTc(3);
+    m.tcs.get(3)!.dying!.ttlMs -= 100;
+    m.killKing(3);
+    expect(m.checker.check()).toEqual({ kind: 'playing' });
+    expect(m.tcs.get(3)!.dying).toEqual({ ttlMs: BUILDING_DEATH_TTL_MS - 100 });
+    expect(second.dying).toEqual({ ttlMs: BUILDING_DEATH_TTL_MS });
+    expect(m.out()).toEqual([3]);
+  });
+
+  it('a king sunk with its transport brings them down too', () => {
+    const m = setup({ count: 3 });
+    const ship = createUnit(m.world, { type: 'transport', tile: { tx: 30, ty: 30 }, playerId: 3 }) as Mortal;
+    const king = m.kings.get(3)!;
+    m.world.remove(king);
+    m.world.addComponent(ship, 'cargo', { units: [king as CargoUnit] });
+    m.checker.check();
+    expect(m.fallen()).toEqual([]);
+    applyDamage(m.world, ship, 10_000, 1);
+    m.checker.check();
+    expect(m.fallen()).toEqual([3]);
+  });
+
+  it('out by the town centre: nothing more collapses, whenever the king falls', () => {
+    const m = setup({ count: 3 });
+    m.razeTc(3);
+    m.checker.check();
+    const later = m.addTc(3);
+    m.killKing(3);
+    m.checker.check();
+    expect(later.dying).toBeUndefined();
+  });
+
+  it("human's loss: theirs collapse, and the result holds when judged again", () => {
+    const m = setup();
+    m.killKing(1);
+    const lost = { kind: 'defeat', winnerId: 2, cause: 'regicide' } as const;
+    expect(m.checker.check()).toEqual(lost);
+    expect(m.fallen()).toEqual([1]);
+    expect(m.checker.check()).toEqual(lost);
+    expect(decidedWinner(lost, m.players.all())).toBe(2);
+  });
+
+  it('both last kings in one tick: both collapse, nobody is crowned', () => {
+    const m = setup();
+    m.killKing(1);
+    m.killKing(2);
+    const state = m.checker.check();
+    expect(state).toEqual({ kind: 'defeat', winnerId: 0, cause: 'regicide' });
+    expect(m.fallen()).toEqual([1, 2]);
+    if (state.kind !== 'defeat') throw new Error('no defeat');
+    expect(decidedWinner(state, m.players.all())).toBeNull();
+  });
+
+  it('teams: won by regicide, the standing ally keeps its town centre', () => {
+    const m = setup({ count: 4, allies: 1 });
+    m.killKing(3);
+    m.killKing(4);
+    expect(m.checker.check()).toEqual({ kind: 'victory', winnerId: 1, cause: 'regicide' });
+    expect(m.fallen()).toEqual([3, 4]);
+  });
+
+  it("teams: the human's loss leaves the ally's standing", () => {
+    const m = setup({ count: 4, allies: 1 });
+    m.killKing(1);
+    expect(m.checker.check()).toEqual({ kind: 'defeat', winnerId: 3, cause: 'regicide' });
+    expect(m.fallen()).toEqual([1]);
+  });
+
+  it.each(['conquest', 'conquest_wonder', 'conquest_time', 'all', 'hill'] as const)('%s: never, nor for a player who is out', (victory) => {
+    const m = setup({ victory, count: 3 });
+    const second = m.addTc(2);
+    m.razeTc(3);
+    m.killKing(2);
+    m.killKing(3);
+    m.checker.check();
+    expect(m.fallen()).toEqual([3]);
+    expect(second.dying).toBeUndefined();
+    expect(m.out()).toEqual([3]);
   });
 });

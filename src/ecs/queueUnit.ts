@@ -1,7 +1,6 @@
 import { uiStore } from '../ui/store';
 import { isUnitAvailable } from '../game/availability';
 import { canCivTrain } from '../game/civUnits';
-import { isRetiredTownCentre } from '../game/regicide';
 import type { AgeId, CivId, Population, UnitType } from '../types';
 import type { Entity } from './components';
 import { UNIT_SPECS } from './archetypes/unit';
@@ -11,7 +10,6 @@ export interface QueueUnitResult {
   readonly ok: boolean;
   readonly reason?:
     | 'missing-queue'
-    | 'owner-defeated'
     | 'wrong-trainer'
     | 'civ-locked'
     | 'researching'
@@ -40,12 +38,11 @@ export function uiTrainAccount(): TrainAccount {
  * are enforced here for the human and the AI alike: the building must
  * be one of the unit's trainers, not researching or collapsing, and the
  * unit must be in the owner's civ roster and unlocked at the owner's age.
- * A defeated owner's town centre takes none (M19, isRetiredTownCentre).
  */
 export function queueUnit(
   trainer: Entity,
   type: UnitType,
-  owner: { readonly age: AgeId; readonly civ: CivId; readonly defeated?: boolean },
+  owner: { readonly age: AgeId; readonly civ: CivId },
   account: TrainAccount = uiTrainAccount(),
 ): QueueUnitResult {
   const spec = UNIT_SPECS[type];
@@ -54,7 +51,6 @@ export function queueUnit(
   if (!trainer.building || !spec.trainers.includes(trainer.building.type)) {
     return { ok: false, reason: 'wrong-trainer' };
   }
-  if (isRetiredTownCentre(trainer, owner)) return { ok: false, reason: 'owner-defeated' };
   if (!canCivTrain(owner.civ, type)) return { ok: false, reason: 'civ-locked' };
   if (trainer.research) return { ok: false, reason: 'researching' };
   if (!isUnitAvailable(type, owner.age)) return { ok: false, reason: 'age-locked' };

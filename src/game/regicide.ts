@@ -4,6 +4,7 @@ import type { TileCoord } from '../iso/coordinates';
 import { reachMask } from '../map/gridSteps';
 import type { MapData } from '../map/MapData';
 import { TOWN_CENTER_SIZE, villagerSpawnTiles } from '../map/startLayout';
+import { killEntity } from './kill';
 
 /* Regicide (M19): who still has a king, where it starts and what losing it leaves behind. */
 
@@ -51,10 +52,13 @@ export function kingStartTile(start: TileCoord, mapData: MapData): TileCoord {
 }
 
 /**
- * A defeated player's town centre takes no orders. Every other rule
- * assumed that a defeated player has none (it lost by it); in Regicide it
- * may still stand after the king fell, and would grow a new economy.
+ * Every standing town centre of `playerId`, sites included, collapses: the
+ * death of a razed one (killEntity, then DeathSystem), so the player who
+ * lost the king is exactly one out by Conquest. No `entityKilled`, so
+ * nobody scores it and it is no lost building, as with a deletion.
  */
-export function isRetiredTownCentre(building: Entity, owner: { readonly defeated?: boolean }): boolean {
-  return owner.defeated === true && building.building?.type === 'town_center';
+export function collapseTownCentres(world: EcsWorld, playerId: number): void {
+  for (const e of world.with('building', 'owner', 'health')) {
+    if (e.building.type === 'town_center' && e.owner.playerId === playerId && !e.dying) killEntity(world, e);
+  }
 }

@@ -3,7 +3,7 @@ import { areAllies, areEnemies } from './diplomacy';
 import { hasHill, hasRegicide, wonderHoldFor, type VictoryMode } from './GameSetupConfig';
 import { hillState, hillWinner } from './hill';
 import type { PlayerManager } from './PlayerManager';
-import { hasLivingKing } from './regicide';
+import { collapseTownCentres, hasLivingKing } from './regicide';
 import { timeLeading, type TimeVictoryRule } from './timeVictory';
 
 /** How a match was decided. */
@@ -31,9 +31,9 @@ export type VictoryState =
  *
  * Regicide (M19, when `regicide` is set): a player is also defeated
  * without a living king (one in a transport's cargo lives), in the same
- * pass, and is never revived. The human's defeat names `regicide` when
- * kingless, the victory when some enemy is kingless; else both name
- * `conquest`.
+ * pass, and is never revived; out by the king, their town centres collapse
+ * in that pass. The human's defeat names `regicide` when kingless, the
+ * victory when some enemy is kingless; else both name `conquest`.
  *
  * King of the Hill (M19, when `hill` is set, after conquest): the team
  * whose clock (HillSystem) is full wins, while any of it still stands.
@@ -68,8 +68,10 @@ export class VictoryChecker {
   check(): VictoryState {
     for (const player of this.players.all()) {
       if (player.defeated) continue;
-      const out = !this.hasLiveTownCenter(player.id) || this.lostKing(player.id);
-      if (out) this.players.markDefeated(player.id);
+      const kingless = this.lostKing(player.id);
+      if (!kingless && this.hasLiveTownCenter(player.id)) continue;
+      this.players.markDefeated(player.id);
+      if (kingless) collapseTownCentres(this.world, player.id);
     }
     const human = this.players.human();
     if (!human) return { kind: 'playing' };

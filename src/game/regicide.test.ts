@@ -136,33 +136,14 @@ describe('kingStartTile (M19)', () => {
   });
 });
 
-describe("a defeated player's standing town centre (M19)", () => {
-  function setup(defeated: boolean) {
+describe("a defeated player's buildings (M19)", () => {
+  it('carry no restriction of their own: a standing town centre takes orders, as any building', () => {
     const map = new MapData(30, 30, TERRAIN.grass);
     const world = createEcsWorld();
-    const player = createPlayer({ id: 2, age: 2, defeated, resources: { food: 2000, wood: 2000, gold: 2000 } });
-    const make = (type: 'town_center' | 'barracks' | 'blacksmith', tx: number) => createBuilding(world, { type, origin: { tx, ty: 3 }, playerId: 2, mapData: map });
+    const player = createPlayer({ id: 2, age: 2, defeated: true, resources: { food: 2000, wood: 2000, gold: 2000 } });
+    const tc = (tx: number) => createBuilding(world, { type: 'town_center', origin: { tx, ty: 3 }, playerId: 2, mapData: map });
     const wallet = playerWallet(player);
-    return { world, player, make, wallet, account: { wallet, population: () => ({ current: 0, cap: 10 }) } };
-  }
-
-  it('takes no training or research order, and takes nothing for a refused one', () => {
-    const { world, player, make, wallet, account } = setup(true);
-    const tc = make('town_center', 3);
-    expect(queueUnit(tc, 'villager', player, account)).toEqual({ ok: false, reason: 'owner-defeated' });
-    expect(startResearch(world, tc, 'enlightenment', player, wallet)).toEqual({ ok: false, reason: 'owner-defeated' });
-    expect(tc.trainingQueue?.entries).toEqual([]);
-    expect(tc.research).toBeUndefined();
-    expect(player.resources).toEqual({ food: 2000, wood: 2000, gold: 2000 });
-  });
-
-  it('the other buildings serve on, as after a defeat by conquest', () => {
-    const { player, make, account } = setup(true);
-    expect(queueUnit(make('barracks', 10), 'swordsman', player, account).ok).toBe(true);
-  });
-
-  it('a standing player trains there as before', () => {
-    const { player, make, account } = setup(false);
-    expect(queueUnit(make('town_center', 3), 'villager', player, account).ok).toBe(true);
+    expect(queueUnit(tc(3), 'villager', player, { wallet, population: () => ({ current: 0, cap: 10 }) })).toEqual({ ok: true });
+    expect(startResearch(world, tc(10), 'artisan_guilds', player, wallet)).toEqual({ ok: true });
   });
 });

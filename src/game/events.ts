@@ -24,7 +24,7 @@ export interface GameEvents {
    * Match statistics (M7, src/stats/MatchStats.ts). `world` is the match
    * the fact happened in: headless sims may run several at once.
    */
-  /** A unit or building died in combat; `killerId` is the attacker's owner (null: no attacker). Deletions never emit it. */
+  /** A unit or building died in combat; `killerId` is the attacker's owner (null: no attacker). Deletions and collapses with a fallen king (M19) never emit it. */
   entityKilled: {
     world: EcsWorld;
     killerId: number | null;
