@@ -9,7 +9,7 @@ import { icons } from '../icons';
 import { bindModalKeys, GLYPHS } from './modalKeys';
 import { grouped, hex } from '../format';
 import { downloadText, exportDate } from '../download';
-import { exportPayload, formatLength, formatRate, formatWhen } from './statsView';
+import { exportPayload, formatLength, formatRate, formatWhen, matchModeTexts } from './statsView';
 import '../hud.css';
 import '../screens.css';
 import '../pause.css';
@@ -187,6 +187,7 @@ function groupPanel<K extends string>(i: number, title: string, groups: readonly
 
 function matchRow(r: MatchRecord, j: number): HTMLElement {
   const sep = (): HTMLElement => el('span', { class: 'sep' }, '·');
+  const mode = matchModeTexts(r);
   return el(
     'div',
     { class: `st-match ${r.outcome}`, role: 'listitem', style: `--j:${Math.min(j, 12)}` },
@@ -202,6 +203,7 @@ function matchRow(r: MatchRecord, j: number): HTMLElement {
       { class: 'st-mmeta' },
       el('span', {}, `${hu.setup.templates[r.map.template].name} · ${hu.setup.sizes[r.map.mapSize]}`),
       el('span', { class: 'st-msub' }, hu.setup.difficulties[r.setup.difficulty], sep(), hu.stats.opponents(r.setup.aiCount)),
+      mode.length > 0 ? el('span', { class: 'st-msub st-mmode' }, mode.join(' · ')) : null,
     ),
     el('span', { class: 'st-mlen' }, el('span', { html: icons.clock }), formatLength(r.durationMs)),
     el('span', { class: `st-badge ${r.outcome}` }, hu.stats.outcomes[r.outcome]),

@@ -36,7 +36,7 @@ export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
  */
 export type VictoryMode = 'conquest' | 'conquest_wonder' | 'conquest_time' | 'all' | 'regicide' | 'hill';
 export const VICTORY_MODES: readonly VictoryMode[] = ['conquest', 'conquest_wonder', 'conquest_time', 'all', 'regicide', 'hill'];
-const DEFAULT_VICTORY: VictoryMode = 'conquest_wonder';
+export const DEFAULT_VICTORY: VictoryMode = 'conquest_wonder';
 
 /** The mode lets a held Wonder win. */
 export function hasWonderVictory(mode: VictoryMode): boolean {

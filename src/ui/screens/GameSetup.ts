@@ -15,8 +15,8 @@ import {
   SPEED_CHOICES,
   TREATY_MINUTES,
   withSetup,
-  VICTORY_MODES,
   type GameSetupConfig,
+  type VictoryMode,
 } from '../../game/GameSetupConfig';
 import { CIV_DEFS } from '../../config/civs';
 import { MAP_TEMPLATES } from '../../map/generator';
@@ -28,7 +28,17 @@ import { ChipGroup, type ChipItem } from './ChipGroup';
 import { hex } from '../format';
 import { CivPicker } from './CivPicker';
 import { E_UP_S } from './MainMenu';
-import { alliesItems, parseChoice, speedItems, startResourceItems, treatyItems } from './modeItems';
+import {
+  alliesItems,
+  parseChoice,
+  speedItems,
+  startResourceItems,
+  treatyItems,
+  VICTORY_PER_ROW,
+  victoryItems,
+  victoryRowView,
+  victoryWasReset,
+} from './modeItems';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
 import '../screens.css';
@@ -49,7 +59,7 @@ export interface GameSetupHandlers {
 
 /**
  * Game setup card: map template / size, AI count, difficulty, victory
- * conditions, allies, treaty, starting resources, game speed (M16), the human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
+ * conditions (six, in two rows; the hill off on the templates without one, saying why), allies, treaty, starting resources, game speed (M16), the human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
  * "hamarosan" tag. Lives over the main menu's live diorama.
  */
 export class GameSetup {
@@ -59,7 +69,10 @@ export class GameSetup {
   private readonly aiSeg: Segmented<string>;
   private readonly sizeSeg: Segmented<string>;
   private readonly diffSeg: Segmented<string>;
-  private readonly victorySeg: Segmented<string>;
+  private readonly victorySeg: Segmented<VictoryMode>;
+  private readonly victoryHint: HTMLElement;
+  /** The template took the chosen hill away (victoryWasReset): the row says so. */
+  private victoryReset = false;
   /** Rebuilt when the AI count changes (its options are 0..aiCount - 1). */
   private alliesSeg: Segmented<string>;
   private alliesFor: number;
@@ -128,10 +141,8 @@ export class GameSetup {
       this.change({ difficulty: v as GameSetupConfig['difficulty'] }),
     );
 
-    const victoryItems: SegmentItem<string>[] = VICTORY_MODES.map((id) => ({ value: id, label: t.victories[id] }));
-    this.victorySeg = new Segmented('victory', t.victory, victoryItems, this.config.victory, (v) =>
-      this.change({ victory: v as GameSetupConfig['victory'] }),
-    );
+    this.victorySeg = new Segmented('victory', t.victory, victoryItems(), this.config.victory, (v) => this.change({ victory: v }), VICTORY_PER_ROW);
+    this.victoryHint = el('div', { class: 'setup-hint victory-hint', 'aria-live': 'polite' });
 
     this.alliesFor = this.config.aiCount;
     this.alliesSeg = this.makeAlliesSeg();
@@ -200,7 +211,7 @@ export class GameSetup {
       field(t.size, this.sizeSeg.root),
       field(t.opponents, this.aiSeg.root, this.aiHint),
       field(t.difficulty, this.diffSeg.root),
-      field(t.victory, this.victorySeg.root),
+      field(t.victory, this.victorySeg.root, this.victoryHint),
       (this.alliesRow = field(t.allies, this.alliesHost, this.alliesHint)),
       field(t.treaty, this.treatySeg.root),
       field(t.startResources, this.startResSeg.root),
@@ -278,8 +289,13 @@ export class GameSetup {
 
   private change(partial: Partial<GameSetupConfig>): void {
     if (this.busy) return;
-    this.config = withSetup(this.config, partial);
+    const before = this.config;
+    const wasReset = this.victoryReset;
+    this.config = withSetup(before, partial);
+    this.victoryReset = victoryWasReset(wasReset, before, partial, this.config);
     this.refresh();
+    // A reset is never silent, also with the row scrolled out of the card.
+    if (this.victoryReset && !wasReset) this.victoryHint.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   private makeAlliesSeg(): Segmented<string> {
@@ -299,6 +315,10 @@ export class GameSetup {
     this.aiSeg.set(String(c.aiCount));
     this.diffSeg.set(c.difficulty);
     this.victorySeg.set(c.victory);
+    const victory = victoryRowView(c.template, this.victoryReset);
+    for (const { value } of victoryItems()) this.victorySeg.setEnabled(value, !victory.disabled.includes(value));
+    if (this.victoryHint.textContent !== victory.hint) this.victoryHint.textContent = victory.hint;
+    this.victoryHint.classList.toggle('warn', victory.warn);
     if (this.alliesFor !== c.aiCount) {
       this.alliesFor = c.aiCount;
       const focused = this.alliesSeg.root.contains(document.activeElement);

@@ -28,6 +28,7 @@ import { FogOfWarSystem } from '../../ecs/systems/FogOfWarSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
 import { TradeSystem } from '../../ecs/systems/TradeSystem';
 import { HealthBarSystem } from '../../ecs/systems/HealthBarSystem';
+import { HillMarkerSystem } from '../../ecs/systems/HillMarkerSystem';
 import { HillSystem } from '../../ecs/systems/HillSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
@@ -140,6 +141,8 @@ export class SystemRunner {
   /** Regicide only (M19). */
   private readonly crowns: CrownSystem | null;
   private readonly kingWatch: KingWatch | null;
+  /** The hill's ring and standards (M19): idle without a hill entity. */
+  private readonly hillMarker: HillMarkerSystem;
   /** Game sounds from the ECS; `combatNear()` feeds the combat music. */
   readonly audioWatch: AudioWatch;
   private readonly camera: Phaser.Cameras.Scene2D.Camera;
@@ -254,6 +257,7 @@ export class SystemRunner {
     const regicide = options.regicide === true;
     this.crowns = regicide ? new CrownSystem(scene, world, (e) => this.xray.raisedDepth(e)) : null;
     this.kingWatch = regicide ? new KingWatch(world, players, this.humanId, showHudNotice) : null;
+    this.hillMarker = new HillMarkerSystem(scene, world, mapData, players, this.fogData, this.treaty);
     this.evictTimer = scene.time.addEvent({
       ...evictionTimer(restore !== undefined),
       loop: true,
@@ -355,6 +359,7 @@ export class SystemRunner {
     // After the X-ray: selection rings follow this frame's raised depths (xray.raisedDepth).
     this.selection.update();
     this.crowns?.update();
+    this.hillMarker.update(time);
     this.buildingFx.update(delta);
     this.projectileRender.update();
     this.healthBars.update();
@@ -388,6 +393,7 @@ export class SystemRunner {
     this.xray.destroy();
     this.crowns?.destroy();
     this.kingWatch?.destroy();
+    this.hillMarker.destroy();
     this.ageUpFx.destroy();
     this.buildingFx.destroy();
     this.ambientFx.destroy();

@@ -1,6 +1,8 @@
 import { TIME_VICTORY, UNIQUE_BUILDINGS } from '../../config/balance';
 import type { EcsWorld } from '../../ecs/world';
 import { countPlayerBuildings } from '../../game/buildRules';
+import { hillState } from '../../game/hill';
+import { hillClocks, sameHillClocks } from '../../game/hillClocks';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { wonderClocks, type WonderClockInfo } from '../../game/wonderClocks';
 import type { MatchStats } from '../../stats/MatchStats';
@@ -18,7 +20,8 @@ import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
  * scores (highest first; the human's allies marked, M16) and the human's villager activity counts, and
  * the time-victory clock (time left and the leader) when the match has one,
  * and the treaty countdown (M16) when the match has a treaty, and the
- * human's market prices (M17; a trade also publishes them at once).
+ * human's market prices (M17; a trade also publishes them at once), and
+ * the hill's state and clocks (M19) in a match that has one.
  */
 export class HudSync {
   constructor(
@@ -33,8 +36,9 @@ export class HudSync {
     /** Treaty time left (M16; 0 once over); null: the match has no treaty. */
     private readonly treatyLeftMs: (() => number) | null = null,
   ) {
-    // The treaty countdown shows from the first frame, not after the first second.
+    // The treaty countdown and the hill show from the first frame, not after the first second.
     if (treatyLeftMs) this.syncTreaty(treatyLeftMs());
+    this.syncHill();
     this.syncMarket();
   }
 
@@ -45,6 +49,7 @@ export class HudSync {
     this.syncVillagers();
     if (this.time) this.syncTimeLimit(this.time);
     if (this.treatyLeftMs) this.syncTreaty(this.treatyLeftMs());
+    this.syncHill();
     this.syncMarket();
   }
 
@@ -58,6 +63,12 @@ export class HudSync {
 
   private syncTreaty(leftMs: number): void {
     if (uiStore.getState().treatyLeftMs !== leftMs) uiStore.getState().setTreatyLeft(leftMs);
+  }
+
+  private syncHill(): void {
+    const hill = hillState(this.world);
+    const next = hill && hillClocks(hill, this.players, (this.treatyLeftMs?.() ?? 0) > 0);
+    if (!sameHillClocks(next, uiStore.getState().hill)) uiStore.getState().setHill(next);
   }
 
   private syncTimeLimit(time: TimeVictoryRule): void {

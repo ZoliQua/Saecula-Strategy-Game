@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { START_RESOURCES } from '../config/balance';
 import { DEFAULT_CIV } from '../config/civs';
+import type { HillClocksInfo } from '../game/hillClocks';
 import type { MarketQuotes } from '../game/market';
 import type { WonderClockInfo } from '../game/wonderClocks';
 import type { VillagerActivity } from '../stats/villagerActivity';
@@ -144,6 +145,8 @@ export interface UiState {
   wonders: readonly WonderClockInfo[];
   /** The time-victory clock (null: the match has no time limit). */
   timeLimit: TimeLimitInfo | null;
+  /** King of the Hill (M19; HudSync once a second): the state and every clock; null in other modes. */
+  hill: HillClocksInfo | null;
   /** Treaty time left (M16; HudSync once a second): null with no treaty, 0 once it is over. */
   treatyLeftMs: number | null;
   /** A campaign mission's objectives (null outside the campaign). */
@@ -174,6 +177,7 @@ export interface UiActions {
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
   setTimeLimit: (info: TimeLimitInfo | null) => void;
+  setHill: (info: HillClocksInfo | null) => void;
   setTreatyLeft: (ms: number | null) => void;
   setObjectives: (objectives: UiStore['objectives']) => void;
   /** Arms the delete of building `id` with the refund `refundPct` locked (null disarms). */
@@ -203,6 +207,7 @@ const INITIAL: UiState = {
   gameTimeMs: 0,
   wonders: [],
   timeLimit: null,
+  hill: null,
   treatyLeftMs: null,
   objectives: null,
   deleteArmedId: null,
@@ -236,6 +241,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
     setTimeLimit: (timeLimit) => set({ timeLimit }),
+    setHill: (hill) => set({ hill }),
     setTreatyLeft: (treatyLeftMs) => set({ treatyLeftMs }),
     setObjectives: (objectives) => set({ objectives }),
     setDeleteArmed: (id, refundPct = 0) => set({ deleteArmedId: id, deleteArmedPct: id === null ? 0 : refundPct }),
@@ -266,6 +272,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore, resources: Read
     gameTimeMs: 0,
     wonders: [],
     timeLimit: null,
+    hill: null,
     treatyLeftMs: null,
     objectives: null,
     deleteArmedId: null,

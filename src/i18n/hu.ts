@@ -117,6 +117,11 @@ export const hu = {
       regicide: 'Királygyilkos',
       hill: 'A domb ura',
     },
+    /** Under the victory row on a template without a hill (M19). */
+    hillOnly: (maps: readonly string[]) =>
+      `A domb ura csak ${maps.slice(0, -1).join(', ')} és ${maps[maps.length - 1] ?? ''} térképen játszható.`,
+    /** The template took the chosen hill away (M19). */
+    hillReset: (mode: string) => `A domb ura ezen a térképen nem játszható, ezért a győzelem módja visszaállt: ${mode}.`,
     allies: 'Szövetségesek',
     /** Under the allies row: who is on whose side (M16). */
     alliesHint: (allies: number, enemies: number) =>
@@ -754,6 +759,21 @@ export const hu = {
     fellOwn: 'Elesett a királyod!',
     fellAlly: (id: number) => `Elesett szövetségesed királya (${id}. játékos)!`,
     fellEnemy: (id: number) => `Elesett a(z) ${id}. játékos királya!`,
+  },
+  /** King of the Hill (M19): the HUD's hill panel. */
+  hill: {
+    title: 'A domb',
+    tip: `Az győz, aki összesen ${HILL_MINUTES} percig egyedül tartja a dombot. A szövetségesek közösen tartják; csak harcoló szárazföldi egység foglalhatja el, falusi nem.`,
+    empty: 'Üres',
+    contested: 'Vitatott',
+    heldYou: 'Te tartod',
+    heldTeam: 'Csapatod tartja',
+    heldEnemy: 'Ellenfél tartja',
+    you: 'Te',
+    ownTeam: 'Csapatod',
+    enemyTeam: 'Ellenséges csapat',
+    waiting: 'Az órák állnak a fegyverszünet végéig',
+    nearWin: 'Egy ellenfél közel jár a győzelemhez!',
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

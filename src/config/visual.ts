@@ -236,6 +236,60 @@ export const CROWN = {
   minimapRise: 2,
 } as const;
 
+/**
+ * The hill of King of the Hill (M19): a ring on the ground, four standards
+ * and the minimap mark. Sizes in world px unless noted (the ring's radius
+ * and dashes in tiles). The states differ in shape, not only in colour:
+ * empty = cloths furled on a crossbar and a thin dashed ring; held = flying flags and a
+ * solid band; contested = torn flags at half mast, crossed swords and a
+ * band broken dark and light.
+ */
+export const HILL_MARK = {
+  linen: 0xe8dcc0,
+  linenShade: 0xa8946f,
+  ink: 0x2b1608,
+  wood: 0x6b4a2e,
+  woodLight: 0xa77b4c,
+  steel: 0xdfe3e8,
+  gold: 0xffcf8f,
+  goldShade: 0xf5a857,
+  ring: {
+    /** Over the terrain and its decals (-995), under the cast shadows (-990). */
+    depths: { base: -994, glow: -993.5, line: -993 },
+    cornerRadius: 0.9,
+    cornerSteps: 8,
+    /** The dark edge under each state's line (its `edge` is that edge's width). */
+    shadeAlpha: 0.34,
+    glow: { width: 12, alpha: 0.2 },
+    empty: { width: 2.2, edge: 3.8, alpha: 0.7, dash: 0.34, gap: 0.3, fill: 0.045 },
+    held: { width: 3.4, edge: 6, alpha: 0.95, fill: 0.11, sheen: { width: 1.1, alpha: 0.45 } },
+    contested: { width: 4.4, edge: 7, alpha: 0.92, dash: 0.5, gap: 0.5, fill: 0.09, band: { width: 6.4, alpha: 0.8 } },
+  },
+  /** One slow breath of the glow while the clocks run (real ms), and how far it swings round 1. */
+  breatheMs: 2600,
+  breatheDepth: 0.45,
+  /** Over the tile's decor and trees (+0.1), under its units (+0.3). */
+  bannerDepth: 0.15,
+  /** Each part of a standard over the one before. */
+  partDepth: 0.0002,
+  pole: { width: 14, height: 66, foot: 62 },
+  flag: { width: 30, height: 26, top: 4, cloth: 18, wave: 2.6, frames: 6, frameMs: 140, lift: 55 },
+  /** The contested cloth hangs this high (half mast). */
+  tornLift: 40,
+  furled: { width: 26, height: 18, lift: 54 },
+  swords: { size: 26, lift: 70 },
+  /** CSS px. */
+  minimap: { minHalfWidth: 9, line: 1.4, glyphWidth: 11, glyphHeight: 13, fill: 0.3 },
+} as const;
+
+/** The hill's HUD clocks (M19). */
+export const HILL_HUD = {
+  /** An enemy clock with this much or less left puts the panel in its warning look. */
+  warnMs: 120_000,
+  /** More clocks than this go in two columns. */
+  maxSingleColumn: 3,
+} as const;
+
 /** Unit X-ray silhouettes behind cliffs, buildings and trees (UnitXRay). Sizes in world px. */
 export const XRAY = {
   /** Opacity of the team-colour silhouette. */

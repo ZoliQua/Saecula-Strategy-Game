@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TIME_VICTORY, WONDER_HOLD_MS } from '../../config/balance';
+import { HILL, TIME_VICTORY, WONDER_HOLD_MS } from '../../config/balance';
 import { createBuilding } from '../../ecs/archetypes/building';
 import { createEcsWorld } from '../../ecs/world';
 import { createPlayer } from '../../game/Player';
@@ -8,6 +8,7 @@ import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { resetUiStore, uiStore } from '../../ui/store';
 import { createVillager } from '../../ecs/archetypes/villager';
+import { createHill } from '../../ecs/archetypes/hill';
 import { MatchStats } from '../../stats/MatchStats';
 import { HudSync } from './HudSync';
 
@@ -119,5 +120,59 @@ describe('HudSync', () => {
     players.get(1)!.marketPrices = { food: 112, wood: 90 };
     sync.syncMarket();
     expect(uiStore.getState().marketQuotes).toEqual({ food: { buy: 112, sell: 78 }, wood: { buy: 90, sell: 63 } });
+  });
+});
+
+describe('HudSync and the hill (M19)', () => {
+  beforeEach(() => resetUiStore());
+
+  function hillMatch() {
+    const { world, players } = setup();
+    const hill = createHill(world, new MapData(20, 20, TERRAIN.grass), { tx: 10, ty: 10 }).hill!;
+    return { world, players, hill };
+  }
+
+  it('publishes the hill from the first frame', () => {
+    const { world, players } = hillMatch();
+    new HudSync(world, players, null);
+    expect(uiStore.getState().hill).toMatchObject({ centre: { tx: 10, ty: 10 }, status: 'empty', waiting: false });
+  });
+
+  it('the clocks follow once a second, and an unchanged hill leaves the store alone', () => {
+    const { world, players, hill } = hillMatch();
+    const sync = new HudSync(world, players, null);
+    const first = uiStore.getState().hill;
+    sync.secondTick();
+    expect(uiStore.getState().hill).toBe(first);
+    Object.assign(hill, { holderTeam: 2, heldMs: { 2: 3000 } });
+    sync.secondTick();
+    const held = uiStore.getState().hill;
+    expect(held).toMatchObject({ status: 'held', holder: 'other' });
+    expect(held?.rows[0]).toMatchObject({ team: 2, holder: true, remainingMs: HILL.holdMs - 3000 });
+    sync.secondTick();
+    expect(uiStore.getState().hill).toBe(held);
+    hill.heldMs[2] = 4000;
+    sync.secondTick();
+    expect(uiStore.getState().hill?.rows[0]?.remainingMs).toBe(HILL.holdMs - 4000);
+  });
+
+  it('waits while the treaty runs, then no more', () => {
+    const { world, players } = hillMatch();
+    let left = 60_000;
+    const sync = new HudSync(world, players, null, null, null, () => left);
+    expect(uiStore.getState().hill?.waiting).toBe(true);
+    left = 0;
+    sync.secondTick();
+    expect(uiStore.getState().hill?.waiting).toBe(false);
+  });
+
+  it('a match without a hill has no clock, and a new match forgets the last one', () => {
+    const { world, players } = hillMatch();
+    new HudSync(world, players, null);
+    resetUiStore();
+    expect(uiStore.getState().hill).toBeNull();
+    const plain = setup();
+    new HudSync(plain.world, plain.players, null).secondTick();
+    expect(uiStore.getState().hill).toBeNull();
   });
 });

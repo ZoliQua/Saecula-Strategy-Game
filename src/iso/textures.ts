@@ -5,6 +5,7 @@ import { buildingTexture, registerLitArt } from './buildingTextures';
 import { paintConstructionSite } from './art/buildings';
 import { paintWallBanner } from './art/walls/wallBanner';
 import { paintCrown } from './art/crown';
+import { HILL_ART, HILL_ART_FRAMES } from './art/hillArt';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
   paintArrow,
@@ -68,6 +69,11 @@ export const FX_KEYS = {
   explosion: 'fx_explosion',
   wallBanner: 'fx_wall_banner',
   crown: 'fx_crown',
+  hillPole: 'fx_hill_pole',
+  hillFlag: 'fx_hill_flag',
+  hillTorn: 'fx_hill_torn',
+  hillFurled: 'fx_hill_furled',
+  hillSwords: 'fx_hill_swords',
 } as const;
 
 export function constructionKey(size: number): string {
@@ -154,6 +160,14 @@ function generateCombatFx(scene: Phaser.Scene): void {
   once(FX_KEYS.scorch, paintScorch);
   once(FX_KEYS.debris, paintDebris);
   once(FX_KEYS.glow, paintGlow);
+  once(FX_KEYS.hillPole, HILL_ART.pole);
+  once(FX_KEYS.hillFurled, HILL_ART.furled);
+  once(FX_KEYS.hillSwords, HILL_ART.swords);
+  for (const [key, paint] of [[FX_KEYS.hillFlag, HILL_ART.flag], [FX_KEYS.hillTorn, HILL_ART.torn]] as const) {
+    if (scene.textures.exists(key)) continue;
+    const strip = paint();
+    registerStrip(scene, key, strip, strip.width / HILL_ART_FRAMES, HILL_ART_FRAMES);
+  }
   if (!scene.textures.exists(FX_KEYS.wallBanner)) {
     const banner = paintWallBanner();
     registerCanvas(scene, FX_KEYS.wallBanner, banner);

@@ -65,3 +65,16 @@ describe('gameOverBody (M16 team wording)', () => {
     expect(gameOverBody({ victory: true, cause: 'wonder', teams: true, missionText: 'Kész.' })).toBe('Kész.');
   });
 });
+
+describe('game over in the new modes (M19)', () => {
+  it('each new cause reads as its mode does on the setup card', () => {
+    for (const mode of ['regicide', 'hill'] as const) expect(hu.gameOver.causes[mode]).toBe(hu.setup.victories[mode]);
+  });
+
+  it('the hill lines say who held it and how long', () => {
+    const line = (victory: boolean, teams: boolean) => gameOverBody({ victory, cause: 'hill', teams });
+    for (const victory of [true, false]) for (const teams of [true, false]) expect(line(victory, teams)).toContain('8 percig');
+    expect(line(true, false)).toContain('tartottad a dombot');
+    expect(line(false, true)).toContain('ellenséges csapat');
+  });
+});

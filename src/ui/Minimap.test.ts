@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createUnit } from '../ecs/archetypes/createUnit';
 import { createEcsWorld } from '../ecs/world';
 import { killEntity } from '../game/kill';
-import { minimapCrowns, minimapShows } from './Minimap';
+import { minimapCrowns, minimapHillMark, minimapShows } from './Minimap';
+import { HILL_MARK } from '../config/visual';
 
 describe('minimapShows (M16)', () => {
   const friendly = (id: number) => id === 1 || id === 2;
@@ -38,5 +39,19 @@ describe('minimapCrowns (M19)', () => {
     killEntity(world, kings[0] as Parameters<typeof killEntity>[1]);
     world.remove(kings[1]!);
     expect(txs(minimapCrowns(world, friendly, () => false))).toEqual([]);
+  });
+});
+
+describe('minimapHillMark (M19)', () => {
+  it('covers the zone, two to one like the tiles', () => {
+    const mark = minimapHillMark(0.25);
+    expect(mark.halfW).toBe(56);
+    expect(mark.halfH).toBe(28);
+  });
+
+  it('stays findable on the largest map', () => {
+    const mark = minimapHillMark(0.001);
+    expect(mark.halfW).toBe(HILL_MARK.minimap.minHalfWidth);
+    expect(mark.halfH).toBe(HILL_MARK.minimap.minHalfWidth / 2);
   });
 });
