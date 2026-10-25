@@ -2,6 +2,7 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { findPath } from '../../map/pathfinding';
+import { computeDamage } from '../../game/damage';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 
@@ -9,6 +10,7 @@ type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
 
 const DEATH_TTL_MS = 900;
+const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 
 /**
  * Resolves attackIntent each tick:
@@ -77,7 +79,11 @@ export class CombatSystem {
     }
     if (a.attacker.cooldownRemaining > 0) return;
 
-    target.health.current -= a.attacker.damage;
+    target.health.current -= computeDamage(
+      a.attacker,
+      (target as Entity).armor ?? NO_ARMOR,
+      (target as Entity).unit?.unitType,
+    );
     a.attacker.cooldownRemaining = a.attacker.cooldownMs;
 
     if (target.health.current <= 0) {

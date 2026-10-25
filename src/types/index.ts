@@ -48,6 +48,7 @@ export type BuildingType =
   | 'archery_range'
   | 'stable'
   | 'blacksmith'
+  | 'foundry'
   | 'tower'
   | 'wall'
   | 'wonder';

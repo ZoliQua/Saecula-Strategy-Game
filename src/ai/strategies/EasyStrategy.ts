@@ -1,11 +1,13 @@
 import type { TileCoord } from '../../iso/coordinates';
-import { createBuilding } from '../../ecs/archetypes/building';
+import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
+import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import type { Entity } from '../../ecs/components';
 import type { AIContext, AIStrategy } from '../AIPlayer';
 
 const ATTACK_READY_COUNT = 4;
-const HOUSE_MIN_WOOD = 100;
-const BARRACKS_MIN_WOOD = 150;
+// Thresholds leave some headroom above the build cost.
+const HOUSE_MIN_WOOD = BUILDING_SPECS.house.cost.wood + 70;
+const BARRACKS_MIN_WOOD = BUILDING_SPECS.barracks.cost.wood;
 const TRAIN_COOLDOWN_MS = 3_000;
 const REPLAN_INTERVAL_MS = 1_500;
 
@@ -93,7 +95,7 @@ export class EasyStrategy implements AIStrategy {
     if (!barracks) return;
     if (barracks.trainingQueue.entries.length >= 3) return;
     const resources = ctx.player.resources;
-    const cost = { food: 60, wood: 0, gold: 20 };
+    const cost = UNIT_SPECS.swordsman.cost;
     if (
       resources.food < cost.food ||
       resources.gold < cost.gold
@@ -105,7 +107,7 @@ export class EasyStrategy implements AIStrategy {
     barracks.trainingQueue.entries.push({
       unitType: 'swordsman',
       elapsed: 0,
-      totalTime: 20,
+      totalTime: UNIT_SPECS.swordsman.trainTime,
     });
     this.lastTrainMs = ctx.timeMs;
   }
@@ -131,7 +133,7 @@ export class EasyStrategy implements AIStrategy {
     type: 'house' | 'barracks',
     origin: TileCoord,
   ): void {
-    const spec = type === 'house' ? { wood: 30 } : { wood: 150 };
+    const spec = BUILDING_SPECS[type].cost;
     if (ctx.player.resources.wood < spec.wood) return;
     ctx.player.resources.wood -= spec.wood;
     const site = createBuilding(ctx.world, {

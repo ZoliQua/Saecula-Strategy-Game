@@ -18,7 +18,7 @@ describe('unitAnimFrame', () => {
     const e: Entity = {
       ...walker(false),
       attackIntent: { targetId: 2 },
-      attacker: { damage: 1, range: 1, cooldownMs: 1000, cooldownRemaining: 950 },
+      attacker: { meleeAtk: 1, pierceAtk: 0, bonusVsCavalry: 0, range: 1, cooldownMs: 1000, cooldownRemaining: 950 },
     };
     expect(unitAnimFrame(e, 0).frame).toBe(UNIT_FRAMES.attack);
     e.attacker!.cooldownRemaining = 400;

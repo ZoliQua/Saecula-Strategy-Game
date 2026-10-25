@@ -81,7 +81,7 @@ function target(p: IsoPainter, u: number, v: number): void {
   });
 }
 
-const ART: Record<BuildingType, BuildingArt> = {
+const BASE_ART: Record<Exclude<BuildingType, 'foundry'>, BuildingArt> = {
   town_center: {
     size: 3,
     maxHeight: 236,
@@ -352,6 +352,13 @@ const ART: Record<BuildingType, BuildingArt> = {
       p.flag(3.35, 3.35, 124, 40, team, true);
     },
   },
+};
+
+
+// Foundry reuses the blacksmith painting (on a 3x3 footprint) until it gets its own art.
+const ART: Record<BuildingType, BuildingArt> = {
+  ...BASE_ART,
+  foundry: { ...BASE_ART.blacksmith, size: 3 },
 };
 
 export const BUILDING_ART_SIZES: Record<BuildingType, number> = Object.fromEntries(

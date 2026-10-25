@@ -80,7 +80,12 @@ export interface Entity {
   owner?: { playerId: number };
   populationCost?: { amount: number };
   attacker?: {
-    damage: number;
+    /** Melee attack value (0 = none). Modifiable by techs. */
+    meleeAtk: number;
+    /** Pierce attack value (0 = none). Modifiable by techs. */
+    pierceAtk: number;
+    /** Extra melee damage vs the cavalry class (pikeman). */
+    bonusVsCavalry: number;
     /** Tile range: 1 = melee, higher for ranged. */
     range: number;
     /** Milliseconds between attacks. */
@@ -88,6 +93,8 @@ export interface Entity {
     /** Remaining cooldown (ms). 0 = ready to swing. */
     cooldownRemaining: number;
   };
+  /** Damage reduction per attack type; lives on the entity so techs can raise it. */
+  armor?: { melee: number; pierce: number };
   attackIntent?: { targetId: number };
   dying?: { ttlMs: number };
   fogEmitter?: { sightRange: number };

@@ -1,6 +1,7 @@
 import type { TileCoord } from '../../iso/coordinates';
 import type { UnitType } from '../../types';
 import type { Entity } from '../components';
+import { bonusVsCavalryFor } from '../../game/damage';
 import { assignEntityId, type EcsWorld } from '../world';
 import { UNIT_SPECS } from './unit';
 
@@ -40,22 +41,19 @@ export function createUnit(
       dropoffId: undefined,
     };
   }
+  const b = spec.balance;
+  entity.armor = { melee: b.meleeDef, pierce: b.pierceDef };
   if (spec.damage > 0) {
     entity.attacker = {
-      damage: spec.damage,
+      meleeAtk: b.meleeAtk,
+      pierceAtk: b.pierceAtk,
+      bonusVsCavalry: bonusVsCavalryFor(options.type),
       range: spec.range,
-      cooldownMs: 1500,
+      cooldownMs: b.cooldownMs,
       cooldownRemaining: 0,
     };
   }
-  entity.fogEmitter = {
-    sightRange:
-      options.type === 'scout'
-        ? 7
-        : options.type === 'archer' || options.type === 'crossbowman'
-        ? 6
-        : 5,
-  };
+  entity.fogEmitter = { sightRange: b.los };
   world.add(entity);
   return entity;
 }

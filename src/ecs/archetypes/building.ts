@@ -1,5 +1,11 @@
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import {
+  BUILDING_BALANCE,
+  BUILDING_MELEE_DEF,
+  BUILDING_PIERCE_DEF,
+  TRAINER_BUILDINGS,
+} from '../../config/balance';
 import type { BuildingType, ResourceType } from '../../types';
 import type { Entity } from '../components';
 import { assignEntityId, type EcsWorld } from '../world';
@@ -14,97 +20,44 @@ export interface BuildingSpec {
   readonly cost: { food: number; wood: number; gold: number };
   /** Builder-seconds required to complete (one villager = 1s/s). */
   readonly buildTime: number;
+  /** Fog-of-war sight range in tiles. */
+  readonly los: number;
 }
 
-export const BUILDING_SPECS: Record<BuildingType, BuildingSpec> = {
-  town_center: {
-    type: 'town_center',
-    width: 3, height: 3, maxHp: 600,
-    textureKey: 'building_town_center',
-    dropoffAccepts: ['food', 'wood', 'gold'],
-    cost: { food: 0, wood: 275, gold: 0 },
-    buildTime: 120,
-  },
-  house: {
-    type: 'house',
-    width: 2, height: 2, maxHp: 200,
-    textureKey: 'building_house',
-    cost: { food: 0, wood: 30, gold: 0 },
-    buildTime: 25,
-  },
-  farm: {
-    type: 'farm',
-    width: 2, height: 2, maxHp: 100,
-    textureKey: 'building_farm',
-    cost: { food: 0, wood: 60, gold: 0 },
-    buildTime: 20,
-  },
-  lumber_camp: {
-    type: 'lumber_camp',
-    width: 2, height: 2, maxHp: 180,
-    textureKey: 'building_lumber_camp',
-    dropoffAccepts: ['wood'],
-    cost: { food: 0, wood: 80, gold: 0 },
-    buildTime: 35,
-  },
-  mining_camp: {
-    type: 'mining_camp',
-    width: 2, height: 2, maxHp: 180,
-    textureKey: 'building_mining_camp',
-    dropoffAccepts: ['gold'],
-    cost: { food: 0, wood: 80, gold: 0 },
-    buildTime: 35,
-  },
-  barracks: {
-    type: 'barracks',
-    width: 3, height: 3, maxHp: 400,
-    textureKey: 'building_barracks',
-    cost: { food: 0, wood: 150, gold: 0 },
-    buildTime: 50,
-  },
-  archery_range: {
-    type: 'archery_range',
-    width: 3, height: 3, maxHp: 400,
-    textureKey: 'building_archery_range',
-    cost: { food: 0, wood: 175, gold: 0 },
-    buildTime: 50,
-  },
-  stable: {
-    type: 'stable',
-    width: 3, height: 3, maxHp: 400,
-    textureKey: 'building_stable',
-    cost: { food: 0, wood: 175, gold: 0 },
-    buildTime: 50,
-  },
-  blacksmith: {
-    type: 'blacksmith',
-    width: 2, height: 2, maxHp: 200,
-    textureKey: 'building_blacksmith',
-    cost: { food: 0, wood: 150, gold: 0 },
-    buildTime: 40,
-  },
-  tower: {
-    type: 'tower',
-    width: 1, height: 1, maxHp: 300,
-    textureKey: 'building_tower',
-    cost: { food: 0, wood: 50, gold: 125 },
-    buildTime: 40,
-  },
-  wall: {
-    type: 'wall',
-    width: 1, height: 1, maxHp: 400,
-    textureKey: 'building_wall',
-    cost: { food: 0, wood: 5, gold: 0 },
-    buildTime: 10,
-  },
-  wonder: {
-    type: 'wonder',
-    width: 4, height: 4, maxHp: 2000,
-    textureKey: 'building_wonder',
-    cost: { food: 0, wood: 1000, gold: 1000 },
-    buildTime: 600,
-  },
+const TEXTURE_KEYS: Record<BuildingType, string> = {
+  town_center: 'building_town_center',
+  house: 'building_house',
+  farm: 'building_farm',
+  lumber_camp: 'building_lumber_camp',
+  mining_camp: 'building_mining_camp',
+  barracks: 'building_barracks',
+  archery_range: 'building_archery_range',
+  stable: 'building_stable',
+  blacksmith: 'building_blacksmith',
+  foundry: 'building_foundry',
+  tower: 'building_tower',
+  wall: 'building_wall',
+  wonder: 'building_wonder',
 };
+
+function toSpec(type: BuildingType): BuildingSpec {
+  const b = BUILDING_BALANCE[type];
+  return {
+    type,
+    width: b.width,
+    height: b.height,
+    maxHp: b.hp,
+    textureKey: TEXTURE_KEYS[type],
+    ...(b.dropoff ? { dropoffAccepts: b.dropoff } : {}),
+    cost: b.cost,
+    buildTime: b.buildTime,
+    los: b.los,
+  };
+}
+
+export const BUILDING_SPECS: Record<BuildingType, BuildingSpec> = Object.fromEntries(
+  (Object.keys(BUILDING_BALANCE) as BuildingType[]).map((t) => [t, toSpec(t)]),
+) as Record<BuildingType, BuildingSpec>;
 
 export interface CreateBuildingOptions {
   readonly type: BuildingType;
@@ -142,6 +95,7 @@ export function createBuilding(
     },
     selectable: { selected: false },
     owner: { playerId: options.playerId },
+    armor: { melee: BUILDING_MELEE_DEF, pierce: BUILDING_PIERCE_DEF },
   });
   if (underConstruction) {
     entity.underConstruction = {
@@ -152,23 +106,13 @@ export function createBuilding(
   if (spec.dropoffAccepts && !underConstruction) {
     entity.resourceDropoff = { accepts: spec.dropoffAccepts };
   }
-  if (TRAINERS.has(spec.type) && !underConstruction) {
+  if (TRAINER_BUILDINGS.has(spec.type) && !underConstruction) {
     entity.trainingQueue = { entries: [], maxQueue: 5 };
   }
-  entity.fogEmitter = {
-    sightRange: spec.type === 'tower' ? 9 : 4,
-  };
+  entity.fogEmitter = { sightRange: spec.los };
   world.add(entity);
   return entity;
 }
-
-const TRAINERS: ReadonlySet<BuildingType> = new Set<BuildingType>([
-  'town_center',
-  'barracks',
-  'archery_range',
-  'stable',
-  'blacksmith',
-]);
 
 function blockFootprint(
   map: MapData,
