@@ -56,12 +56,13 @@ export function drawCannon(fig: Figure, anim: UnitAnim, i: number): void {
   fig.sphere(bp([-7.0, 0, 12.6]), 1.7, M.bronze);
 
   if (anim === 'attack' && (i === 2 || i === 3)) {
-    // Muzzle smoke puff.
-    const k = i === 2 ? 1 : 1.5;
-    const m = bp([21 + 3 * k, 0, 14]);
-    fig.sphere(m, 3.0 * k, SMOKE);
-    fig.sphere(madd(m, [0.6, 0.6, 0.4], 3.2 * k), 2.4 * k, SMOKE);
-    fig.sphere(madd(m, [0.5, -0.7, 0.6], 3.0 * k), 2.2 * k, SMOKE);
+    // Muzzle smoke puff, billowing out on the recoil frame.
+    const k = i === 2 ? 1 : 1.45;
+    const m = bp([20 + 4 * k, 0, 14]);
+    fig.sphere(m, 4.2 * k, SMOKE);
+    fig.sphere(madd(m, [0.6, 0.7, 0.5], 4.4 * k), 3.4 * k, SMOKE);
+    fig.sphere(madd(m, [0.5, -0.8, 0.7], 4.2 * k), 3.2 * k, SMOKE);
+    fig.sphere(madd(m, [-0.2, 0, 1], 3.6 * k), 3.0 * k, SMOKE);
   }
 }
 

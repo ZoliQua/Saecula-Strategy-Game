@@ -165,19 +165,20 @@ function drawCrossbow(fig: Figure, w: WeaponPose, d: V3): void {
   const at = (k: number): V3 => madd(w.at, d, k);
   let left = cross([0, 0, 1], d);
   left = Math.hypot(left[0], left[1], left[2]) < 1e-4 ? [0, 1, 0] : norm(left);
-  fig.box(at(3.2), axesAlong(d, left), [7.4, 1.2, 1.35], M.wood);
-  const prodC = at(9.3);
-  const limb = (t: number): V3 => madd(madd(prodC, left, 8.2 * t), d, -2.2 * t * t);
+  // Slightly oversized so the crossbow reads at game zoom.
+  fig.box(at(4.2), axesAlong(d, left), [9.2, 1.4, 1.6], M.wood);
+  const prodC = at(12);
+  const limb = (t: number): V3 => madd(madd(prodC, left, 10 * t), d, -2.8 * t * t);
   for (const s of [1, -1]) {
-    fig.capsule(prodC, limb(s * 0.5), 1.0, M.darkSteel);
-    fig.capsule(limb(s * 0.5), limb(s), 0.85, M.darkSteel);
+    fig.capsule(prodC, limb(s * 0.5), 1.25, M.darkSteel);
+    fig.capsule(limb(s * 0.5), limb(s), 1.0, M.darkSteel);
   }
-  const nut = w.loaded ? at(3.4) : at(8.6);
+  const nut = w.loaded ? at(3.4) : at(11.2);
   fig.capsule(limb(1), nut, 0.3, M.string);
   fig.capsule(limb(-1), nut, 0.3, M.string);
   if (w.loaded) {
-    fig.capsule(at(3.4), at(10.2), 0.42, M.wood);
-    fig.cone(at(10.2), at(11.8), 0.75, 0.05, M.steel);
+    fig.capsule(at(3.4), at(12.6), 0.5, M.wood);
+    fig.cone(at(12.6), at(14.6), 0.85, 0.05, M.steel);
   }
 }
 
