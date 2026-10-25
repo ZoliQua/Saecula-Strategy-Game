@@ -27,7 +27,7 @@ export function createUnit(
     unit: { unitType: options.type },
     health: { current: spec.maxHp, max: spec.maxHp },
     selectable: { selected: false },
-    movable: { speed: spec.speed, path: [], progress: 0, facing: 'S' },
+    movable: { speed: spec.speed, path: [], progress: 0, facing: 'SE' },
     owner: { playerId: options.playerId },
     populationCost: { amount: spec.populationCost },
   });

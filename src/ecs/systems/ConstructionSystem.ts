@@ -5,6 +5,7 @@ import { findPath } from '../../map/pathfinding';
 import { TRAINER_BUILDINGS } from '../../config/balance';
 import { BUILDING_SPECS } from '../archetypes/building';
 import type { Entity } from '../components';
+import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
 
 type Builder = With<Entity, 'position' | 'movable' | 'buildCommand' | 'owner'>;
@@ -51,6 +52,7 @@ export class ConstructionSystem {
       // Adjacent — contribute build time.
       b.movable.path = [];
       b.movable.progress = 0;
+      faceToward(b as Entity, site as Entity);
       site.underConstruction.elapsed += dt;
       const pct = Math.min(
         1,

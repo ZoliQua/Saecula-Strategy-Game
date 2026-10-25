@@ -7,7 +7,7 @@ import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons, type IconName } from '../icons';
 import type { SelectedEntityInfo, UiStore } from '../store';
-import { thumbnail } from '../thumbnails';
+import { thumbnail, unitThumbnail } from '../thumbnails';
 
 const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', string> = {
   food: decorKeys.bush(0),
@@ -50,7 +50,7 @@ export class SelectionPanel {
     if (!sel) return;
     const src =
       sel.kind === 'unit'
-        ? thumbnail(this.textures, UNIT_SPECS[sel.unitType].textureKey, 0)
+        ? unitThumbnail(sel.unitType)
         : sel.kind === 'building'
           ? thumbnail(this.textures, BUILDING_SPECS[sel.buildingType].textureKey)
           : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType]);
@@ -106,7 +106,7 @@ export class SelectionPanel {
         'div',
         { class: 'q-item', title: hu.units[entry.unitType] },
         fill,
-        el('img', { src: thumbnail(this.textures, UNIT_SPECS[entry.unitType].textureKey, 0), alt: '' }),
+        el('img', { src: unitThumbnail(entry.unitType), alt: '' }),
       );
       item.addEventListener('click', () => dispatchCommand({ type: 'cancel-queue', trainerId, index }));
       row.append(item);

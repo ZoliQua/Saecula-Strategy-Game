@@ -2,18 +2,20 @@ import Phaser from 'phaser';
 import type { With } from 'miniplex';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import { LightManager, lit } from '../../iso/art/lighting/LightManager';
-import { UNIT_FRAMES, UNIT_ORIGIN_Y } from '../../iso/art/units';
+import { frameIndex, headingSlot, unitSheetLayout } from '../../iso/art/units/layout';
+import { pumpUnitArt } from '../../iso/art/units/UnitArt';
+import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../../iso/art/units/unitSprite';
+import { PLAYER_COLORS } from '../../game/Player';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
 import { BUILDING_LIGHT, constructionKey, teamTextureKey } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
-import { unitAnimFrame } from './unitAnim';
+import { dyingAlpha, DYING_MS, unitAnimState } from './unitAnim';
 
 type Renderable = With<Entity, 'position' | 'renderable'>;
 
-const DYING_MS = 900;
 const SPRITE_SCALE = 1 / ART_SCALE;
 
 /**
@@ -27,6 +29,8 @@ export class RenderSystem {
   private readonly world: EcsWorld;
   private readonly renderable: ReturnType<EcsWorld['with']>;
   private readonly sites = new Map<Entity, Phaser.GameObjects.Image>();
+  /** Unit body + team-colour overlay pairs. */
+  private readonly units = new Map<Entity, UnitSprites>();
   /** Detaches shadows / glows / torches registered with the LightManager. */
   private readonly unlight = new Map<Entity, () => void>();
   private fog: FogOfWarData | null = null;
@@ -42,6 +46,8 @@ export class RenderSystem {
       this.unlight.delete(entity);
       entity.sprite?.destroy();
       delete entity.sprite;
+      this.units.get(entity)?.team.destroy();
+      this.units.delete(entity);
       this.sites.get(entity)?.destroy();
       this.sites.delete(entity);
     });
@@ -54,6 +60,7 @@ export class RenderSystem {
 
   update(): void {
     const now = this.scene.time.now;
+    pumpUnitArt(this.scene);
     for (const entity of this.renderable) {
       const sprite = entity.sprite ?? this.ensureSprite(entity);
       const { sx, sy } = renderScreenPos(entity);
@@ -61,27 +68,39 @@ export class RenderSystem {
       sprite.setDepth(renderDepth(entity));
       if (entity.building) {
         this.applyConstruction(sprite, entity);
-      } else {
-        applyUnitAnimation(sprite, entity, now);
       }
       applyDying(sprite, entity);
       const visible = isVisibleToViewer(entity, this.fog, this.viewerPlayerId);
       sprite.setVisible(visible);
       const site = this.sites.get(entity);
       if (site) site.setVisible(visible);
+      const unit = this.units.get(entity);
+      if (unit) {
+        const { anim, i, heading } = unitAnimState(entity, now);
+        const { slot, flip } = headingSlot(heading);
+        setUnitFrame(unit, frameIndex(unitSheetLayout(unit.type), slot, anim, i), flip);
+        syncTeamSprite(unit);
+        // Units whose textures were deferred get their cast shadow once they exist.
+        if (unit.art && !this.unlight.has(entity)) this.attachLighting(entity, sprite);
+      }
     }
   }
 
   private ensureSprite(entity: Renderable): Phaser.GameObjects.Sprite {
-    const key = teamTextureKey(this.scene, entity.renderable.textureKey, entity.owner?.playerId ?? 1);
-    const sprite = this.scene.add.sprite(0, 0, key, entity.building ? undefined : UNIT_FRAMES.idle);
-    sprite.setScale(SPRITE_SCALE);
-    if (entity.building) {
-      sprite.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / sprite.height);
+    const playerId = entity.owner?.playerId ?? 1;
+    let sprite: Phaser.GameObjects.Sprite;
+    if (entity.unit) {
+      const color = PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+      const pair = createUnitSprites(this.scene, entity.unit.unitType, entity.renderable.textureKey, color);
+      this.units.set(entity, pair);
+      sprite = pair.body;
     } else {
-      sprite.setOrigin(0.5, UNIT_ORIGIN_Y);
+      const key = teamTextureKey(this.scene, entity.renderable.textureKey, playerId);
+      sprite = this.scene.add.sprite(0, 0, key);
+      sprite.setScale(SPRITE_SCALE);
+      sprite.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / sprite.height);
+      lit(sprite);
     }
-    lit(sprite);
     entity.sprite = sprite;
     // Position first so building-anchored lights land on the right spot.
     const { sx, sy } = renderScreenPos(entity);
@@ -96,7 +115,7 @@ export class RenderSystem {
     const baseKey = entity.renderable.textureKey;
     const b = entity.building;
     if (!b) {
-      this.unlight.set(entity, lights.attachCaster(sprite, baseKey));
+      if (this.units.get(entity)?.art) this.unlight.set(entity, lights.attachCaster(sprite, baseKey));
       return;
     }
     const info = BUILDING_LIGHT.get(baseKey);
@@ -180,24 +199,16 @@ function isVisibleToViewer(entity: Renderable, fog: FogOfWarData | null, viewerP
   return fog.isVisible(entity.position.tx, entity.position.ty);
 }
 
-function applyUnitAnimation(sprite: Phaser.GameObjects.Sprite, entity: Renderable, now: number): void {
-  const mv = entity.movable;
-  if (mv) sprite.setFlipX(mv.facing === 'W' || mv.facing === 'NW' || mv.facing === 'SW');
-  const { frame, bob } = unitAnimFrame(entity, now);
-  sprite.setFrame(frame);
-  sprite.y -= bob;
-}
-
 function applyDying(sprite: Phaser.GameObjects.Sprite, entity: Renderable): void {
   const d = entity.dying;
   if (!d) return;
-  const t = Math.max(0, d.ttlMs / DYING_MS);
-  sprite.setAlpha(t);
-  sprite.setTint(0xb08070);
-  if (!entity.building) {
-    sprite.setAngle((1 - t) * (sprite.flipX ? -70 : 70));
-    sprite.y += (1 - t) * 6;
+  if (entity.building) {
+    sprite.setAlpha(Math.max(0, d.ttlMs / DYING_MS));
+    sprite.setTint(0xb08070);
+    return;
   }
+  // Units play their death fall (unitAnim); the corpse then fades.
+  sprite.setAlpha(dyingAlpha(d.ttlMs));
 }
 
 function renderDepth(entity: Renderable): number {

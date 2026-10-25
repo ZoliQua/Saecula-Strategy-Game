@@ -7,7 +7,7 @@ import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons } from '../icons';
 import { uiStore, type UiStore } from '../store';
-import { thumbnail } from '../thumbnails';
+import { thumbnail, unitThumbnail } from '../thumbnails';
 
 export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'house',
@@ -123,7 +123,7 @@ export class CommandPanel {
       id: unitType,
       name: hu.units[unitType],
       role: hu.unitRoles[unitType],
-      image: thumbnail(this.textures, spec.textureKey, 0),
+      image: unitThumbnail(unitType),
       cost: spec.cost,
       pop: spec.populationCost,
       run: () => dispatchCommand({ type: 'queue-unit', trainerId, unitType }),

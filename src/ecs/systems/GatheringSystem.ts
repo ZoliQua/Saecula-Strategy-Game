@@ -6,6 +6,7 @@ import { findPath } from '../../map/pathfinding';
 import type { ResourceType } from '../../types';
 import { uiStore } from '../../ui/store';
 import type { Entity } from '../components';
+import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
 
 type Villager = With<
@@ -96,6 +97,7 @@ export class GatheringSystem {
     // Stop any residual movement while working.
     v.movable.path = [];
     v.movable.progress = 0;
+    faceToward(v as Entity, node as Entity);
 
     const wantType = node.resourceNode.type;
     const take = Math.min(

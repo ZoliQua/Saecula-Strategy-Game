@@ -52,8 +52,9 @@ class SilhouetteShadow extends Phaser.GameObjects.Image {
     const f = this.frame;
     const sx = Math.abs(c.scaleX);
     const sy = Math.abs(c.scaleY);
-    const w = f.cutWidth * sx;
-    const h = f.cutHeight * sy;
+    // Geometry follows the caster's frame, so shadow textures may be lower resolution.
+    const w = c.frame.cutWidth * sx;
+    const h = c.frame.cutHeight * sy;
     const left = -c.originX * w;
     const top = -c.originY * h;
     const view = camera.worldView;

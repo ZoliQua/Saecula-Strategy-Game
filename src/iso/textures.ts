@@ -1,10 +1,9 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { UNIT_SPECS } from '../ecs/archetypes/unit';
 import { PLAYER_COLORS } from '../game/Player';
-import type { BuildingType, UnitType } from '../types';
+import type { BuildingType } from '../types';
 import { paintBuilding, paintConstructionSite } from './art/buildings';
-import { makeCanvas, registerCanvas, registerStrip } from './art/canvas';
+import { makeCanvas, registerCanvas } from './art/canvas';
 import {
   BUSH_VARIANTS,
   paintBerryBush,
@@ -20,13 +19,11 @@ import {
   FOLIAGE_DERIVE,
   normalMapFor,
   ROCK_DERIVE,
-  UNIT_DERIVE,
   type GlowPoint,
   type LitArt,
 } from './art/lighting/normalLayer';
 import type { VolumePoint } from './art/lighting/shadowGeometry';
 import { hash2 } from './art/palette';
-import { paintUnitStrip, UNIT_FRAME_W } from './art/units';
 
 /** Decor texture keys + per-key origin Y, filled by generateArt. */
 export const DECOR_ORIGIN_Y = new Map<string, number>();
@@ -53,7 +50,6 @@ export function constructionKey(size: number): string {
 /** Per base texture key: building shadow volume + window glows (texture px). */
 export const BUILDING_LIGHT = new Map<string, { volume: readonly VolumePoint[]; glows: readonly GlowPoint[] }>();
 
-const unitByKey = new Map<string, UnitType>();
 const buildingByKey = new Map<string, BuildingType>();
 
 function teamColor(playerId: number): number {
@@ -65,18 +61,11 @@ function teamColor(playerId: number): number {
  * procedurally onto canvases (see src/iso/art) so the repo carries
  * no binary sprite assets. Base keys are painted in player 1's colour;
  * other players get lazily painted variants via teamTextureKey().
+ * Units are painted lazily per type (art/units/UnitArt.ts) and get their
+ * team colour from a tinted mask overlay instead.
  */
 export function generateArt(scene: Phaser.Scene): void {
   const p1 = teamColor(1);
-  for (const spec of Object.values(UNIT_SPECS)) {
-    unitByKey.set(spec.textureKey, spec.type);
-    if (!scene.textures.exists(spec.textureKey)) {
-      const strip = paintUnitStrip(spec.type, p1);
-      registerStrip(scene, spec.textureKey, strip, UNIT_FRAME_W, 4);
-      attachNormalMap(scene, spec.textureKey, normalMapFor(strip, null, UNIT_DERIVE));
-      registerShadowSilhouette(scene, spec.textureKey);
-    }
-  }
   for (const spec of Object.values(BUILDING_SPECS)) {
     buildingByKey.set(spec.textureKey, spec.type);
     if (!scene.textures.exists(spec.textureKey)) {
@@ -107,11 +96,8 @@ export function teamTextureKey(scene: Phaser.Scene, baseKey: string, playerId: n
   if (playerId <= 1) return baseKey;
   const key = `${baseKey}@p${playerId}`;
   if (scene.textures.exists(key)) return key;
-  const unit = unitByKey.get(baseKey);
   const building = buildingByKey.get(baseKey);
-  if (unit) {
-    registerStrip(scene, key, paintUnitStrip(unit, teamColor(playerId)), UNIT_FRAME_W, 4);
-  } else if (building) {
+  if (building) {
     registerCanvas(scene, key, paintBuilding(building, teamColor(playerId), false).canvas);
   } else {
     return baseKey;

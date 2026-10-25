@@ -4,7 +4,10 @@ import { UNIT_SPECS } from '../ecs/archetypes/unit';
 import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { LightManager, lit } from '../iso/art/lighting/LightManager';
-import { UNIT_FRAMES, UNIT_ORIGIN_Y } from '../iso/art/units';
+import { frameIndex, headingSlot, unitSheetLayout, WALK_CYCLE_TILES } from '../iso/art/units/layout';
+import { pumpUnitArt } from '../iso/art/units/UnitArt';
+import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../iso/art/units/unitSprite';
+import { PLAYER_COLORS } from '../game/Player';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
 import { BUILDING_LIGHT } from '../iso/textures';
@@ -12,15 +15,23 @@ import { FogOfWarData } from '../map/FogOfWarData';
 import { generateMap } from '../map/generator';
 import { TERRAIN } from '../map/TerrainTypes';
 import { TileMap } from '../map/TileMap';
-import type { BuildingType, UnitType } from '../types';
+import { directionFromDelta, type BuildingType, type Direction, type UnitType } from '../types';
 import { MainMenu } from '../ui/screens/MainMenu';
 
 const MENU_MAP_SIZE = 48;
 const MENU_SEED = 7;
 
 interface Walker {
-  sprite: Phaser.GameObjects.Sprite;
+  sprites: UnitSprites;
+  /** Heading towards b (outbound) and back. */
+  out: Direction;
+  back: Direction;
+  outbound: boolean;
+  /** Screen px per ms → walk cycle pace. */
+  cycleMs: number;
 }
+
+const WALK_MS = 4200;
 
 /**
  * Main menu: a live diorama of the world (swaying trees, drifting
@@ -117,19 +128,25 @@ export class MainMenuScene extends Phaser.Scene {
   private walk(type: UnitType, a: TileCoord, b: TileCoord, delay: number): void {
     const pa = tileToScreen(a);
     const pb = tileToScreen(b);
-    const sprite = this.add
-      .sprite(pa.sx, pa.sy, UNIT_SPECS[type].textureKey, UNIT_FRAMES.idle)
-      .setScale(1 / ART_SCALE)
-      .setOrigin(0.5, UNIT_ORIGIN_Y)
-      .setDepth(tileDepth(a) + 0.3);
-    lit(sprite);
-    this.lighting?.attachCaster(sprite, UNIT_SPECS[type].textureKey);
-    this.walkers.push({ sprite });
+    const key = UNIT_SPECS[type].textureKey;
+    const sprites = createUnitSprites(this, type, key, PLAYER_COLORS[0] ?? 0xffffff, true);
+    const sprite = sprites.body.setPosition(pa.sx, pa.sy).setDepth(tileDepth(a) + 0.3);
+    this.lighting?.attachCaster(sprite, key);
+    const tiles = Math.hypot(b.tx - a.tx, b.ty - a.ty);
+    const walker: Walker = {
+      sprites,
+      out: directionFromDelta(b.tx - a.tx, b.ty - a.ty),
+      back: directionFromDelta(a.tx - b.tx, a.ty - b.ty),
+      outbound: true,
+      // Average tween speed (tiles/ms) sets the stride pace.
+      cycleMs: (WALK_CYCLE_TILES[type] / Math.max(0.1, tiles / WALK_MS)) * 0.7,
+    };
+    this.walkers.push(walker);
     this.tweens.add({
       targets: sprite,
       x: pb.sx,
       y: pb.sy,
-      duration: 4200,
+      duration: WALK_MS,
       delay,
       yoyo: true,
       repeat: -1,
@@ -137,21 +154,32 @@ export class MainMenuScene extends Phaser.Scene {
       repeatDelay: 1400,
       ease: 'Sine.easeInOut',
       onUpdate: () => {
-        sprite.setDepth((sprite.y / 16) + 0.3);
+        sprite.setDepth(sprite.y / 16 + 0.3);
       },
-      onYoyo: () => sprite.setFlipX(pb.sx > pa.sx),
-      onRepeat: () => sprite.setFlipX(pb.sx < pa.sx),
+      onYoyo: () => {
+        walker.outbound = false;
+      },
+      onRepeat: () => {
+        walker.outbound = true;
+      },
     });
-    sprite.setFlipX(pb.sx < pa.sx);
   }
 
   override update(time: number, delta: number): void {
     this.tileMap?.update(time, delta);
     this.lighting?.update(delta);
+    pumpUnitArt(this);
     for (const w of this.walkers) {
-      const moving = w.sprite.getData('lx') !== w.sprite.x;
-      w.sprite.setData('lx', w.sprite.x);
-      w.sprite.setFrame(moving ? (Math.floor(time / 160) % 2 ? UNIT_FRAMES.walkA : UNIT_FRAMES.walkB) : UNIT_FRAMES.idle);
+      const body = w.sprites.body;
+      const moving = body.getData('lx') !== body.x;
+      body.setData('lx', body.x);
+      const { slot, flip } = headingSlot(w.outbound ? w.out : w.back);
+      const layout = unitSheetLayout(w.sprites.type);
+      const k = moving
+        ? frameIndex(layout, slot, 'walk', Math.floor((time / w.cycleMs) * 6) % 6)
+        : frameIndex(layout, slot, 'idle', Math.floor(time / 700) % 2);
+      setUnitFrame(w.sprites, k, flip);
+      syncTeamSprite(w.sprites);
     }
     const cam = this.cameras.main;
     cam.centerOn(this.focus.sx + Math.sin(time / 9000) * 90, this.focus.sy + Math.cos(time / 11000) * 40);

@@ -1,4 +1,7 @@
 import type Phaser from 'phaser';
+import { PLAYER_COLORS } from '../game/Player';
+import { paintPortrait } from '../iso/art/units/sheet';
+import type { UnitType } from '../types';
 
 const cache = new Map<string, string>();
 
@@ -19,6 +22,19 @@ export function thumbnail(textures: Phaser.Textures.TextureManager, key: string,
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
   ctx.drawImage(src, f.cutX, f.cutY, f.cutWidth, f.cutHeight, 0, 0, f.cutWidth, f.cutHeight);
+  const url = cropToContent(canvas, ctx).toDataURL('image/png');
+  cache.set(id, url);
+  return url;
+}
+
+/** HUD portrait of a unit type (front idle pose, in the human player's colour). */
+export function unitThumbnail(type: UnitType): string {
+  const id = `unit:${type}`;
+  const hit = cache.get(id);
+  if (hit) return hit;
+  const canvas = paintPortrait(type, PLAYER_COLORS[0] ?? 0xffffff);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
   const url = cropToContent(canvas, ctx).toDataURL('image/png');
   cache.set(id, url);
   return url;

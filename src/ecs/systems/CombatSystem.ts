@@ -4,6 +4,7 @@ import type { MapData } from '../../map/MapData';
 import { findPath } from '../../map/pathfinding';
 import { computeDamage } from '../../game/damage';
 import type { Entity } from '../components';
+import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
 
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
@@ -77,6 +78,7 @@ export class CombatSystem {
       a.movable.path = [];
       a.movable.progress = 0;
     }
+    faceToward(a as Entity, target as Entity);
     if (a.attacker.cooldownRemaining > 0) return;
 
     target.health.current -= computeDamage(

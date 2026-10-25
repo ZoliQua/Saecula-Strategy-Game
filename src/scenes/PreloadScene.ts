@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { hu } from '../i18n/hu';
+import { UNIT_SPECS } from '../ecs/archetypes/unit';
+import { paintAllUnitArt, unitArt } from '../iso/art/units/UnitArt';
 import { generateArt } from '../iso/textures';
 
 /**
@@ -23,6 +25,10 @@ export class PreloadScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.time.delayedCall(60, () => {
       generateArt(this);
+      // Villagers are on screen from the first frame of the menu and the
+      // game: paint them now (this also warms up the unit rasterizer).
+      const villager = unitArt(this, 'villager', UNIT_SPECS.villager.textureKey, true);
+      if (villager) paintAllUnitArt(this, villager);
       this.scene.start('MainMenuScene');
     });
   }
