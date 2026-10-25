@@ -15,6 +15,7 @@ export interface TrainingEntryInfo {
 export interface SelectedUnitInfo {
   kind: 'unit';
   id: number;
+  ownerId: number;
   unitType: UnitType;
   hp: { current: number; max: number };
   tile: { tx: number; ty: number };
@@ -24,6 +25,7 @@ export interface SelectedUnitInfo {
 export interface SelectedBuildingInfo {
   kind: 'building';
   id: number;
+  ownerId: number;
   buildingType: BuildingType;
   hp: { current: number; max: number };
   tile: { tx: number; ty: number };
@@ -51,15 +53,20 @@ export interface UiState {
   population: Population;
   currentAge: AgeId;
   selectedEntity: SelectedEntityInfo | null;
+  /** How many entities are selected (primary is `selectedEntity`). */
+  selectionCount: number;
   placementBuilding: BuildingType | null;
+  /** In-game clock for the HUD (display only). */
+  gameTimeMs: number;
 }
 
 export interface UiActions {
   setResources: (r: Partial<Resources>) => void;
   setPopulation: (p: Partial<Population>) => void;
   setAge: (age: AgeId) => void;
-  setSelectedEntity: (info: SelectedEntityInfo | null) => void;
+  setSelectedEntity: (info: SelectedEntityInfo | null, count?: number) => void;
   setPlacementBuilding: (type: BuildingType | null) => void;
+  setGameTime: (ms: number) => void;
 }
 
 export type UiStore = UiState & UiActions;
@@ -69,7 +76,9 @@ const INITIAL: UiState = {
   population: { current: 3, cap: 10 },
   currentAge: 1,
   selectedEntity: null,
+  selectionCount: 0,
   placementBuilding: null,
+  gameTimeMs: 0,
 };
 
 export function createUiStore(): StoreApi<UiStore> {
@@ -80,8 +89,10 @@ export function createUiStore(): StoreApi<UiStore> {
     setPopulation: (p) =>
       set((state) => ({ population: { ...state.population, ...p } })),
     setAge: (age) => set({ currentAge: age }),
-    setSelectedEntity: (info) => set({ selectedEntity: info }),
+    setSelectedEntity: (info, count) =>
+      set({ selectedEntity: info, selectionCount: count ?? (info ? 1 : 0) }),
     setPlacementBuilding: (type) => set({ placementBuilding: type }),
+    setGameTime: (ms) => set({ gameTimeMs: ms }),
   }));
 }
 
@@ -91,7 +102,9 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     population: { ...INITIAL.population },
     currentAge: INITIAL.currentAge,
     selectedEntity: null,
+    selectionCount: 0,
     placementBuilding: null,
+    gameTimeMs: 0,
   });
 }
 

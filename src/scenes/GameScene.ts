@@ -16,6 +16,7 @@ import { createVillager } from '../ecs/archetypes/villager';
 import { queueUnit } from '../ecs/queueUnit';
 import { CombatSystem } from '../ecs/systems/CombatSystem';
 import { ConstructionSystem } from '../ecs/systems/ConstructionSystem';
+import { AmbientFxSystem } from '../ecs/systems/AmbientFxSystem';
 import { DeathSystem } from '../ecs/systems/DeathSystem';
 import { FogOfWarSystem } from '../ecs/systems/FogOfWarSystem';
 import { GatheringSystem } from '../ecs/systems/GatheringSystem';
@@ -30,7 +31,8 @@ import { RenderSystem } from '../ecs/systems/RenderSystem';
 import { SelectionSystem } from '../ecs/systems/SelectionSystem';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
 import type { TileCoord } from '../iso/coordinates';
-import { tileEquals } from '../iso/coordinates';
+import { tileEquals, tileToScreen } from '../iso/coordinates';
+import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { pickTile } from '../iso/picking';
 import { generateMap } from '../map/generator';
 import { TileMap } from '../map/TileMap';
@@ -52,6 +54,7 @@ export class GameScene extends Phaser.Scene {
   private combatSystem!: CombatSystem;
   private deathSystem!: DeathSystem;
   private healthBarSystem!: HealthBarSystem;
+  private ambientFx!: AmbientFxSystem;
   private fogOfWarSystem!: FogOfWarSystem;
   private fogData!: FogOfWarData;
   private players!: PlayerManager;
@@ -74,7 +77,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#0d1016');
+    this.cameras.main.setBackgroundColor('#090c12');
     resetUiStore();
 
     this.players = createDefaultPlayers();
@@ -100,6 +103,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     const startScreen = this.playerStartScreen();
+    this.cameras.main.setZoom(1.2);
     this.cameras.main.centerOn(startScreen.sx, startScreen.sy);
 
     this.cameraController = new CameraController(this);
@@ -123,6 +127,9 @@ export class GameScene extends Phaser.Scene {
     this.fogData = new FogOfWarData(this.mapData.width, this.mapData.height);
     this.fogOfWarSystem = new FogOfWarSystem(this.world, this.fogData, 1);
     this.renderSystem.setFogContext(this.fogData, 1);
+    this.ambientFx = new AmbientFxSystem(this, this.world);
+    this.ambientFx.setFogContext(this.fogData, 1);
+    this.applyCameraGrade();
 
     this.commandUnsubscribe = onCommand((cmd) => {
       if (cmd.type === 'queue-unit') {
@@ -138,6 +145,8 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.commandUnsubscribe?.();
       this.commandUnsubscribe = null;
+      this.ambientFx.destroy();
+      this.tileMap.destroy();
     });
 
     const resourceNodes = this.world.with('position', 'resourceNode');
@@ -178,9 +187,8 @@ export class GameScene extends Phaser.Scene {
     // Wire the minimap once the HUD scene has finished its own create().
     this.time.delayedCall(50, () => {
       const hud = this.scene.get('HUDScene') as import('./HUDScene').HUDScene;
-      hud.setupMinimap(this.world, this.mapData, this.cameras.main, (tx, ty) => {
-        const sx = (tx - ty) * 32;
-        const sy = (tx + ty) * 16;
+      hud.setupMinimap(this.world, this.mapData, this.fogData, this.cameras.main, (tx, ty) => {
+        const { sx, sy } = tileToScreen({ tx, ty });
         this.cameras.main.centerOn(sx, sy);
       });
     });
@@ -195,6 +203,14 @@ export class GameScene extends Phaser.Scene {
       uiStore.getState().setPlacementBuilding(null);
     });
 
+  }
+
+  /** Vignette + gentle saturation lift (WebGL only). */
+  private applyCameraGrade(): void {
+    if (this.game.renderer.type !== Phaser.WEBGL) return;
+    const fx = this.cameras.main.postFX;
+    fx.addVignette(0.5, 0.5, 0.92, 0.32);
+    fx.addColorMatrix().saturate(0.12);
   }
 
   private spawnResourceNodes(): void {
@@ -213,24 +229,10 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
+  /** The DOM HUD sits above the canvas; ignore pointer events aimed at it. */
   private isPointerOverHud(pointer: Phaser.Input.Pointer): boolean {
-    const h = this.scale.height;
-    const w = this.scale.width;
-    // Top bar (48 px) and bottom panel (140 px) both swallow clicks.
-    if (pointer.y <= 48) return true;
-    if (pointer.y >= h - 140) return true;
-    // Minimap (200×200 at top-right, 16 px from edges, below top bar).
-    const miniX0 = w - 216;
-    const miniY0 = 64;
-    if (
-      pointer.x >= miniX0 &&
-      pointer.x <= miniX0 + 200 &&
-      pointer.y >= miniY0 &&
-      pointer.y <= miniY0 + 200
-    ) {
-      return true;
-    }
-    return false;
+    const target = pointer.event?.target;
+    return target !== undefined && target !== null && target !== this.game.canvas;
   }
 
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
@@ -471,8 +473,9 @@ export class GameScene extends Phaser.Scene {
     return null;
   }
 
-  private onUpdate(_time: number, delta: number): void {
+  private onUpdate(time: number, delta: number): void {
     this.cameraController.update(delta);
+    this.tileMap.update(time, delta);
     this.pathfindingSystem.update();
     this.gatheringSystem.update(delta);
     this.constructionSystem.update(delta);
@@ -489,9 +492,14 @@ export class GameScene extends Phaser.Scene {
     this.selectionSystem.update();
     this.renderSystem.update();
     this.healthBarSystem.update();
+    this.ambientFx.update(delta);
     this.updateBuildGhost();
 
+    const prevSecond = Math.floor(this.gameElapsedMs / 1000);
     this.gameElapsedMs += delta;
+    if (Math.floor(this.gameElapsedMs / 1000) !== prevSecond) {
+      uiStore.getState().setGameTime(this.gameElapsedMs);
+    }
     this.checkVictory();
   }
 
@@ -522,7 +530,7 @@ export class GameScene extends Phaser.Scene {
     const spec = BUILDING_SPECS[placement];
     if (!this.buildGhost) {
       this.buildGhost = this.add.image(0, 0, spec.textureKey);
-      this.buildGhost.setAlpha(0.55);
+      this.buildGhost.setAlpha(0.6).setScale(1 / ART_SCALE);
     }
     if (this.buildGhost.texture.key !== spec.textureKey) {
       this.buildGhost.setTexture(spec.textureKey);
@@ -531,14 +539,11 @@ export class GameScene extends Phaser.Scene {
       tx: this.hoverTile.tx + spec.width - 1,
       ty: this.hoverTile.ty + spec.height - 1,
     };
-    const { sx, sy } = {
-      sx: (bottom.tx - bottom.ty) * 32,
-      sy: (bottom.tx + bottom.ty) * 16,
-    };
-    this.buildGhost.setPosition(sx, sy);
-    this.buildGhost.setOrigin(0.5, 1 - 4 / this.buildGhost.height);
+    const { sx, sy } = tileToScreen(bottom);
+    this.buildGhost.setPosition(sx, sy + 16);
+    this.buildGhost.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / this.buildGhost.height);
     const valid = this.canPlaceBuilding(this.hoverTile, spec.width, spec.height);
-    this.buildGhost.setTint(valid ? 0xffffff : 0xff6666);
+    this.buildGhost.setTint(valid ? 0xbfffd0 : 0xff6666);
     this.buildGhost.setDepth(
       bottom.tx + bottom.ty + 0.25,
     );

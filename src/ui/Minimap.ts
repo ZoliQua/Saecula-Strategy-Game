@@ -1,189 +1,170 @@
-import Phaser from 'phaser';
-import { TERRAIN, type TerrainId } from '../map/TerrainTypes';
-import type { Entity } from '../ecs/components';
-import type { EcsWorld } from '../ecs/world';
-import type { MapData } from '../map/MapData';
-import { PLAYER_COLORS } from '../game/Player';
+import type Phaser from 'phaser';
 import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
+import type { EcsWorld } from '../ecs/world';
+import { PLAYER_COLORS } from '../game/Player';
+import { css } from '../iso/art/palette';
+import { FOG_EXPLORED, FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
+import type { MapData } from '../map/MapData';
+import { TERRAIN, type TerrainId } from '../map/TerrainTypes';
 
-const MINIMAP_SIZE = 200;
 const REBUILD_INTERVAL_MS = 500;
 
 const TERRAIN_COLOR: Record<TerrainId, number> = {
-  [TERRAIN.grass]: 0x4a7a34,
-  [TERRAIN.forest]: 0x1f4a2a,
-  [TERRAIN.gold_mine]: 0xd0a84a,
-  [TERRAIN.berries]: 0xd24747,
-  [TERRAIN.water]: 0x2e5a8a,
-  [TERRAIN.cliff]: 0x5a5a5a,
+  [TERRAIN.grass]: 0x5f8f3c,
+  [TERRAIN.forest]: 0x2c4c26,
+  [TERRAIN.gold_mine]: 0xe2b84a,
+  [TERRAIN.berries]: 0xc4505a,
+  [TERRAIN.water]: 0x2f6f9a,
+  [TERRAIN.cliff]: 0x6a6460,
 };
 
 /**
- * 200×200 isometric overview. The minimap renders tiles + entities
- * in the same iso projection as the main view, just scaled down,
- * so the viewport rectangle is a faithful 1:1 axis-aligned subset of
- * the iso diamond. Clicking anywhere jumps the main camera there.
+ * Isometric overview drawn on a DOM canvas. Tiles, fog, units and
+ * buildings are repainted twice a second; the camera frustum is
+ * redrawn every frame. Clicking or dragging jumps the main camera.
  */
 export class Minimap {
-  private readonly frame: Phaser.GameObjects.Rectangle;
-  private readonly rt: Phaser.GameObjects.Graphics;
-  private readonly viewportRect: Phaser.GameObjects.Rectangle;
+  readonly canvas: HTMLCanvasElement;
+  private readonly ctx: CanvasRenderingContext2D;
+  private readonly base: HTMLCanvasElement;
+  private readonly size: number;
+  private readonly dpr: number;
   private readonly scale: number;
   private readonly offsetX: number;
   private readonly offsetY: number;
   private readonly minWorldX: number;
-  private readonly minWorldY: number;
-  private readonly worldWidth: number;
-  private readonly worldHeight: number;
-  private readonly x: number;
-  private readonly y: number;
-  private elapsedSinceBuildMs = Number.MAX_SAFE_INTEGER;
+  private elapsed = Number.MAX_SAFE_INTEGER;
+  private dragging = false;
 
   constructor(
-    scene: Phaser.Scene,
+    sizeCss: number,
     private readonly world: EcsWorld,
     private readonly mapData: MapData,
-    private readonly gameCamera: Phaser.Cameras.Scene2D.Camera,
-    onJumpTo: (tx: number, ty: number) => void,
+    private readonly fog: FogOfWarData | null,
+    private readonly camera: Phaser.Cameras.Scene2D.Camera,
+    private readonly onJumpTo: (tx: number, ty: number) => void,
   ) {
-    this.x = scene.scale.width - MINIMAP_SIZE - 16;
-    this.y = 64;
+    this.size = sizeCss;
+    this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = this.canvas.height = Math.round(sizeCss * this.dpr);
+    const ctx = this.canvas.getContext('2d');
+    if (!ctx) throw new Error('2D canvas context unavailable');
+    this.ctx = ctx;
+    this.base = document.createElement('canvas');
+    this.base.width = this.base.height = this.canvas.width;
 
-    // World-space bounding box of the iso map.
     const W = mapData.width;
     const H = mapData.height;
-    const halfW = TILE_WIDTH / 2;
-    const halfH = TILE_HEIGHT / 2;
-    this.minWorldX = -(H - 1) * halfW;
-    const maxWorldX = (W - 1) * halfW;
-    this.minWorldY = 0;
-    const maxWorldY = (W + H - 2) * halfH;
-    this.worldWidth = maxWorldX - this.minWorldX + TILE_WIDTH;
-    this.worldHeight = maxWorldY - this.minWorldY + TILE_HEIGHT;
+    this.minWorldX = -(H - 1) * (TILE_WIDTH / 2) - TILE_WIDTH / 2;
+    const worldWidth = (W + H) * (TILE_WIDTH / 2);
+    const worldHeight = (W + H) * (TILE_HEIGHT / 2);
+    this.scale = Math.min(sizeCss / worldWidth, sizeCss / worldHeight) * 0.96;
+    this.offsetX = (sizeCss - worldWidth * this.scale) / 2;
+    this.offsetY = (sizeCss - worldHeight * this.scale) / 2;
 
-    this.scale = Math.min(
-      MINIMAP_SIZE / this.worldWidth,
-      MINIMAP_SIZE / this.worldHeight,
-    );
-    this.offsetX = (MINIMAP_SIZE - this.worldWidth * this.scale) / 2;
-    this.offsetY = (MINIMAP_SIZE - this.worldHeight * this.scale) / 2;
+    this.canvas.addEventListener('pointerdown', this.onPointer);
+    this.canvas.addEventListener('pointermove', this.onPointer);
+    window.addEventListener('pointerup', this.onUp);
+  }
 
-    this.frame = scene.add
-      .rectangle(this.x, this.y, MINIMAP_SIZE, MINIMAP_SIZE, 0x000000, 0.8)
-      .setStrokeStyle(1, 0x4a5565)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(10_000);
+  private readonly onPointer = (e: PointerEvent): void => {
+    if (e.type === 'pointerdown') this.dragging = true;
+    if (!this.dragging) return;
+    const r = this.canvas.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width) * this.size;
+    const my = ((e.clientY - r.top) / r.height) * this.size;
+    const wx = (mx - this.offsetX) / this.scale + this.minWorldX;
+    const wy = (my - this.offsetY) / this.scale - TILE_HEIGHT / 2;
+    const tx = (wx / (TILE_WIDTH / 2) + wy / (TILE_HEIGHT / 2)) / 2;
+    const ty = (wy / (TILE_HEIGHT / 2) - wx / (TILE_WIDTH / 2)) / 2;
+    const clamp = (v: number, max: number) => Math.max(0, Math.min(max - 1, Math.round(v)));
+    this.onJumpTo(clamp(tx, this.mapData.width), clamp(ty, this.mapData.height));
+  };
 
-    this.rt = scene.add
-      .graphics()
-      .setScrollFactor(0)
-      .setDepth(10_001)
-      .setPosition(this.x, this.y);
+  private readonly onUp = (): void => {
+    this.dragging = false;
+  };
 
-    this.viewportRect = scene.add
-      .rectangle(this.x, this.y, 20, 20, 0, 0)
-      .setStrokeStyle(1, 0xffffff, 0.9)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(10_002);
-
-    this.frame.setInteractive({ useHandCursor: true });
-    this.frame.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      const localX = p.x - this.x - this.offsetX;
-      const localY = p.y - this.y - this.offsetY;
-      const worldX = localX / this.scale + this.minWorldX;
-      const worldY = localY / this.scale + this.minWorldY;
-      // Inverse iso projection (world → tile).
-      const tx = worldX / halfW + worldY / halfH;
-      const ty = worldY / halfH - worldX / halfW;
-      const clampedTx = Math.max(0, Math.min(W - 1, Math.floor(tx / 2)));
-      const clampedTy = Math.max(0, Math.min(H - 1, Math.floor(ty / 2)));
-      onJumpTo(clampedTx, clampedTy);
-    });
+  private toMini(sx: number, sy: number): [number, number] {
+    return [
+      ((sx - this.minWorldX) * this.scale + this.offsetX) * this.dpr,
+      ((sy + TILE_HEIGHT / 2) * this.scale + this.offsetY) * this.dpr,
+    ];
   }
 
   update(deltaMs: number): void {
-    this.elapsedSinceBuildMs += deltaMs;
-    if (this.elapsedSinceBuildMs >= REBUILD_INTERVAL_MS) {
+    this.elapsed += deltaMs;
+    if (this.elapsed >= REBUILD_INTERVAL_MS) {
       this.rebuild();
-      this.elapsedSinceBuildMs = 0;
+      this.elapsed = 0;
     }
-    this.updateViewport();
-  }
-
-  private worldToMini(sx: number, sy: number): { x: number; y: number } {
-    return {
-      x: (sx - this.minWorldX) * this.scale + this.offsetX,
-      y: (sy - this.minWorldY) * this.scale + this.offsetY,
-    };
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.drawImage(this.base, 0, 0);
+    const view = this.camera.worldView;
+    const [x0, y0] = this.toMini(view.x, view.y);
+    const [x1, y1] = this.toMini(view.right, view.bottom);
+    ctx.strokeStyle = 'rgba(255,207,143,.95)';
+    ctx.lineWidth = 1.5 * this.dpr;
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
   }
 
   private rebuild(): void {
-    this.rt.clear();
-    const halfW = TILE_WIDTH / 2;
-    const halfH = TILE_HEIGHT / 2;
-    const tileSize = Math.max(1.2, this.scale * TILE_WIDTH);
-
-    // Terrain — one colored pixel per tile projected in iso.
+    const ctx = this.base.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, this.base.width, this.base.height);
+    const hw = TILE_WIDTH / 2;
+    const hh = TILE_HEIGHT / 2;
+    const dw = hw * this.scale * this.dpr;
+    const dh = hh * this.scale * this.dpr;
+    const diamond = (cx: number, cy: number) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - dh);
+      ctx.lineTo(cx + dw, cy);
+      ctx.lineTo(cx, cy + dh);
+      ctx.lineTo(cx - dw, cy);
+      ctx.closePath();
+      ctx.fill();
+    };
     for (let ty = 0; ty < this.mapData.height; ty++) {
       for (let tx = 0; tx < this.mapData.width; tx++) {
-        const terrain = this.mapData.getTile(tx, ty);
-        const sx = (tx - ty) * halfW;
-        const sy = (tx + ty) * halfH;
-        const p = this.worldToMini(sx, sy);
-        this.rt.fillStyle(TERRAIN_COLOR[terrain], 1);
-        this.rt.fillRect(p.x, p.y, tileSize, tileSize);
+        const fogState = this.fog?.get(tx, ty);
+        const [cx, cy] = this.toMini((tx - ty) * hw, (tx + ty) * hh);
+        if (fogState === FOG_UNEXPLORED) {
+          ctx.fillStyle = '#0f1218';
+        } else {
+          const c = TERRAIN_COLOR[this.mapData.getTile(tx, ty)];
+          ctx.fillStyle = css(c, fogState === FOG_EXPLORED ? 0.55 : 1);
+        }
+        diamond(cx, cy);
       }
     }
-
-    // Buildings — larger dot.
-    for (const entity of this.world.with('building', 'owner', 'position') as Iterable<Entity>) {
-      if (!entity.position || !entity.owner || !entity.building) continue;
-      const bx = entity.position.tx + (entity.building.footprint.width - 1) / 2;
-      const by = entity.position.ty + (entity.building.footprint.height - 1) / 2;
-      const sx = (bx - by) * halfW;
-      const sy = (bx + by) * halfH;
-      const p = this.worldToMini(sx, sy);
-      const c = PLAYER_COLORS[(entity.owner.playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
-      this.rt.fillStyle(c, 1);
-      const size = Math.max(4, tileSize * 2);
-      this.rt.fillRect(p.x - size / 2 + tileSize / 2, p.y - size / 2 + tileSize / 2, size, size);
+    for (const e of this.world.with('owner', 'position')) {
+      if (!e.unit && !e.building) continue;
+      const own = e.owner.playerId === 1;
+      if (!own && this.fog && !this.fog.isVisible(e.position.tx, e.position.ty)) continue;
+      const color = PLAYER_COLORS[(e.owner.playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+      const b = e.building;
+      const tx = e.position.tx + (b ? (b.footprint.width - 1) / 2 : 0);
+      const ty = e.position.ty + (b ? (b.footprint.height - 1) / 2 : 0);
+      const [cx, cy] = this.toMini((tx - ty) * hw, (tx + ty) * hh);
+      const r = (b ? 3.2 : 1.8) * this.dpr;
+      ctx.fillStyle = css(color);
+      ctx.strokeStyle = 'rgba(0,0,0,.6)';
+      ctx.lineWidth = this.dpr;
+      ctx.beginPath();
+      if (b) ctx.rect(cx - r, cy - r, r * 2, r * 2);
+      else ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
     }
-
-    // Units — small dot.
-    for (const entity of this.world.with('unit', 'owner', 'position') as Iterable<Entity>) {
-      if (!entity.position || !entity.owner) continue;
-      const { tx, ty } = entity.position;
-      const sx = (tx - ty) * halfW;
-      const sy = (tx + ty) * halfH;
-      const p = this.worldToMini(sx, sy);
-      const c = PLAYER_COLORS[(entity.owner.playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
-      this.rt.fillStyle(c, 1);
-      const size = Math.max(2.5, tileSize);
-      this.rt.fillRect(p.x, p.y, size, size);
-    }
-  }
-
-  private updateViewport(): void {
-    const cam = this.gameCamera;
-    const zoom = cam.zoom;
-    const viewW = cam.width / zoom;
-    const viewH = cam.height / zoom;
-    const p0 = this.worldToMini(cam.scrollX, cam.scrollY);
-    const w = viewW * this.scale;
-    const h = viewH * this.scale;
-    const clampedX = Math.max(0, Math.min(MINIMAP_SIZE - 4, p0.x));
-    const clampedY = Math.max(0, Math.min(MINIMAP_SIZE - 4, p0.y));
-    const clampedW = Math.min(MINIMAP_SIZE - clampedX, Math.max(4, w));
-    const clampedH = Math.min(MINIMAP_SIZE - clampedY, Math.max(4, h));
-    this.viewportRect.setPosition(this.x + clampedX, this.y + clampedY);
-    this.viewportRect.setSize(clampedW, clampedH);
   }
 
   destroy(): void {
-    this.frame.destroy();
-    this.rt.destroy();
-    this.viewportRect.destroy();
+    this.canvas.removeEventListener('pointerdown', this.onPointer);
+    this.canvas.removeEventListener('pointermove', this.onPointer);
+    window.removeEventListener('pointerup', this.onUp);
+    this.canvas.remove();
   }
 }

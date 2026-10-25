@@ -1,84 +1,138 @@
 import Phaser from 'phaser';
-import { hu } from '../i18n/hu';
+import { BUILDING_SPECS } from '../ecs/archetypes/building';
+import { UNIT_SPECS } from '../ecs/archetypes/unit';
+import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
+import { UNIT_FRAMES, UNIT_ORIGIN_Y } from '../iso/art/units';
+import { tileToScreen, type TileCoord } from '../iso/coordinates';
+import { tileDepth } from '../iso/depth';
+import { FogOfWarData } from '../map/FogOfWarData';
+import { generateMap } from '../map/generator';
+import { TERRAIN } from '../map/TerrainTypes';
+import { TileMap } from '../map/TileMap';
+import type { BuildingType, UnitType } from '../types';
+import { MainMenu } from '../ui/screens/MainMenu';
 
+const MENU_MAP_SIZE = 48;
+const MENU_SEED = 7;
+
+interface Walker {
+  sprite: Phaser.GameObjects.Sprite;
+}
+
+/**
+ * Main menu: a live diorama of the world (swaying trees, drifting
+ * clouds, a small settlement with walking villagers) under a slow
+ * camera drift, with the DOM hero overlay on top.
+ */
 export class MainMenuScene extends Phaser.Scene {
+  private tileMap: TileMap | null = null;
+  private menu: MainMenu | null = null;
+  private readonly walkers: Walker[] = [];
+  private focus = { sx: 0, sy: 0 };
+
   constructor() {
     super({ key: 'MainMenuScene' });
   }
 
   create(): void {
-    const { width, height } = this.scale;
+    this.cameras.main.setBackgroundColor('#090c12');
+    const { map } = generateMap({
+      template: 'meadow',
+      width: MENU_MAP_SIZE,
+      height: MENU_MAP_SIZE,
+      seed: MENU_SEED,
+      playerCount: 2,
+    });
+    // The settlement sits mid-map so the drifting camera never sees the rim.
+    const start = { tx: Math.floor(MENU_MAP_SIZE / 2), ty: Math.floor(MENU_MAP_SIZE / 2) };
+    // Clear a settlement clearing before the map is painted.
+    map.forEachTile(({ tx, ty }) => {
+      if (Math.abs(tx - start.tx) + Math.abs(ty - start.ty) <= 6) map.setTile(tx, ty, TERRAIN.grass);
+    });
+    this.tileMap = new TileMap(this, map);
+    const fog = new FogOfWarData(map.width, map.height);
+    map.forEachTile(({ tx, ty }) => fog.markVisible(tx, ty));
+    this.tileMap.applyFog(fog);
 
-    this.add
-      .text(width / 2, height / 2 - 140, hu.title, {
-        fontFamily: 'system-ui',
-        fontSize: '72px',
-        color: '#f5e7a3',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    const place = (type: BuildingType, tx: number, ty: number) => {
+      const spec = BUILDING_SPECS[type];
+      const front = tileToScreen({ tx: tx + spec.width - 1, ty: ty + spec.height - 1 });
+      const img = this.add.image(front.sx, front.sy + 16, spec.textureKey);
+      img.setScale(1 / ART_SCALE).setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
+      img.setDepth(tx + spec.width - 1 + ty + spec.height - 1 + 0.2);
+    };
+    place('town_center', start.tx - 1, start.ty - 1);
+    place('house', start.tx + 3, start.ty - 2);
+    place('house', start.tx - 4, start.ty + 2);
+    place('barracks', start.tx + 3, start.ty + 2);
+    place('farm', start.tx - 4, start.ty - 2);
 
-    this.add
-      .text(width / 2, height / 2 - 70, hu.subtitle, {
-        fontFamily: 'system-ui',
-        fontSize: '20px',
-        color: '#c9c2a6',
-      })
-      .setOrigin(0.5);
+    const units: UnitType[] = ['villager', 'villager', 'villager', 'swordsman', 'archer', 'villager'];
+    units.forEach((u, i) => {
+      const a = { tx: start.tx - 3 + (i % 3) * 3, ty: start.ty + 2 + Math.floor(i / 3) * 2 };
+      const b = { tx: a.tx + 2 + (i % 2), ty: a.ty - 3 };
+      this.walk(u, a, b, i * 700);
+    });
 
-    this.createMenuButton(width / 2, height / 2 + 20, hu.menu.newGame, () =>
-      this.scene.start('GameScene'),
-    );
-    this.createDisabledButton(
-      width / 2,
-      height / 2 + 80,
-      hu.menu.loadGame,
-    );
-    this.createDisabledButton(
-      width / 2,
-      height / 2 + 140,
-      hu.menu.settings,
-    );
+    const center = tileToScreen(start);
+    this.focus = { sx: center.sx - 140, sy: center.sy + 20 };
+    this.cameras.main.setZoom(1.25);
+    this.cameras.main.centerOn(this.focus.sx, this.focus.sy);
+    if (this.game.renderer.type === Phaser.WEBGL) {
+      this.cameras.main.postFX.addVignette(0.6, 0.5, 0.95, 0.3);
+    }
+
+    this.menu = new MainMenu(() => {
+      this.cameras.main.fadeOut(350, 9, 12, 18);
+      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('GameScene'));
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.menu?.destroy();
+      this.menu = null;
+      this.tileMap?.destroy();
+      this.tileMap = null;
+      this.walkers.length = 0;
+    });
   }
 
-  private createMenuButton(
-    x: number,
-    y: number,
-    label: string,
-    onClick: () => void,
-  ): Phaser.GameObjects.Container {
-    const bg = this.add.rectangle(0, 0, 280, 44, 0x333840, 1).setStrokeStyle(2, 0x8bc34a);
-    const text = this.add
-      .text(0, 0, label, {
-        fontFamily: 'system-ui',
-        fontSize: '20px',
-        color: '#eeeeee',
-      })
-      .setOrigin(0.5);
-    const container = this.add.container(x, y, [bg, text]);
-    container.setSize(280, 44);
-    container.setInteractive({ useHandCursor: true });
-    container.on('pointerover', () => bg.setFillStyle(0x444b55));
-    container.on('pointerout', () => bg.setFillStyle(0x333840));
-    container.on('pointerdown', onClick);
-    return container;
+  /** A unit strolling back and forth between two tiles. */
+  private walk(type: UnitType, a: TileCoord, b: TileCoord, delay: number): void {
+    const pa = tileToScreen(a);
+    const pb = tileToScreen(b);
+    const sprite = this.add
+      .sprite(pa.sx, pa.sy, UNIT_SPECS[type].textureKey, UNIT_FRAMES.idle)
+      .setScale(1 / ART_SCALE)
+      .setOrigin(0.5, UNIT_ORIGIN_Y)
+      .setDepth(tileDepth(a) + 0.3);
+    this.walkers.push({ sprite });
+    this.tweens.add({
+      targets: sprite,
+      x: pb.sx,
+      y: pb.sy,
+      duration: 4200,
+      delay,
+      yoyo: true,
+      repeat: -1,
+      hold: 1400,
+      repeatDelay: 1400,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        sprite.setDepth((sprite.y / 16) + 0.3);
+      },
+      onYoyo: () => sprite.setFlipX(pb.sx > pa.sx),
+      onRepeat: () => sprite.setFlipX(pb.sx < pa.sx),
+    });
+    sprite.setFlipX(pb.sx < pa.sx);
   }
 
-  private createDisabledButton(
-    x: number,
-    y: number,
-    label: string,
-  ): Phaser.GameObjects.Container {
-    const bg = this.add
-      .rectangle(0, 0, 280, 44, 0x222529, 1)
-      .setStrokeStyle(1, 0x4a4a4a);
-    const text = this.add
-      .text(0, 0, label, {
-        fontFamily: 'system-ui',
-        fontSize: '20px',
-        color: '#666666',
-      })
-      .setOrigin(0.5);
-    return this.add.container(x, y, [bg, text]);
+  override update(time: number, delta: number): void {
+    this.tileMap?.update(time, delta);
+    for (const w of this.walkers) {
+      const moving = w.sprite.getData('lx') !== w.sprite.x;
+      w.sprite.setData('lx', w.sprite.x);
+      w.sprite.setFrame(moving ? (Math.floor(time / 160) % 2 ? UNIT_FRAMES.walkA : UNIT_FRAMES.walkB) : UNIT_FRAMES.idle);
+    }
+    const cam = this.cameras.main;
+    cam.centerOn(this.focus.sx + Math.sin(time / 9000) * 90, this.focus.sy + Math.cos(time / 11000) * 40);
   }
 }
