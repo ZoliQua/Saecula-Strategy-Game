@@ -442,7 +442,8 @@ IsoRTS/
     ├── config/
     │   ├── game.ts              ← Phaser config
     │   ├── constants.ts         ← TILE_WIDTH, MAX_PLAYERS, stb.
-    │   └── balance.ts           ← stat konstansok (egyetlen forrás)
+    │   ├── balance.ts           ← stat konstansok (egyetlen forrás)
+    │   └── visual.ts            ← világítás, napszak, árnyék (csak megjelenés)
     ├── scenes/
     │   ├── BootScene.ts
     │   ├── PreloadScene.ts
