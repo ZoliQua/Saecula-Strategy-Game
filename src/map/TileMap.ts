@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { ART_SCALE } from '../iso/art/canvas';
+import { LightManager, lit } from '../iso/art/lighting/LightManager';
+import { attachNormalMap, flatGroundNormal } from '../iso/art/lighting/litTextures';
 import { BUSH_VARIANTS, ROCK_VARIANTS, TREE_VARIANTS } from '../iso/art/decor';
 import { hash2, tileVariant } from '../iso/art/palette';
 import { paintTerrainChunk } from '../iso/art/terrain';
@@ -23,6 +25,8 @@ interface Decor {
   sprite: Phaser.GameObjects.Image;
   kind: 'tree' | 'gold' | 'bush' | 'stump';
   phase: number;
+  /** Removes the cast shadow (trees). */
+  unshadow: (() => void) | null;
 }
 
 /**
@@ -39,7 +43,6 @@ export class TileMap {
   private readonly mapData: MapData;
   private readonly chunks: Phaser.GameObjects.Image[] = [];
   private readonly decor = new Map<number, Decor>();
-  private readonly trees: Decor[] = [];
   private readonly clouds: Phaser.GameObjects.TileSprite;
   private readonly fog: FogLayer;
   private highlight: Phaser.GameObjects.Graphics | null = null;
@@ -81,7 +84,8 @@ export class TileMap {
         // Chunks overlap by CHUNK_OVERLAP px so filtering never opens a seam.
         const o = CHUNK_OVERLAP;
         this.scene.textures.addCanvas(key, paintTerrainChunk(this.mapData, x - o, y - o, w + o * 2, h + o * 2));
-        this.chunks.push(this.scene.add.image(x - o, y - o, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH));
+        attachNormalMap(this.scene, key, flatGroundNormal());
+        this.chunks.push(lit(this.scene.add.image(x - o, y - o, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH)));
       }
     }
   }
@@ -111,10 +115,9 @@ export class TileMap {
     if (have && want && have.sprite.texture.key === want.key) return;
     if (have) {
       const wasTree = have.kind === 'tree';
+      have.unshadow?.();
       have.sprite.destroy();
       this.decor.delete(id);
-      const idx = this.trees.indexOf(have);
-      if (idx >= 0) this.trees.splice(idx, 1);
       if (wasTree && !want) {
         this.addDecor(id, tx, ty, decorKeys.stump, 'stump');
         return;
@@ -135,9 +138,10 @@ export class TileMap {
       .setScale(scale)
       .setFlipX(hash2(tx, ty, 204) > 0.5)
       .setDepth(tileDepth({ tx, ty }) + DECOR_DEPTH_OFFSET);
-    const d: Decor = { sprite, kind, phase: hash2(tx, ty, 205) * Math.PI * 2 };
+    lit(sprite);
+    const unshadow = kind === 'tree' ? LightManager.of(this.scene)?.attachCaster(sprite, key) ?? null : null;
+    const d: Decor = { sprite, kind, phase: hash2(tx, ty, 205) * Math.PI * 2, unshadow };
     this.decor.set(id, d);
-    if (kind === 'tree') this.trees.push(d);
   }
 
   /** Re-reads terrain for one tile (e.g. a depleted resource). */
@@ -148,11 +152,19 @@ export class TileMap {
   /** Per-frame ambient animation. */
   update(time: number, delta: number): void {
     const view = this.scene.cameras.main.worldView;
+    // Off-screen culling: Phaser batches every visible object, and the lit
+    // pipeline breaks batches per texture, so hidden decor saves draw calls.
     const margin = 80;
-    for (const t of this.trees) {
-      const s = t.sprite;
-      if (s.x < view.x - margin || s.x > view.right + margin || s.y < view.y - margin || s.y > view.bottom + margin * 2) continue;
-      s.rotation = Math.sin(time * 0.0011 + t.phase) * 0.025 + Math.sin(time * 0.0031 + t.phase * 2) * 0.008;
+    for (const d of this.decor.values()) {
+      const s = d.sprite;
+      const inView = !(s.x < view.x - margin || s.x > view.right + margin || s.y < view.y - margin || s.y > view.bottom + margin * 2);
+      s.setVisible(inView);
+      if (inView && d.kind === 'tree') {
+        s.rotation = Math.sin(time * 0.0011 + d.phase) * 0.025 + Math.sin(time * 0.0031 + d.phase * 2) * 0.008;
+      }
+    }
+    for (const c of this.chunks) {
+      c.setVisible(c.x < view.right && c.x + c.width > view.x && c.y < view.bottom && c.y + c.height > view.y);
     }
     this.clouds.tilePositionX += delta * 0.006;
     this.clouds.tilePositionY += delta * 0.0025;
@@ -220,9 +232,11 @@ export class TileMap {
 
   destroy(): void {
     for (const c of this.chunks) c.destroy();
-    for (const d of this.decor.values()) d.sprite.destroy();
+    for (const d of this.decor.values()) {
+      d.unshadow?.();
+      d.sprite.destroy();
+    }
     this.decor.clear();
-    this.trees.length = 0;
     this.clouds.destroy();
     this.fog.destroy();
     this.highlight?.destroy();

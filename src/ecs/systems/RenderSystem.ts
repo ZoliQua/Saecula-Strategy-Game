@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import type { With } from 'miniplex';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
+import { LightManager, lit } from '../../iso/art/lighting/LightManager';
 import { UNIT_FRAMES, UNIT_ORIGIN_Y } from '../../iso/art/units';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
-import { constructionKey, teamTextureKey } from '../../iso/textures';
+import { BUILDING_LIGHT, constructionKey, teamTextureKey } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -26,6 +27,8 @@ export class RenderSystem {
   private readonly world: EcsWorld;
   private readonly renderable: ReturnType<EcsWorld['with']>;
   private readonly sites = new Map<Entity, Phaser.GameObjects.Image>();
+  /** Detaches shadows / glows / torches registered with the LightManager. */
+  private readonly unlight = new Map<Entity, () => void>();
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -35,6 +38,8 @@ export class RenderSystem {
     this.renderable = this.world.with('position', 'renderable');
 
     this.renderable.onEntityRemoved.subscribe((entity: Renderable) => {
+      this.unlight.get(entity)?.();
+      this.unlight.delete(entity);
       entity.sprite?.destroy();
       delete entity.sprite;
       this.sites.get(entity)?.destroy();
@@ -76,8 +81,40 @@ export class RenderSystem {
     } else {
       sprite.setOrigin(0.5, UNIT_ORIGIN_Y);
     }
+    lit(sprite);
     entity.sprite = sprite;
+    // Position first so building-anchored lights land on the right spot.
+    const { sx, sy } = renderScreenPos(entity);
+    sprite.setPosition(sx, sy);
+    this.attachLighting(entity, sprite);
     return sprite;
+  }
+
+  private attachLighting(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {
+    const lights = LightManager.of(this.scene);
+    if (!lights) return;
+    const baseKey = entity.renderable.textureKey;
+    const b = entity.building;
+    if (!b) {
+      this.unlight.set(entity, lights.attachCaster(sprite, baseKey));
+      return;
+    }
+    const info = BUILDING_LIGHT.get(baseKey);
+    this.unlight.set(
+      entity,
+      lights.attachBuilding({
+        sprite,
+        type: b.type,
+        footprint: { w: b.footprint.width, h: b.footprint.height },
+        volume: info?.volume ?? [],
+        glows: info?.glows ?? [],
+        isComplete: () => !entity.underConstruction && !entity.dying,
+        heightScale: () => {
+          const uc = entity.underConstruction;
+          return uc ? Math.min(1, uc.elapsed / uc.totalTime) : 1;
+        },
+      }),
+    );
   }
 
   /** Construction: the building grows up out of a scaffolded site. */
@@ -97,7 +134,7 @@ export class RenderSystem {
     let site = this.sites.get(entity);
     if (!site && entity.building) {
       const key = constructionKey(entity.building.footprint.width);
-      site = this.scene.add.image(sprite.x, sprite.y, key).setScale(SPRITE_SCALE);
+      site = lit(this.scene.add.image(sprite.x, sprite.y, key).setScale(SPRITE_SCALE));
       site.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / site.height);
       this.sites.set(entity, site);
     }

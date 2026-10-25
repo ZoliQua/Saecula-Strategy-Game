@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { UNIT_SPECS } from '../ecs/archetypes/unit';
+import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
+import { LightManager, lit } from '../iso/art/lighting/LightManager';
 import { UNIT_FRAMES, UNIT_ORIGIN_Y } from '../iso/art/units';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
+import { BUILDING_LIGHT } from '../iso/textures';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { generateMap } from '../map/generator';
 import { TERRAIN } from '../map/TerrainTypes';
@@ -26,6 +29,7 @@ interface Walker {
  */
 export class MainMenuScene extends Phaser.Scene {
   private tileMap: TileMap | null = null;
+  private lighting: LightManager | null = null;
   private menu: MainMenu | null = null;
   private readonly walkers: Walker[] = [];
   private focus = { sx: 0, sy: 0 };
@@ -49,6 +53,7 @@ export class MainMenuScene extends Phaser.Scene {
     map.forEachTile(({ tx, ty }) => {
       if (Math.abs(tx - start.tx) + Math.abs(ty - start.ty) <= 6) map.setTile(tx, ty, TERRAIN.grass);
     });
+    this.lighting = new LightManager(this, { phase: MENU_PHASE, fixed: true });
     this.tileMap = new TileMap(this, map);
     const fog = new FogOfWarData(map.width, map.height);
     map.forEachTile(({ tx, ty }) => fog.markVisible(tx, ty));
@@ -60,6 +65,17 @@ export class MainMenuScene extends Phaser.Scene {
       const img = this.add.image(front.sx, front.sy + 16, spec.textureKey);
       img.setScale(1 / ART_SCALE).setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
       img.setDepth(tx + spec.width - 1 + ty + spec.height - 1 + 0.2);
+      lit(img);
+      const info = BUILDING_LIGHT.get(spec.textureKey);
+      this.lighting?.attachBuilding({
+        sprite: img,
+        type,
+        footprint: { w: spec.width, h: spec.height },
+        volume: info?.volume ?? [],
+        glows: info?.glows ?? [],
+        isComplete: () => true,
+        heightScale: () => 1,
+      });
     };
     place('town_center', start.tx - 1, start.ty - 1);
     place('house', start.tx + 3, start.ty - 2);
@@ -91,6 +107,8 @@ export class MainMenuScene extends Phaser.Scene {
       this.menu = null;
       this.tileMap?.destroy();
       this.tileMap = null;
+      this.lighting?.destroy();
+      this.lighting = null;
       this.walkers.length = 0;
     });
   }
@@ -104,6 +122,8 @@ export class MainMenuScene extends Phaser.Scene {
       .setScale(1 / ART_SCALE)
       .setOrigin(0.5, UNIT_ORIGIN_Y)
       .setDepth(tileDepth(a) + 0.3);
+    lit(sprite);
+    this.lighting?.attachCaster(sprite, UNIT_SPECS[type].textureKey);
     this.walkers.push({ sprite });
     this.tweens.add({
       targets: sprite,
@@ -127,6 +147,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   override update(time: number, delta: number): void {
     this.tileMap?.update(time, delta);
+    this.lighting?.update(delta);
     for (const w of this.walkers) {
       const moving = w.sprite.getData('lx') !== w.sprite.x;
       w.sprite.setData('lx', w.sprite.x);

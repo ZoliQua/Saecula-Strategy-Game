@@ -3,6 +3,8 @@ import { createDefaultPlayers, type PlayerManager } from '../game/PlayerManager'
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
+import { DAY_START_PHASE } from '../config/visual';
+import { LightManager } from '../iso/art/lighting/LightManager';
 import { tileToScreen } from '../iso/coordinates';
 import type { MapData } from '../map/MapData';
 import { TileMap } from '../map/TileMap';
@@ -28,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private runner!: SystemRunner;
   private placement!: BuildPlacement;
   private victoryChecker!: VictoryChecker;
+  private lighting!: LightManager;
   private gameElapsedMs = 0;
   private gameOverTriggered = false;
   private commandUnsubscribe: (() => void) | null = null;
@@ -43,6 +46,8 @@ export class GameScene extends Phaser.Scene {
     this.players = createDefaultPlayers();
     const { mapData, playerStart, aiStart } = generateGameMap(this.players);
     this.mapData = mapData;
+    // Lighting first: the map and render proxies register lit sprites and shadows with it.
+    this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
     this.tileMap = new TileMap(this, mapData);
 
     const bounds = this.tileMap.getWorldBounds();
@@ -74,6 +79,7 @@ export class GameScene extends Phaser.Scene {
       this.commandUnsubscribe = null;
       this.runner.destroy();
       this.tileMap.destroy();
+      this.lighting.destroy();
     });
 
     const resourceNodes = this.world.with('position', 'resourceNode');
@@ -157,6 +163,7 @@ export class GameScene extends Phaser.Scene {
 
   private onUpdate(time: number, delta: number): void {
     this.runner.update(time, delta);
+    this.lighting.update(delta);
     this.placement.updateGhost();
 
     const prevSecond = Math.floor(this.gameElapsedMs / 1000);
