@@ -12,6 +12,9 @@
  *        null, FOLIAGE_DERIVE | ROCK_DERIVE | UNIT_DERIVE)` derives a
  *        pillow + luminance-bump normal map; attachNormalMap(scene, key, n).
  *      - Team-colour variants: shareNormalMap(scene, baseKey, variantKey).
+ *        Variants share ONE TextureSource with the base: removing either
+ *        texture destroys the shared normal map for all of them, so never
+ *        remove/re-register a base or variant texture mid-game.
  * 2. Pipeline. Lit GameObjects call `lit(gameObject)` (sets the
  *    IsoLight2D pipeline when lighting is active; no-op otherwise).
  *    UI, fog, particles, glows and shadows stay unlit.
@@ -21,6 +24,8 @@
  *        up at night). handle.remove() / handle.setPosition().
  *      - flash(x, y, color, radius, durationMs, intensity?) — pooled
  *        (FLASH_POOL_SIZE), oldest recycled; for muzzle flashes, blasts.
+ *        Active flashes always render: persistent lights only get the
+ *        MAX_LIGHTS − activeFlashes slots left (nearest the view centre).
  *      - attachBuilding()/attachCaster() wire buildings/units/trees to
  *        shadows, window glows and the BUILDING_LIGHTS table.
  * 4. Shadows. Upright casters register a blurred silhouette
@@ -35,12 +40,13 @@ import {
   DAY_CYCLE_MS,
   FLASH_POOL_SIZE,
   LIGHTING_ENABLED,
+  MAX_LIGHTS,
   NIGHT_LIGHT_GAIN,
 } from '../../../config/visual';
 import type { BuildingType } from '../../../types';
 import { BUILDING_LIGHTS } from './buildingLights';
 import { CastShadows } from './CastShadows';
-import { FlashPool } from './flashPool';
+import { FlashPool, persistentBudget, selectPersistentLights } from './flashPool';
 import { ISO_LIGHT_PIPELINE, setSceneSun } from './IsoLightPipeline';
 import type { GlowPoint } from './normalLayer';
 import type { VolumePoint } from './shadowGeometry';
@@ -215,12 +221,21 @@ export class LightManager {
     const now = this.scene.time.now;
     const gain = NIGHT_LIGHT_GAIN.day + (NIGHT_LIGHT_GAIN.night - NIGHT_LIGHT_GAIN.day) * s.night;
     for (const sync of this.syncers) sync();
-    for (const p of this.persistent) {
-      const wobble = p.flicker * (Math.sin(now * 0.017 + p.seed) * 0.5 + Math.sin(now * 0.041 + p.seed * 2.3) * 0.5);
-      p.light.setVisible(p.enabled);
-      p.light.intensity = p.base * gain * (1 + wobble);
-    }
     const strengths = this.pool.update(now);
+    // Flashes get reserved slots; persistent lights share what is left.
+    const enabled = [...this.persistent].filter((p) => p.enabled);
+    const keep = selectPersistentLights(
+      enabled.map((p) => p.light),
+      this.scene.cameras.main.worldView,
+      persistentBudget(MAX_LIGHTS, this.pool.activeCount()),
+    );
+    for (const p of this.persistent) p.light.setVisible(false);
+    enabled.forEach((p, i) => {
+      if (!keep.has(i)) return;
+      const wobble = p.flicker * (Math.sin(now * 0.017 + p.seed) * 0.5 + Math.sin(now * 0.041 + p.seed * 2.3) * 0.5);
+      p.light.setVisible(true);
+      p.light.intensity = p.base * gain * (1 + wobble);
+    });
     this.pool.slots.forEach((slot, i) => {
       const light = this.flashLights[i];
       if (!light) return;
@@ -243,5 +258,7 @@ export class LightManager {
     this.syncers.clear();
     if (this.active) this.scene.lights.lights.length = 0;
     managers.delete(this.scene);
+    const w = window as unknown as { __lighting?: LightManager };
+    if (w.__lighting === this) delete w.__lighting;
   }
 }

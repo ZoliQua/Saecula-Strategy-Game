@@ -71,3 +71,33 @@ export class FlashPool {
     return this.slots.filter((s) => s.active).length;
   }
 }
+
+/** Light slots left for persistent lights once active flashes are reserved. */
+export function persistentBudget(maxLights: number, activeFlashes: number): number {
+  return Math.max(0, maxLights - activeFlashes);
+}
+
+/**
+ * Picks which persistent lights may render this frame: only those whose
+ * radius reaches the view, nearest the view centre first, at most
+ * `budget`. Returns their indices. Flashes are reserved separately, so
+ * a town full of torches can never crowd a muzzle flash out of
+ * Phaser's nearest-to-camera light cap.
+ */
+export function selectPersistentLights(
+  lights: ReadonlyArray<{ x: number; y: number; radius: number }>,
+  view: { x: number; y: number; right: number; bottom: number },
+  budget: number,
+): Set<number> {
+  const cx = (view.x + view.right) / 2;
+  const cy = (view.y + view.bottom) / 2;
+  const candidates: Array<[number, number]> = [];
+  lights.forEach((l, i) => {
+    const nx = Math.max(view.x, Math.min(l.x, view.right));
+    const ny = Math.max(view.y, Math.min(l.y, view.bottom));
+    if (Math.hypot(l.x - nx, l.y - ny) > l.radius) return;
+    candidates.push([i, Math.hypot(l.x - cx, l.y - cy)]);
+  });
+  candidates.sort((a, b) => a[1] - b[1]);
+  return new Set(candidates.slice(0, Math.max(0, budget)).map(([i]) => i));
+}

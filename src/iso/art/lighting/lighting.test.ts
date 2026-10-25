@@ -1,6 +1,6 @@
 import { MIN_BRIGHTNESS, SHADOW, SKY_KEYS } from '../../../config/visual';
 import { deriveNormals } from './deriveNormals';
-import { flashEnvelope, FlashPool } from './flashPool';
+import { flashEnvelope, FlashPool, persistentBudget, selectPersistentLights } from './flashPool';
 import { convexHull, projectVolumeShadow, shearQuad } from './shadowGeometry';
 import { groundBrightness, shadowVector, sunAt, sunDirection, wrapPhase } from './sun';
 import {
@@ -199,5 +199,28 @@ describe('deriveNormals', () => {
     const n = deriveNormals(square(), W, W, faces, { bulge: 3, bulgeStrength: 6, upBias: 0, detail: 0 });
     expect(normalAt(n, 0, 0)[1]).toBeCloseTo(N_UP[1], 1);
     expect(normalAt(n, 4, 10)[0]).toBeCloseTo(N_RIGHT[0], 1);
+  });
+});
+
+describe('persistent light budget', () => {
+  const view = { x: 0, y: 0, right: 100, bottom: 100 };
+  const at = (x: number, y: number, radius = 10) => ({ x, y, radius });
+
+  it('keeps the lights nearest the view centre within the budget', () => {
+    const lights = [at(50, 50), at(90, 90), at(10, 10), at(55, 45)];
+    expect([...selectPersistentLights(lights, view, 2)].sort()).toEqual([0, 3]);
+  });
+
+  it('ignores lights that cannot reach the view', () => {
+    const lights = [at(500, 500), at(60, 60)];
+    expect([...selectPersistentLights(lights, view, 2)]).toEqual([1]);
+  });
+
+  it('reserves room for active flashes', () => {
+    const lights = Array.from({ length: 20 }, (_, i) => at(i * 5, 50));
+    const budget = persistentBudget(12, 4);
+    expect(budget).toBe(8);
+    expect(selectPersistentLights(lights, view, budget).size).toBe(8);
+    expect(persistentBudget(12, 20)).toBe(0);
   });
 });
