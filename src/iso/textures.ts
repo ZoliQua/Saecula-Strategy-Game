@@ -15,6 +15,16 @@ import {
   TREE_VARIANTS,
   type DecorArt,
 } from './art/decor';
+import { attachNormalMap, registerShadowSilhouette, shareNormalMap } from './art/lighting/litTextures';
+import {
+  FOLIAGE_DERIVE,
+  normalMapFor,
+  ROCK_DERIVE,
+  UNIT_DERIVE,
+  type GlowPoint,
+  type LitArt,
+} from './art/lighting/normalLayer';
+import type { VolumePoint } from './art/lighting/shadowGeometry';
 import { hash2 } from './art/palette';
 import { paintUnitStrip, UNIT_FRAME_W } from './art/units';
 
@@ -40,6 +50,9 @@ export function constructionKey(size: number): string {
   return `construction_${size}`;
 }
 
+/** Per base texture key: building shadow volume + window glows (texture px). */
+export const BUILDING_LIGHT = new Map<string, { volume: readonly VolumePoint[]; glows: readonly GlowPoint[] }>();
+
 const unitByKey = new Map<string, UnitType>();
 const buildingByKey = new Map<string, BuildingType>();
 
@@ -58,28 +71,34 @@ export function generateArt(scene: Phaser.Scene): void {
   for (const spec of Object.values(UNIT_SPECS)) {
     unitByKey.set(spec.textureKey, spec.type);
     if (!scene.textures.exists(spec.textureKey)) {
-      registerStrip(scene, spec.textureKey, paintUnitStrip(spec.type, p1), UNIT_FRAME_W, 4);
+      const strip = paintUnitStrip(spec.type, p1);
+      registerStrip(scene, spec.textureKey, strip, UNIT_FRAME_W, 4);
+      attachNormalMap(scene, spec.textureKey, normalMapFor(strip, null, UNIT_DERIVE));
+      registerShadowSilhouette(scene, spec.textureKey);
     }
   }
   for (const spec of Object.values(BUILDING_SPECS)) {
     buildingByKey.set(spec.textureKey, spec.type);
     if (!scene.textures.exists(spec.textureKey)) {
-      registerCanvas(scene, spec.textureKey, paintBuilding(spec.type, p1));
+      registerLitArt(scene, spec.textureKey, paintBuilding(spec.type, p1));
     }
   }
   for (const size of [1, 2, 3, 4]) {
     if (!scene.textures.exists(constructionKey(size))) {
-      registerCanvas(scene, constructionKey(size), paintConstructionSite(size));
+      registerLitArt(scene, constructionKey(size), paintConstructionSite(size));
     }
   }
-  const decor = (key: string, art: DecorArt): void => {
+  const decor = (key: string, art: DecorArt, foliage: boolean, casts: boolean): void => {
     DECOR_ORIGIN_Y.set(key, art.originY);
-    if (!scene.textures.exists(key)) registerCanvas(scene, key, art.canvas);
+    if (scene.textures.exists(key)) return;
+    registerCanvas(scene, key, art.canvas);
+    attachNormalMap(scene, key, normalMapFor(art.canvas, null, foliage ? FOLIAGE_DERIVE : ROCK_DERIVE));
+    if (casts) registerShadowSilhouette(scene, key);
   };
-  for (let i = 0; i < TREE_VARIANTS; i++) decor(decorKeys.tree(i), paintTree(i));
-  for (let i = 0; i < ROCK_VARIANTS; i++) decor(decorKeys.gold(i), paintGoldRocks(i));
-  for (let i = 0; i < BUSH_VARIANTS; i++) decor(decorKeys.bush(i), paintBerryBush(i));
-  decor(decorKeys.stump, paintStump());
+  for (let i = 0; i < TREE_VARIANTS; i++) decor(decorKeys.tree(i), paintTree(i), true, true);
+  for (let i = 0; i < ROCK_VARIANTS; i++) decor(decorKeys.gold(i), paintGoldRocks(i), false, false);
+  for (let i = 0; i < BUSH_VARIANTS; i++) decor(decorKeys.bush(i), paintBerryBush(i), true, false);
+  decor(decorKeys.stump, paintStump(), false, false);
   generateFx(scene);
 }
 
@@ -93,11 +112,19 @@ export function teamTextureKey(scene: Phaser.Scene, baseKey: string, playerId: n
   if (unit) {
     registerStrip(scene, key, paintUnitStrip(unit, teamColor(playerId)), UNIT_FRAME_W, 4);
   } else if (building) {
-    registerCanvas(scene, key, paintBuilding(building, teamColor(playerId)));
+    registerCanvas(scene, key, paintBuilding(building, teamColor(playerId), false).canvas);
   } else {
     return baseKey;
   }
+  shareNormalMap(scene, baseKey, key);
   return key;
+}
+
+/** Registers painted art with its normal map and remembers its lighting data. */
+function registerLitArt(scene: Phaser.Scene, key: string, art: LitArt): void {
+  registerCanvas(scene, key, art.canvas);
+  attachNormalMap(scene, key, art.normal);
+  BUILDING_LIGHT.set(key, { volume: art.volume, glows: art.glows });
 }
 
 function generateFx(scene: Phaser.Scene): void {

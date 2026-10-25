@@ -1,6 +1,7 @@
 import type { BuildingType } from '../../types';
 import { ellipse } from './canvas';
 import { IsoPainter } from './isoPainter';
+import type { LitArt } from './lighting/normalLayer';
 import { css, shade } from './palette';
 
 const STONE = 0xa49a88;
@@ -29,6 +30,7 @@ function column(p: IsoPainter, u: number, v: number, z0: number, z1: number, r =
   g.addColorStop(1, css(shade(color, 0.62)));
   ctx.fillStyle = g;
   ctx.fillRect(x - r, yt, r * 2, yb - yt);
+  p.normalCylinder(x - r - 1.5, yt - 2, r * 2 + 3, yb - yt + 3);
   ctx.fillStyle = css(shade(color, 0.85));
   ctx.fillRect(x - r - 1.5, yt - 2, r * 2 + 3, 3);
   ctx.fillRect(x - r - 1.5, yb - 2, r * 2 + 3, 3);
@@ -365,16 +367,19 @@ export const BUILDING_ART_SIZES: Record<BuildingType, number> = Object.fromEntri
   Object.entries(ART).map(([k, v]) => [k, v.size]),
 ) as Record<BuildingType, number>;
 
-/** Paints a building for a team colour. Returns the canvas. */
-export function paintBuilding(type: BuildingType, team: number): HTMLCanvasElement {
+/**
+ * Paints a building for a team colour (albedo, normals, shadow volume,
+ * glows). Team variants pass withNormals=false and share the base map.
+ */
+export function paintBuilding(type: BuildingType, team: number, withNormals = true): LitArt {
   const art = ART[type];
   const p = new IsoPainter(art.size, art.size, art.maxHeight, type.length * 977);
   art.paint(p, team);
-  return p.canvas;
+  return p.result(withNormals);
 }
 
 /** Foundation stones + scaffolding shown while a site is being built. */
-export function paintConstructionSite(size: number): HTMLCanvasElement {
+export function paintConstructionSite(size: number): LitArt {
   const p = new IsoPainter(size, size, 40 + size * 20, size * 31);
   const ctx = p.ctx;
   p.ground(0.1, 0.1, size - 0.1, size - 0.1, 0x9b8a6a);
@@ -403,5 +408,5 @@ export function paintConstructionSite(size: number): HTMLCanvasElement {
       ctx.stroke();
     }
   }
-  return p.canvas;
+  return p.result();
 }

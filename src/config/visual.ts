@@ -52,9 +52,9 @@ export interface SkyKey {
 export const SKY_KEYS: readonly SkyKey[] = [
   { at: 0.0, elevation: 8, azimuth: 168, sun: [0.62, 0.42, 0.36], ambient: [0.5, 0.5, 0.62], glow: 0.55 },
   { at: 0.1, elevation: 22, azimuth: 150, sun: [0.66, 0.54, 0.42], ambient: [0.58, 0.57, 0.62], glow: 0.1 },
-  { at: 0.25, elevation: 48, azimuth: 125, sun: [0.6, 0.58, 0.52], ambient: [0.62, 0.63, 0.66], glow: 0 },
-  { at: 0.4, elevation: 56, azimuth: 95, sun: [0.6, 0.59, 0.54], ambient: [0.63, 0.64, 0.66], glow: 0 },
-  { at: 0.55, elevation: 30, azimuth: 55, sun: [0.7, 0.55, 0.36], ambient: [0.6, 0.56, 0.54], glow: 0.05 },
+  { at: 0.25, elevation: 40, azimuth: 125, sun: [0.62, 0.6, 0.53], ambient: [0.6, 0.61, 0.64], glow: 0 },
+  { at: 0.4, elevation: 46, azimuth: 95, sun: [0.62, 0.61, 0.55], ambient: [0.6, 0.61, 0.63], glow: 0 },
+  { at: 0.55, elevation: 30, azimuth: 55, sun: [0.66, 0.52, 0.34], ambient: [0.55, 0.52, 0.5], glow: 0.05 },
   { at: 0.65, elevation: 12, azimuth: 30, sun: [0.74, 0.44, 0.26], ambient: [0.55, 0.48, 0.52], glow: 0.45 },
   { at: 0.73, elevation: 5, azimuth: 18, sun: [0.5, 0.3, 0.34], ambient: [0.48, 0.46, 0.6], glow: 0.9 },
   { at: 0.82, elevation: 34, azimuth: 120, sun: [0.16, 0.2, 0.32], ambient: [0.46, 0.5, 0.66], glow: 1 },
@@ -64,7 +64,7 @@ export const SKY_KEYS: readonly SkyKey[] = [
 /** Cast-shadow look. */
 export const SHADOW = {
   /** Max shadow alpha (full sun). */
-  alpha: 0.34,
+  alpha: 0.42,
   /** Shadow length per unit of screen height is capped here. */
   maxLength: 2.6,
   /** Silhouette blur in art px (pre-blurred into shadow textures). */
