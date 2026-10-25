@@ -5,6 +5,7 @@ import { GameScene } from '../scenes/GameScene';
 import { HUDScene } from '../scenes/HUDScene';
 import { MainMenuScene } from '../scenes/MainMenuScene';
 import { PreloadScene } from '../scenes/PreloadScene';
+import { UnitShowcaseScene } from '../scenes/UnitShowcaseScene';
 import { ISO_LIGHT_PIPELINE, IsoLightPipeline } from '../iso/art/lighting/IsoLightPipeline';
 import { GAME_HEIGHT, GAME_WIDTH } from './constants';
 import { MAX_LIGHTS } from './visual';
@@ -40,5 +41,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     GameScene,
     HUDScene,
     GameOverScene,
+    // Dev-only art review scene (started from the console, never from the menu).
+    ...(import.meta.env.DEV ? [UnitShowcaseScene] : []),
   ],
 };
