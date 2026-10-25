@@ -8,7 +8,12 @@ if (import.meta.env.DEV) {
   // Dev-only: expose the game instance for preview / console debugging.
   (window as unknown as { __game: Phaser.Game }).__game = game;
   // Dev-only unit art review: __showUnits({ anim: 'walk', zoom: 2 }).
-  (window as unknown as { __showUnits: (opts?: object) => void }).__showUnits = (opts = {}) => {
+  // The showcase is loaded only here, so it never reaches production bundles.
+  (window as unknown as { __showUnits: (opts?: object) => Promise<void> }).__showUnits = async (opts = {}) => {
+    if (!game.scene.getScene('UnitShowcaseScene')) {
+      const { UnitShowcaseScene } = await import('./scenes/UnitShowcaseScene');
+      game.scene.add('UnitShowcaseScene', UnitShowcaseScene, false);
+    }
     const showcase = game.scene.getScene('UnitShowcaseScene');
     if (showcase.scene.isActive()) {
       showcase.scene.restart(opts);

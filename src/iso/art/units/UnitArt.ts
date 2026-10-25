@@ -2,13 +2,14 @@ import Phaser from 'phaser';
 import type { UnitType } from '../../../types';
 import { shadowKey, shareNormalMap } from '../lighting/litTextures';
 import { PAINTED_HEADINGS } from './layout';
+import { spendPaintBudget } from './paintBudget';
 import { createSheet, frameRect, paintSome, type DirtyFrame, type UnitSheet } from './sheet';
 
 /**
  * Lazy unit textures. The first time a unit type is needed its sheets
  * are allocated and the first idle frame of every heading is painted
- * synchronously (a few ms); pumpUnitArt() paints the rest a few frames
- * per game frame and re-uploads the textures, so no frame hitches.
+ * synchronously; pumpUnitArt() paints the rest within one shared
+ * per-frame budget and uploads only the changed frames.
  * Frames that are not painted yet fall back to the heading's idle frame.
  *
  * Textures (per type, shared by every player):
@@ -30,17 +31,14 @@ const arts = new Map<string, UnitArt>();
 const pending = new Set<UnitArt>();
 /** Worst per-frame costs seen (dev diagnostics, see unitArtStats). */
 const timing = { paintMax: 0, uploadMax: 0, createMax: 0 };
-/** Max synchronous first-use painting per game frame. */
-const SYNC_BUDGET_MS = 14;
 /** New sheets (allocation + texture upload, ~15 ms each) per game frame. */
 const NEW_SHEETS_PER_FRAME = 1;
-const perFrame = { frame: -1, paintMs: 0, sheets: 0 };
+const perFrame = { frame: -1, sheets: 0 };
 
 function frameBudget(scene: Phaser.Scene): typeof perFrame {
   const frame = scene.game.loop.frame;
   if (perFrame.frame !== frame) {
     perFrame.frame = frame;
-    perFrame.paintMs = 0;
     perFrame.sheets = 0;
   }
   return perFrame;
@@ -63,13 +61,9 @@ export function unitArt(scene: Phaser.Scene, type: UnitType, key: string, force 
   budget.sheets++;
   const created = performance.now();
   const sheet = hit?.sheet ?? createSheet(type);
-  // Something to show right away: the first idle frame of every heading,
-  // within a per-frame budget.
-  if (!hit && budget.paintMs < SYNC_BUDGET_MS) {
-    const t0 = performance.now();
-    paintSome(sheet, SYNC_BUDGET_MS - budget.paintMs, PAINTED_HEADINGS.length);
-    budget.paintMs += performance.now() - t0;
-  }
+  // A new unit is never invisible: finish the first idle frame of every
+  // heading now (~5 frames, bounded by one new type per game frame).
+  if (!hit) paintSome(sheet, Infinity, PAINTED_HEADINGS.length);
   const originY = new Float32Array(sheet.layout.frameCount);
   for (let k = 0; k < originY.length; k++) {
     const r = frameRect(sheet, k);
@@ -94,17 +88,17 @@ export function readyFrame(art: UnitArt, k: number): number {
  * Call once per frame from any scene that shows units.
  */
 export function pumpUnitArt(scene: Phaser.Scene, budgetMs = 5): void {
-  for (const art of pending) {
+  spendPaintBudget(pending, budgetMs, (art, remainingMs) => {
     const t0 = performance.now();
-    const painted = paintSome(art.sheet, budgetMs);
+    const painted = paintSome(art.sheet, remainingMs);
     const t1 = performance.now();
     if (painted > 0) refresh(scene, art);
+    if (art.sheet.queue.length === 0) pending.delete(art);
     timing.paintMax = Math.max(timing.paintMax, t1 - t0);
     timing.uploadMax = Math.max(timing.uploadMax, performance.now() - t1);
-    if (art.sheet.queue.length === 0) pending.delete(art);
-    // One sheet per frame keeps the upload cost bounded.
-    if (painted > 0) return;
-  }
+    // A frame left half-rasterized also counts as this frame's work.
+    return { worked: painted > 0 || art.sheet.active >= 0 };
+  });
 }
 
 /** Paints everything now (dev showcase, tests of the look). */
