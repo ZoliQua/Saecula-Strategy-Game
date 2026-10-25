@@ -3,7 +3,8 @@ import {
   PROJECTILE_BALANCE,
   PROJECTILE_MIN_FLIGHT_MS,
 } from '../../config/balance';
-import { entityPoint, type Point } from '../../game/targetGeometry';
+import { leadTargetPoint } from '../../game/leadTarget';
+import type { Point } from '../../game/targetGeometry';
 import type { ProjectileKind } from '../../types';
 import type { Entity } from '../components';
 import { flightDurationMs } from '../systems/projectileMotion';
@@ -12,7 +13,7 @@ import { assignEntityId, type EcsWorld } from '../world';
 export interface FireProjectileOptions {
   readonly kind: ProjectileKind;
   readonly from: Point;
-  /** Aimed at the target's position at launch time. */
+  /** Aimed where the target will be on arrival (leadTargetPoint). */
   readonly target: Entity;
   readonly ownerId: number;
   readonly payload: { meleeAtk: number; pierceAtk: number; bonusVsCavalry: number };
@@ -26,8 +27,8 @@ export interface FireProjectileOptions {
 export function fireProjectile(world: EcsWorld, o: FireProjectileOptions): Entity {
   const t = o.target;
   if (!t.position) throw new Error('fireProjectile: target has no position');
-  const to = entityPoint({ ...t, position: t.position });
   const b = PROJECTILE_BALANCE[o.kind];
+  const to = leadTargetPoint(o.from, { ...t, position: t.position }, b.speed, PROJECTILE_MIN_FLIGHT_MS);
   const distance = Math.hypot(to.x - o.from.x, to.y - o.from.y);
   const entity: Entity = assignEntityId({
     projectile: {
