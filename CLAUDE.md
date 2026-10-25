@@ -456,6 +456,7 @@ IsoRTS/
     │   ├── systems/             ← rendszer függvények
     │   └── archetypes/          ← entitás factory-k
     ├── iso/
+    │   ├── art/                 ← procedurális grafika (terep, épület, egység, dekor)
     │   ├── coordinates.ts       ← tile ↔ screen konverzió
     │   ├── depth.ts             ← rajzolási sorrend
     │   └── picking.ts           ← egérrel tile választás
@@ -471,7 +472,8 @@ IsoRTS/
     │   ├── store.ts             ← Zustand UI store
     │   ├── HUD.ts
     │   ├── Minimap.ts
-    │   └── panels/
+    │   ├── panels/
+    │   └── screens/             ← főmenü, játék vége (DOM overlay)
     ├── save/
     │   ├── schema.ts            ← TS típusok a save-hez
     │   ├── serializer.ts        ← ECS → JSON
@@ -532,9 +534,12 @@ sprite packek. A végleges art külön milestone.
 
 **Vizuális átdolgozás (feat/visual-overhaul):** ingyenes (CC0) asset
 packok és AI által generált grafika (csempék, épületek, egységek) is
-használható. Minden külső asset licence a `public/assets/CREDITS.md`-ben
-rögzítve. A UI irány: sötét, meleg tónusú üveg panelek, borostyán
-kiemelőszín, dinamikus (animált) megjelenés.
+használható. Jelenleg minden grafika procedurálisan, kódból generált
+(`src/iso/art/`), külső bináris asset nincs. Ha külső asset kerül be,
+a licence a `public/assets/CREDITS.md`-ben rögzítendő. A UI irány:
+sötét, meleg tónusú üveg panelek (DOM overlay a canvas fölött),
+borostyán kiemelőszín, Inter + Cinzel betűk, dinamikus (animált)
+megjelenés.
 
 ### 8.2 TexturePacker atlaszok
 
