@@ -16,6 +16,11 @@ import type { FogOfWarData } from './FogOfWarData';
 const HIGHLIGHT_DEPTH_OFFSET = 0.5;
 const TERRAIN_DEPTH = -1000;
 const CLOUD_DEPTH = 9_000;
+/** Cloud pattern repeat scale in world px per texture px. */
+const CLOUD_SCALE_X = 3;
+const CLOUD_SCALE_Y = 1.6;
+/** Screen px of cloud layer beyond each view edge. */
+const CLOUD_PAD = 64;
 const CHUNK = 1024;
 const CHUNK_OVERLAP = 3;
 const DECOR_DEPTH_OFFSET = 0.1;
@@ -44,6 +49,8 @@ export class TileMap {
   private readonly chunks: Phaser.GameObjects.Image[] = [];
   private readonly decor = new Map<number, Decor>();
   private readonly clouds: Phaser.GameObjects.TileSprite;
+  /** Cloud drift in texture px. */
+  private readonly cloudDrift = { x: 0, y: 0 };
   private readonly fog: FogLayer;
   private highlight: Phaser.GameObjects.Graphics | null = null;
   private selection: Phaser.GameObjects.Graphics | null = null;
@@ -57,14 +64,14 @@ export class TileMap {
     this.bakeTerrain();
     this.placeDecor();
 
-    const b = this.computeWorldBounds();
-    const pad = 600;
+    // Camera-sized layer (a map-sized TileSprite allocates a canvas of the
+    // whole world, >100 MB on large maps); update() keeps it over the view
+    // and offsets the pattern so the clouds stay fixed to the ground.
     this.clouds = scene.add
-      .tileSprite(b.minX - pad, b.minY - pad, b.maxX - b.minX + pad * 2, b.maxY - b.minY + pad * 2, FX_KEYS.clouds)
+      .tileSprite(0, 0, scene.scale.width + CLOUD_PAD * 2, scene.scale.height + CLOUD_PAD * 2, FX_KEYS.clouds)
       .setOrigin(0, 0)
       .setDepth(CLOUD_DEPTH)
-      .setAlpha(0.2)
-      .setTileScale(3, 1.6);
+      .setAlpha(0.2);
     this.fog = new FogLayer(scene, mapData.width, mapData.height);
   }
 
@@ -166,9 +173,24 @@ export class TileMap {
     for (const c of this.chunks) {
       c.setVisible(c.x < view.right && c.x + c.width > view.x && c.y < view.bottom && c.y + c.height > view.y);
     }
-    this.clouds.tilePositionX += delta * 0.006;
-    this.clouds.tilePositionY += delta * 0.0025;
+    this.updateClouds(delta);
     this.fog.update(delta);
+  }
+
+  /** Keeps the screen-sized cloud layer over the camera, pattern locked to the world. */
+  private updateClouds(delta: number): void {
+    const cam = this.scene.cameras.main;
+    const w = this.scene.scale.width + CLOUD_PAD * 2;
+    const h = this.scene.scale.height + CLOUD_PAD * 2;
+    if (this.clouds.width !== w || this.clouds.height !== h) this.clouds.setSize(w, h);
+    const k = 1 / cam.zoom;
+    const x = cam.worldView.x - CLOUD_PAD * k;
+    const y = cam.worldView.y - CLOUD_PAD * k;
+    this.cloudDrift.x += delta * 0.006;
+    this.cloudDrift.y += delta * 0.0025;
+    this.clouds.setScale(k).setPosition(x, y).setTileScale(CLOUD_SCALE_X * cam.zoom, CLOUD_SCALE_Y * cam.zoom);
+    this.clouds.tilePositionX = x / CLOUD_SCALE_X + this.cloudDrift.x;
+    this.clouds.tilePositionY = y / CLOUD_SCALE_Y + this.cloudDrift.y;
   }
 
   applyFog(fog: FogOfWarData): void {
