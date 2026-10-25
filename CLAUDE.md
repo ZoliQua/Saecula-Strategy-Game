@@ -234,6 +234,7 @@ Felvilágosodás:
 - `blacksmith` — Kovácsműhely. Egység-fejlesztések. (2×2, 2. kortól)
 - `tower` — Őrtorony. Defenzív. (1×1)
 - `wall` — Fal. Defenzív, 1-tile szegmensek.
+- `foundry` — Ágyúöntöde. `cannon` képzése. (3×3, 3. kortól)
 - `wonder` — Csoda. Győzelmi feltétel (3. kortól, csak 1 építhető). (4×4)
 
 ### 4.6 Nyersanyagok
@@ -441,33 +442,39 @@ IsoRTS/
     ├── config/
     │   ├── game.ts              ← Phaser config
     │   ├── constants.ts         ← TILE_WIDTH, MAX_PLAYERS, stb.
-    │   └── balance.ts           ← stat konstansok
+    │   └── balance.ts           ← stat konstansok (egyetlen forrás)
     ├── scenes/
     │   ├── BootScene.ts
     │   ├── PreloadScene.ts
     │   ├── MainMenuScene.ts
     │   ├── GameSetupScene.ts
-    │   ├── GameScene.ts
+    │   ├── GameScene.ts         ← életciklus, bekötés, rendszersorrend
     │   ├── HUDScene.ts
-    │   └── PauseScene.ts
+    │   ├── PauseScene.ts
+    │   └── game/                ← GameScene segédmodulok (input, építés, bootstrap, rendszerek)
     ├── ecs/
     │   ├── world.ts             ← Miniplex world létrehozás
     │   ├── components/          ← komponens interfészek
     │   ├── systems/             ← rendszer függvények
     │   └── archetypes/          ← entitás factory-k
+    ├── game/                    ← Player, PlayerManager, VictoryChecker, technológiák
     ├── iso/
     │   ├── art/                 ← procedurális grafika (terep, épület, egység, dekor)
+    │   │   └── lighting/        ← világítási szerződés (normal map-ek, fény, árnyék)
     │   ├── coordinates.ts       ← tile ↔ screen konverzió
     │   ├── depth.ts             ← rajzolási sorrend
     │   └── picking.ts           ← egérrel tile választás
     ├── map/
     │   ├── TileMap.ts
     │   ├── generator.ts         ← véletlen térkép generátor
+    │   ├── generators/          ← térképsablonok (template-enként egy generátor)
     │   └── pathfinding.ts       ← A* wrapper
     ├── ai/
     │   ├── AIPlayer.ts
+    │   ├── perception.ts        ← az AI látószöge (amit a játékos is látna)
+    │   ├── economy.ts           ← AI gazdasági számítások
     │   ├── strategies/          ← AI stratégia modulok
-    │   └── decisions.ts         ← döntési függvények
+    │   └── decisions/           ← döntési függvények
     ├── ui/
     │   ├── store.ts             ← Zustand UI store
     │   ├── HUD.ts
@@ -484,6 +491,8 @@ IsoRTS/
     │   └── hu.ts                ← magyar szövegek
     └── types/
         └── index.ts             ← globális típusok (CivId, UnitType, stb.)
+
+docs/                            ← tervek és specifikációk (plans/specs)
 ```
 
 ---
@@ -540,6 +549,10 @@ a licence a `public/assets/CREDITS.md`-ben rögzítendő. A UI irány:
 sötét, meleg tónusú üveg panelek (DOM overlay a canvas fölött),
 borostyán kiemelőszín, Inter + Cinzel betűk, dinamikus (animált)
 megjelenés.
+
+**Világítás:** a világ grafikája Phaser Light2D-vel van megvilágítva,
+procedurálisan generált normal map-ekkel. Lassú napszak-ciklus és vetett
+árnyékok adnak mélységet a képnek.
 
 ### 8.2 TexturePacker atlaszok
 
@@ -731,4 +744,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-04-21. Zoli projekt, `IsoRTS` munkacím.*
+*Utolsó frissítés: 2026-10-25. Zoli projekt, `IsoRTS` munkacím.*
