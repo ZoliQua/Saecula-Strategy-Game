@@ -44,8 +44,6 @@ export const N_UP: Vec3 = normalize(worldToView(0, 0, 1));
 export const N_LEFT: Vec3 = normalize(tileToView(0, 1, 0));
 /** Wall facing +u (the painter's "right" face, screen down-right). */
 export const N_RIGHT: Vec3 = normalize(tileToView(1, 0, 0));
-/** Faces pointing straight at the camera (billboards). */
-export const N_VIEW: Vec3 = [0, 0, 1];
 
 /**
  * Normal of a sloped plane (roof) that descends horizontally along tile
