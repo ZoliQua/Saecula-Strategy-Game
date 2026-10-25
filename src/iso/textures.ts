@@ -1,307 +1,157 @@
-import Phaser from 'phaser';
-import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
+import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { TERRAIN_TEXTURE_KEYS, TERRAIN, type TerrainId } from '../map/TerrainTypes';
-import type { BuildingType } from '../types';
+import { UNIT_SPECS } from '../ecs/archetypes/unit';
+import { PLAYER_COLORS } from '../game/Player';
+import type { BuildingType, UnitType } from '../types';
+import { paintBuilding, paintConstructionSite } from './art/buildings';
+import { makeCanvas, registerCanvas, registerStrip } from './art/canvas';
+import {
+  BUSH_VARIANTS,
+  paintBerryBush,
+  paintGoldRocks,
+  paintStump,
+  paintTree,
+  ROCK_VARIANTS,
+  TREE_VARIANTS,
+  type DecorArt,
+} from './art/decor';
+import { hash2 } from './art/palette';
+import { paintUnitStrip, UNIT_FRAME_W } from './art/units';
+
+/** Decor texture keys + per-key origin Y, filled by generateArt. */
+export const DECOR_ORIGIN_Y = new Map<string, number>();
+
+export const decorKeys = {
+  tree: (i: number) => `decor_tree_${i}`,
+  gold: (i: number) => `decor_gold_${i}`,
+  bush: (i: number) => `decor_bush_${i}`,
+  stump: 'decor_stump',
+} as const;
+
+export const FX_KEYS = {
+  clouds: 'fx_clouds',
+  smoke: 'fx_smoke',
+  spark: 'fx_spark',
+  mote: 'fx_mote',
+  dust: 'fx_dust',
+} as const;
+
+export function constructionKey(size: number): string {
+  return `construction_${size}`;
+}
+
+const unitByKey = new Map<string, UnitType>();
+const buildingByKey = new Map<string, BuildingType>();
+
+function teamColor(playerId: number): number {
+  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+}
 
 /**
- * Generates placeholder textures procedurally so M0/M1 need no binary
- * assets in git. Real sprites replace these in M2+ via the atlas
- * pipeline (CLAUDE.md 8).
+ * Generates every texture the game draws. All art is painted
+ * procedurally onto canvases (see src/iso/art) so the repo carries
+ * no binary sprite assets. Base keys are painted in player 1's colour;
+ * other players get lazily painted variants via teamTextureKey().
  */
-export function generatePlaceholderTextures(scene: Phaser.Scene): void {
-  for (const [key, id] of Object.entries(TERRAIN) as Array<[
-    keyof typeof TERRAIN,
-    TerrainId,
-  ]>) {
-    const textureKey = TERRAIN_TEXTURE_KEYS[id];
-    if (scene.textures.exists(textureKey)) continue;
-    buildDiamondTile(scene, textureKey, TERRAIN_PALETTE[key]);
-  }
-
-  if (!scene.textures.exists('villager_placeholder')) {
-    buildVillagerPlaceholder(scene);
-  }
-
-  const unitPalettes: Array<[string, { shirt: number; accent: number }]> = [
-    ['unit_scout', { shirt: 0x2a8a3a, accent: 0x1a4a20 }],
-    ['unit_swordsman', { shirt: 0xc03030, accent: 0x9a9a9a }],
-    ['unit_archer', { shirt: 0x3a8a6a, accent: 0x8a5a2a }],
-    ['unit_knight', { shirt: 0x5a5a9a, accent: 0xffd85c }],
-    ['unit_pikeman', { shirt: 0x6a5a3a, accent: 0x9a9a9a }],
-    ['unit_crossbowman', { shirt: 0x2a4a8a, accent: 0x8a5a2a }],
-    ['unit_musketeer', { shirt: 0x4a4a4a, accent: 0xff6a2a }],
-    ['unit_cannon', { shirt: 0x2a2a2a, accent: 0x8a5a2a }],
-    ['unit_cavalry', { shirt: 0x8a2a2a, accent: 0xffd85c }],
-  ];
-  for (const [key, palette] of unitPalettes) {
-    if (!scene.textures.exists(key)) {
-      buildUnitPlaceholder(scene, key, palette);
-    }
-  }
-
-  for (const type of Object.keys(BUILDING_SPECS) as BuildingType[]) {
-    const spec = BUILDING_SPECS[type];
+export function generateArt(scene: Phaser.Scene): void {
+  const p1 = teamColor(1);
+  for (const spec of Object.values(UNIT_SPECS)) {
+    unitByKey.set(spec.textureKey, spec.type);
     if (!scene.textures.exists(spec.textureKey)) {
-      buildPlaceholderBuilding(scene, spec.textureKey, BUILDING_PALETTE[type], spec.width, spec.height);
+      registerStrip(scene, spec.textureKey, paintUnitStrip(spec.type, p1), UNIT_FRAME_W, 4);
     }
   }
-}
-
-interface BuildingPalette {
-  readonly roof: number;
-  readonly wall: number;
-  readonly accent: number;
-}
-
-const BUILDING_PALETTE: Record<BuildingType, BuildingPalette> = {
-  town_center: { roof: 0x884b2a, wall: 0xd9b77f, accent: 0xffd85c },
-  house: { roof: 0x8a3a2a, wall: 0xcfb37a, accent: 0xffffff },
-  farm: { roof: 0x6a4b2a, wall: 0xa67a3a, accent: 0xffd85c },
-  lumber_camp: { roof: 0x4a331a, wall: 0x9a6a3a, accent: 0xa67a3a },
-  mining_camp: { roof: 0x555555, wall: 0x9a9a9a, accent: 0xffd85c },
-  barracks: { roof: 0x6a2222, wall: 0xcfb37a, accent: 0xff4444 },
-  archery_range: { roof: 0x2a3a6a, wall: 0xcfb37a, accent: 0x6a9acf },
-  stable: { roof: 0x5a4422, wall: 0xcfb37a, accent: 0x8a5a22 },
-  blacksmith: { roof: 0x333333, wall: 0x8a7a5a, accent: 0xff8800 },
-  tower: { roof: 0x555555, wall: 0x9a9a9a, accent: 0x7a7a7a },
-  wall: { roof: 0x555555, wall: 0x7a7a7a, accent: 0x555555 },
-  wonder: { roof: 0xcfa93a, wall: 0xfff2cf, accent: 0xffd85c },
-};
-
-function buildPlaceholderBuilding(
-  scene: Phaser.Scene,
-  key: string,
-  palette: BuildingPalette,
-  footprintW: number,
-  footprintH: number,
-): void {
-  // Render a box sitting on the full iso footprint. The texture extends
-  // upward from the base diamond to give the building some height.
-  const baseW = TILE_WIDTH * (footprintW + footprintH) / 2;
-  const baseH = TILE_HEIGHT * (footprintW + footprintH) / 2;
-  const height = Math.max(32, footprintW * 16 + footprintH * 16);
-  const texW = Math.ceil(baseW) + 8;
-  const texH = Math.ceil(baseH) + height + 8;
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  const cx = texW / 2;
-  const bottomY = texH - 4;
-  const topY = bottomY - baseH - height;
-  const leftX = cx - baseW / 2;
-  const rightX = cx + baseW / 2;
-  const baseTopY = bottomY - baseH;
-  const wallBaseY = baseTopY + baseH / 2;
-
-  // Base diamond (ground pattern, darker)
-  g.fillStyle(palette.wall, 0.4);
-  g.beginPath();
-  g.moveTo(cx, baseTopY);
-  g.lineTo(rightX, wallBaseY);
-  g.lineTo(cx, bottomY);
-  g.lineTo(leftX, wallBaseY);
-  g.closePath();
-  g.fillPath();
-
-  // Walls (three visible faces as a simple prism).
-  const wallTopY = topY + (baseH + height) * 0.4;
-  g.fillStyle(palette.wall, 1);
-  g.beginPath();
-  g.moveTo(cx, baseTopY);
-  g.lineTo(cx, wallTopY);
-  g.lineTo(leftX, wallTopY + baseH / 2);
-  g.lineTo(leftX, wallBaseY);
-  g.closePath();
-  g.fillPath();
-
-  g.fillStyle(shade(palette.wall, 0.85), 1);
-  g.beginPath();
-  g.moveTo(cx, baseTopY);
-  g.lineTo(cx, wallTopY);
-  g.lineTo(rightX, wallTopY + baseH / 2);
-  g.lineTo(rightX, wallBaseY);
-  g.closePath();
-  g.fillPath();
-
-  // Roof (two triangular faces forming a ridge).
-  g.fillStyle(palette.roof, 1);
-  g.beginPath();
-  g.moveTo(cx, topY);
-  g.lineTo(rightX, wallTopY + baseH / 2);
-  g.lineTo(cx, wallTopY);
-  g.closePath();
-  g.fillPath();
-
-  g.fillStyle(shade(palette.roof, 0.8), 1);
-  g.beginPath();
-  g.moveTo(cx, topY);
-  g.lineTo(leftX, wallTopY + baseH / 2);
-  g.lineTo(cx, wallTopY);
-  g.closePath();
-  g.fillPath();
-
-  // Accent (flag).
-  g.fillStyle(palette.accent, 1);
-  g.fillRect(cx - 1, topY - 12, 2, 12);
-  g.fillRect(cx, topY - 12, 6, 5);
-
-  g.lineStyle(1, 0x111111, 0.7);
-  g.strokePath();
-
-  g.generateTexture(key, texW, texH);
-  g.destroy();
-}
-
-function shade(color: number, factor: number): number {
-  const r = ((color >> 16) & 0xff) * factor;
-  const g = ((color >> 8) & 0xff) * factor;
-  const b = (color & 0xff) * factor;
-  return (Math.floor(r) << 16) | (Math.floor(g) << 8) | Math.floor(b);
-}
-
-interface Palette {
-  readonly fill: number;
-  readonly stroke: number;
-  readonly accent?: number;
-  readonly variant?: 'diamond' | 'forest' | 'gold' | 'berries' | 'water' | 'cliff';
-}
-
-const TERRAIN_PALETTE: Record<keyof typeof TERRAIN, Palette> = {
-  grass: { fill: 0x4a7a34, stroke: 0x2d4d20, variant: 'diamond' },
-  forest: { fill: 0x1f4a2a, stroke: 0x0d2414, accent: 0x2d6638, variant: 'forest' },
-  gold_mine: { fill: 0x8a6a2a, stroke: 0x4a3914, accent: 0xffd85c, variant: 'gold' },
-  berries: { fill: 0x5c8a3a, stroke: 0x2d4d20, accent: 0xd24747, variant: 'berries' },
-  water: { fill: 0x2e5a8a, stroke: 0x1a3a5c, accent: 0x6aa0d0, variant: 'water' },
-  cliff: { fill: 0x5a5a5a, stroke: 0x2e2e2e, accent: 0x8a8a8a, variant: 'cliff' },
-};
-
-function buildDiamondTile(
-  scene: Phaser.Scene,
-  key: string,
-  palette: Palette,
-): void {
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  const w = TILE_WIDTH;
-  const h = TILE_HEIGHT;
-  const halfW = w / 2;
-  const halfH = h / 2;
-
-  g.fillStyle(palette.fill, 1);
-  g.beginPath();
-  g.moveTo(halfW, 0);
-  g.lineTo(w, halfH);
-  g.lineTo(halfW, h);
-  g.lineTo(0, halfH);
-  g.closePath();
-  g.fillPath();
-
-  switch (palette.variant) {
-    case 'forest':
-      g.fillStyle(palette.accent ?? palette.fill, 1);
-      g.fillTriangle(halfW, 4, halfW - 7, halfH + 2, halfW + 7, halfH + 2);
-      g.fillStyle(0x1a1f14, 1);
-      g.fillRect(halfW - 1, halfH + 1, 2, 4);
-      break;
-    case 'gold':
-      g.fillStyle(palette.accent ?? 0xffd85c, 1);
-      g.fillCircle(halfW - 6, halfH, 3);
-      g.fillCircle(halfW + 6, halfH - 2, 2);
-      g.fillCircle(halfW + 2, halfH + 4, 2);
-      break;
-    case 'berries':
-      if (palette.accent !== undefined) {
-        g.fillStyle(palette.accent, 1);
-        for (const [dx, dy] of [
-          [-8, 0],
-          [-4, 3],
-          [0, -2],
-          [4, 3],
-          [8, 0],
-        ] as const) {
-          g.fillCircle(halfW + dx, halfH + dy, 2);
-        }
-      }
-      break;
-    case 'water': {
-      g.lineStyle(1, palette.accent ?? 0x6aa0d0, 0.9);
-      g.beginPath();
-      g.moveTo(halfW - 10, halfH);
-      g.lineTo(halfW - 4, halfH - 2);
-      g.lineTo(halfW + 4, halfH + 2);
-      g.lineTo(halfW + 10, halfH);
-      g.strokePath();
-      break;
+  for (const spec of Object.values(BUILDING_SPECS)) {
+    buildingByKey.set(spec.textureKey, spec.type);
+    if (!scene.textures.exists(spec.textureKey)) {
+      registerCanvas(scene, spec.textureKey, paintBuilding(spec.type, p1));
     }
-    case 'cliff':
-      g.fillStyle(palette.accent ?? 0x8a8a8a, 1);
-      g.fillRect(halfW - 10, halfH - 2, 6, 4);
-      g.fillRect(halfW + 2, halfH - 4, 5, 6);
-      break;
-    case 'diamond':
-    default:
-      break;
   }
-
-  g.lineStyle(1, palette.stroke, 0.85);
-  g.beginPath();
-  g.moveTo(halfW, 0);
-  g.lineTo(w, halfH);
-  g.lineTo(halfW, h);
-  g.lineTo(0, halfH);
-  g.closePath();
-  g.strokePath();
-
-  g.generateTexture(key, w, h);
-  g.destroy();
+  for (const size of [1, 2, 3, 4]) {
+    if (!scene.textures.exists(constructionKey(size))) {
+      registerCanvas(scene, constructionKey(size), paintConstructionSite(size));
+    }
+  }
+  const decor = (key: string, art: DecorArt): void => {
+    DECOR_ORIGIN_Y.set(key, art.originY);
+    if (!scene.textures.exists(key)) registerCanvas(scene, key, art.canvas);
+  };
+  for (let i = 0; i < TREE_VARIANTS; i++) decor(decorKeys.tree(i), paintTree(i));
+  for (let i = 0; i < ROCK_VARIANTS; i++) decor(decorKeys.gold(i), paintGoldRocks(i));
+  for (let i = 0; i < BUSH_VARIANTS; i++) decor(decorKeys.bush(i), paintBerryBush(i));
+  decor(decorKeys.stump, paintStump());
+  generateFx(scene);
 }
 
-function buildUnitPlaceholder(
-  scene: Phaser.Scene,
-  key: string,
-  palette: { shirt: number; accent: number },
-): void {
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  const w = 24;
-  const h = 40;
-
-  g.fillStyle(0xeec07b, 1);
-  g.fillCircle(w / 2, 8, 7);
-  g.lineStyle(1, 0x000000, 0.6);
-  g.strokeCircle(w / 2, 8, 7);
-
-  g.fillStyle(palette.shirt, 1);
-  g.fillRect(w / 2 - 6, 15, 12, 16);
-
-  g.fillStyle(0x2a2a2a, 1);
-  g.fillRect(w / 2 - 5, 31, 4, 8);
-  g.fillRect(w / 2 + 1, 31, 4, 8);
-
-  // Weapon stripe (accent) on the right shoulder — ranged units get it
-  // more prominent so they stand out at a glance.
-  g.fillStyle(palette.accent, 1);
-  g.fillRect(w / 2 + 5, 14, 2, 14);
-
-  g.generateTexture(key, w, h);
-  g.destroy();
+/** Returns (and lazily paints) the texture for `baseKey` in a player's colour. */
+export function teamTextureKey(scene: Phaser.Scene, baseKey: string, playerId: number): string {
+  if (playerId <= 1) return baseKey;
+  const key = `${baseKey}@p${playerId}`;
+  if (scene.textures.exists(key)) return key;
+  const unit = unitByKey.get(baseKey);
+  const building = buildingByKey.get(baseKey);
+  if (unit) {
+    registerStrip(scene, key, paintUnitStrip(unit, teamColor(playerId)), UNIT_FRAME_W, 4);
+  } else if (building) {
+    registerCanvas(scene, key, paintBuilding(building, teamColor(playerId)));
+  } else {
+    return baseKey;
+  }
+  return key;
 }
 
-function buildVillagerPlaceholder(scene: Phaser.Scene): void {
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  const w = 24;
-  const h = 40;
+function generateFx(scene: Phaser.Scene): void {
+  if (!scene.textures.exists(FX_KEYS.clouds)) registerCanvas(scene, FX_KEYS.clouds, paintClouds(512));
+  const radial = (key: string, size: number, stops: Array<[number, string]>): void => {
+    if (scene.textures.exists(key)) return;
+    const { canvas, ctx } = makeCanvas(size, size);
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    for (const [o, c] of stops) g.addColorStop(o, c);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    registerCanvas(scene, key, canvas);
+  };
+  radial(FX_KEYS.smoke, 48, [[0, 'rgba(225,222,215,.85)'], [0.5, 'rgba(200,196,188,.45)'], [1, 'rgba(180,176,170,0)']]);
+  radial(FX_KEYS.dust, 32, [[0, 'rgba(214,190,140,.8)'], [1, 'rgba(214,190,140,0)']]);
+  radial(FX_KEYS.spark, 16, [[0, 'rgba(255,250,220,1)'], [0.4, 'rgba(255,200,90,.9)'], [1, 'rgba(255,140,40,0)']]);
+  radial(FX_KEYS.mote, 12, [[0, 'rgba(255,248,210,.95)'], [1, 'rgba(255,248,210,0)']]);
+}
 
-  g.fillStyle(0xeec07b, 1);
-  g.fillCircle(w / 2, 8, 7);
-
-  g.fillStyle(0x3a6ab0, 1);
-  g.fillRect(w / 2 - 6, 15, 12, 16);
-
-  g.fillStyle(0x2a2a2a, 1);
-  g.fillRect(w / 2 - 5, 31, 4, 8);
-  g.fillRect(w / 2 + 1, 31, 4, 8);
-
-  g.lineStyle(1, 0x000000, 0.6);
-  g.strokeCircle(w / 2, 8, 7);
-
-  g.generateTexture('villager_placeholder', w, h);
-  g.destroy();
+/** Tileable soft cloud-shadow mask (black with varying alpha). */
+function paintClouds(size: number): HTMLCanvasElement {
+  const { canvas, ctx } = makeCanvas(size, size);
+  const img = ctx.createImageData(size, size);
+  const period = 8;
+  const noise = (x: number, y: number, p: number, seed: number): number => {
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const fx = x - x0;
+    const fy = y - y0;
+    const sx = fx * fx * (3 - 2 * fx);
+    const sy = fy * fy * (3 - 2 * fy);
+    const h = (a: number, b: number) => hash2(((a % p) + p) % p, ((b % p) + p) % p, seed);
+    const a = h(x0, y0);
+    const b = h(x0 + 1, y0);
+    const c = h(x0, y0 + 1);
+    const d = h(x0 + 1, y0 + 1);
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const u = (x / size) * period;
+      const v = (y / size) * period;
+      const n =
+        noise(u, v, period, 1) * 0.6 +
+        noise(u * 2, v * 2, period * 2, 2) * 0.28 +
+        noise(u * 4, v * 4, period * 4, 3) * 0.12;
+      const a = Math.max(0, (n - 0.52) / 0.48);
+      const o = (y * size + x) * 4;
+      img.data[o] = 8;
+      img.data[o + 1] = 14;
+      img.data[o + 2] = 20;
+      img.data[o + 3] = Math.round(Math.min(1, a * 1.8) * 255);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas;
 }

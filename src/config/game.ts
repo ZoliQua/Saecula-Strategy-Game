@@ -12,14 +12,16 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   parent: 'game',
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
-  backgroundColor: '#0a0a0a',
+  backgroundColor: '#090c12',
   scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
+    mode: Phaser.Scale.RESIZE,
+    width: '100%',
+    height: '100%',
   },
   render: {
-    pixelArt: true,
-    antialias: false,
+    pixelArt: false,
+    antialias: true,
+    roundPixels: false,
   },
   fps: {
     target: 60,

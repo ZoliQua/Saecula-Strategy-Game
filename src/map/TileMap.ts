@@ -1,25 +1,35 @@
 import Phaser from 'phaser';
-import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
+import { ART_SCALE } from '../iso/art/canvas';
+import { BUSH_VARIANTS, ROCK_VARIANTS, TREE_VARIANTS } from '../iso/art/decor';
+import { hash2, tileVariant } from '../iso/art/palette';
+import { paintTerrainChunk } from '../iso/art/terrain';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
+import { DECOR_ORIGIN_Y, decorKeys, FX_KEYS } from '../iso/textures';
 import type { MapData } from './MapData';
-import { TERRAIN_TEXTURE_KEYS } from './TerrainTypes';
-import { FOG_UNEXPLORED, type FogOfWarData } from './FogOfWarData';
+import { TERRAIN } from './TerrainTypes';
+import { FogLayer } from './FogLayer';
+import type { FogOfWarData } from './FogOfWarData';
 
 const HIGHLIGHT_DEPTH_OFFSET = 0.5;
 const TERRAIN_DEPTH = -1000;
-const FOG_DEPTH = 10_000;
+const CLOUD_DEPTH = 9_000;
+const CHUNK = 1024;
+const CHUNK_OVERLAP = 3;
+const DECOR_DEPTH_OFFSET = 0.1;
+const HOVER_COLOR = 0xf5a857;
+
+interface Decor {
+  sprite: Phaser.GameObjects.Image;
+  kind: 'tree' | 'gold' | 'bush' | 'stump';
+  phase: number;
+}
 
 /**
- * Renders terrain tiles from a MapData in isometric projection.
- *
- * Terrain is baked once into a RenderTexture on build — a single
- * scene object regardless of map size. refreshTile(tx, ty) repaints
- * one cell (used when a resource tile gets depleted).
- *
- * Fog of war uses a single Phaser.GameObjects.Graphics that we clear
- * + refill on every FogOfWarSystem scan (≤4×/sec). fillRect is cheap;
- * the whole fog overlay is still a single scene object.
+ * Renders the isometric world: painted terrain chunks, per-tile decor
+ * (trees, gold rocks, berry bushes), a soft fog-of-war layer and
+ * drifting cloud shadows. Call update() every frame for the ambient
+ * animation (tree sway, clouds, fog fades).
  */
 export class TileMap {
   public readonly width: number;
@@ -27,14 +37,13 @@ export class TileMap {
 
   private readonly scene: Phaser.Scene;
   private readonly mapData: MapData;
-  private readonly terrainRt: Phaser.GameObjects.RenderTexture;
-  private readonly fogGfx: Phaser.GameObjects.Graphics;
-  private readonly originOffsetX: number;
-  private readonly originOffsetY: number;
-  private lastFogRevision = -1;
+  private readonly chunks: Phaser.GameObjects.Image[] = [];
+  private readonly decor = new Map<number, Decor>();
+  private readonly trees: Decor[] = [];
+  private readonly clouds: Phaser.GameObjects.TileSprite;
+  private readonly fog: FogLayer;
   private highlight: Phaser.GameObjects.Graphics | null = null;
   private selection: Phaser.GameObjects.Graphics | null = null;
-  private eraseStamp: Phaser.GameObjects.Graphics | null = null;
 
   constructor(scene: Phaser.Scene, mapData: MapData) {
     this.scene = scene;
@@ -42,87 +51,116 @@ export class TileMap {
     this.width = mapData.width;
     this.height = mapData.height;
 
-    const bounds = this.computeWorldBounds();
-    const padding = TILE_WIDTH;
-    const rtWidth = bounds.maxX - bounds.minX + TILE_WIDTH + padding * 2;
-    const rtHeight = bounds.maxY - bounds.minY + TILE_HEIGHT + padding * 2;
-    this.originOffsetX = -bounds.minX + TILE_WIDTH / 2 + padding;
-    this.originOffsetY = -bounds.minY + TILE_HEIGHT / 2 + padding;
-
-    this.terrainRt = scene.add
-      .renderTexture(bounds.minX - padding, bounds.minY - padding, rtWidth, rtHeight)
-      .setOrigin(0, 0)
-      .setDepth(TERRAIN_DEPTH);
-
-    this.fogGfx = scene.add.graphics();
-    this.fogGfx.setDepth(FOG_DEPTH);
-
     this.bakeTerrain();
+    this.placeDecor();
+
+    const b = this.computeWorldBounds();
+    const pad = 600;
+    this.clouds = scene.add
+      .tileSprite(b.minX - pad, b.minY - pad, b.maxX - b.minX + pad * 2, b.maxY - b.minY + pad * 2, FX_KEYS.clouds)
+      .setOrigin(0, 0)
+      .setDepth(CLOUD_DEPTH)
+      .setAlpha(0.2)
+      .setTileScale(3, 1.6);
+    this.fog = new FogLayer(scene, mapData.width, mapData.height);
   }
 
   private bakeTerrain(): void {
-    this.terrainRt.clear();
-    this.mapData.forEachTile(({ tx, ty }, terrain) => {
-      const { sx, sy } = tileToScreen({ tx, ty });
-      this.terrainRt.drawFrame(
-        TERRAIN_TEXTURE_KEYS[terrain],
-        undefined,
-        sx + this.originOffsetX - TILE_WIDTH / 2,
-        sy + this.originOffsetY - TILE_HEIGHT / 2,
-      );
-    });
+    const b = this.computeWorldBounds();
+    const x0 = b.minX - 64;
+    const y0 = b.minY - 32;
+    const x1 = b.maxX + 64;
+    const y1 = b.maxY + 32;
+    let n = 0;
+    for (let y = y0; y < y1; y += CHUNK) {
+      for (let x = x0; x < x1; x += CHUNK) {
+        const w = Math.min(CHUNK, x1 - x);
+        const h = Math.min(CHUNK, y1 - y);
+        const key = `terrain_chunk_${n++}`;
+        if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
+        // Chunks overlap by CHUNK_OVERLAP px so filtering never opens a seam.
+        const o = CHUNK_OVERLAP;
+        this.scene.textures.addCanvas(key, paintTerrainChunk(this.mapData, x - o, y - o, w + o * 2, h + o * 2));
+        this.chunks.push(this.scene.add.image(x - o, y - o, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH));
+      }
+    }
   }
 
-  /** Re-reads terrain for a single tile from MapData and repaints it. */
-  refreshTile(tx: number, ty: number): void {
-    const terrain = this.mapData.getTile(tx, ty);
+  private placeDecor(): void {
+    this.mapData.forEachTile(({ tx, ty }) => this.syncDecor(tx, ty));
+  }
+
+  private decorFor(tx: number, ty: number): { key: string; kind: Decor['kind'] } | null {
+    switch (this.mapData.getTile(tx, ty)) {
+      case TERRAIN.forest:
+        return { key: decorKeys.tree(tileVariant(tx, ty, TREE_VARIANTS)), kind: 'tree' };
+      case TERRAIN.gold_mine:
+        return { key: decorKeys.gold(tileVariant(tx, ty, ROCK_VARIANTS)), kind: 'gold' };
+      case TERRAIN.berries:
+        return { key: decorKeys.bush(tileVariant(tx, ty, BUSH_VARIANTS)), kind: 'bush' };
+      default:
+        return null;
+    }
+  }
+
+  /** Creates, swaps or removes the decor sprite for one tile. */
+  private syncDecor(tx: number, ty: number): void {
+    const id = ty * this.width + tx;
+    const want = this.decorFor(tx, ty);
+    const have = this.decor.get(id);
+    if (have && want && have.sprite.texture.key === want.key) return;
+    if (have) {
+      const wasTree = have.kind === 'tree';
+      have.sprite.destroy();
+      this.decor.delete(id);
+      const idx = this.trees.indexOf(have);
+      if (idx >= 0) this.trees.splice(idx, 1);
+      if (wasTree && !want) {
+        this.addDecor(id, tx, ty, decorKeys.stump, 'stump');
+        return;
+      }
+    }
+    if (want) this.addDecor(id, tx, ty, want.key, want.kind);
+  }
+
+  private addDecor(id: number, tx: number, ty: number, key: string, kind: Decor['kind']): void {
     const { sx, sy } = tileToScreen({ tx, ty });
-    const x = sx + this.originOffsetX - TILE_WIDTH / 2;
-    const y = sy + this.originOffsetY - TILE_HEIGHT / 2;
-    this.terrainRt.erase(this.makeEraseRect(), x, y);
-    this.terrainRt.drawFrame(TERRAIN_TEXTURE_KEYS[terrain], undefined, x, y);
+    // Small jitter breaks up the grid; trees stay inside their tile.
+    const jx = (hash2(tx, ty, 201) - 0.5) * 10;
+    const jy = (hash2(tx, ty, 202) - 0.5) * 5;
+    const scale = (1 / ART_SCALE) * (kind === 'tree' ? 0.9 + hash2(tx, ty, 203) * 0.25 : 1);
+    const sprite = this.scene.add
+      .image(sx + jx, sy + jy, key)
+      .setOrigin(0.5, DECOR_ORIGIN_Y.get(key) ?? 0.85)
+      .setScale(scale)
+      .setFlipX(hash2(tx, ty, 204) > 0.5)
+      .setDepth(tileDepth({ tx, ty }) + DECOR_DEPTH_OFFSET);
+    const d: Decor = { sprite, kind, phase: hash2(tx, ty, 205) * Math.PI * 2 };
+    this.decor.set(id, d);
+    if (kind === 'tree') this.trees.push(d);
   }
 
-  private makeEraseRect(): Phaser.GameObjects.Graphics {
-    if (!this.eraseStamp) {
-      const g = this.scene.add.graphics().setVisible(false);
-      g.fillStyle(0xffffff, 1);
-      g.fillRect(0, 0, TILE_WIDTH, TILE_HEIGHT);
-      this.eraseStamp = g;
+  /** Re-reads terrain for one tile (e.g. a depleted resource). */
+  refreshTile(tx: number, ty: number): void {
+    this.syncDecor(tx, ty);
+  }
+
+  /** Per-frame ambient animation. */
+  update(time: number, delta: number): void {
+    const view = this.scene.cameras.main.worldView;
+    const margin = 80;
+    for (const t of this.trees) {
+      const s = t.sprite;
+      if (s.x < view.x - margin || s.x > view.right + margin || s.y < view.y - margin || s.y > view.bottom + margin * 2) continue;
+      s.rotation = Math.sin(time * 0.0011 + t.phase) * 0.025 + Math.sin(time * 0.0031 + t.phase * 2) * 0.008;
     }
-    return this.eraseStamp;
+    this.clouds.tilePositionX += delta * 0.006;
+    this.clouds.tilePositionY += delta * 0.0025;
+    this.fog.update(delta);
   }
 
-  /**
-   * Repaints the fog layer when the scanner bumps revision (every
-   * 250 ms). Single Graphics + batched fillRect calls — a lot cheaper
-   * than thousands of RenderTexture.draw() invocations.
-   */
   applyFog(fog: FogOfWarData): void {
-    if (this.lastFogRevision === fog.revision && this.lastFogRevision !== -1) {
-      return;
-    }
-    const raw = fog.raw();
-    this.fogGfx.clear();
-
-    // Batch by state so we only flip fillStyle twice instead of per-tile.
-    this.fogGfx.fillStyle(0x000000, 1);
-    for (let ty = 0; ty < fog.height; ty++) {
-      for (let tx = 0; tx < fog.width; tx++) {
-        if (raw[ty * fog.width + tx] !== FOG_UNEXPLORED) continue;
-        const { sx, sy } = tileToScreen({ tx, ty });
-        this.fogGfx.fillRect(sx - TILE_WIDTH / 2, sy - TILE_HEIGHT / 2, TILE_WIDTH, TILE_HEIGHT);
-      }
-    }
-    this.fogGfx.fillStyle(0x000000, 0.55);
-    for (let ty = 0; ty < fog.height; ty++) {
-      for (let tx = 0; tx < fog.width; tx++) {
-        if (raw[ty * fog.width + tx] !== 1) continue;
-        const { sx, sy } = tileToScreen({ tx, ty });
-        this.fogGfx.fillRect(sx - TILE_WIDTH / 2, sy - TILE_HEIGHT / 2, TILE_WIDTH, TILE_HEIGHT);
-      }
-    }
-    this.lastFogRevision = fog.revision;
+    this.fog.setTarget(fog);
   }
 
   setHoverTile(tile: TileCoord | null): void {
@@ -130,9 +168,7 @@ export class TileMap {
       this.highlight?.setVisible(false);
       return;
     }
-    if (!this.highlight) {
-      this.highlight = this.drawDiamondOutline(0xffe066, 0.95);
-    }
+    if (!this.highlight) this.highlight = this.drawDiamond(HOVER_COLOR, 0.9, 0.12);
     this.placeOverlay(this.highlight, tile);
   }
 
@@ -141,9 +177,7 @@ export class TileMap {
       this.selection?.setVisible(false);
       return;
     }
-    if (!this.selection) {
-      this.selection = this.drawDiamondOutline(0xffffff, 1);
-    }
+    if (!this.selection) this.selection = this.drawDiamond(0xffffff, 0.8, 0.06);
     this.placeOverlay(this.selection, tile);
   }
 
@@ -152,12 +186,7 @@ export class TileMap {
     return this.computeWorldBounds();
   }
 
-  private computeWorldBounds(): {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-  } {
+  private computeWorldBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
     const corners = [
       tileToScreen({ tx: 0, ty: 0 }),
       tileToScreen({ tx: this.width - 1, ty: 0 }),
@@ -166,48 +195,37 @@ export class TileMap {
     ];
     const xs = corners.map((c) => c.sx);
     const ys = corners.map((c) => c.sy);
-    return {
-      minX: Math.min(...xs),
-      minY: Math.min(...ys),
-      maxX: Math.max(...xs),
-      maxY: Math.max(...ys),
-    };
+    return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
   }
 
-  private placeOverlay(
-    overlay: Phaser.GameObjects.Graphics,
-    tile: TileCoord,
-  ): void {
+  private placeOverlay(overlay: Phaser.GameObjects.Graphics, tile: TileCoord): void {
     const { sx, sy } = tileToScreen(tile);
     overlay.setPosition(sx, sy);
     overlay.setDepth(tileDepth(tile) + HIGHLIGHT_DEPTH_OFFSET);
     overlay.setVisible(true);
   }
 
-  private drawDiamondOutline(
-    color: number,
-    alpha: number,
-  ): Phaser.GameObjects.Graphics {
+  private drawDiamond(color: number, lineAlpha: number, fillAlpha: number): Phaser.GameObjects.Graphics {
     const g = this.scene.add.graphics();
-    g.lineStyle(2, color, alpha);
-    const hw = TILE_WIDTH / 2;
-    const hh = TILE_HEIGHT / 2;
-    g.beginPath();
-    g.moveTo(0, -hh);
-    g.lineTo(hw, 0);
-    g.lineTo(0, hh);
-    g.lineTo(-hw, 0);
-    g.closePath();
-    g.strokePath();
+    const hw = 30;
+    const hh = 15;
+    const pts = [new Phaser.Math.Vector2(0, -hh), new Phaser.Math.Vector2(hw, 0), new Phaser.Math.Vector2(0, hh), new Phaser.Math.Vector2(-hw, 0)];
+    g.fillStyle(color, fillAlpha);
+    g.fillPoints(pts, true);
+    g.lineStyle(1.5, color, lineAlpha);
+    g.strokePoints(pts, true);
     g.setVisible(false);
     return g;
   }
 
   destroy(): void {
-    this.terrainRt.destroy();
-    this.fogGfx.destroy();
+    for (const c of this.chunks) c.destroy();
+    for (const d of this.decor.values()) d.sprite.destroy();
+    this.decor.clear();
+    this.trees.length = 0;
+    this.clouds.destroy();
+    this.fog.destroy();
     this.highlight?.destroy();
     this.selection?.destroy();
-    this.eraseStamp?.destroy();
   }
 }

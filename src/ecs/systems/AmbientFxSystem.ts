@@ -1,0 +1,152 @@
+import Phaser from 'phaser';
+import { tileToScreen } from '../../iso/coordinates';
+import { FX_KEYS } from '../../iso/textures';
+import type { FogOfWarData } from '../../map/FogOfWarData';
+import type { BuildingType } from '../../types';
+import type { Entity } from '../components';
+import type { EcsWorld } from '../world';
+
+const FX_DEPTH = 8_500;
+const SMOKE_EVERY_MS = 420;
+const DUST_EVERY_MS = 300;
+
+/** Chimney tops relative to the building's front corner, world px. */
+const CHIMNEYS: Partial<Record<BuildingType, ReadonlyArray<readonly [number, number]>>> = {
+  house: [[0, -88]],
+  blacksmith: [[25.6, -84]],
+};
+
+/**
+ * Purely cosmetic particles: chimney smoke, dust puffs over building
+ * sites, sparks when a unit lands a blow, and drifting pollen motes in
+ * the camera view. Reads the ECS, never writes it.
+ */
+export class AmbientFxSystem {
+  private readonly smoke: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly dust: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly sparks: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly motes: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly lastCooldown = new Map<Entity, number>();
+  private smokeTimer = 0;
+  private dustTimer = 0;
+  private fog: FogOfWarData | null = null;
+  private viewerPlayerId = 1;
+
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly world: EcsWorld,
+  ) {
+    this.smoke = scene.add
+      .particles(0, 0, FX_KEYS.smoke, {
+        emitting: false,
+        lifespan: { min: 2600, max: 3600 },
+        speedX: { min: 4, max: 14 },
+        speedY: { min: -22, max: -14 },
+        scale: { start: 0.25, end: 1.1 },
+        alpha: { start: 0.55, end: 0 },
+        rotate: { min: 0, max: 360 },
+      })
+      .setDepth(FX_DEPTH);
+    this.dust = scene.add
+      .particles(0, 0, FX_KEYS.dust, {
+        emitting: false,
+        lifespan: 900,
+        speed: { min: 6, max: 22 },
+        angle: { min: 200, max: 340 },
+        scale: { start: 0.5, end: 1.3 },
+        alpha: { start: 0.6, end: 0 },
+      })
+      .setDepth(FX_DEPTH);
+    this.sparks = scene.add
+      .particles(0, 0, FX_KEYS.spark, {
+        emitting: false,
+        lifespan: 380,
+        speed: { min: 30, max: 80 },
+        angle: { min: 200, max: 340 },
+        gravityY: 160,
+        scale: { start: 0.7, end: 0 },
+        blendMode: Phaser.BlendModes.ADD,
+      })
+      .setDepth(FX_DEPTH + 1);
+    this.motes = scene.add
+      .particles(0, 0, FX_KEYS.mote, {
+        frequency: 160,
+        lifespan: 7000,
+        speedX: { min: 4, max: 16 },
+        speedY: { min: -8, max: 3 },
+        scale: { min: 0.25, max: 0.6 },
+        alpha: { start: 0, end: 0, ease: (t: number) => Math.sin(t * Math.PI) * 0.7 },
+        blendMode: Phaser.BlendModes.ADD,
+        emitZone: { type: 'random', source: new Phaser.Geom.Rectangle(0, 0, 1, 1), quantity: 1 },
+      })
+      .setDepth(FX_DEPTH + 2);
+  }
+
+  setFogContext(fog: FogOfWarData, viewerPlayerId: number): void {
+    this.fog = fog;
+    this.viewerPlayerId = viewerPlayerId;
+  }
+
+  update(delta: number): void {
+    this.smokeTimer += delta;
+    this.dustTimer += delta;
+    const emitSmoke = this.smokeTimer >= SMOKE_EVERY_MS;
+    const emitDust = this.dustTimer >= DUST_EVERY_MS;
+    if (emitSmoke) this.smokeTimer = 0;
+    if (emitDust) this.dustTimer = 0;
+
+    for (const e of this.world.with('building', 'position')) {
+      if (!this.isSeen(e)) continue;
+      const anchor = frontCorner(e);
+      if (e.underConstruction) {
+        if (emitDust) {
+          const span = (e.building.footprint.width + e.building.footprint.height) * 12;
+          this.dust.emitParticleAt(anchor.sx + (Math.random() - 0.5) * span, anchor.sy - 6 - Math.random() * 18);
+        }
+        continue;
+      }
+      if (!emitSmoke || e.dying) continue;
+      for (const [dx, dy] of CHIMNEYS[e.building.type] ?? []) {
+        this.smoke.emitParticleAt(anchor.sx + dx, anchor.sy + dy);
+      }
+    }
+
+    for (const e of this.world.with('attacker', 'position')) {
+      const last = this.lastCooldown.get(e) ?? 0;
+      const cur = e.attacker.cooldownRemaining;
+      if (cur > last + 1 && e.attackIntent && this.isSeen(e)) {
+        const { sx, sy } = tileToScreen(e.position);
+        const dir = e.sprite?.flipX ? -1 : 1;
+        this.sparks.explode(6, sx + dir * 10, sy - 14);
+      }
+      this.lastCooldown.set(e, cur);
+    }
+
+    const view = this.scene.cameras.main.worldView;
+    const zone = this.motes.emitZones[0] as unknown as { source: Phaser.Geom.Rectangle } | undefined;
+    zone?.source.setTo(view.x - 100, view.y, view.width + 100, view.height);
+  }
+
+  private isSeen(e: Entity): boolean {
+    if (!this.fog || !e.position) return true;
+    if (e.owner?.playerId === this.viewerPlayerId) return true;
+    return this.fog.isVisible(e.position.tx, e.position.ty);
+  }
+
+  destroy(): void {
+    this.smoke.destroy();
+    this.dust.destroy();
+    this.sparks.destroy();
+    this.motes.destroy();
+    this.lastCooldown.clear();
+  }
+}
+
+function frontCorner(e: Entity): { sx: number; sy: number } {
+  const b = e.building!;
+  const p = tileToScreen({
+    tx: e.position!.tx + b.footprint.width - 1,
+    ty: e.position!.ty + b.footprint.height - 1,
+  });
+  return { sx: p.sx, sy: p.sy + 16 };
+}

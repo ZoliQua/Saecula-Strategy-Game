@@ -18,14 +18,15 @@ function infoKey(info: SelectedEntityInfo | null): string {
   if (!info) return 'null';
   if (info.kind === 'unit') {
     const c = info.carrying ? `${info.carrying.type}:${info.carrying.amount}` : '-';
-    return `u:${info.id}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}`;
+    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}`;
   }
   if (info.kind === 'building') {
     const q = (info.queue ?? [])
       .map((e) => `${e.unitType}@${Math.round(e.progress * 100)}`)
       .join(',');
     const tr = (info.trainable ?? []).join(',');
-    return `b:${info.id}:${info.hp.current}/${info.hp.max}:${tr}:${q}`;
+    const cp = info.constructionProgress === undefined ? '-' : Math.round(info.constructionProgress * 100);
+    return `b:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}`;
   }
   return `r:${info.id}:${info.amount}/${info.maxAmount}`;
 }
@@ -48,6 +49,7 @@ function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
     return {
       kind: 'unit',
       id: entity.id,
+      ownerId: entity.owner?.playerId ?? 0,
       unitType: entity.unit.unitType,
       hp: { current: entity.health.current, max: entity.health.max },
       tile: { tx: entity.position.tx, ty: entity.position.ty },
@@ -65,10 +67,13 @@ function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
     const info: SelectedEntityInfo = {
       kind: 'building',
       id: entity.id,
+      ownerId: entity.owner?.playerId ?? 0,
       buildingType: entity.building.type,
       hp: { current: entity.health.current, max: entity.health.max },
       tile: { tx: entity.position.tx, ty: entity.position.ty },
     };
+    const uc = (entity as Entity).underConstruction;
+    if (uc) info.constructionProgress = Math.min(1, uc.elapsed / uc.totalTime);
     if (entity.trainingQueue) {
       const trainable = (Object.keys(UNIT_SPECS) as UnitType[]).filter(
         (u) => UNIT_SPECS[u].trainers.includes(entity.building!.type),
@@ -90,6 +95,9 @@ function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
  * `selectable.selected`; the system renders a circle under the
  * selected unit and keeps it in sync with the entity's tile position.
  */
+const SELECT_OWN = 0xffd27a;
+const SELECT_ENEMY = 0xff6b5b;
+
 export class SelectionSystem {
   private readonly scene: Phaser.Scene;
   private readonly world: EcsWorld;
@@ -203,7 +211,7 @@ export class SelectionSystem {
     this.ensureIndicators(selected.length);
     if (selected.length === 0) {
       if (this.lastInfoKey !== null) {
-        uiStore.getState().setSelectedEntity(null);
+        uiStore.getState().setSelectedEntity(null, 0);
         this.lastInfoKey = null;
       }
       return;
@@ -216,9 +224,9 @@ export class SelectionSystem {
     // frame churns Zustand subscribers and triggers a full HUD render.
     const primary = selected[0] as SelectableWithPos;
     const info = toSelectedInfo(primary);
-    const key = infoKey(info);
+    const key = `${infoKey(info)}#${selected.length}`;
     if (key !== this.lastInfoKey) {
-      uiStore.getState().setSelectedEntity(info);
+      uiStore.getState().setSelectedEntity(info, selected.length);
       this.lastInfoKey = key;
     }
   }
@@ -237,8 +245,11 @@ export class SelectionSystem {
     selected: SelectableWithPos,
   ): void {
     g.clear();
-    g.lineStyle(2, 0x8bc34a, 1);
     const e = selected as Entity;
+    const own = e.owner?.playerId === 1;
+    const color = e.owner === undefined ? 0xf2efe9 : own ? SELECT_OWN : SELECT_ENEMY;
+    const pulse = 0.75 + 0.25 * Math.sin(this.scene.time.now / 220);
+    g.setAlpha(pulse);
     if (e.building) {
       const w = e.building.footprint.width;
       const h = e.building.footprint.height;
@@ -247,21 +258,25 @@ export class SelectionSystem {
         ty: selected.position.ty + (h - 1) / 2,
       };
       const { sx, sy } = tileToScreen(centerTile);
-      const halfW = ((w + h) * 32) / 2;
-      const halfH = ((w + h) * 16) / 2;
-      g.beginPath();
-      g.moveTo(sx, sy - halfH);
-      g.lineTo(sx + halfW, sy);
-      g.lineTo(sx, sy + halfH);
-      g.lineTo(sx - halfW, sy);
-      g.closePath();
-      g.strokePath();
+      const halfW = ((w + h) * 32) / 2 + 4;
+      const halfH = ((w + h) * 16) / 2 + 2;
+      const pts = [
+        new Phaser.Math.Vector2(sx, sy - halfH),
+        new Phaser.Math.Vector2(sx + halfW, sy),
+        new Phaser.Math.Vector2(sx, sy + halfH),
+        new Phaser.Math.Vector2(sx - halfW, sy),
+      ];
+      g.fillStyle(color, 0.1);
+      g.fillPoints(pts, true);
+      g.lineStyle(2, color, 0.95);
+      g.strokePoints(pts, true);
       g.setDepth(
         selected.position.tx + w - 1 + (selected.position.ty + h - 1) - 0.1,
       );
     } else if (e.resourceNode && !e.unit) {
       // Resource tile selection outlines a single diamond.
       const { sx, sy } = tileToScreen(selected.position);
+      g.lineStyle(2, color, 0.9);
       g.beginPath();
       g.moveTo(sx, sy - 16);
       g.lineTo(sx + 32, sy);
@@ -271,9 +286,12 @@ export class SelectionSystem {
       g.strokePath();
       g.setDepth(tileDepth(selected.position) + 0.5);
     } else {
-      const { sx, sy } = tileToScreen(selected.position);
-      g.strokeEllipse(sx, sy, 36, 18);
-      g.setDepth(tileDepth(selected.position) - 0.1);
+      const pos = e.sprite ? { sx: e.sprite.x, sy: e.sprite.y } : tileToScreen(selected.position);
+      g.fillStyle(color, 0.18);
+      g.fillEllipse(pos.sx, pos.sy, 30, 15);
+      g.lineStyle(1.6, color, 1);
+      g.strokeEllipse(pos.sx, pos.sy, 30, 15);
+      g.setDepth(tileDepth(selected.position) + 0.05);
     }
     g.setVisible(true);
   }

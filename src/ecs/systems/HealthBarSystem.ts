@@ -8,8 +8,8 @@ interface BarRecord {
   fill: Phaser.GameObjects.Rectangle;
 }
 
-const BAR_WIDTH = 28;
-const BAR_HEIGHT = 3;
+const BAR_WIDTH = 26;
+const BAR_HEIGHT = 4;
 
 /**
  * Draws a thin HP bar above every entity with a health component,
@@ -61,8 +61,9 @@ export class HealthBarSystem {
   }
 
   private createBar(): BarRecord {
-    const bg = this.scene.add.rectangle(0, 0, BAR_WIDTH, BAR_HEIGHT, 0x000000, 0.85);
-    const fill = this.scene.add.rectangle(0, 0, BAR_WIDTH, BAR_HEIGHT, 0x4ad068, 1);
+    const bg = this.scene.add.rectangle(0, 0, BAR_WIDTH, BAR_HEIGHT, 0x0b0a09, 0.8);
+    bg.setStrokeStyle(1, 0x0b0a09, 0.9);
+    const fill = this.scene.add.rectangle(0, 0, BAR_WIDTH, BAR_HEIGHT - 1, 0x7ed491, 1);
     bg.setOrigin(0, 0.5);
     fill.setOrigin(0, 0.5);
     return { bg, fill };
@@ -71,38 +72,34 @@ export class HealthBarSystem {
   private positionBar(record: BarRecord, entity: Entity): void {
     if (!entity.position || !entity.health) return;
     const b = entity.building;
+    let width = BAR_WIDTH;
     let sx: number;
     let sy: number;
-    let width = BAR_WIDTH;
-    if (b) {
-      // Buildings: bar above the top corner of the footprint.
-      const center = {
-        tx: entity.position.tx + (b.footprint.width - 1) / 2,
-        ty: entity.position.ty + (b.footprint.height - 1) / 2,
-      };
-      const topY = (center.tx + center.ty) * 16 - (b.footprint.width + b.footprint.height) * 8 - 12;
-      sx = (center.tx - center.ty) * 32;
-      sy = topY;
-      width = Math.max(BAR_WIDTH, (b.footprint.width + b.footprint.height) * 12);
+    const sprite = entity.sprite;
+    if (sprite) {
+      // Float just above the sprite's visible top.
+      sx = sprite.x;
+      sy = sprite.y - sprite.displayHeight * sprite.originY + (b ? 18 : 4);
     } else {
-      const { sx: x, sy: y } = tileToScreen(entity.position);
-      sx = x;
-      sy = y - 30;
+      const p = tileToScreen(entity.position);
+      sx = p.sx;
+      sy = p.sy - 40;
     }
+    if (b) width = Math.max(BAR_WIDTH, (b.footprint.width + b.footprint.height) * 12);
     const pct = Math.max(0, entity.health.current / entity.health.max);
-    const depth = (entity.position.tx + entity.position.ty) + 5;
+    const depth = 8_800;
     record.bg.setPosition(sx - width / 2, sy);
     record.bg.setSize(width, BAR_HEIGHT);
     record.bg.setDepth(depth);
     record.fill.setPosition(sx - width / 2, sy);
-    record.fill.setSize(Math.round(width * pct), BAR_HEIGHT);
+    record.fill.setSize(Math.round(width * pct), BAR_HEIGHT - 1);
     record.fill.setDepth(depth + 0.01);
     record.fill.setFillStyle(hpColor(pct));
   }
 }
 
 function hpColor(pct: number): number {
-  if (pct > 0.5) return 0x4ad068;
-  if (pct > 0.25) return 0xd0c64a;
-  return 0xd04a4a;
+  if (pct > 0.5) return 0x7ed491;
+  if (pct > 0.25) return 0xf5c46a;
+  return 0xff7a6b;
 }
