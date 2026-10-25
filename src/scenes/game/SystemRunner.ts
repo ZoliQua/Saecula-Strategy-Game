@@ -11,6 +11,8 @@ import { HealthBarSystem } from '../../ecs/systems/HealthBarSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
+import { ProjectileRenderSystem } from '../../ecs/systems/ProjectileRenderSystem';
+import { ProjectileSystem } from '../../ecs/systems/ProjectileSystem';
 import { RenderSystem } from '../../ecs/systems/RenderSystem';
 import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
@@ -33,6 +35,8 @@ export class SystemRunner {
   private readonly training: TrainingSystem;
   private readonly population: PopulationSystem;
   private readonly combat: CombatSystem;
+  private readonly projectiles: ProjectileSystem;
+  private readonly projectileRender: ProjectileRenderSystem;
   private readonly death: DeathSystem;
   private readonly healthBars: HealthBarSystem;
   private readonly fogOfWar: FogOfWarSystem;
@@ -56,6 +60,8 @@ export class SystemRunner {
     this.training = new TrainingSystem(world, mapData);
     this.population = new PopulationSystem(world, 1);
     this.combat = new CombatSystem(world, mapData);
+    this.projectiles = new ProjectileSystem(world);
+    this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
     this.healthBars = new HealthBarSystem(scene, world);
     this.fogData = new FogOfWarData(mapData.width, mapData.height);
@@ -76,6 +82,7 @@ export class SystemRunner {
     this.construction.update(delta);
     this.training.update(delta);
     this.combat.update(delta);
+    this.projectiles.update(delta);
     this.movement.update(delta);
     this.death.update(delta);
     for (const ai of this.aiPlayers) {
@@ -86,11 +93,13 @@ export class SystemRunner {
     this.tileMap.applyFog(this.fogData);
     this.selection.update();
     this.render.update();
+    this.projectileRender.update();
     this.healthBars.update();
     this.ambientFx.update(delta);
   }
 
   destroy(): void {
     this.ambientFx.destroy();
+    this.projectileRender.destroy();
   }
 }

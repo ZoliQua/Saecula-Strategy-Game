@@ -3,6 +3,7 @@ import type { TileCoord } from '../iso/coordinates';
 import type {
   BuildingType,
   Direction,
+  ProjectileKind,
   ResourceType,
   UnitType,
 } from '../types';
@@ -98,4 +99,27 @@ export interface Entity {
   attackIntent?: { targetId: number };
   dying?: { ttlMs: number };
   fogEmitter?: { sightRange: number };
+  /**
+   * A shot in flight. Projectile entities have no `position`, `owner`
+   * or `health`, so they are never selectable, never block pathing and
+   * are invisible to every other system.
+   */
+  projectile?: {
+    kind: ProjectileKind;
+    /** Launch and impact points in fractional tile space. */
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    elapsedMs: number;
+    durationMs: number;
+    /** Peak arc height in tiles. */
+    arcHeight: number;
+    /** Firing player (no friendly fire). */
+    ownerId: number;
+    /** Attack values copied at launch, so the shooter may die in flight. */
+    payload: { meleeAtk: number; pierceAtk: number; bonusVsCavalry: number };
+    /** Intended victim for single-target shots. */
+    targetId: number;
+    /** Splash radius in tiles; 0 = single target. */
+    aoeRadius: number;
+  };
 }

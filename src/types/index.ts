@@ -88,3 +88,5 @@ export function directionFromDelta(dx: number, dy: number): Direction {
   const lookup: Direction[] = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'];
   return lookup[octant] ?? 'S';
 }
+
+export type ProjectileKind = 'arrow' | 'bolt' | 'bullet' | 'cannonball';

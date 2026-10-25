@@ -1,4 +1,4 @@
-import type { AgeId, BuildingType, Resources, UnitType } from '../types';
+import type { AgeId, BuildingType, ProjectileKind, Resources, UnitType } from '../types';
 
 /**
  * Single source of truth for unit and building stats
@@ -148,3 +148,35 @@ export function gameSpeed(tableSpeed: number): number {
 export const TRAINER_BUILDINGS: ReadonlySet<BuildingType> = new Set(
   Object.values(UNIT_BALANCE).flatMap((u) => u.trainers),
 );
+
+/** Projectile kind fired by each ranged unit. Melee units are absent. */
+export const UNIT_PROJECTILE: Partial<Record<UnitType, ProjectileKind>> = {
+  archer: 'arrow',
+  crossbowman: 'bolt',
+  musketeer: 'bullet',
+  cannon: 'cannonball',
+};
+
+/** Towers fire arrows (Task 11 wires the tower attacker to this). */
+export const TOWER_PROJECTILE: ProjectileKind = 'arrow';
+
+export interface ProjectileBalance {
+  /** Flight speed in tiles per second. */
+  readonly speed: number;
+  /** Peak height of the arc, in tiles (0 = flat). */
+  readonly arcHeight: number;
+}
+
+export const PROJECTILE_BALANCE: Record<ProjectileKind, ProjectileBalance> = {
+  arrow: { speed: 10, arcHeight: 1.0 },
+  bolt: { speed: 13, arcHeight: 0.5 },
+  bullet: { speed: 30, arcHeight: 0.05 },
+  cannonball: { speed: 9, arcHeight: 1.8 },
+};
+
+/** Flights never resolve faster than this, so point-blank shots stay visible. */
+export const PROJECTILE_MIN_FLIGHT_MS = 120;
+/** A single-target projectile only hits if the target is this close to the impact point. */
+export const PROJECTILE_HIT_RADIUS = 0.75;
+/** Cannonball splash radius: full damage to every enemy within it, no friendly fire. */
+export const CANNON_AOE_RADIUS = 1;

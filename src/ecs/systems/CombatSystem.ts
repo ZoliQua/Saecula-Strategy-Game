@@ -2,7 +2,11 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { findPath } from '../../map/pathfinding';
+import { TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
+import { applyDamage } from '../../game/kill';
+import type { ProjectileKind } from '../../types';
+import { fireProjectile } from '../archetypes/projectile';
 import type { Entity } from '../components';
 import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
@@ -10,14 +14,14 @@ import type { EcsWorld } from '../world';
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
 
-const DEATH_TTL_MS = 900;
 const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 
 /**
  * Resolves attackIntent each tick:
  *   - Target missing / same owner / dying → drop intent.
  *   - Out of range → walk toward it (updates movable.path).
- *   - In range → if cooldown ready, deal damage; if not, idle.
+ *   - In range → if cooldown ready, deal damage (melee) or fire a
+ *     projectile (ranged); if not, idle.
  *
  * When target HP hits 0 we attach a `dying` tag (DeathSystem handles
  * the rest) and strip components that would let the corpse act.
@@ -81,17 +85,27 @@ export class CombatSystem {
     faceToward(a as Entity, target as Entity);
     if (a.attacker.cooldownRemaining > 0) return;
 
-    target.health.current -= computeDamage(
-      a.attacker,
-      (target as Entity).armor ?? NO_ARMOR,
-      (target as Entity).unit?.unitType,
-    );
     a.attacker.cooldownRemaining = a.attacker.cooldownMs;
 
-    if (target.health.current <= 0) {
-      this.killTarget(target);
-      this.world.removeComponent(a as Entity, 'attackIntent');
+    const kind = projectileKindFor(a);
+    if (kind) {
+      // Ranged: damage lands when the projectile arrives (ProjectileSystem).
+      fireProjectile(this.world, {
+        kind,
+        from: { x: a.position.tx, y: a.position.ty },
+        target: target as Entity,
+        ownerId: a.owner.playerId,
+        payload: a.attacker,
+      });
+      return;
     }
+
+    const killed = applyDamage(
+      this.world,
+      target,
+      computeDamage(a.attacker, (target as Entity).armor ?? NO_ARMOR, (target as Entity).unit?.unitType),
+    );
+    if (killed) this.world.removeComponent(a as Entity, 'attackIntent');
   }
 
   private walkIntoRange(a: Attacker, target: Target): void {
@@ -106,27 +120,20 @@ export class CombatSystem {
     a.movable.progress = 0;
   }
 
-  private killTarget(target: Target): void {
-    target.health.current = 0;
-    this.world.addComponent(target as Entity, 'dying', { ttlMs: DEATH_TTL_MS });
-    const e = target as Entity;
-    // Remove components that could cause the corpse to keep acting.
-    if (e.attackIntent) this.world.removeComponent(e, 'attackIntent');
-    if (e.gatherIntent) this.world.removeComponent(e, 'gatherIntent');
-    if (e.moveIntent) this.world.removeComponent(e, 'moveIntent');
-    if (e.buildCommand) this.world.removeComponent(e, 'buildCommand');
-    if (e.movable) {
-      e.movable.path = [];
-      e.movable.progress = 0;
-    }
-  }
-
   private findEntityById(id: number): Entity | undefined {
     for (const entity of this.world.entities) {
       if (entity.id === id) return entity;
     }
     return undefined;
   }
+}
+
+/** Projectile kind for a ranged attacker (unit or tower); undefined = melee. */
+function projectileKindFor(a: Attacker): ProjectileKind | undefined {
+  const e = a as Entity;
+  if (e.unit) return UNIT_PROJECTILE[e.unit.unitType];
+  if (e.building?.type === 'tower') return TOWER_PROJECTILE;
+  return undefined;
 }
 
 function targetDistance(v: TileCoord, target: Target): number {
