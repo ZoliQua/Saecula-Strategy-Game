@@ -1,0 +1,195 @@
+import Phaser from 'phaser';
+import type { UnitType } from '../../../types';
+import { shadowKey, shareNormalMap } from '../lighting/litTextures';
+import { PAINTED_HEADINGS } from './layout';
+import { createSheet, frameRect, paintSome, type DirtyFrame, type UnitSheet } from './sheet';
+
+/**
+ * Lazy unit textures. The first time a unit type is needed its sheets
+ * are allocated and the first idle frame of every heading is painted
+ * synchronously (a few ms); pumpUnitArt() paints the rest a few frames
+ * per game frame and re-uploads the textures, so no frame hitches.
+ * Frames that are not painted yet fall back to the heading's idle frame.
+ *
+ * Textures (per type, shared by every player):
+ *  - `key`          albedo, team parts in neutral grey, normal map attached;
+ *  - `maskKey(key)` team mask (same frames, shares the normal map), drawn
+ *                   on top and tinted with the player colour;
+ *  - `shadowKey(key)` half-resolution cast-shadow silhouette.
+ */
+export interface UnitArt {
+  readonly type: UnitType;
+  readonly key: string;
+  readonly maskKey: string;
+  readonly sheet: UnitSheet;
+  /** Sprite origin Y (feet) per frame; frame boxes differ per animation. */
+  readonly originY: Float32Array;
+}
+
+const arts = new Map<string, UnitArt>();
+const pending = new Set<UnitArt>();
+/** Worst per-frame costs seen (dev diagnostics, see unitArtStats). */
+const timing = { paintMax: 0, uploadMax: 0, createMax: 0 };
+/** Max synchronous first-use painting per game frame. */
+const SYNC_BUDGET_MS = 14;
+/** New sheets (allocation + texture upload, ~15 ms each) per game frame. */
+const NEW_SHEETS_PER_FRAME = 1;
+const perFrame = { frame: -1, paintMs: 0, sheets: 0 };
+
+function frameBudget(scene: Phaser.Scene): typeof perFrame {
+  const frame = scene.game.loop.frame;
+  if (perFrame.frame !== frame) {
+    perFrame.frame = frame;
+    perFrame.paintMs = 0;
+    perFrame.sheets = 0;
+  }
+  return perFrame;
+}
+
+export function teamMaskKey(key: string): string {
+  return `${key}#team`;
+}
+
+/**
+ * Returns the art of a unit type, creating its textures on first use.
+ * Returns null when this frame already created a sheet (callers retry
+ * next frame) unless `force` (scene set-up, where a hitch is harmless).
+ */
+export function unitArt(scene: Phaser.Scene, type: UnitType, key: string, force = false): UnitArt | null {
+  const hit = arts.get(key);
+  if (hit && scene.textures.exists(key)) return hit;
+  const budget = frameBudget(scene);
+  if (!hit && !force && budget.sheets >= NEW_SHEETS_PER_FRAME) return null;
+  budget.sheets++;
+  const created = performance.now();
+  const sheet = hit?.sheet ?? createSheet(type);
+  // Something to show right away: the first idle frame of every heading,
+  // within a per-frame budget.
+  if (!hit && budget.paintMs < SYNC_BUDGET_MS) {
+    const t0 = performance.now();
+    paintSome(sheet, SYNC_BUDGET_MS - budget.paintMs, PAINTED_HEADINGS.length);
+    budget.paintMs += performance.now() - t0;
+  }
+  const originY = new Float32Array(sheet.layout.frameCount);
+  for (let k = 0; k < originY.length; k++) {
+    const r = frameRect(sheet, k);
+    originY[k] = r.feetY / r.h;
+  }
+  const art: UnitArt = { type, key, maskKey: teamMaskKey(key), sheet, originY };
+  register(scene, art);
+  arts.set(key, art);
+  timing.createMax = Math.max(timing.createMax, performance.now() - created);
+  if (sheet.queue.length > 0) pending.add(art);
+  return art;
+}
+
+/** Frame to show for `k`: itself once painted, else the heading's first idle frame. */
+export function readyFrame(art: UnitArt, k: number): number {
+  if (art.sheet.painted[k]) return k;
+  return Math.floor(k / art.sheet.layout.perHeading) * art.sheet.layout.perHeading;
+}
+
+/**
+ * Continues lazy painting within `budgetMs` and re-uploads what changed.
+ * Call once per frame from any scene that shows units.
+ */
+export function pumpUnitArt(scene: Phaser.Scene, budgetMs = 5): void {
+  for (const art of pending) {
+    const t0 = performance.now();
+    const painted = paintSome(art.sheet, budgetMs);
+    const t1 = performance.now();
+    if (painted > 0) refresh(scene, art);
+    timing.paintMax = Math.max(timing.paintMax, t1 - t0);
+    timing.uploadMax = Math.max(timing.uploadMax, performance.now() - t1);
+    if (art.sheet.queue.length === 0) pending.delete(art);
+    // One sheet per frame keeps the upload cost bounded.
+    if (painted > 0) return;
+  }
+}
+
+/** Paints everything now (dev showcase, tests of the look). */
+export function paintAllUnitArt(scene: Phaser.Scene, art: UnitArt): void {
+  paintSome(art.sheet, Infinity);
+  pending.delete(art);
+  refresh(scene, art);
+}
+
+/** Worst per-frame paint / upload / first-use costs so far (ms). */
+export function unitArtTiming(): Readonly<typeof timing> {
+  return { ...timing };
+}
+
+/** Painting statistics per type (dev: window.__unitArt). */
+export function unitArtStats(): Array<{ type: UnitType; frames: number; totalMs: number; maxMs: number; bytes: number }> {
+  return [...arts.values()].map((a) => {
+    const s = a.sheet;
+    const px = (c: HTMLCanvasElement | null) => (c ? c.width * c.height * 4 : 0);
+    return { type: a.type, ...s.stats, bytes: px(s.albedo) + px(s.mask) + px(s.normal) + px(s.shadow) };
+  });
+}
+
+function register(scene: Phaser.Scene, art: UnitArt): void {
+  const { sheet } = art;
+  const tm = scene.textures;
+  const frames = (tex: Phaser.Textures.Texture, div: number) => {
+    for (let k = 0; k < sheet.layout.frameCount; k++) {
+      const { x, y, w, h } = frameRect(sheet, k);
+      tex.add(k, 0, x / div, y / div, w / div, h / div);
+    }
+  };
+  const create = (key: string, canvas: HTMLCanvasElement): Phaser.Textures.Texture | null => {
+    if (tm.exists(key)) tm.remove(key);
+    return tm.create(key, canvas, canvas.width, canvas.height);
+  };
+  const albedo = create(art.key, sheet.albedo);
+  if (!albedo) return;
+  frames(albedo, 1);
+  if (sheet.normal) albedo.setDataSource(sheet.normal);
+  const mask = create(art.maskKey, sheet.mask);
+  if (mask) {
+    frames(mask, 1);
+    shareNormalMap(scene, art.key, art.maskKey);
+  }
+  if (sheet.shadow) {
+    const shadow = create(shadowKey(art.key), sheet.shadow);
+    if (shadow) frames(shadow, 2);
+  }
+  // Creating the textures uploaded everything painted so far.
+  sheet.dirty = [];
+}
+
+/**
+ * Uploads the frames painted since the last call. WebGL gets only the
+ * changed rectangles (texSubImage2D) — re-uploading whole sheets every
+ * frame costs more than the painting itself.
+ */
+function refresh(scene: Phaser.Scene, art: UnitArt): void {
+  const dirty = art.sheet.dirty;
+  art.sheet.dirty = [];
+  const tm = scene.textures;
+  if (!tm.exists(art.key)) return;
+  const renderer = scene.game.renderer;
+  if (!(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
+  const gl = renderer.gl;
+  const albedo = tm.get(art.key);
+  const targets: Array<[Phaser.Textures.TextureSource | undefined, (d: DirtyFrame) => ImageData | null, number]> = [
+    [albedo.source[0], (d) => d.albedo, 1],
+    [albedo.dataSource[0], (d) => d.normal, 1],
+    [tm.exists(art.maskKey) ? tm.get(art.maskKey).source[0] : undefined, (d) => d.mask, 1],
+    [tm.exists(shadowKey(art.key)) ? tm.get(shadowKey(art.key)).source[0] : undefined, (d) => d.shadow, 2],
+  ];
+  gl.activeTexture(gl.TEXTURE0);
+  const previous = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  for (const [source, pick, div] of targets) {
+    const tex = source?.glTexture?.webGLTexture;
+    if (!tex) continue;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    for (const d of dirty) {
+      const img = pick(d);
+      if (img) gl.texSubImage2D(gl.TEXTURE_2D, 0, d.x / div, d.y / div, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    }
+  }
+  gl.bindTexture(gl.TEXTURE_2D, previous);
+}
