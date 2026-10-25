@@ -31,8 +31,6 @@ egyszerűbb scope-pal.
 ### 1.2 Nem-cél (mit explicit NEM csinálunk)
 
 - **Multiplayer.** Nincs netkód, nincs szerver, nincs state sync.
-- **3D grafika.** Nem használunk Three.js-t, WebGL 3D-t, 3D modelleket.
-  Minden sprite-alapú 2D, izometrikus vetítéssel.
 - **Mobil touch interfész.** Desktop böngésző + egér + billentyűzet.
   (Reszponzív layout nem prioritás.)
 - **Kampány / küldetések / sztori.** Csak skirmish (szabad játék).
@@ -75,8 +73,6 @@ Ha a MVP stabil, ezek kerülhetnek be később (külön feature branch-ben):
 
 ### 2.3 Kiegészítő döntések
 
-- **NINCS React.** A UI Phaser DOM elementekkel vagy saját HTML overlay-jel
-  készül. React + Phaser kombó felesleges komplexitás egy ilyen projektnél.
 - **NINCS Redux.** A játékállapotot az ECS világ tárolja, a UI állapotot
   Zustand.
 - **NINCS backend.** Minden kliensoldalon fut.
@@ -533,6 +529,12 @@ IsoRTS/
 
 **MVP-ben placeholder art.** Kraftpix, Itch.io, OpenGameArt ingyenes
 sprite packek. A végleges art külön milestone.
+
+**Vizuális átdolgozás (feat/visual-overhaul):** ingyenes (CC0) asset
+packok és AI által generált grafika (csempék, épületek, egységek) is
+használható. Minden külső asset licence a `public/assets/CREDITS.md`-ben
+rögzítve. A UI irány: sötét, meleg tónusú üveg panelek, borostyán
+kiemelőszín, dinamikus (animált) megjelenés.
 
 ### 8.2 TexturePacker atlaszok
 
