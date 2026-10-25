@@ -5,7 +5,9 @@ import { GameScene } from '../scenes/GameScene';
 import { HUDScene } from '../scenes/HUDScene';
 import { MainMenuScene } from '../scenes/MainMenuScene';
 import { PreloadScene } from '../scenes/PreloadScene';
+import { ISO_LIGHT_PIPELINE, IsoLightPipeline } from '../iso/art/lighting/IsoLightPipeline';
 import { GAME_HEIGHT, GAME_WIDTH } from './constants';
+import { MAX_LIGHTS } from './visual';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -22,7 +24,10 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
     roundPixels: false,
+    maxLights: MAX_LIGHTS,
   },
+  // Phaser constructs config pipelines with the Game (its typings say config).
+  pipeline: { [ISO_LIGHT_PIPELINE]: IsoLightPipeline } as unknown as Phaser.Types.Core.PipelineConfig,
   fps: {
     target: 60,
     forceSetTimeOut: true,
