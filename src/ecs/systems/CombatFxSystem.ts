@@ -36,7 +36,7 @@ interface Pending {
  * it): muzzle flashes + gun smoke + light flashes when shots are fired,
  * blasts with scorch marks and camera shake when cannonballs land,
  * stuck arrows and dirt kicks for misses, sparks and a white hit flash
- * for blows, dust when bodies fall and buildings collapse. Everything
+ * for blows, dust when bodies fall. Everything
  * is pooled and skipped on tiles the viewer cannot see.
  */
 export class CombatFxSystem {
@@ -213,12 +213,7 @@ export class CombatFxSystem {
 
   private onDeath(e: Entity): void {
     if (!e.position || !this.shows(e.position.tx, e.position.ty)) return;
-    const b = e.building;
-    if (b) {
-      const c = tileToScreen({ tx: e.position.tx + (b.footprint.width - 1) / 2, ty: e.position.ty + (b.footprint.height - 1) / 2 });
-      this.fx.collapse(c.sx, c.sy, (b.footprint.width + b.footprint.height) * 16);
-      return;
-    }
+    // Buildings collapse in BuildingFxSystem.
     if (!e.unit) return;
     const p = screenOf(entityPoint(e as Positioned));
     this.falls.push({ at: this.scene.time.now + COMBAT_FX.deathDustDelayMs, x: p.sx, y: p.sy, tx: e.position.tx, ty: e.position.ty });

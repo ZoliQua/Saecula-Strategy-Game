@@ -7,19 +7,17 @@ import type { EcsWorld } from '../world';
 
 const FX_DEPTH = 8_500;
 const SMOKE_EVERY_MS = 420;
-const DUST_EVERY_MS = 300;
 
 /**
- * Purely cosmetic particles: chimney smoke, dust puffs over building
- * sites and drifting pollen motes in the camera view (combat effects
- * live in CombatFxSystem). Reads the ECS, never writes it.
+ * Purely cosmetic particles: chimney smoke and drifting pollen motes in
+ * the camera view (combat effects live in CombatFxSystem, building
+ * damage / collapse / hammer dust in BuildingFxSystem). Reads the ECS,
+ * never writes it.
  */
 export class AmbientFxSystem {
   private readonly smoke: Phaser.GameObjects.Particles.ParticleEmitter;
-  private readonly dust: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly motes: Phaser.GameObjects.Particles.ParticleEmitter;
   private smokeTimer = 0;
-  private dustTimer = 0;
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -36,16 +34,6 @@ export class AmbientFxSystem {
         scale: { start: 0.25, end: 1.1 },
         alpha: { start: 0.55, end: 0 },
         rotate: { min: 0, max: 360 },
-      })
-      .setDepth(FX_DEPTH);
-    this.dust = scene.add
-      .particles(0, 0, FX_KEYS.dust, {
-        emitting: false,
-        lifespan: 900,
-        speed: { min: 6, max: 22 },
-        angle: { min: 200, max: 340 },
-        scale: { start: 0.5, end: 1.3 },
-        alpha: { start: 0.6, end: 0 },
       })
       .setDepth(FX_DEPTH);
     this.motes = scene.add
@@ -69,23 +57,12 @@ export class AmbientFxSystem {
 
   update(delta: number): void {
     this.smokeTimer += delta;
-    this.dustTimer += delta;
     const emitSmoke = this.smokeTimer >= SMOKE_EVERY_MS;
-    const emitDust = this.dustTimer >= DUST_EVERY_MS;
     if (emitSmoke) this.smokeTimer = 0;
-    if (emitDust) this.dustTimer = 0;
 
     for (const e of this.world.with('building', 'position')) {
-      if (!this.isSeen(e)) continue;
+      if (!emitSmoke || e.dying || e.underConstruction || !this.isSeen(e)) continue;
       const anchor = frontCorner(e);
-      if (e.underConstruction) {
-        if (emitDust) {
-          const span = (e.building.footprint.width + e.building.footprint.height) * 12;
-          this.dust.emitParticleAt(anchor.sx + (Math.random() - 0.5) * span, anchor.sy - 6 - Math.random() * 18);
-        }
-        continue;
-      }
-      if (!emitSmoke || e.dying) continue;
       // Chimney tops are recorded by the painter per age style (front-corner relative).
       const key = e.sprite?.texture.key;
       for (const [dx, dy] of (key && BUILDING_LIGHT.get(key)?.smoke) || []) {
@@ -106,7 +83,6 @@ export class AmbientFxSystem {
 
   destroy(): void {
     this.smoke.destroy();
-    this.dust.destroy();
     this.motes.destroy();
   }
 }

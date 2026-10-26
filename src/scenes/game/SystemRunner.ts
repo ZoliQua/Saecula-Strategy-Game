@@ -3,6 +3,7 @@ import { AIPlayer } from '../../ai/AIPlayer';
 import { createStrategy } from '../../ai/createStrategy';
 import { AgeUpFxSystem } from '../../ecs/systems/AgeUpFxSystem';
 import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
+import { BuildingFxSystem } from '../../ecs/systems/BuildingFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
@@ -52,6 +53,7 @@ export class SystemRunner {
   private readonly ambientFx: AmbientFxSystem;
   private readonly combatFx: CombatFxSystem;
   private readonly ageUpFx: AgeUpFxSystem;
+  private readonly buildingFx: BuildingFxSystem;
   private aiPlayers: AIPlayer[] = [];
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
@@ -91,6 +93,8 @@ export class SystemRunner {
     this.combatFx = new CombatFxSystem(scene, world, this.render);
     this.combatFx.setFogContext(this.fogData);
     this.ageUpFx = new AgeUpFxSystem(scene, world, this.render);
+    this.buildingFx = new BuildingFxSystem(scene, world);
+    this.buildingFx.setFogContext(this.fogData);
     // Once the age-up wave has played out, drop age styles nobody shows any more.
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
       scene.time.delayedCall(AGE_UP_FX.maxSpreadMs + AGE_UP_FX.swapMs + 1500, () => {
@@ -131,6 +135,7 @@ export class SystemRunner {
     this.tileMap.applyFog(this.fogData);
     this.selection.update();
     this.render.update();
+    this.buildingFx.update(delta);
     this.projectileRender.update();
     this.healthBars.update();
     this.ambientFx.update(delta);
@@ -140,6 +145,7 @@ export class SystemRunner {
   destroy(): void {
     this.unsubscribeAge();
     this.ageUpFx.destroy();
+    this.buildingFx.destroy();
     this.ambientFx.destroy();
     this.combatFx.destroy();
     this.projectileRender.destroy();

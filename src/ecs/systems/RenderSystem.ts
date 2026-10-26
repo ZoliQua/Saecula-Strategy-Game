@@ -22,7 +22,9 @@ import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { AgeId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
-import { dyingAlpha, DYING_MS, unitAnimState } from './unitAnim';
+import { BUILDING_DEATH_TTL_MS } from '../../config/balance';
+import { collapseHeightScale } from './buildingFx/damageMath';
+import { dyingAlpha, unitAnimState } from './unitAnim';
 import { WallBanners } from './wallJoins/WallBanners';
 import { WallJoinIndex } from './wallJoins/WallJoinIndex';
 
@@ -36,7 +38,7 @@ const RESKINS_PER_FRAME = 2;
  * Syncs ECS entities that have `position` + `renderable` into Phaser
  * sprites: team-coloured textures, walk/work/attack frames with a
  * little bob, buildings that rise out of their construction site, and
- * a sink-and-fade on death.
+ * a fade on death (buildings collapse in BuildingFxSystem).
  */
 export class RenderSystem {
   private readonly scene: Phaser.Scene;
@@ -136,7 +138,7 @@ export class RenderSystem {
         this.applyConstruction(sprite, entity);
         if (entity.building.type === 'wall') {
           const shownAge = ((this.shownLook.get(entity) ?? 1) % 4) as AgeId;
-          const show = visible && !entity.underConstruction;
+          const show = visible && !entity.underConstruction && !entity.dying;
           this.banners.sync(entity, sprite, this.joins.pieceOf(entity), shownAge, teamColor(entity.owner?.playerId ?? 1), show);
         }
       }
@@ -266,6 +268,7 @@ export class RenderSystem {
         lights: info?.lights ?? [],
         isComplete: () => !entity.underConstruction && !entity.dying,
         heightScale: () => {
+          if (entity.dying) return collapseHeightScale(entity.dying.ttlMs, BUILDING_DEATH_TTL_MS);
           const uc = entity.underConstruction;
           return uc ? Math.min(1, uc.elapsed / uc.totalTime) : 1;
         },
@@ -342,16 +345,10 @@ function isVisibleToViewer(entity: Renderable, fog: FogOfWarData | null, viewerP
   return fog.isVisible(entity.position.tx, entity.position.ty);
 }
 
+/** Units play their death fall (unitAnim), then the corpse fades; buildings collapse (BuildingFxSystem). */
 function applyDying(sprite: Phaser.GameObjects.Sprite, entity: Renderable): void {
   const d = entity.dying;
-  if (!d) return;
-  if (entity.building) {
-    sprite.setAlpha(Math.max(0, d.ttlMs / DYING_MS));
-    sprite.setTint(0xb08070);
-    return;
-  }
-  // Units play their death fall (unitAnim); the corpse then fades.
-  sprite.setAlpha(dyingAlpha(d.ttlMs));
+  if (d && !entity.building) sprite.setAlpha(dyingAlpha(d.ttlMs));
 }
 
 function renderDepth(entity: Renderable): number {

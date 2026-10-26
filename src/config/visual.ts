@@ -151,3 +151,34 @@ export const AGE_UP_FX = {
  * are released from that height (towerLaunchHeight).
  */
 export const TOWER_PLATFORM_Z = { 1: 124, 2: 132, 3: 140 } as const;
+
+/** Building damage, fire, collapse and construction effects (BuildingFxSystem). Times in ms, sizes in world px. */
+export const BUILDING_FX = {
+  /** HP fraction below which a finished building smokes and cracks … */
+  smokeBelow: 0.66,
+  /** … and below which it burns. */
+  fireBelow: 0.33,
+  /** Flames per footprint size (index = tiles across); wall segments burn on every other tile. */
+  flamesBySize: [1, 1, 2, 3, 4],
+  /** Most burning buildings / wall segments drawn with flames at once (nearest the view centre). */
+  maxBurning: 14,
+  maxBurningWalls: 10,
+  /** Fire point lights at once (shared with torches; flashes keep their reserved slots). */
+  maxFireLights: 4,
+  fireLight: { color: 0xff8a3a, radius: 200, intensity: 2.3, flicker: 0.45 },
+  flameFrameMs: 70,
+  /** Emission intervals per source. */
+  lightSmokeMs: 520,
+  heavySmokeMs: 230,
+  emberMs: 320,
+  /** Collapse: dust and debris per footprint tile across, emitted over the collapse. */
+  collapseDustPerTile: 22,
+  collapseDebrisPerTile: 14,
+  /** Rubble decal: total life after the building went down, and the fraction held at full opacity. */
+  rubbleLifeMs: 30_000,
+  rubbleHold: 0.4,
+  /** Camera shake when a building of 3+ tiles across comes down on screen (strength per tile). */
+  collapseShake: { ms: 320, perTile: 0.0012, edgeKeep: 0.3 },
+  /** Hammer dust per strike of a builder's tool. */
+  hammerDust: 4,
+} as const;

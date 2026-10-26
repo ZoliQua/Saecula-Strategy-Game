@@ -152,15 +152,6 @@ export class CombatEmitters {
     for (let i = 0; i < 5; i++) this.dust.emitParticleAt(x + (Math.random() - 0.5) * 18, y - 2 + (Math.random() - 0.5) * 6);
   }
 
-  /** A building coming down: rubble and a wide dust cloud over its footprint. */
-  collapse(x: number, y: number, span: number): void {
-    for (let i = 0; i < 14; i++) {
-      this.dust.emitParticleAt(x + (Math.random() - 0.5) * span, y - Math.random() * span * 0.4);
-    }
-    for (let i = 0; i < 4; i++) this.blastSmoke.emitParticleAt(x + (Math.random() - 0.5) * span * 0.6, y - span * 0.2);
-    this.debris.emitParticleAt(x, y - span * 0.25, 12);
-  }
-
   destroy(): void {
     for (const e of this.all) e.destroy();
   }
