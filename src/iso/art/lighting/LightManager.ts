@@ -44,7 +44,7 @@ import {
   NIGHT_LIGHT_GAIN,
 } from '../../../config/visual';
 import type { BuildingType } from '../../../types';
-import { BUILDING_LIGHTS } from './buildingLights';
+import { BUILDING_LIGHTS, type AnchoredLight } from './buildingLights';
 import { CastShadows } from './CastShadows';
 import { FlashPool, persistentBudget, selectPersistentLights } from './flashPool';
 import { ISO_LIGHT_PIPELINE, setSceneSun } from './IsoLightPipeline';
@@ -83,6 +83,8 @@ export interface BuildingAttachment {
   footprint: { w: number; h: number };
   volume: readonly VolumePoint[];
   glows: readonly GlowPoint[];
+  /** Painter-recorded torches etc. (added to any hand-placed BUILDING_LIGHTS for the type). */
+  lights?: readonly AnchoredLight[];
   /** Finished and alive (glows + torches on). */
   isComplete: () => boolean;
   /** 0..1 shadow height while under construction. */
@@ -191,7 +193,7 @@ export class LightManager {
     const removers: Array<() => void> = [];
     removers.push(this.shadows?.addVolume(a.sprite, a.volume, a.footprint, a.heightScale) ?? (() => undefined));
     removers.push(this.glows?.add(a.sprite, a.glows, a.isComplete) ?? (() => undefined));
-    for (const l of BUILDING_LIGHTS[a.type] ?? []) {
+    for (const l of [...(BUILDING_LIGHTS[a.type] ?? []), ...(a.lights ?? [])]) {
       const h = this.addLight({ x: a.sprite.x + l.dx, y: a.sprite.y + l.dy, color: l.color, radius: l.radius, intensity: l.intensity, flicker: l.flicker });
       const sync = () => h.setEnabled(a.sprite.active && a.sprite.visible && a.isComplete());
       this.syncers.add(sync);

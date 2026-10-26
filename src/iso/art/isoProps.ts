@@ -1,4 +1,4 @@
-import { poly, type Ctx } from './canvas';
+import type { Ctx } from './canvas';
 import { css, shade } from './palette';
 
 type Pt = readonly [number, number];
@@ -77,38 +77,6 @@ export function paintFlag(ctx: Ctx, x: number, y: number, pole: number, team: nu
   ctx.quadraticCurveTo(x + fw * 0.5, y - pole + fh + 2, x + 1, y - pole + fh);
   ctx.closePath();
   ctx.fill();
-}
-
-/** Roof tile rows + seams clipped to a slope polygon. */
-export function paintRoofTiles(ctx: Ctx, pts: Pt[], color: number, light: number, rowAt: (t: number) => [Pt, Pt]): void {
-  ctx.save();
-  poly(ctx, pts);
-  ctx.clip();
-  const rows = 9;
-  for (let i = 1; i < rows; i++) {
-    const [s, e] = rowAt(i / rows);
-    ctx.strokeStyle = css(shade(color, light * 0.55), 0.7);
-    ctx.lineWidth = 1.3;
-    ctx.beginPath();
-    ctx.moveTo(s[0], s[1]);
-    ctx.lineTo(e[0], e[1]);
-    ctx.stroke();
-    // Tile seams: short ticks between this row and the previous one.
-    const [ps, pe] = rowAt((i - 1) / rows);
-    const n = 14;
-    ctx.strokeStyle = css(shade(color, light * 0.7), 0.45);
-    ctx.lineWidth = 0.8;
-    for (let k = (i % 2) * 0.5; k < n; k++) {
-      const t = k / n;
-      const a = lerp(ps, pe, t);
-      const b = lerp(s, e, t);
-      ctx.beginPath();
-      ctx.moveTo(a[0], a[1]);
-      ctx.lineTo(b[0], b[1]);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
 }
 
 export function lerp(a: Pt, b: Pt, t: number): Pt {

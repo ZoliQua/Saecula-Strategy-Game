@@ -1,10 +1,12 @@
 import { TILE_HEIGHT, TILE_WIDTH } from '../../config/constants';
 import { ART_SCALE, BUILDING_BOTTOM_PAD, makeCanvas, poly, type Ctx } from './canvas';
+import type { AnchoredLight } from './lighting/buildingLights';
 import { baked, NormalLayer, type GlowPoint, type LitArt } from './lighting/normalLayer';
 import type { VolumePoint } from './lighting/shadowGeometry';
 import { N_LEFT, N_RIGHT, N_UP, slopeNormal, SCREEN_PER_WORLD_HEIGHT, type Vec3 } from './lighting/viewSpace';
 import { css, rng, shade } from './palette';
-import { lerp, paintDoor, paintFlag, paintRidge, paintRoofTiles, paintWindow } from './isoProps';
+import { lerp, paintDoor, paintFlag, paintRidge, paintWindow } from './isoProps';
+import { paintRoofCover, type RoofMaterial } from './roofCover';
 import { paintWallDetail } from './wallDetail';
 
 /** Half tile extents at art resolution. */
@@ -16,7 +18,7 @@ type Pt = readonly [number, number];
 export interface WallStyle {
   readonly color: number;
   /** Optional decoration painted in face-local coordinates. */
-  readonly detail?: 'stone' | 'plaster' | 'planks' | 'logs' | 'brick';
+  readonly detail?: 'stone' | 'fieldstone' | 'plaster' | 'planks' | 'logs' | 'brick';
 }
 
 /**
@@ -42,6 +44,10 @@ export class IsoPainter {
   private readonly rand: () => number;
   private readonly volume: VolumePoint[] = [];
   private readonly glows: GlowPoint[] = [];
+  private readonly lights: AnchoredLight[] = [];
+  private readonly smoke: Array<readonly [number, number]> = [];
+  /** Cover painted on the following roof slopes (tiles, shingles, thatch, slate, copper). */
+  material: RoofMaterial = 'tile';
 
   constructor(
     readonly w: number,
@@ -68,7 +74,30 @@ export class IsoPainter {
       normal: withNormals ? this.normals.finish(this.canvas) : null,
       volume: this.volume,
       glows: this.glows,
+      lights: this.lights,
+      smoke: this.smoke,
     };
+  }
+
+  /** Canvas point → world px offset from the sprite anchor (front corner). */
+  private anchorOffset(x: number, y: number): readonly [number, number] {
+    return [(x - this.cx) / ART_SCALE, (y - this.by) / ART_SCALE];
+  }
+
+  /** Records a building-anchored point light whose ground point is (u, v). */
+  addLight(u: number, v: number, light: Omit<AnchoredLight, 'dx' | 'dy'>): void {
+    const [dx, dy] = this.anchorOffset(...this.p(u, v, 0));
+    this.lights.push({ ...light, dx, dy });
+  }
+
+  /** Records a chimney top (smoke source) at (u, v, z). */
+  addSmoke(u: number, v: number, z: number): void {
+    this.smoke.push(this.anchorOffset(...this.p(u, v, z)));
+  }
+
+  /** Records an emissive spot (flame, lit lantern) that glows at dusk, canvas px. */
+  addGlow(x: number, y: number, r: number): void {
+    this.glows.push({ x, y, r });
   }
 
   /** Records a point of a solid (u, v at height z art px) for the cast shadow. */
@@ -83,7 +112,7 @@ export class IsoPainter {
   }
 
   /** Roof slope normal: descends along (du, dv) by `rise` art px over `runTiles`. */
-  private slope(du: number, dv: number, runTiles: number, rise: number) {
+  slope(du: number, dv: number, runTiles: number, rise: number) {
     return slopeNormal(du, dv, runTiles * HW * Math.SQRT2, rise / SCREEN_PER_WORLD_HEIGHT);
   }
 
@@ -245,6 +274,7 @@ export class IsoPainter {
     wallColor: number,
     axis: 'u' | 'v',
     overhang = 0.12,
+    gableDetail?: (width: number, rise: number) => void,
   ): void {
     const o = overhang;
     if (axis === 'u') {
@@ -258,6 +288,7 @@ export class IsoPainter {
       this.normals.fill(back, this.slope(0, -1, run, rise));
       this.fillPoly(gable, css(shade(wallColor, baked(0.72))));
       this.normals.fill(gable, N_RIGHT);
+      if (gableDetail) this.rightFace(v0, v1, u1, eave, (w) => gableDetail(w, rise));
       this.strokePoly(gable, css(shade(wallColor, 0.4), 0.6), 1);
       this.recordRoof(u0 - o, v0 - o, u1 + o, v1 + o, eave, [this.p(u0 - o, vm, 0), this.p(u1 + o, vm, 0)], top);
       this.roofSlope(front, color, baked(1.05), this.slope(0, 1, run, rise), (t) => [this.p(u0 - o, vm + (v1 + o - vm) * t, top - rise * t), this.p(u1 + o, vm + (v1 + o - vm) * t, top - rise * t)]);
@@ -273,6 +304,7 @@ export class IsoPainter {
       this.normals.fill(back, this.slope(-1, 0, run, rise));
       this.fillPoly(gable, css(shade(wallColor, 1.0)));
       this.normals.fill(gable, N_LEFT);
+      if (gableDetail) this.leftFace(u0, u1, v1, eave, (w) => gableDetail(w, rise));
       this.strokePoly(gable, css(shade(wallColor, 0.4), 0.6), 1);
       this.recordRoof(u0 - o, v0 - o, u1 + o, v1 + o, eave, [this.p(um, v0 - o, 0), this.p(um, v1 + o, 0)], top);
       this.roofSlope(front, color, baked(0.78), this.slope(1, 0, run, rise), (t) => [this.p(um + (u1 + o - um) * t, v0 - o, top - rise * t), this.p(um + (u1 + o - um) * t, v1 + o, top - rise * t)]);
@@ -307,12 +339,12 @@ export class IsoPainter {
   }
 
   /** Eave corners at `eave` plus ridge/apex ground points at `top`. */
-  private recordRoof(u0: number, v0: number, u1: number, v1: number, eave: number, peaks: Pt[], top: number): void {
+  recordRoof(u0: number, v0: number, u1: number, v1: number, eave: number, peaks: Pt[], top: number): void {
     for (const [u, v] of [[u0, v0], [u1, v0], [u1, v1], [u0, v1]] as const) this.addVolumePoint(u, v, eave);
     for (const [gx, gy] of peaks) this.volume.push({ gx, gy, z: top });
   }
 
-  private roofSlope(pts: Pt[], color: number, light: number, normal: Vec3, rowAt: (t: number) => [Pt, Pt]): void {
+  roofSlope(pts: Pt[], color: number, light: number, normal: Vec3, rowAt: (t: number) => [Pt, Pt]): void {
     const ctx = this.ctx;
     this.normals.fill(pts, normal);
     const ys = pts.map((p) => p[1]);
@@ -320,7 +352,7 @@ export class IsoPainter {
     g.addColorStop(0, css(shade(color, light * 1.12)));
     g.addColorStop(1, css(shade(color, light * 0.88)));
     this.fillPoly(pts, g);
-    paintRoofTiles(ctx, pts, color, light, rowAt);
+    paintRoofCover(ctx, this.material, pts, color, light, rowAt, this.rand);
     this.strokePoly(pts, css(shade(color, 0.4), 0.6), 1.1);
   }
 

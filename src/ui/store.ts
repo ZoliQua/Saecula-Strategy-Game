@@ -28,6 +28,8 @@ export interface SelectedBuildingInfo {
   id: number;
   ownerId: number;
   buildingType: BuildingType;
+  /** Texture the building is drawn with (age style + team colour), for the portrait. */
+  textureKey?: string;
   hp: { current: number; max: number };
   tile: { tx: number; ty: number };
   constructionProgress?: number;

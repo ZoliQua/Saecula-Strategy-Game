@@ -5,6 +5,7 @@ import type { EcsWorld } from '../../ecs/world';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import type { TileCoord } from '../../iso/coordinates';
 import { tileToScreen } from '../../iso/coordinates';
+import { buildingTexture } from '../../iso/textures';
 import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import type { MapData } from '../../map/MapData';
 import type { AgeId, BuildingType } from '../../types';
@@ -115,12 +116,14 @@ export class BuildPlacement {
       return;
     }
     const spec = BUILDING_SPECS[placement];
+    // The ghost previews the building in the player's current age style.
+    const key = buildingTexture(this.scene, placement, this.getAge(), this.playerId);
     if (!this.ghost) {
-      this.ghost = this.scene.add.image(0, 0, spec.textureKey);
+      this.ghost = this.scene.add.image(0, 0, key);
       this.ghost.setAlpha(0.6).setScale(1 / ART_SCALE);
     }
-    if (this.ghost.texture.key !== spec.textureKey) {
-      this.ghost.setTexture(spec.textureKey);
+    if (this.ghost.texture.key !== key) {
+      this.ghost.setTexture(key);
     }
     const bottom = {
       tx: hover.tx + spec.width - 1,

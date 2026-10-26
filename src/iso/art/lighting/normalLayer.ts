@@ -1,6 +1,7 @@
 import { BAKED_SHADE_KEEP, LIGHTING_ENABLED } from '../../../config/visual';
 import { poly } from '../canvas';
 import { deriveNormals, type DeriveOptions, DEFAULT_DERIVE } from './deriveNormals';
+import type { AnchoredLight } from './buildingLights';
 import type { VolumePoint } from './shadowGeometry';
 import { cylinderNormal, normalCss, type Vec3 } from './viewSpace';
 
@@ -26,6 +27,10 @@ export interface LitArt {
   readonly volume: readonly VolumePoint[];
   /** Window glow spots (empty = none). */
   readonly glows: readonly GlowPoint[];
+  /** Torches / forges / lanterns recorded by the painter (front-corner relative, world px). */
+  readonly lights: readonly AnchoredLight[];
+  /** Chimney tops emitting smoke (front-corner relative, world px). */
+  readonly smoke: ReadonlyArray<readonly [number, number]>;
 }
 
 /** Scales a baked light factor towards 1 when dynamic lighting does the shading. */
@@ -76,6 +81,23 @@ export class NormalLayer {
     }
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
+  }
+
+  /** Cylinder normals clipped to a polygon (domes, helms, round props). */
+  cylinderPoly(pts: readonly Pt[], x: number, w: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    ctx.save();
+    poly(ctx, pts);
+    ctx.clip();
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    for (let i = 0; i <= 6; i++) {
+      const t = i / 6;
+      g.addColorStop(t, normalCss(cylinderNormal((t - 0.5) * Math.PI * 0.9)));
+    }
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
   }
 
   /** Combines faces with the albedo into the final normal map. */

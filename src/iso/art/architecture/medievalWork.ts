@@ -1,0 +1,192 @@
+import { ellipse } from '../canvas';
+import type { IsoPainter } from '../isoPainter';
+import { css } from '../palette';
+import { archedOpening, boardedGable } from './facade';
+import { ARCH_STONE, BOARD, FIELD, OAK, R, SHINGLE } from './medievalPalette';
+import { chimney, forgeLight, forgeMouth, goldPile, haystack, logPile, post, strawButt, torch, wattleFence } from './parts';
+import { porchRoofLeft, porchRoofRight } from './roofs';
+import type { AgeArtSet } from './types';
+
+/** Ripe strip field: alternating stubble / standing wheat strips. */
+export function stripField(p: IsoPainter, strips: number, wheat: string, soil: number): void {
+  const ctx = p.ctx;
+  p.ground(0.06, 0.06, 1.94, 1.94, soil);
+  for (let i = 0; i < strips; i++) {
+    const v0 = 0.12 + (i * 1.76) / strips;
+    const v1 = v0 + 1.76 / strips - 0.04;
+    if (i % 2) {
+      p.ground(0.12, v0, 1.88, v1, 0xa58a4e);
+      continue;
+    }
+    for (let k = 0; k < 60; k++) {
+      const [x, y] = p.p(0.15 + p.random() * 1.7, v0 + p.random() * (v1 - v0), 0);
+      ctx.strokeStyle = k % 3 ? wheat : '#9c7a2e';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (p.random() - 0.5) * 3, y - 9 - p.random() * 4);
+      ctx.stroke();
+    }
+  }
+}
+
+function sawhorse(p: IsoPainter, u: number, v: number): void {
+  const ctx = p.ctx;
+  const [x, y] = p.p(u, v, 0);
+  ctx.strokeStyle = '#4a3220';
+  ctx.lineWidth = 2;
+  for (const dx of [-12, 12]) {
+    ctx.beginPath();
+    ctx.moveTo(x + dx - 4, y + 2);
+    ctx.lineTo(x + dx + 4, y - 14);
+    ctx.moveTo(x + dx + 4, y + 2);
+    ctx.lineTo(x + dx - 4, y - 14);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#8a5a32';
+  ctx.fillRect(x - 22, y - 16, 44, 6);
+  ellipse(ctx, x + 22, y - 13, 3, 3);
+  ctx.fillStyle = '#d9b07a';
+  ctx.fill();
+}
+
+/** Age 2 workplaces: farm, camps, archery range, smithy. */
+export const MEDIEVAL_WORK_ART: AgeArtSet = {
+  farm: {
+    size: 2,
+    maxHeight: 64,
+    paint: (p, team) => {
+      stripField(p, 7, '#d8b34a', 0x6a4828);
+      haystack(p, 0.42, 0.42, 15, 34);
+      haystack(p, 0.82, 0.3, 11, 26);
+      wattleFence(p, 0.06, 1.95, 1.95, 1.95, 12);
+      wattleFence(p, 1.95, 0.06, 1.95, 1.95, 12);
+      p.flag(1.95, 1.95, 0, 24, team);
+    },
+  },
+  lumber_camp: {
+    size: 2,
+    maxHeight: 118,
+    paint: (p, team) => {
+      p.footShadow();
+      p.ground(0.1, 0.1, 1.9, 1.9, 0x857455);
+      p.box(0.22, 0.22, 1.18, 1.5, 0, 6, { color: FIELD }, FIELD);
+      p.box(0.25, 0.25, 1.15, 1.47, 6, 42, { color: 0x5a3a22, detail: 'logs' });
+      p.leftFace(0.25, 1.15, 1.47, 6, (w) => p.door(w * 0.35, 16, 26, 0x3e2614), 36);
+      p.material = 'shingle';
+      p.gableRoof(0.25, 0.25, 1.15, 1.47, 42, 52, SHINGLE, 0x5a3a22, 'v', 0.14, (w, r) => boardedGable(p.ctx, w, r, BOARD));
+      torch(p, 0.3, 1.47, 30, 0.3, 1.66);
+      logPile(p, 1.2, 1.82, 10, 0x6b4426, 0xe0b880);
+      logPile(p, 1.45, 1.15, 6, 0x6b4426, 0xe0b880);
+      sawhorse(p, 0.72, 1.85);
+      p.flag(1.82, 0.32, 0, 32, team);
+    },
+  },
+  mining_camp: {
+    size: 2,
+    maxHeight: 118,
+    paint: (p, team) => {
+      const ctx = p.ctx;
+      p.footShadow();
+      p.ground(0.1, 0.1, 1.9, 1.9, 0x877c6b);
+      p.box(0.18, 0.95, 1.05, 1.75, 0, 34, { color: FIELD, detail: 'fieldstone' });
+      p.leftFace(0.18, 1.05, 1.75, 0, (w) => {
+        archedOpening(ctx, w * 0.4, 16, 24, ARCH_STONE);
+        p.door(w * 0.4 + 1, 14, 22, 0x3e2614);
+      }, 34);
+      p.material = 'shingle';
+      p.gableRoof(0.18, 0.95, 1.05, 1.75, 34, 44, SHINGLE, FIELD, 'u', 0.12, (w, r) => boardedGable(ctx, w, r, BOARD, R));
+      torch(p, 0.3, 1.75, 26, 0.3, 1.95);
+      // Shaft with a windlass headframe.
+      const [sx, sy] = p.p(1.3, 0.62, 0);
+      ellipse(ctx, sx, sy, 20, 10);
+      ctx.fillStyle = '#5a5046';
+      ctx.fill();
+      ellipse(ctx, sx, sy, 15, 7.5);
+      ctx.fillStyle = '#0d0a08';
+      ctx.fill();
+      for (const [u, v] of [[1.05, 0.38], [1.55, 0.38], [1.05, 0.86], [1.55, 0.86]] as const) post(p, u, v, 0, 58, 2.6, OAK);
+      const a = p.p(1.05, 0.62, 58);
+      const b = p.p(1.55, 0.62, 58);
+      ctx.strokeStyle = '#5a3b20';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(a[0], a[1]);
+      ctx.lineTo(b[0], b[1]);
+      ctx.stroke();
+      ctx.strokeStyle = '#c9b08a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 58);
+      ctx.lineTo(sx, sy - 22);
+      ctx.stroke();
+      ctx.fillStyle = '#6b4526';
+      ctx.fillRect(sx - 4, sy - 24, 8, 7);
+      for (const [u, v] of [[1.05, 0.38], [1.55, 0.86]] as const) p.addVolumePoint(u, v, 58);
+      // Ore cart.
+      p.box(1.3, 1.3, 1.78, 1.68, 6, 20, { color: 0x5a3a22, detail: 'planks' });
+      goldPile(p, 1.54, 1.52);
+      for (const u of [1.4, 1.68]) {
+        const [x, y] = p.p(u, 1.68, 6);
+        ellipse(ctx, x, y, 4.5, 5);
+        ctx.fillStyle = '#20160c';
+        ctx.fill();
+      }
+      p.flag(1.86, 0.2, 0, 30, team);
+    },
+  },
+  archery_range: {
+    size: 3,
+    maxHeight: 140,
+    paint: (p, team) => {
+      p.footShadow();
+      p.ground(0.05, 0.05, 2.95, 2.95, 0x8d9c64);
+      p.box(0.25, 0.25, 1.6, 1.25, 0, 8, { color: FIELD }, FIELD);
+      p.box(0.25, 0.25, 1.6, 1.25, 8, 46, { color: 0x6e4528, detail: 'planks' });
+      p.rightFace(0.25, 1.25, 1.6, 8, (w) => p.door(w * 0.4, 16, 26, 0x3e2614), 38);
+      p.material = 'shingle';
+      p.gableRoof(0.25, 0.25, 1.6, 1.25, 46, 54, SHINGLE, 0x6e4528, 'u', 0.14, (w, r) => boardedGable(p.ctx, w, r, BOARD, R));
+      // Shooting gallery along the front.
+      for (let i = 0; i <= 3; i++) post(p, 0.3 + i * 0.43, 1.6, 0, 30, 2.4, OAK);
+      porchRoofLeft(p, 0.22, 1.63, 1.3, 0.32, 40, 30, SHINGLE);
+      for (const [u, v] of [[2.5, 0.55], [2.55, 1.35], [2.5, 2.15]] as const) strawButt(p, u, v);
+      p.flag(0.4, 2.6, 0, 38, team, true);
+    },
+  },
+  blacksmith: {
+    size: 2,
+    maxHeight: 130,
+    paint: (p, team) => {
+      const ctx = p.ctx;
+      p.footShadow();
+      p.ground(0.1, 0.1, 1.9, 1.9, 0x7a7266);
+      chimney(p, 1.08, 0.28, 1.45, 0.65, 0, 112, { color: FIELD, detail: 'fieldstone' });
+      p.box(0.28, 0.3, 1.4, 1.5, 0, 38, { color: FIELD, detail: 'fieldstone' });
+      p.leftFace(0.28, 1.4, 1.5, 0, (w) => {
+        archedOpening(ctx, w * 0.3, 18, 26, ARCH_STONE);
+        p.door(w * 0.3 + 1, 16, 24, 0x3e2614);
+      }, 38);
+      p.rightFace(0.3, 1.5, 1.4, 0, (w) => forgeMouth(p, w * 0.35, 22, 26), 38);
+      p.material = 'shingle';
+      p.hipRoof(0.28, 0.3, 1.4, 1.5, 38, 46, SHINGLE, 0.12);
+      // Open lean-to over the anvil.
+      post(p, 1.75, 0.4, 0, 28, 2.4, OAK);
+      post(p, 1.75, 1.4, 0, 28, 2.4, OAK);
+      porchRoofRight(p, 0.32, 1.48, 1.4, 0.4, 36, 27, SHINGLE);
+      forgeLight(p, 1.65, 0.95);
+      const [x, y] = p.p(1.62, 1.2, 0);
+      ctx.fillStyle = '#5a3b20';
+      ctx.fillRect(x - 5, y - 8, 10, 8);
+      ctx.fillStyle = '#34343a';
+      ctx.fillRect(x - 9, y - 12, 18, 4.5);
+      ctx.fillRect(x - 3, y - 9, 6, 2);
+      const [bx, by] = p.p(1.7, 1.7, 0);
+      ellipse(ctx, bx, by - 9, 6, 3);
+      ctx.fillStyle = css(0x24303a);
+      ctx.fill();
+      ctx.fillStyle = '#6b4526';
+      ctx.fillRect(bx - 6, by - 9, 12, 9);
+      p.flag(1.88, 1.88, 0, 26, team);
+    },
+  },
+};

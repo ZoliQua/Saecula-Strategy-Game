@@ -33,7 +33,8 @@ export class SelectionPanel {
 
   render(state: UiStore): void {
     const sel = state.selectedEntity;
-    const identity = sel ? `${sel.kind}:${sel.id}` : 'none';
+    // The building portrait follows its age style, so a re-skin refreshes it.
+    const identity = sel ? `${sel.kind}:${sel.id}:${sel.kind === 'building' ? (sel.textureKey ?? '') : ''}` : 'none';
     if (identity !== this.identity) {
       this.identity = identity;
       this.setPortrait(sel);
@@ -54,7 +55,7 @@ export class SelectionPanel {
       sel.kind === 'unit'
         ? unitThumbnail(sel.unitType)
         : sel.kind === 'building'
-          ? thumbnail(this.textures, BUILDING_SPECS[sel.buildingType].textureKey)
+          ? thumbnail(this.textures, sel.textureKey ?? BUILDING_SPECS[sel.buildingType].textureKey)
           : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType]);
     if (src) this.portrait.append(el('img', { src, alt: '' }));
   }
@@ -120,7 +121,7 @@ export class SelectionPanel {
       'div',
       { class: 'q-item', title: name },
       el('span', { class: 'q-fill', style: `height:${Math.round(research.progress * 100)}%` }),
-      el('img', { src: thumbnail(this.textures, BUILDING_SPECS[sel.buildingType].textureKey), alt: '' }),
+      el('img', { src: thumbnail(this.textures, sel.textureKey ?? BUILDING_SPECS[sel.buildingType].textureKey), alt: '' }),
     );
     item.addEventListener('click', () => dispatchCommand({ type: 'cancel-research', buildingId: sel.id }));
     return el(

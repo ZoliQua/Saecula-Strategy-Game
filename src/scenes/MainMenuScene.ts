@@ -10,7 +10,7 @@ import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } fro
 import { PLAYER_COLORS } from '../game/Player';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
-import { BUILDING_LIGHT } from '../iso/textures';
+import { BUILDING_LIGHT, buildingTexture } from '../iso/textures';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { generateMap } from '../map/generator';
 import { TERRAIN } from '../map/TerrainTypes';
@@ -20,6 +20,8 @@ import { MainMenu } from '../ui/screens/MainMenu';
 
 const MENU_MAP_SIZE = 48;
 const MENU_SEED = 7;
+/** The diorama shows off the grand Enlightenment-era town the player builds towards. */
+const MENU_AGE = 3;
 
 interface Walker {
   sprites: UnitSprites;
@@ -73,17 +75,19 @@ export class MainMenuScene extends Phaser.Scene {
     const place = (type: BuildingType, tx: number, ty: number) => {
       const spec = BUILDING_SPECS[type];
       const front = tileToScreen({ tx: tx + spec.width - 1, ty: ty + spec.height - 1 });
-      const img = this.add.image(front.sx, front.sy + 16, spec.textureKey);
+      const key = buildingTexture(this, type, MENU_AGE, 1);
+      const img = this.add.image(front.sx, front.sy + 16, key);
       img.setScale(1 / ART_SCALE).setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
       img.setDepth(tx + spec.width - 1 + ty + spec.height - 1 + 0.2);
       lit(img);
-      const info = BUILDING_LIGHT.get(spec.textureKey);
+      const info = BUILDING_LIGHT.get(key);
       this.lighting?.attachBuilding({
         sprite: img,
         type,
         footprint: { w: spec.width, h: spec.height },
         volume: info?.volume ?? [],
         glows: info?.glows ?? [],
+        lights: info?.lights ?? [],
         isComplete: () => true,
         heightScale: () => 1,
       });

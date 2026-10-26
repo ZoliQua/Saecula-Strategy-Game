@@ -1,20 +1,13 @@
 import Phaser from 'phaser';
 import { tileToScreen } from '../../iso/coordinates';
-import { FX_KEYS } from '../../iso/textures';
+import { BUILDING_LIGHT, FX_KEYS } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
-import type { BuildingType } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 
 const FX_DEPTH = 8_500;
 const SMOKE_EVERY_MS = 420;
 const DUST_EVERY_MS = 300;
-
-/** Chimney tops relative to the building's front corner, world px. */
-const CHIMNEYS: Partial<Record<BuildingType, ReadonlyArray<readonly [number, number]>>> = {
-  house: [[0, -88]],
-  blacksmith: [[25.6, -84]],
-};
 
 /**
  * Purely cosmetic particles: chimney smoke, dust puffs over building
@@ -93,7 +86,9 @@ export class AmbientFxSystem {
         continue;
       }
       if (!emitSmoke || e.dying) continue;
-      for (const [dx, dy] of CHIMNEYS[e.building.type] ?? []) {
+      // Chimney tops are recorded by the painter per age style (front-corner relative).
+      const key = e.sprite?.texture.key;
+      for (const [dx, dy] of (key && BUILDING_LIGHT.get(key)?.smoke) || []) {
         this.smoke.emitParticleAt(anchor.sx + dx, anchor.sy + dy);
       }
     }

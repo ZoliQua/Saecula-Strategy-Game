@@ -62,6 +62,7 @@ export class SystemRunner {
   ) {
     this.humanId = players.human()?.id;
     this.render = new RenderSystem(scene, world);
+    this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
     this.selection = new SelectionSystem(scene, world);
     this.pathfinding = new PathfindingSystem(world, mapData);
     this.movement = new MovementSystem(world, players);

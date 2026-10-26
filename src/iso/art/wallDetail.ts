@@ -26,6 +26,26 @@ light: number,
       }
       break;
     }
+    case 'fieldstone': {
+      // Rounded river / field stones of mixed size in pale mortar.
+      ctx.fillStyle = css(shade(wall.color, light * 0.78), 0.6);
+      ctx.fillRect(0, -h, width, h);
+      for (let row = 0, y = 0; y < h; row++) {
+        const rh = 6 + rand() * 4;
+        for (let x = -rand() * 8; x < width; ) {
+          const sw = 7 + rand() * 9;
+          ctx.fillStyle = css(shade(wall.color, light * (0.78 + rand() * 0.42)));
+          ctx.beginPath();
+          ctx.ellipse(x + sw / 2, -y - rh / 2, sw / 2 - 0.6, rh / 2 - 0.4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = lite;
+          ctx.fillRect(x + sw * 0.25, -y - rh + 1.2, sw * 0.4, 1);
+          x += sw;
+        }
+        y += rh;
+      }
+      break;
+    }
     case 'brick': {
       for (let row = 0, y = 0; y < h; row++, y += 5) {
         ctx.fillStyle = dark;

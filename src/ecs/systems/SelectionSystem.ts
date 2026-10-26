@@ -74,6 +74,8 @@ function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
       hp: { current: entity.health.current, max: entity.health.max },
       tile: { tx: entity.position.tx, ty: entity.position.ty },
     };
+    const textureKey = (entity as Entity).sprite?.texture.key;
+    if (textureKey) info.textureKey = textureKey;
     const uc = (entity as Entity).underConstruction;
     if (uc) info.constructionProgress = Math.min(1, uc.elapsed / uc.totalTime);
     if (entity.trainingQueue) {

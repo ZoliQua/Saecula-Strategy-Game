@@ -12,23 +12,22 @@ export interface AnchoredLight {
   readonly flicker: number;
 }
 
+export type LightPreset = Omit<AnchoredLight, 'dx' | 'dy'>;
+
 const TORCH = 0xffa24a;
 const FORGE = 0xff7a2a;
 
+export const TORCH_LIGHT: LightPreset = { color: TORCH, radius: 105, intensity: 0.72, flicker: 0.25 };
+export const FORGE_LIGHT: LightPreset = { color: FORGE, radius: 100, intensity: 0.9, flicker: 0.35 };
+/** Glazed oil lantern: whiter, steadier than a torch. */
+export const LANTERN_LIGHT: LightPreset = { color: 0xffc77a, radius: 115, intensity: 0.7, flicker: 0.06 };
+
 /**
- * Torches and fires per building type (front-corner relative ground
- * points). Later art tasks add their own entries here.
+ * Hand-placed lights for buildings whose art does not record its own
+ * (front-corner relative ground points). Age-styled buildings record
+ * torches / forges / lanterns while painting (IsoPainter.addLight), so
+ * the lights follow each age's geometry; see architecture/parts.ts.
  */
 export const BUILDING_LIGHTS: Partial<Record<BuildingType, readonly AnchoredLight[]>> = {
-  town_center: [
-    { dx: -58, dy: -27, color: TORCH, radius: 110, intensity: 0.75, flicker: 0.25 },
-    { dx: -26, dy: -12, color: TORCH, radius: 110, intensity: 0.75, flicker: 0.25 },
-  ],
   tower: [{ dx: -6, dy: -6, color: TORCH, radius: 90, intensity: 0.7, flicker: 0.3 }],
-  blacksmith: [{ dx: -15, dy: -22, color: FORGE, radius: 100, intensity: 0.9, flicker: 0.35 }],
-  foundry: [{ dx: -15, dy: -22, color: FORGE, radius: 120, intensity: 1, flicker: 0.35 }],
-  barracks: [
-    { dx: 36, dy: -38, color: TORCH, radius: 95, intensity: 0.65, flicker: 0.25 },
-    { dx: 58, dy: -26, color: TORCH, radius: 95, intensity: 0.65, flicker: 0.25 },
-  ],
 };

@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { PLAYER_COLORS } from '../game/Player';
-import type { BuildingType } from '../types';
+import type { AgeId, BuildingType } from '../types';
+import { ageArtKey, artAgeFor, teamArtKey } from './art/architecture/ageStyle';
 import { paintBuilding, paintConstructionSite } from './art/buildings';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
@@ -36,6 +37,7 @@ import {
   type GlowPoint,
   type LitArt,
 } from './art/lighting/normalLayer';
+import type { AnchoredLight } from './art/lighting/buildingLights';
 import type { VolumePoint } from './art/lighting/shadowGeometry';
 import { hash2 } from './art/palette';
 
@@ -73,10 +75,20 @@ export function constructionKey(size: number): string {
   return `construction_${size}`;
 }
 
-/** Per base texture key: building shadow volume + window glows (texture px). */
-export const BUILDING_LIGHT = new Map<string, { volume: readonly VolumePoint[]; glows: readonly GlowPoint[] }>();
+/** Lighting data of one building texture (shared by its team variants). */
+export interface BuildingLightInfo {
+  /** Shadow volume + window glows, texture px. */
+  readonly volume: readonly VolumePoint[];
+  readonly glows: readonly GlowPoint[];
+  /** Painter-recorded torches / forges / lanterns and chimney tops (front-corner relative, world px). */
+  readonly lights: readonly AnchoredLight[];
+  readonly smoke: ReadonlyArray<readonly [number, number]>;
+}
 
-const buildingByKey = new Map<string, BuildingType>();
+/** Per building texture key (age style and team variants included). */
+export const BUILDING_LIGHT = new Map<string, BuildingLightInfo>();
+
+type TextureHost = Pick<Phaser.Scene, 'textures'>;
 
 function teamColor(playerId: number): number {
   return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
@@ -86,18 +98,13 @@ function teamColor(playerId: number): number {
  * Generates every texture the game draws. All art is painted
  * procedurally onto canvases (see src/iso/art) so the repo carries
  * no binary sprite assets. Base keys are painted in player 1's colour;
- * other players get lazily painted variants via teamTextureKey().
+ * other players get lazily painted variants via buildingTexture().
  * Units are painted lazily per type (art/units/UnitArt.ts) and get their
  * team colour from a tinted mask overlay instead.
  */
 export function generateArt(scene: Phaser.Scene): void {
-  const p1 = teamColor(1);
-  for (const spec of Object.values(BUILDING_SPECS)) {
-    buildingByKey.set(spec.textureKey, spec.type);
-    if (!scene.textures.exists(spec.textureKey)) {
-      registerLitArt(scene, spec.textureKey, paintBuilding(spec.type, p1));
-    }
-  }
+  // Age-1 art for every building up front; later age styles paint on first need.
+  for (const spec of Object.values(BUILDING_SPECS)) buildingTexture(scene, spec.type, 1, 1);
   for (const size of [1, 2, 3, 4]) {
     if (!scene.textures.exists(constructionKey(size))) {
       registerLitArt(scene, constructionKey(size), paintConstructionSite(size));
@@ -117,26 +124,31 @@ export function generateArt(scene: Phaser.Scene): void {
   generateFx(scene);
 }
 
-/** Returns (and lazily paints) the texture for `baseKey` in a player's colour. */
-export function teamTextureKey(scene: Phaser.Scene, baseKey: string, playerId: number): string {
-  if (playerId <= 1) return baseKey;
-  const key = `${baseKey}@p${playerId}`;
-  if (scene.textures.exists(key)) return key;
-  const building = buildingByKey.get(baseKey);
-  if (building) {
-    registerCanvas(scene, key, paintBuilding(building, teamColor(playerId), false).canvas);
-  } else {
-    return baseKey;
-  }
-  shareNormalMap(scene, baseKey, key);
+/**
+ * Texture key of a building in an age style and a player's colour,
+ * painting it on first need: the (type, age) base once with its normal
+ * map, each other team as an albedo-only variant sharing that map.
+ * Painted textures are never removed (the shared normal source must
+ * stay alive), so old age styles simply stay cached.
+ */
+export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeId, playerId: number): string {
+  const ageKey = ageArtKey(BUILDING_SPECS[type].textureKey, type, age);
+  const artAge = artAgeFor(type, age);
+  if (!host.textures.exists(ageKey)) registerLitArt(host, ageKey, paintBuilding(type, teamColor(1), artAge));
+  const key = teamArtKey(ageKey, playerId);
+  if (key === ageKey || host.textures.exists(key)) return key;
+  registerCanvas(host, key, paintBuilding(type, teamColor(playerId), artAge, false).canvas);
+  shareNormalMap(host, ageKey, key);
+  const info = BUILDING_LIGHT.get(ageKey);
+  if (info) BUILDING_LIGHT.set(key, info);
   return key;
 }
 
 /** Registers painted art with its normal map and remembers its lighting data. */
-function registerLitArt(scene: Phaser.Scene, key: string, art: LitArt): void {
-  registerCanvas(scene, key, art.canvas);
-  attachNormalMap(scene, key, art.normal);
-  BUILDING_LIGHT.set(key, { volume: art.volume, glows: art.glows });
+function registerLitArt(host: TextureHost, key: string, art: LitArt): void {
+  registerCanvas(host, key, art.canvas);
+  attachNormalMap(host, key, art.normal);
+  BUILDING_LIGHT.set(key, { volume: art.volume, glows: art.glows, lights: art.lights, smoke: art.smoke });
 }
 
 function generateFx(scene: Phaser.Scene): void {

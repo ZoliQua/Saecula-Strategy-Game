@@ -8,8 +8,9 @@ import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } fro
 import { PLAYER_COLORS } from '../../game/Player';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
-import { BUILDING_LIGHT, constructionKey, teamTextureKey } from '../../iso/textures';
+import { BUILDING_LIGHT, buildingTexture, constructionKey } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
+import type { AgeId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { dyingAlpha, DYING_MS, unitAnimState } from './unitAnim';
@@ -35,6 +36,11 @@ export class RenderSystem {
   private readonly unlight = new Map<Entity, () => void>();
   /** Units showing the white hit flash, by the time it ends. */
   private readonly hitUntil = new Map<Entity, number>();
+  /** Age style each building sprite currently shows (render state, not game state). */
+  private readonly shownAge = new Map<Entity, AgeId>();
+  /** Buildings whose re-skin waits for their age-up effect (AgeUpFxSystem). */
+  private readonly heldReskin = new Set<Entity>();
+  private ageOf: (playerId: number) => AgeId = () => 1;
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -53,7 +59,25 @@ export class RenderSystem {
       this.sites.get(entity)?.destroy();
       this.sites.delete(entity);
       this.hitUntil.delete(entity);
+      this.shownAge.delete(entity);
+      this.heldReskin.delete(entity);
     });
+  }
+
+  /** Where buildings read their owner's age (style shown on the sprite). */
+  setAgeSource(ageOf: (playerId: number) => AgeId): void {
+    this.ageOf = ageOf;
+  }
+
+  /** Keeps a building in its old style until releaseReskin (age-up effect running). */
+  holdReskin(entity: Entity): void {
+    if (entity.building && entity.sprite) this.heldReskin.add(entity);
+  }
+
+  /** Ends a hold and swaps the building to its owner's current age style now. */
+  releaseReskin(entity: Entity): void {
+    this.heldReskin.delete(entity);
+    if (entity.building && entity.sprite && entity.position && entity.renderable) this.reskin(entity as Renderable, entity.sprite);
   }
 
   /** Brief white flash on a unit that just took damage (cosmetic). */
@@ -75,6 +99,7 @@ export class RenderSystem {
       sprite.setPosition(sx, sy);
       sprite.setDepth(renderDepth(entity));
       if (entity.building) {
+        if (!this.heldReskin.has(entity) && this.shownAge.get(entity) !== this.ownerAge(entity)) this.reskin(entity, sprite);
         this.applyConstruction(sprite, entity);
       }
       applyDying(sprite, entity);
@@ -116,11 +141,11 @@ export class RenderSystem {
       this.units.set(entity, pair);
       sprite = pair.body;
     } else {
-      const key = teamTextureKey(this.scene, entity.renderable.textureKey, playerId);
-      sprite = this.scene.add.sprite(0, 0, key);
+      sprite = this.scene.add.sprite(0, 0, this.buildingKey(entity));
       sprite.setScale(SPRITE_SCALE);
       sprite.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / sprite.height);
       lit(sprite);
+      if (entity.building) this.shownAge.set(entity, this.ownerAge(entity));
     }
     entity.sprite = sprite;
     // Position first so building-anchored lights land on the right spot.
@@ -128,6 +153,31 @@ export class RenderSystem {
     sprite.setPosition(sx, sy);
     this.attachLighting(entity, sprite);
     return sprite;
+  }
+
+  private ownerAge(entity: Renderable): AgeId {
+    return this.ageOf(entity.owner?.playerId ?? 1);
+  }
+
+  private buildingKey(entity: Renderable): string {
+    const type = entity.building?.type;
+    const playerId = entity.owner?.playerId ?? 1;
+    return type ? buildingTexture(this.scene, type, this.ownerAge(entity), playerId) : entity.renderable.textureKey;
+  }
+
+  /** Swaps a building sprite to its owner's current age style (texture, origin, lights). */
+  private reskin(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {
+    const age = this.ownerAge(entity);
+    this.shownAge.set(entity, age);
+    const key = this.buildingKey(entity);
+    if (sprite.texture.key === key) return;
+    const cropped = sprite.isCropped;
+    if (cropped) sprite.setCrop();
+    sprite.setTexture(key);
+    sprite.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / sprite.height);
+    this.unlight.get(entity)?.();
+    this.unlight.delete(entity);
+    this.attachLighting(entity, sprite);
   }
 
   private attachLighting(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {
@@ -139,7 +189,7 @@ export class RenderSystem {
       if (this.units.get(entity)?.art) this.unlight.set(entity, lights.attachCaster(sprite, baseKey));
       return;
     }
-    const info = BUILDING_LIGHT.get(baseKey);
+    const info = BUILDING_LIGHT.get(sprite.texture.key) ?? BUILDING_LIGHT.get(baseKey);
     this.unlight.set(
       entity,
       lights.attachBuilding({
@@ -148,6 +198,7 @@ export class RenderSystem {
         footprint: { w: b.footprint.width, h: b.footprint.height },
         volume: info?.volume ?? [],
         glows: info?.glows ?? [],
+        lights: info?.lights ?? [],
         isComplete: () => !entity.underConstruction && !entity.dying,
         heightScale: () => {
           const uc = entity.underConstruction;

@@ -25,7 +25,7 @@ export function makeCanvas(width: number, height: number): {
 
 /** Registers a canvas as a Phaser texture, replacing any existing one. */
 export function registerCanvas(
-  scene: Phaser.Scene,
+  scene: Pick<Phaser.Scene, 'textures'>,
   key: string,
   canvas: HTMLCanvasElement,
 ): void {

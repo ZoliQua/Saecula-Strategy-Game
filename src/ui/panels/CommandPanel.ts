@@ -14,7 +14,7 @@ import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons } from '../icons';
 import { uiStore, type UiStore } from '../store';
-import { thumbnail, unitThumbnail } from '../thumbnails';
+import { buildingThumbnail, unitThumbnail } from '../thumbnails';
 
 const AGE_NAME: Record<AgeId, string> = {
   1: hu.ages.roman,
@@ -113,8 +113,8 @@ export class CommandPanel {
     if (sel?.kind === 'unit' && sel.ownerId === 1 && sel.unitType === 'villager') {
       return {
         title: hu.hud.build,
-        signature: 'build',
-        commands: BUILDABLE_BY_VILLAGER.map((type) => this.buildCommand(type)),
+        signature: `build:${state.currentAge}`,
+        commands: BUILDABLE_BY_VILLAGER.map((type) => this.buildCommand(type, state.currentAge)),
       };
     }
     if (sel?.kind === 'building' && sel.ownerId === 1 && sel.constructionProgress === undefined) {
@@ -128,7 +128,7 @@ export class CommandPanel {
       const id = sel.id;
       return {
         title: techs.length > 0 ? hu.hud.commands : hu.hud.train,
-        signature: `building:${id}:${units.join(',')}:${techs.join(',')}`,
+        signature: `building:${id}:${state.currentAge}:${units.join(',')}:${techs.join(',')}`,
         commands: [
           ...units.map((u) => this.trainCommand(id, u)),
           ...techs.map((t) => this.researchCommand(id, t)),
@@ -138,13 +138,13 @@ export class CommandPanel {
     return { title: hu.hud.commands, signature: 'none', commands: [] };
   }
 
-  private buildCommand(type: BuildingType): Command {
+  private buildCommand(type: BuildingType, age: AgeId): Command {
     const spec = BUILDING_SPECS[type];
     return {
       id: type,
       name: hu.buildings[type],
       role: hu.buildingRoles[type],
-      image: thumbnail(this.textures, spec.textureKey),
+      image: buildingThumbnail(this.textures, type, age),
       cost: spec.cost,
       pop: 0,
       requiredAge: buildingRequiredAge(type),
@@ -179,7 +179,7 @@ export class CommandPanel {
       id: techId,
       name: hu.techs[techId].name,
       role: hu.techs[techId].role,
-      image: thumbnail(this.textures, BUILDING_SPECS[spec.building].textureKey),
+      image: buildingThumbnail(this.textures, spec.building, uiStore.getState().currentAge),
       cost: spec.cost,
       pop: 0,
       requiredAge: techRequiredAge(techId),

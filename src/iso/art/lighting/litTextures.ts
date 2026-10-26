@@ -9,7 +9,7 @@ export function shadowKey(baseKey: string): string {
 }
 
 /** Attaches a normal map to a registered texture (Light2D reads dataSource[0]). */
-export function attachNormalMap(scene: Phaser.Scene, key: string, normal: HTMLCanvasElement | null): void {
+export function attachNormalMap(scene: Pick<Phaser.Scene, 'textures'>, key: string, normal: HTMLCanvasElement | null): void {
   if (!normal || !scene.textures.exists(key)) return;
   scene.textures.get(key).setDataSource(normal);
 }
@@ -19,7 +19,7 @@ export function attachNormalMap(scene: Phaser.Scene, key: string, normal: HTMLCa
  * normal map source (one GPU texture for all players). Neither texture
  * is ever removed while the game runs, so the shared source is safe.
  */
-export function shareNormalMap(scene: Phaser.Scene, fromKey: string, toKey: string): void {
+export function shareNormalMap(scene: Pick<Phaser.Scene, 'textures'>, fromKey: string, toKey: string): void {
   if (!scene.textures.exists(fromKey) || !scene.textures.exists(toKey)) return;
   const from = scene.textures.get(fromKey);
   if (from.dataSource.length === 0) return;
