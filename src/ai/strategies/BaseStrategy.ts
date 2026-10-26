@@ -1,4 +1,4 @@
-import { AI_COMMON, type Span } from '../../config/balance';
+import { AI_COMMON, AI_PLACEMENT, type Span } from '../../config/aiBalance';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import type { Entity } from '../../ecs/components';
@@ -12,20 +12,11 @@ import type { TileCoord } from '../../iso/coordinates';
 import { FOG_UNEXPLORED } from '../../map/FogOfWarData';
 import type { BuildingType, Resources, TechId, UnitType } from '../../types';
 import type { AIContext, AIStrategy } from '../AIPlayer';
-import { findPlacement, type PlacementOptions } from '../decisions/placement';
+import { findPlacement } from '../decisions/placement';
 import { aiTrainAccount, canAfford, NO_RESERVE } from '../economy';
 import { Perception, type WorldView } from '../perception';
 import { ThoughtLog, type AIThoughts } from '../thoughts';
 
-/** Where each building type goes relative to the base (min / max ring around the anchor). */
-const PLACEMENT: Partial<Record<BuildingType, Pick<PlacementOptions, 'minRadius' | 'maxRadius'>>> = {
-  // Farms take the ring right around the TC (short walks); houses go one ring out.
-  house: { minRadius: 5, maxRadius: 16 },
-  farm: { minRadius: 2, maxRadius: 12 },
-  lumber_camp: { minRadius: 1, maxRadius: 6 },
-  mining_camp: { minRadius: 1, maxRadius: 6 },
-};
-const DEFAULT_PLACEMENT = { minRadius: 7, maxRadius: 18 } as const;
 
 /**
  * Shared AI skeleton: a cheap upkeep pass every AI_COMMON.upkeepMs and a
@@ -94,7 +85,7 @@ export abstract class BaseStrategy implements AIStrategy {
   /** Free origin for `type` near `anchor` on explored ground, keeping lanes clear. */
   protected placeFor(ctx: AIContext, view: WorldView, type: BuildingType, anchor: TileCoord): TileCoord | null {
     const spec = BUILDING_SPECS[type];
-    const ring = PLACEMENT[type] ?? DEFAULT_PLACEMENT;
+    const ring = AI_PLACEMENT.byType[type] ?? AI_PLACEMENT.fallback;
     const tc = type === 'farm' ? view.townCenter : undefined;
     return findPlacement(ctx.mapData, anchor, spec.width, spec.height, {
       ...ring,

@@ -1,5 +1,5 @@
 import type { TileCoord } from '../../iso/coordinates';
-import type { GatherWeights } from '../../config/balance';
+import type { GatherWeights } from '../../config/aiBalance';
 import type { ResourceType } from '../../types';
 
 const TYPES: readonly ResourceType[] = ['food', 'wood', 'gold'];
@@ -34,12 +34,14 @@ export function pickGatherType(
 /**
  * A gatherer move that brings the split closer to `weights`: from the most
  * over-staffed resource to the most under-staffed one, or null when no
- * resource is off by a full villager.
+ * resource is off by at least `slack` villagers (moving costs a walk, so
+ * small drifts are left alone).
  */
 export function pickRebalance(
   counts: Readonly<Record<ResourceType, number>>,
   weights: GatherWeights,
   available: (type: ResourceType) => boolean,
+  slack = 1,
 ): { from: ResourceType; to: ResourceType } | null {
   const total = TYPES.reduce((s, t) => s + counts[t], 0);
   if (total === 0) return null;
@@ -50,8 +52,8 @@ export function pickRebalance(
   let to: ResourceType | null = null;
   for (const t of TYPES) {
     const diff = counts[t] - want(t);
-    if (diff >= 1 && (from === null || diff > counts[from] - want(from))) from = t;
-    if (usable.includes(t) && diff <= -1 && (to === null || diff < counts[to] - want(to))) to = t;
+    if (diff >= slack && (from === null || diff > counts[from] - want(from))) from = t;
+    if (usable.includes(t) && diff <= -slack && (to === null || diff < counts[to] - want(to))) to = t;
   }
   return from && to ? { from, to } : null;
 }

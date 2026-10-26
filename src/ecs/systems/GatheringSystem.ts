@@ -74,7 +74,9 @@ export class GatheringSystem {
     const node = this.findEntityById(g.targetNodeId) as
       | ResourceNode
       | undefined;
-    if (!node || !node.resourceNode || node.resourceNode.amount <= 0) {
+    // An empty farm regrows (FarmRegenSystem): its farmer waits instead of leaving.
+    const regrows = (node as Entity | undefined)?.building !== undefined && !(node as Entity | undefined)?.dying;
+    if (!node || !node.resourceNode || (node.resourceNode.amount <= 0 && !regrows)) {
       this.retarget(v);
       return;
     }
@@ -190,7 +192,7 @@ export class GatheringSystem {
       g.targetNodeId = undefined;
       return;
     }
-    const next = this.findNearestNodeOfType(v.position, g.carryingType);
+    const next = this.findNearestNodeOfType(v, g.carryingType);
     g.targetNodeId = next?.id ?? undefined;
     if (g.carrying >= g.capacity) {
       this.handleFull(v);
@@ -200,12 +202,8 @@ export class GatheringSystem {
   }
 
   private depleteNode(node: ResourceNode): void {
-    if ((node as Entity).building) {
-      // Farms keep the building but drop the resourceNode tag so no
-      // further villagers come here to gather.
-      this.world.removeComponent(node as Entity, 'resourceNode');
-      return;
-    }
+    // Farms are never used up: they regrow (FarmRegenSystem).
+    if ((node as Entity).building) return;
     const { tx, ty } = node.position;
     // Natural resource tiles revert to grass on depletion.
     const TERRAIN_GRASS = 0;
@@ -252,23 +250,29 @@ export class GatheringSystem {
     return best;
   }
 
-  private findNearestNodeOfType(
-    from: TileCoord,
-    type: ResourceType,
-  ): ResourceNode | undefined {
+  /** Nearest node of `type` for `v`; a farm only if it is its owner's and nobody else works it. */
+  private findNearestNodeOfType(v: Villager, type: ResourceType): ResourceNode | undefined {
     let best: ResourceNode | undefined;
     let bestDist = Infinity;
     const nodes = this.world.with('position', 'resourceNode');
     for (const n of nodes) {
       if (n.resourceNode.type !== type) continue;
       if (n.resourceNode.amount <= 0) continue;
-      const dist = manhattan(from, n.position);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = n;
-      }
+      const dist = manhattan(v.position, n.position);
+      if (dist >= bestDist) continue;
+      if ((n as Entity).building && !this.isFreeFarmFor(n as Entity, v)) continue;
+      bestDist = dist;
+      best = n;
     }
     return best;
+  }
+
+  private isFreeFarmFor(farm: Entity, v: Villager): boolean {
+    if (farm.owner?.playerId !== v.owner.playerId || farm.dying) return false;
+    for (const o of this.world.with('gatherer')) {
+      if (o !== v && o.gatherer.targetNodeId === farm.id) return false;
+    }
+    return true;
   }
 }
 

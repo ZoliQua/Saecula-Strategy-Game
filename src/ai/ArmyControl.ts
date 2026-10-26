@@ -1,4 +1,4 @@
-import { AI_COMMON } from '../config/balance';
+import { AI_COMMON } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { TileCoord } from '../iso/coordinates';
@@ -35,9 +35,17 @@ export class ArmyControl {
     return this.wave.size;
   }
 
-  /** Sends every military unit not already on the wave out with it. Returns the wave size. */
-  launchWave(ctx: AIContext, view: WorldView): number {
-    for (const u of view.military) if (u.id !== undefined) this.wave.add(u.id);
+  /** True while the unit belongs to the attack wave. */
+  inWave(u: Entity): boolean {
+    return u.id !== undefined && this.wave.has(u.id);
+  }
+
+  /**
+   * Sends `units` (default: every military unit) out as the wave,
+   * together with any wave already out. Returns the wave size.
+   */
+  launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
+    for (const u of units) if (u.id !== undefined) this.wave.add(u.id);
     this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId);
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
     this.steerWave(ctx, view);
@@ -93,13 +101,30 @@ export class ArmyControl {
         continue;
       }
       if (this.waveTarget) {
-        clearUnitOrders(ctx.world, u);
-        ctx.world.addComponent(u, 'attackIntent', { targetId: this.waveTarget.id });
+        this.marchOn(ctx, u, this.waveTarget, enemyBuildings);
         continue;
       }
       if (!isBusy(u)) idle.push(u);
     }
     if (idle.length > 0) this.explore(ctx, idle);
+  }
+
+  /**
+   * Attack the wave target once it is in sight; until then only walk to
+   * where it was seen. (An attack order on a remembered building that has
+   * since vanished would be dropped at once and freeze the wave; walking
+   * there instead lets the AI see the empty spot and forget it.)
+   */
+  private marchOn(ctx: AIContext, u: Entity, target: KnownBuilding, inSight: readonly Entity[]): void {
+    if (inSight.some((b) => b.id === target.id)) {
+      if (u.attackIntent?.targetId === target.id) return;
+      clearUnitOrders(ctx.world, u);
+      ctx.world.addComponent(u, 'attackIntent', { targetId: target.id });
+      return;
+    }
+    if (isBusy(u) && !u.attackIntent) return;
+    clearUnitOrders(ctx.world, u);
+    ctx.world.addComponent(u, 'moveIntent', { target: target.position });
   }
 
   /** A unit marching on a building turns to fight armed enemies that come close. */
@@ -113,7 +138,7 @@ export class ArmyControl {
   private explore(ctx: AIContext, idle: readonly Entity[]): void {
     const centre = groupCentre(idle);
     if (!centre) return;
-    if (!this.exploreGoal || chebyshev(centre, this.exploreGoal) <= 3) {
+    if (!this.exploreGoal || chebyshev(centre, this.exploreGoal) <= AI_COMMON.exploreArrivedWithin) {
       this.exploreGoal = nextExploreTarget(ctx.fog, ctx.mapData, centre, this.rng);
       if (this.exploreGoal) this.log.add(ctx.timeMs, 'explore', `${this.exploreGoal.tx},${this.exploreGoal.ty}`);
     }
@@ -137,7 +162,7 @@ export class ArmyControl {
   /** Keeps every idle scout exploring. */
   scout(ctx: AIContext, view: WorldView): void {
     for (const s of view.scouts) {
-      if (!s.position || isBusy(s)) continue;
+      if (!s.position || isBusy(s) || this.inWave(s)) continue;
       const goal = nextExploreTarget(ctx.fog, ctx.mapData, s.position, this.rng);
       if (!goal) continue;
       ctx.world.addComponent(s, 'moveIntent', { target: goal });

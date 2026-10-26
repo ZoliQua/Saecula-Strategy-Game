@@ -1,4 +1,5 @@
-import { AI_COMMON, AI_MEDIUM, type GatherWeights } from '../../config/balance';
+import { AI_COMMON, AI_MEDIUM, type GatherWeights } from '../../config/aiBalance';
+import type { Entity } from '../../ecs/components';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { isUnitAvailable } from '../../game/availability';
@@ -24,8 +25,6 @@ import type { WorldView } from '../perception';
 import { assignIdleVillagers, rebalanceGatherers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
-/** Military buildings keep at most this many units queued (resources stay liquid). */
-const MILITARY_QUEUE = 2;
 
 /**
  * Medium AI (PROGRAM_TERV.md §10.2): a preset build order, age-ups as
@@ -39,6 +38,7 @@ export class MediumStrategy extends BaseStrategy {
   protected readonly army: ArmyControl;
   private readonly firstAttackAtMs: number;
   private lastScoutMs = -Infinity;
+  private pressureSent = false;
 
   constructor(rng: () => number = Math.random) {
     super(rng, AI_MEDIUM.decisionMs);
@@ -53,7 +53,9 @@ export class MediumStrategy extends BaseStrategy {
     const waitingForTc = this.tryAgeUp(ctx, view);
     // Houses and farms come before more mouths: an unaffordable one keeps the food for it.
     const saving = this.buildEssentials(ctx, view);
-    if (!waitingForTc && !saving) this.trainVillagers(ctx, view);
+    // Close to the first-attack time, the raiders come before more villagers.
+    const raiding = this.preparePressure(ctx, view);
+    if (!waitingForTc && !saving && !raiding) this.trainVillagers(ctx, view);
     if (this.army.underAttack(view)) this.trainDefenders(ctx, view);
   }
 
@@ -65,7 +67,8 @@ export class MediumStrategy extends BaseStrategy {
     this.keepScouting(ctx, view);
     this.trainArmy(ctx, view);
     this.researchTechs(ctx, view);
-    if (!this.army.attacking && attackReady({
+    this.pressure(ctx, view);
+    if (this.pressureSent && !this.army.attacking && attackReady({
       armySize: view.military.length,
       wave: AI_MEDIUM.attackWave,
       timeMs: ctx.timeMs,
@@ -74,6 +77,45 @@ export class MediumStrategy extends BaseStrategy {
       this.army.launchWave(ctx, view);
     }
     this.updateThoughts(ctx, view);
+  }
+
+  /**
+   * §10.2 first attack at the rolled 5-8 min: a small pressure wave of
+   * Roman-age infantry. Below the minimum size it waits for the next
+   * decision (a few more units) instead of sending a token force.
+   */
+  private pressure(ctx: AIContext, view: WorldView): void {
+    if (this.pressureSent) return;
+    const squad = this.pressureSquad(view);
+    if (ctx.timeMs < this.firstAttackAtMs || squad.length < AI_MEDIUM.pressure.minArmy || this.army.attacking) return;
+    this.army.launchWave(ctx, view, squad);
+    this.pressureSent = true;
+  }
+
+  /** Pressure units besides the exploring scout. */
+  private pressureSquad(view: WorldView): Entity[] {
+    const scout = view.scouts.find((s) => !this.army.inWave(s));
+    return [...view.military, ...view.scouts].filter((u) => u !== scout && u.unit?.unitType === AI_MEDIUM.pressure.unit);
+  }
+
+  /**
+   * From `leadMs` before the first-attack time until the raid leaves,
+   * trains the pressure squad (queued units counted). True while the squad
+   * is still short, so the caller holds back villager training.
+   */
+  private preparePressure(ctx: AIContext, view: WorldView): boolean {
+    const { unit, minArmy, leadMs } = AI_MEDIUM.pressure;
+    if (this.pressureSent || ctx.timeMs < this.firstAttackAtMs - leadMs) return false;
+    const queued = view.buildings.reduce(
+      (n, b) => n + (b.trainingQueue?.entries.filter((e) => e.unitType === unit).length ?? 0),
+      0,
+    );
+    // Without an exploring scout, the next scout trained goes exploring first.
+    const wanted = minArmy + (unit === 'scout' && !view.scouts.some((s) => !this.army.inWave(s)) ? 1 : 0);
+    const have = this.pressureSquad(view).length + queued;
+    if (have >= wanted) return false;
+    this.train(ctx, view, unit, AI_MEDIUM.militaryQueue);
+    return true;
   }
 
   // ------------------------------------------------------------ economy
@@ -175,7 +217,7 @@ export class MediumStrategy extends BaseStrategy {
   // ------------------------------------------------------------ army
 
   private keepScouting(ctx: AIContext, view: WorldView): void {
-    if (view.scouts.length > 0) return;
+    if (view.scouts.some((s) => !this.army.inWave(s))) return;
     if (ctx.timeMs - this.lastScoutMs < AI_MEDIUM.scoutRetrainMs) return;
     const queued = view.buildings.some((b) => b.trainingQueue?.entries.some((e) => e.unitType === 'scout'));
     if (!queued && this.train(ctx, view, 'scout', 1)) this.lastScoutMs = ctx.timeMs;
@@ -196,10 +238,10 @@ export class MediumStrategy extends BaseStrategy {
     const mix = this.armyMix(ctx, view);
     const reserve = this.reserve(ctx, view);
     const counts = countByType(view.military);
-    for (let i = 0; i < 4; i++) {
-      const type = nextUnitToTrain(mix, counts, (t) => this.trainersFor(view, t, MILITARY_QUEUE).length > 0
+    for (let i = 0; i < AI_MEDIUM.trainPerDecision; i++) {
+      const type = nextUnitToTrain(mix, counts, (t) => this.trainersFor(view, t, AI_MEDIUM.militaryQueue).length > 0
         && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, reserve));
-      if (!type || !this.train(ctx, view, type, MILITARY_QUEUE, reserve)) return;
+      if (!type || !this.train(ctx, view, type, AI_MEDIUM.militaryQueue, reserve)) return;
       counts[type] = (counts[type] ?? 0) + 1;
     }
   }
@@ -208,7 +250,7 @@ export class MediumStrategy extends BaseStrategy {
   private trainDefenders(ctx: AIContext, view: WorldView): void {
     if (view.military.length >= Math.min(view.threats.length, AI_MEDIUM.minDefenders * 2)) return;
     const type: UnitType = isUnitAvailable('pikeman', ctx.player.age) ? 'pikeman' : 'swordsman';
-    this.train(ctx, view, type, MILITARY_QUEUE);
+    this.train(ctx, view, type, AI_MEDIUM.militaryQueue);
   }
 
   private researchTechs(ctx: AIContext, view: WorldView): void {

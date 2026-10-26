@@ -1,4 +1,4 @@
-import { AI_COMMON } from '../config/balance';
+import { AI_COMMON } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import type { TileCoord } from '../iso/coordinates';
 import { FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
@@ -51,6 +51,16 @@ export function isEntityVisible(fog: FogOfWarData, e: Entity & { position: TileC
   return false;
 }
 
+/** Any tile of a remembered building's footprint is in sight right now. */
+export function isKnownInSight(fog: FogOfWarData, known: KnownBuilding): boolean {
+  for (let dy = 0; dy < known.footprint.height; dy++) {
+    for (let dx = 0; dx < known.footprint.width; dx++) {
+      if (fog.isVisible(known.position.tx + dx, known.position.ty + dy)) return true;
+    }
+  }
+  return false;
+}
+
 const isHostile = (ownerId: number, me: number) => ownerId !== me && ownerId !== 0;
 
 /**
@@ -80,7 +90,8 @@ export class Perception {
       if (e.id !== undefined) byId.set(e.id, e);
       if (!e.position) continue;
       const placed = e as Entity & { position: TileCoord };
-      if (e.resourceNode && e.resourceNode.amount > 0) {
+      // Farms count even while empty: they regrow.
+      if (e.resourceNode && (e.resourceNode.amount > 0 || e.building)) {
         const foreign = e.owner !== undefined && e.owner.playerId !== me;
         if (!foreign && fog.get(e.position.tx, e.position.ty) !== FOG_UNEXPLORED) {
           resources[e.resourceNode.type].push(e);
@@ -134,7 +145,7 @@ export class Perception {
     for (const [id, known] of this.memory) {
       const e = byId.get(id);
       if (e && !e.dying) continue;
-      if (fog.isVisible(known.position.tx, known.position.ty)) this.memory.delete(id);
+      if (isKnownInSight(fog, known)) this.memory.delete(id);
     }
   }
 

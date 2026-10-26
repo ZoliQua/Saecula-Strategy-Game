@@ -1,6 +1,7 @@
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
+import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
@@ -60,6 +61,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const systems = {
     pathfinding: new PathfindingSystem(world, map),
     gathering: new GatheringSystem(world, map, players),
+    farms: new FarmRegenSystem(world),
     construction: new ConstructionSystem(world, map),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
@@ -75,6 +77,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     now += dt;
     systems.pathfinding.update();
     systems.gathering.update(dt);
+    systems.farms.update(dt);
     systems.construction.update(dt);
     systems.training.update(dt);
     systems.research.update(dt);

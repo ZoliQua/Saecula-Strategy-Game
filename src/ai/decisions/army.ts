@@ -1,4 +1,5 @@
-import { AI_COUNTERS, ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS } from '../../config/balance';
+import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS } from '../../config/balance';
+import { AI_COUNTERS } from '../../config/aiBalance';
 import type { UnitType } from '../../types';
 
 export type ArmyMix = Readonly<Partial<Record<UnitType, number>>>;

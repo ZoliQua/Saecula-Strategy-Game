@@ -2,7 +2,7 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { findPathToNearest } from '../../map/pathfinding';
-import { BREACH_SEARCH_RADIUS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
+import { BREACH_SEARCH_RADIUS, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { findBreachTarget } from '../../game/breach';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
@@ -18,7 +18,6 @@ import type { EcsWorld } from '../world';
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
 
-const REPATH_RETRY_MS = 1500;
 const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 
 /**

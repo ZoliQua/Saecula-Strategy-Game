@@ -1,11 +1,5 @@
-import {
-  AI_EASY,
-  AI_EASY_AGE_UP_CHANCE,
-  AI_EASY_AGE_UP_DELAY_MS,
-  type GatherWeights,
-} from '../../config/balance';
+import { AI_EASY, AI_EASY_AGE_UP_CHANCE, AI_EASY_AGE_UP_DELAY_MS } from '../../config/aiBalance';
 import { TECH_SPECS } from '../../game/technologies';
-import type { BuildingType } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { ArmyControl } from '../ArmyControl';
 import { attackReady } from '../decisions/combat';
@@ -15,10 +9,6 @@ import type { WorldView } from '../perception';
 import { assignIdleVillagers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
-/** Easy keeps a simple, wood-heavy split and never scouts. */
-const EASY_GATHER: GatherWeights = { food: 0.4, wood: 0.5, gold: 0.1 };
-/** What the 20% "random" decisions may put up. */
-const RANDOM_BUILDS: readonly BuildingType[] = ['house', 'farm', 'barracks', 'lumber_camp', 'mining_camp'];
 
 /**
  * Easy AI (PROGRAM_TERV.md §10.1): a slow decision every 20-30 s that
@@ -46,7 +36,7 @@ export class EasyStrategy extends BaseStrategy {
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
-    assignIdleVillagers(ctx.world, view, EASY_GATHER);
+    assignIdleVillagers(ctx.world, view, AI_EASY.gather);
     this.army.update(ctx, view);
     this.maybeAgeUp(ctx, view);
   }
@@ -86,7 +76,7 @@ export class EasyStrategy extends BaseStrategy {
 
   private randomBuild(ctx: AIContext, view: WorldView): void {
     const anchor = baseAnchor(view);
-    const type = RANDOM_BUILDS[Math.floor(this.rng() * RANDOM_BUILDS.length)];
+    const type = AI_EASY.randomBuilds[Math.floor(this.rng() * AI_EASY.randomBuilds.length)];
     if (anchor && type) this.startBuilding(ctx, view, type, anchor);
   }
 

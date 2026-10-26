@@ -1,4 +1,4 @@
-import { AI_COMMON } from '../config/balance';
+import { AI_COMMON } from '../config/aiBalance';
 import { FogOfWarSystem } from '../ecs/systems/FogOfWarSystem';
 import type { EcsWorld } from '../ecs/world';
 import type { Player } from '../game/Player';

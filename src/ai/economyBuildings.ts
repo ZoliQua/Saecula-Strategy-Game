@@ -1,4 +1,4 @@
-import { AI_COMMON } from '../config/balance';
+import { AI_COMMON } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import type { TileCoord } from '../iso/coordinates';
 import type { BuildingType, Population, ResourceType } from '../types';
@@ -12,12 +12,6 @@ import { foodSpots, gatherCounts } from './workforce';
 export type BuildFn = (type: BuildingType, anchor: TileCoord) => Entity | null;
 
 const CAMP_FOR: Readonly<Record<'wood' | 'gold', BuildingType>> = { wood: 'lumber_camp', gold: 'mining_camp' };
-/** Gatherers on a resource before it earns a drop-off camp. */
-const CAMP_MIN_GATHERERS: Readonly<Record<'wood' | 'gold', number>> = { wood: 3, gold: 2 };
-/** Berry bushes this close to the TC count as food spots. */
-const BERRY_RADIUS = 10;
-/** Resource tiles this close to the cluster seed belong to the cluster. */
-const CLUSTER_RADIUS = 3;
 
 /** Centre of the base: the town centre's middle tile (or any own building). */
 export function baseAnchor(view: WorldView): TileCoord | null {
@@ -42,7 +36,7 @@ export function farmNeeded(view: WorldView, wantedFood: number): boolean {
   const anchor = baseAnchor(view);
   if (!anchor) return false;
   if (view.buildings.some((b) => b.building?.type === 'farm' && b.underConstruction)) return false;
-  return foodSpots(view, anchor, BERRY_RADIUS) < wantedFood;
+  return foodSpots(view, anchor, AI_COMMON.berryRadius) < wantedFood;
 }
 
 /** A farm in the ring around the TC when `farmNeeded`. */
@@ -78,8 +72,8 @@ function campAccepts(type: BuildingType): readonly ResourceType[] {
 export function buildCampIfNeeded(view: WorldView, type: 'wood' | 'gold', build: BuildFn): Entity | null {
   const home = baseAnchor(view);
   if (!home) return null;
-  if (gatherCounts(view)[type] < CAMP_MIN_GATHERERS[type]) return null;
-  const cluster = clusterAnchor(view.resources[type], home, CLUSTER_RADIUS);
+  if (gatherCounts(view)[type] < AI_COMMON.campMinGatherers[type]) return null;
+  const cluster = clusterAnchor(view.resources[type], home, AI_COMMON.clusterRadius);
   if (!cluster) return null;
   if (dropoffDistance(view, type, cluster) <= AI_COMMON.campDistance) return null;
   return build(CAMP_FOR[type], cluster);

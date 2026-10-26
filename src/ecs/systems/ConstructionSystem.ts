@@ -2,7 +2,7 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { findPath } from '../../map/pathfinding';
-import { TRAINER_BUILDINGS } from '../../config/balance';
+import { FARM_BALANCE, REPATH_RETRY_MS, TRAINER_BUILDINGS } from '../../config/balance';
 import { BUILDING_SPECS, towerAttacker } from '../archetypes/building';
 import type { Entity } from '../components';
 import { faceToward } from './facing';
@@ -10,8 +10,7 @@ import type { EcsWorld } from '../world';
 
 /** How far (tiles) from the finished segment a builder looks for the next wall segment. */
 const CHAIN_RADIUS = 3;
-/** A builder that found no path to its site waits this long before planning again. */
-const REPATH_RETRY_MS = 1500;
+
 
 type Builder = With<Entity, 'position' | 'movable' | 'buildCommand' | 'owner'>;
 type Site = With<
@@ -93,11 +92,11 @@ export class ConstructionSystem {
       this.world.addComponent(site as Entity, 'attacker', towerAttacker());
     }
     if (site.building.type === 'farm') {
-      // Farms are harvestable food sources. Finite in M1 (no regen).
+      // Farms are harvestable, self-regrowing food sources (FarmRegenSystem).
       this.world.addComponent(site as Entity, 'resourceNode', {
         type: 'food',
-        amount: 300,
-        maxAmount: 300,
+        amount: FARM_BALANCE.capacity,
+        maxAmount: FARM_BALANCE.capacity,
       });
     }
     if (TRAINER_BUILDINGS.has(site.building.type) && !(site as Entity).trainingQueue) {

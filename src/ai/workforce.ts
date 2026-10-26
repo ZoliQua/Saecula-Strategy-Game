@@ -1,4 +1,4 @@
-import type { GatherWeights } from '../config/balance';
+import { AI_COMMON, type GatherWeights } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { EcsWorld } from '../ecs/world';
@@ -116,7 +116,7 @@ export function rebalanceGatherers(
   const open = new Set(TYPES.filter((t) => gatherable(view, t, taken)));
   const moves: { from: ResourceType; to: ResourceType }[] = [];
   for (let i = 0; i < maxMoves; i++) {
-    const move = pickRebalance(counts, weights, (t) => open.has(t));
+    const move = pickRebalance(counts, weights, (t) => open.has(t), AI_COMMON.rebalanceSlack);
     if (!move) break;
     // Lightest load first; a carried load is still dropped off before the new job (GatheringSystem).
     const worker = view.villagers
@@ -133,13 +133,13 @@ export function rebalanceGatherers(
   return moves;
 }
 
-/** Food spots for the AI: two gatherers per known berry bush near home, one per free or worked own farm. */
+/** Food spots for the AI: AI_COMMON.berrySpots per known berry bush near home, one per own farm. */
 export function foodSpots(view: WorldView, home: TileCoord, radius: number): number {
   let spots = 0;
   for (const n of view.resources.food) {
     if (n.building) spots += 1;
     else if (n.position && Math.max(Math.abs(n.position.tx - home.tx), Math.abs(n.position.ty - home.ty)) <= radius) {
-      spots += 2;
+      spots += AI_COMMON.berrySpots;
     }
   }
   // Farm sites still going up will host a farmer too.
