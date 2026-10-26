@@ -12,7 +12,8 @@ export const TREE_FRAMES = TREE_VARIANTS * 2;
 const W = 104;
 const H = 156;
 const BASE_Y = 140;
-const PAD = 2;
+/** Transparent gutter between atlas frames: wider than the normal-map bulge blur so frames never bleed. */
+const PAD = 10;
 
 export interface TreeAtlas {
   readonly canvas: HTMLCanvasElement;
