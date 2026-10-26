@@ -2,6 +2,8 @@ import { TILE_HEIGHT, TILE_WIDTH } from '../../config/constants';
 import { TERRAIN, type TerrainId } from '../../map/TerrainTypes';
 import { screenToTile } from '../coordinates';
 import { makeCanvas } from './canvas';
+import type { CliffField } from './cliffArt';
+import { CliffChunkBake, rectTouchesCliffs, type OccluderSink } from './cliffPainter';
 import { css, fbm, hash2, hexToRgb, mix, shade } from './palette';
 
 const HALF_W = TILE_WIDTH / 2;
@@ -16,6 +18,7 @@ const FOREST_FLOOR = 0x3c5528;
 const FOREST_SOIL = 0x5b4a2c;
 const ROCKY = 0x8b8169;
 const WATER = 0x2f6f9a;
+const WET_SAND = 0x7d7253;
 
 export interface TerrainSource {
   readonly width: number;
@@ -23,10 +26,17 @@ export interface TerrainSource {
   getTile(tx: number, ty: number): TerrainId;
 }
 
+export interface TerrainChunk {
+  readonly canvas: HTMLCanvasElement;
+  /** Downscaled normal map when cliffs show in the chunk; null = flat ground. */
+  readonly normal: HTMLCanvasElement | null;
+}
+
 /**
  * Paints one terrain chunk covering world rect (x0, y0, w, h). Colours
  * come from world-space noise, so neighbouring chunks join seamlessly
- * and there is no visible tile grid.
+ * and there is no visible tile grid. Cliff plateaus (when `cliffs` is
+ * given) are painted with their faces, tops and scree in place.
  */
 export function paintTerrainChunk(
   map: TerrainSource,
@@ -34,12 +44,19 @@ export function paintTerrainChunk(
   y0: number,
   w: number,
   h: number,
-): HTMLCanvasElement {
+  cliffs: CliffField | null = null,
+  withNormals = true,
+  occluders: OccluderSink | null = null,
+): TerrainChunk {
   const sw = Math.ceil(w / SAMPLE_STEP) + 1;
   const sh = Math.ceil(h / SAMPLE_STEP) + 1;
   const low = makeCanvas(sw, sh);
   const img = low.ctx.createImageData(sw, sh);
   const data = img.data;
+  const bake =
+    cliffs && rectTouchesCliffs(cliffs, x0, y0, w, h)
+      ? new CliffChunkBake(cliffs, x0, y0, sw, sh, SAMPLE_STEP, occluders, withNormals)
+      : null;
   const weight = (tx: number, ty: number, id: TerrainId): number => {
     const fx = Math.floor(tx);
     const fy = Math.floor(ty);
@@ -63,6 +80,7 @@ export function paintTerrainChunk(
       const edge = Math.min(tx + 0.5, ty + 0.5, map.width - 0.5 - tx, map.height - 0.5 - ty);
       if (edge < 0) {
         data[o + 3] = 0;
+        bake?.sample(data, i, j);
         continue;
       }
       const big = fbm(tx * 0.09, ty * 0.09, 11);
@@ -79,7 +97,11 @@ export function paintTerrainChunk(
       const rock = smooth(weight(tx, ty, TERRAIN.gold_mine));
       if (rock > 0) c = mix(c, shade(ROCKY, 0.85 + fine * 0.3), rock * 0.8);
       const water = smooth(weight(tx, ty, TERRAIN.water));
-      if (water > 0) c = mix(c, shade(WATER, 0.9 + mid * 0.2), water);
+      if (water > 0) {
+        // Wet sand along the shore, then the (static) water the surface shader animates over.
+        c = mix(c, shade(WET_SAND, 0.88 + fine * 0.24), Math.min(1, water / 0.4) * 0.85);
+        if (water > 0.42) c = mix(c, shade(WATER, 0.9 + mid * 0.2), Math.min(1, (water - 0.42) / 0.2));
+      }
 
       // Darken towards the map rim so the world fades into the void.
       if (edge < 1.5) c = shade(c, 0.55 + 0.45 * (edge / 1.5));
@@ -88,6 +110,7 @@ export function paintTerrainChunk(
       data[o + 1] = g;
       data[o + 2] = b;
       data[o + 3] = edge < 0.25 ? Math.round(255 * (edge / 0.25)) : 255;
+      bake?.sample(data, i, j);
     }
   }
   low.ctx.putImageData(img, 0, 0);
@@ -97,7 +120,8 @@ export function paintTerrainChunk(
   out.ctx.imageSmoothingQuality = 'high';
   out.ctx.drawImage(low.canvas, 0, 0, sw * SAMPLE_STEP, sh * SAMPLE_STEP);
   paintGroundDetail(out.ctx, map, x0, y0, w, h);
-  return out.canvas;
+  const normal = bake ? bake.finish(out.canvas) : null;
+  return { canvas: out.canvas, normal };
 }
 
 function smooth(t: number): number {
@@ -120,8 +144,12 @@ function paintGroundDetail(
       const sy = (tx + ty) * HALF_H - y0;
       if (sx < -HALF_W || sy < -HALF_H || sx > w + HALF_W || sy > h + HALF_H) continue;
       const terrain = map.getTile(tx, ty);
-      if (terrain === TERRAIN.water) continue;
-      const tufts = terrain === TERRAIN.forest ? 1 : 3 + Math.floor(hash2(tx, ty, 3) * 4);
+      if (terrain === TERRAIN.water || terrain === TERRAIN.cliff) continue;
+      if (terrain === TERRAIN.forest) {
+        paintUndergrowth(ctx, tx, ty, sx, sy);
+        continue;
+      }
+      const tufts = 3 + Math.floor(hash2(tx, ty, 3) * 4);
       for (let k = 0; k < tufts; k++) {
         const px = sx + (hash2(tx, ty, 40 + k) - 0.5) * HALF_W * 1.3;
         const py = sy + (hash2(tx, ty, 60 + k) - 0.5) * HALF_H * 1.3;
@@ -158,5 +186,58 @@ function paintGroundDetail(
         ctx.fill();
       }
     }
+  }
+}
+
+let undergrowthStamps: HTMLCanvasElement[] | null = null;
+
+/** Small fern and shrub stamps (drawn once, then blitted: path ops per tile are too slow). */
+function stamps(): HTMLCanvasElement[] {
+  if (undergrowthStamps) return undergrowthStamps;
+  const out: HTMLCanvasElement[] = [];
+  for (let v = 0; v < 4; v++) {
+    const { canvas, ctx } = makeCanvas(14, 10);
+    const dark = v % 2 === 0;
+    const px = 7;
+    const py = 7;
+    if (v < 2) {
+      // Fern: a fan of fronds.
+      ctx.strokeStyle = dark ? 'rgba(28,58,22,.85)' : 'rgba(92,138,52,.8)';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for (let f = -2; f <= 2; f++) {
+        ctx.moveTo(px, py);
+        ctx.quadraticCurveTo(px + f * 2.2, py - 4, px + f * 3.6, py - 2.5 + Math.abs(f) * 0.8);
+      }
+      ctx.stroke();
+    } else {
+      // Shrub: two overlapping clumps with a lit top and a contact shadow.
+      ctx.fillStyle = 'rgba(20,34,16,.5)';
+      ctx.beginPath();
+      ctx.ellipse(px + 1, py + 0.8, 4.6, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = dark ? '#2f4a24' : '#46652c';
+      ctx.beginPath();
+      ctx.ellipse(px - 1.5, py - 1.5, 3.2, 2.4, 0, 0, Math.PI * 2);
+      ctx.ellipse(px + 1.8, py - 1.2, 2.8, 2.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(140,180,80,.45)';
+      ctx.fillRect(px - 2.5, py - 3.4, 2, 1);
+    }
+    out.push(canvas);
+  }
+  undergrowthStamps = out;
+  return out;
+}
+
+/** Ferns and low shrubs on the forest floor (seen between trunks and where trees fall). */
+function paintUndergrowth(ctx: CanvasRenderingContext2D, tx: number, ty: number, sx: number, sy: number): void {
+  const art = stamps();
+  const n = 2 + Math.floor(hash2(tx, ty, 170) * 3);
+  for (let k = 0; k < n; k++) {
+    const px = sx + (hash2(tx, ty, 171 + k) - 0.5) * HALF_W * 1.4;
+    const py = sy + (hash2(tx, ty, 181 + k) - 0.5) * HALF_H * 1.4;
+    const stamp = art[Math.floor(hash2(tx, ty, 191 + k) * art.length)];
+    if (stamp) ctx.drawImage(stamp, Math.round(px - 7), Math.round(py - 7));
   }
 }

@@ -186,9 +186,9 @@ export const BUILDING_FX = {
 /** Terrain relief and animated surfaces (Task 18). Sizes in world px unless noted. */
 export const TERRAIN_LOOK = {
   /** Screen height of a cliff plateau above the ground (its vertical faces are this tall). */
-  cliffHeight: 30,
-  /** Water mask texels per tile (coverage + shore distance for the water shader). */
-  waterMaskRes: 4,
+  cliffHeight: 36,
+  /** Grid points per tile of the cliff relief and water fields (the surface shader's mask). */
+  surfaceRes: 8,
   /** Shore distance (tiles) at which water reaches its deepest tint. */
   waterDeepTiles: 3.5,
   /** Forest: scale of trees on the forest edge vs. inside it (before per-tree jitter). */

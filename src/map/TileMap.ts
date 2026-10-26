@@ -1,11 +1,16 @@
 import Phaser from 'phaser';
 import { ART_SCALE } from '../iso/art/canvas';
-import { lit } from '../iso/art/lighting/LightManager';
+import { lightingActive, lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap, flatGroundNormal } from '../iso/art/lighting/litTextures';
 import { BUSH_VARIANTS, ROCK_VARIANTS } from '../iso/art/decor';
 import { hash2, tileVariant } from '../iso/art/palette';
 import { paintTerrainChunk } from '../iso/art/terrain';
-import { tileToScreen, type TileCoord } from '../iso/coordinates';
+import { cliffField, type CliffField } from '../iso/art/cliffArt';
+import { TERRAIN_LOOK } from '../config/visual';
+import { TerrainSurface } from './TerrainSurface';
+import { buildWaterMask, hasWater } from './waterMask';
+import { CliffOccluders, planOccluders, type OccluderPlan } from './CliffOccluders';
+import { screenToTile, tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
 import { DECOR_ORIGIN_Y, decorKeys, FX_KEYS } from '../iso/textures';
 import type { MapData } from './MapData';
@@ -23,6 +28,8 @@ const CLOUD_SCALE_Y = 1.6;
 /** Screen px of cloud layer beyond each view edge. */
 const CLOUD_PAD = 64;
 const CHUNK = 1024;
+/** Distinguishes chunk texture keys of map views alive at once (menu diorama + game). */
+let tileMapSeq = 0;
 const CHUNK_OVERLAP = 3;
 const DECOR_DEPTH_OFFSET = 0.1;
 const HOVER_COLOR = 0xf5a857;
@@ -45,8 +52,12 @@ export class TileMap {
   private readonly scene: Phaser.Scene;
   private readonly mapData: MapData;
   private readonly chunks: Phaser.GameObjects.Image[] = [];
+  private readonly seq = tileMapSeq++;
   private readonly decor = new Map<number, Decor>();
   private forest!: ForestLayer;
+  private readonly cliffs: CliffField | null;
+  private readonly occluders: CliffOccluders | null;
+  private readonly surface: TerrainSurface;
   private readonly clouds: Phaser.GameObjects.TileSprite;
   /** Cloud drift in texture px. */
   private readonly cloudDrift = { x: 0, y: 0 };
@@ -60,8 +71,19 @@ export class TileMap {
     this.width = mapData.width;
     this.height = mapData.height;
 
-    this.bakeTerrain();
+    this.cliffs = makeCliffField(mapData);
+    const plan = this.cliffs ? planOccluders(this.cliffs) : null;
+    this.bakeTerrain(plan);
+    this.occluders = this.cliffs && plan ? new CliffOccluders(scene, this.cliffs, plan) : null;
     this.placeDecor();
+    this.surface = new TerrainSurface(
+      scene,
+      this.computeWorldBounds(),
+      mapData,
+      TERRAIN_LOOK.surfaceRes,
+      this.cliffs?.relief ?? null,
+      hasWater(mapData) ? buildWaterMask(mapData, TERRAIN_LOOK.surfaceRes) : null,
+    );
 
     // Camera-sized layer (a map-sized TileSprite allocates a canvas of the
     // whole world, >100 MB on large maps); update() keeps it over the view
@@ -74,10 +96,11 @@ export class TileMap {
     this.fog = new FogLayer(scene, mapData.width, mapData.height);
   }
 
-  private bakeTerrain(): void {
+  private bakeTerrain(plan: OccluderPlan | null): void {
     const b = this.computeWorldBounds();
     const x0 = b.minX - 64;
-    const y0 = b.minY - 32;
+    // Raised plateau tops along the far map edges reach a cliff height above the map.
+    const y0 = b.minY - 32 - Math.ceil(this.cliffs?.relief.maxHeight ?? 0);
     const x1 = b.maxX + 64;
     const y1 = b.maxY + 32;
     let n = 0;
@@ -85,12 +108,14 @@ export class TileMap {
       for (let x = x0; x < x1; x += CHUNK) {
         const w = Math.min(CHUNK, x1 - x);
         const h = Math.min(CHUNK, y1 - y);
-        const key = `terrain_chunk_${n++}`;
-        if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
         // Chunks overlap by CHUNK_OVERLAP px so filtering never opens a seam.
         const o = CHUNK_OVERLAP;
-        this.scene.textures.addCanvas(key, paintTerrainChunk(this.mapData, x - o, y - o, w + o * 2, h + o * 2));
-        attachNormalMap(this.scene, key, flatGroundNormal());
+        if (!rectTouchesMap(this.mapData, x - o, y - o, w + o * 2, h + o * 2)) continue;
+        const key = `terrain_chunk_${this.seq}_${n++}`;
+        if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
+        const chunk = paintTerrainChunk(this.mapData, x - o, y - o, w + o * 2, h + o * 2, this.cliffs, lightingActive(this.scene), plan);
+        this.scene.textures.addCanvas(key, chunk.canvas);
+        attachNormalMap(this.scene, key, chunk.normal ?? flatGroundNormal());
         this.chunks.push(lit(this.scene.add.image(x - o, y - o, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH)));
       }
     }
@@ -165,6 +190,8 @@ export class TileMap {
       s.setVisible(inView);
     }
     this.forest.update(time);
+    this.occluders?.update(view);
+    this.surface.update(time);
     for (const c of this.chunks) {
       c.setVisible(c.x < view.right && c.x + c.width > view.x && c.y < view.bottom && c.y + c.height > view.y);
     }
@@ -248,7 +275,13 @@ export class TileMap {
   }
 
   destroy(): void {
-    for (const c of this.chunks) c.destroy();
+    for (const c of this.chunks) {
+      const key = c.texture.key;
+      c.destroy();
+      if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
+    }
+    this.occluders?.destroy();
+    this.surface.destroy();
     for (const d of this.decor.values()) d.sprite.destroy();
     this.forest.destroy();
     this.decor.clear();
@@ -257,4 +290,29 @@ export class TileMap {
     this.highlight?.destroy();
     this.selection?.destroy();
   }
+}
+
+/** Cliff description for painting, or null on maps without cliffs. */
+function makeCliffField(map: MapData): CliffField | null {
+  const raw = map.getRawTiles();
+  const cliff = new Uint8Array(raw.length);
+  let any = false;
+  raw.forEach((t, i) => {
+    if (t !== TERRAIN.cliff) return;
+    cliff[i] = 1;
+    any = true;
+  });
+  return any ? cliffField(map.width, map.height, cliff, TERRAIN_LOOK.cliffHeight, 0, TERRAIN_LOOK.surfaceRes) : null;
+}
+
+/** True when a world rect overlaps the map (padded two tiles, for raised tops and the rim fade). */
+function rectTouchesMap(map: MapData, x: number, y: number, w: number, h: number): boolean {
+  const pad = 2;
+  for (let py = y; py <= y + h; py += 16) {
+    for (let px = x; px <= x + w; px += 16) {
+      const t = screenToTile({ sx: px, sy: py });
+      if (t.tx > -pad && t.ty > -pad && t.tx < map.width + pad && t.ty < map.height + pad) return true;
+    }
+  }
+  return false;
 }
