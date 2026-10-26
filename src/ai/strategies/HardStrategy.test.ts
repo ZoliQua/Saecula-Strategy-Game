@@ -73,4 +73,16 @@ describe('HardStrategy', () => {
     const prey = new Set(villagers.map((v) => v.id));
     expect(knights.filter((k) => k.attackIntent && prey.has(k.attackIntent.targetId)).length).toBeGreaterThanOrEqual(2);
   });
+
+  it('a starved AI does not wait for its raiders forever: with too little food for a scout and no farm, it builds a farm', () => {
+    const { world, map, player, ai, tick } = setup(1, 0);
+    for (const tx of [10, 13]) createBuilding(world, { type: 'house', origin: { tx, ty: 10 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'barracks', origin: { tx: 14, ty: 22 }, playerId: 2, mapData: map });
+    // No food source anywhere; 70 food buys a farm (60) but not a scout (80).
+    player.resources = { food: 70, wood: 500, gold: 0 };
+    // Past the first-attack time (rolled at most 5 min), squad still empty.
+    ai.update({ world, mapData: map, enemyPlayerId: 1 }, AI_HARD.firstAttackMs.max);
+    tick(3000);
+    expect(own(world, 'farm').length).toBeGreaterThanOrEqual(1);
+  });
 });

@@ -58,11 +58,11 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
   });
 
   /**
-   * Measured (this build) on seeds 1-8: Easy's TC falls at 10.3 / 12.9 / 11.1 / 11.8 / 10.8 / 10.2 / 10.6 /
-   * 10.5 min; the scout pressure (§10.3 first attack, rolled at 3-5 min) leaves at 4.5 / 5.3 / 4.3 / 4.5 /
-   * 4.6 / 4.3 / 4.7 / 4.5 min. No seed in 1-8 is left out.
+   * Measured (this build) on seeds 1-8: Easy's TC falls at 11.2 / 12.9 / 10.8 / 11.3 / 11.4 / 12.4 / 10.6 /
+   * 10.6 min; the scout pressure (§10.3 first attack, rolled at 3-5 min) leaves at 5.0 / 5.3 / 4.8 / 5.1 /
+   * 5.4 / 5.0 / 4.7 / 4.7 min. No seed in 1-8 is left out.
    */
-  it('on seeds 1-8: first attack leaves by 5.5 min (measured 4.3-5.3) and Easy\'s TC falls within 25 min', () => {
+  it('on seeds 1-8: first attack leaves by 5.5 min (measured 4.7-5.4) and Easy\'s TC falls within 25 min', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const r = duel(seed, (rng) => new EasyStrategy(rng));
       expect(r.firstAttackAt, `seed ${seed} first attack`).toBeGreaterThanOrEqual(3 * MIN);
@@ -71,7 +71,7 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
     }
   });
 
-  it('beats Medium on fixed seed 4 within 25 minutes (measured 14.3 min)', () => {
+  it('beats Medium on fixed seed 4 within 25 minutes (measured 14.7 min)', () => {
     expect(duel(4, (rng) => new MediumStrategy(rng)).wonAt).toBeLessThan(25 * MIN);
   });
 });

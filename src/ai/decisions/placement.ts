@@ -14,7 +14,11 @@ export interface PlacementOptions {
   readonly tileAllowed?: (tx: number, ty: number) => boolean;
   /** Ring tiles that may be blocked anyway (e.g. farms may hug the town centre they deliver to). */
   readonly mayTouch?: (tx: number, ty: number) => boolean;
-  /** The free ring only has to be clear of buildings: trees, mines and water may touch. */
+  /**
+   * The free ring only has to be clear of buildings: trees, mines and water
+   * may touch, as long as each keeps another passable neighbour (villagers
+   * still reach it) and at least two ring tiles stay free.
+   */
   readonly natureMayTouch?: boolean;
 }
 
@@ -35,6 +39,9 @@ export function canPlaceAt(
     }
   }
   if (options.clearance === 0) return true;
+  const inFootprint = (tx: number, ty: number) =>
+    tx >= origin.tx && ty >= origin.ty && tx < origin.tx + width && ty < origin.ty + height;
+  let open = 0;
   for (let dy = -1; dy <= height; dy++) {
     for (let dx = -1; dx <= width; dx++) {
       const inside = dx >= 0 && dx < width && dy >= 0 && dy < height;
@@ -43,12 +50,34 @@ export function canPlaceAt(
       const ty = origin.ty + dy;
       // The map edge is fine; buildings, trees, water and mines are not (nature is, with natureMayTouch).
       if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) continue;
-      if (map.isPassable(tx, ty) || options.mayTouch?.(tx, ty)) continue;
-      if (options.natureMayTouch && !map.isBlocked(tx, ty)) continue;
-      return false;
+      if (map.isPassable(tx, ty)) {
+        open++;
+        continue;
+      }
+      if (options.mayTouch?.(tx, ty)) continue;
+      if (!options.natureMayTouch || map.isBlocked(tx, ty)) return false;
+      // A tree / mine touching the building must keep another way in.
+      if (!hasOpenNeighbour(map, tx, ty, inFootprint)) return false;
     }
   }
-  return true;
+  // Touching nature, the building still needs room around it to be reached and walked past.
+  return !options.natureMayTouch || open >= NATURE_MIN_OPEN_RING;
+}
+
+/** Free ring tiles a building placed against trees / mines must keep. */
+const NATURE_MIN_OPEN_RING = 2;
+
+/** Some passable tile next to (tx, ty) that the new footprint will not cover. */
+function hasOpenNeighbour(map: MapData, tx: number, ty: number, covered: (tx: number, ty: number) => boolean): boolean {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = tx + dx;
+      const ny = ty + dy;
+      if (!covered(nx, ny) && map.isPassable(nx, ny)) return true;
+    }
+  }
+  return false;
 }
 
 /**

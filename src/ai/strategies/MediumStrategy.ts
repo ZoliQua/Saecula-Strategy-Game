@@ -136,8 +136,9 @@ export class MediumStrategy extends BaseStrategy {
   /**
    * From `leadMs` before the first-attack time until the raid leaves,
    * trains the pressure squad (queued units counted). True while the squad
-   * is still short and `holdsVillagers` is set: the caller then holds back
-   * villager training.
+   * is still short, `holdsVillagers` is set and holding may pay off
+   * (`mayHoldForPressure`): the caller then holds back villager training
+   * (and, with `beforeFarms`, new farms).
    */
   private preparePressure(ctx: AIContext, view: WorldView): boolean {
     const { unit, minArmy, leadMs } = this.tune.pressure;
@@ -151,8 +152,22 @@ export class MediumStrategy extends BaseStrategy {
     const have = this.pressureSquad(view).length + queued;
     if (have >= wanted) return false;
     this.train(ctx, view, unit, this.tune.militaryQueue);
-    // Without a finished trainer there is nothing to save for yet: villagers go on.
-    return this.tune.pressure.holdsVillagers && this.trainersFor(view, unit, Infinity).length > 0;
+    return this.tune.pressure.holdsVillagers && this.mayHoldForPressure(ctx, view);
+  }
+
+  /**
+   * Whether waiting for the raiders is worth it. Never without a finished
+   * trainer; never when starved (food below the raider's cost and no
+   * finished farm: holding farms and villagers would stall for good); and
+   * never past `AI_COMMON.pressureHoldCapMs` after the first-attack time
+   * (e.g. capped by population, or scouts keep dying).
+   */
+  private mayHoldForPressure(ctx: AIContext, view: WorldView): boolean {
+    const unit = this.tune.pressure.unit;
+    if (this.trainersFor(view, unit, Infinity).length === 0) return false;
+    if (ctx.timeMs > this.firstAttackAtMs + AI_COMMON.pressureHoldCapMs) return false;
+    const farm = view.buildings.some((b) => b.building?.type === 'farm' && !b.underConstruction);
+    return farm || ctx.player.resources.food >= UNIT_SPECS[unit].cost.food;
   }
 
   // ------------------------------------------------------------ economy

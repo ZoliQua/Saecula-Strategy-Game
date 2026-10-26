@@ -44,6 +44,8 @@ export const AI_COMMON = {
   clusterRadius: 3,
   /** Builders sent to a new construction site. */
   buildersPerSite: 2,
+  /** Villagers / farms wait for a short pressure squad at most this long past the first-attack time (ms). */
+  pressureHoldCapMs: 90_000,
   /** How long an enemy villager's last seen spot is remembered (ms). */
   villagerMemoryMs: 180_000,
 } as const;

@@ -71,6 +71,36 @@ describe('placement', () => {
     expect(canPlaceAt(map, { tx: 0, ty: 0 }, 2, 2, { clearance: 1 })).toBe(true);
   });
 
+  it('natureMayTouch: trees may touch, buildings may not, and the trees and the building stay reachable', () => {
+    const map = new MapData(12, 12);
+    map.setTile(5, 3, TERRAIN.forest);
+    const nature = { clearance: 1 as const, natureMayTouch: true };
+    expect(canPlaceAt(map, { tx: 3, ty: 3 }, 2, 2, { clearance: 1 })).toBe(false);
+    expect(canPlaceAt(map, { tx: 3, ty: 3 }, 2, 2, nature)).toBe(true);
+    // A building in the ring is never accepted.
+    map.setBlocked(2, 3, true);
+    expect(canPlaceAt(map, { tx: 3, ty: 3 }, 2, 2, nature)).toBe(false);
+    map.setBlocked(2, 3, false);
+    // A tree whose only free neighbour the footprint would cover is cut off: rejected.
+    // (5,4) in the ring: its other neighbours are trees or a building outside the ring (6,5).
+    for (const [x, y] of [[6, 3], [6, 4], [5, 4], [4, 5], [5, 5]] as const) map.setTile(x, y, TERRAIN.forest);
+    map.setBlocked(6, 5, true);
+    expect(canPlaceAt(map, { tx: 3, ty: 3 }, 2, 2, nature)).toBe(false);
+    // Free (5,4)'s corner neighbour and the spot is fine again.
+    map.setBlocked(6, 5, false);
+    expect(canPlaceAt(map, { tx: 3, ty: 3 }, 2, 2, nature)).toBe(true);
+  });
+
+  it('natureMayTouch keeps at least two free ring tiles', () => {
+    const map = new MapData(12, 12);
+    // Ring of a 1x1 at (5,5): trees everywhere but one tile.
+    const ring = [[4, 4], [5, 4], [6, 4], [4, 5], [6, 5], [4, 6], [5, 6], [6, 6]] as const;
+    for (const [x, y] of ring.slice(1)) map.setTile(x, y, TERRAIN.forest);
+    expect(canPlaceAt(map, { tx: 5, ty: 5 }, 1, 1, { clearance: 1, natureMayTouch: true })).toBe(false);
+    map.setTile(6, 6, TERRAIN.grass);
+    expect(canPlaceAt(map, { tx: 5, ty: 5 }, 1, 1, { clearance: 1, natureMayTouch: true })).toBe(true);
+  });
+
   it('searches rings outward from the anchor and honours tile rules', () => {
     const map = new MapData(20, 20);
     const spot = findPlacement(map, { tx: 10, ty: 10 }, 2, 2, { minRadius: 3, maxRadius: 6, clearance: 1 });
