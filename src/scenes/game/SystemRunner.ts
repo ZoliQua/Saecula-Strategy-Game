@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
 import { createStrategy } from '../../ai/createStrategy';
+import { AgeUpFxSystem } from '../../ecs/systems/AgeUpFxSystem';
 import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
@@ -20,6 +21,8 @@ import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import type { EcsWorld } from '../../ecs/world';
+import { AGE_UP_FX } from '../../config/visual';
+import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
@@ -48,8 +51,10 @@ export class SystemRunner {
   private readonly fogOfWar: FogOfWarSystem;
   private readonly ambientFx: AmbientFxSystem;
   private readonly combatFx: CombatFxSystem;
+  private readonly ageUpFx: AgeUpFxSystem;
   private aiPlayers: AIPlayer[] = [];
   private readonly humanId: number | undefined;
+  private readonly unsubscribeAge: () => void;
 
   constructor(
     scene: Phaser.Scene,
@@ -85,6 +90,16 @@ export class SystemRunner {
     this.projectileRender.setFogContext(this.fogData);
     this.combatFx = new CombatFxSystem(scene, world, this.render);
     this.combatFx.setFogContext(this.fogData);
+    this.ageUpFx = new AgeUpFxSystem(scene, world, this.render);
+    // Once the age-up wave has played out, drop age styles nobody shows any more.
+    this.unsubscribeAge = gameEvents.on('ageChanged', () => {
+      scene.time.delayedCall(AGE_UP_FX.maxSpreadMs + AGE_UP_FX.swapMs + 1500, () => {
+        const active = players.all().filter((p) => !p.defeated);
+        if (active.length === 0) return;
+        const minAge = active.reduce((m, p) => (p.age < m ? p.age : m), active[0]!.age);
+        this.render.releaseStaleAgeArt((id) => active.find((p) => p.id === id)?.age, minAge);
+      });
+    });
     this.aiPlayers = players
       .ais()
       .map((p) => new AIPlayer(p, createStrategy(difficulty)));
@@ -123,6 +138,8 @@ export class SystemRunner {
   }
 
   destroy(): void {
+    this.unsubscribeAge();
+    this.ageUpFx.destroy();
     this.ambientFx.destroy();
     this.combatFx.destroy();
     this.projectileRender.destroy();

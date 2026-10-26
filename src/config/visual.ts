@@ -127,3 +127,20 @@ export const COMBAT_FX = {
   /** When the falling body hits the ground in the death animation. */
   deathDustDelayMs: 380,
 } as const;
+
+/** Age-up transformation of a player's buildings (AgeUpFxSystem). Times in ms, sizes in world px. */
+export const AGE_UP_FX = {
+  /** Delay between consecutive buildings, rippling out from the town centre … */
+  staggerMs: 280,
+  /** … compressed so the last one starts within this time. */
+  maxSpreadMs: 3600,
+  /** Scaffolding + dust before the new style appears. */
+  swapMs: 520,
+  scaffoldInMs: 260,
+  scaffoldOutMs: 650,
+  /** Warm light flash at the swap: colour, radius per footprint tile, duration, intensity. */
+  flash: { color: 0xffd9a0, radiusPerTile: 52, ms: 900, intensity: 2.2 },
+  /** Particles per footprint tile (dust burst / rising sparks). */
+  dustPerTile: 7,
+  sparksPerTile: 5,
+} as const;

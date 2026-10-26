@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { PLAYER_COLORS } from '../game/Player';
 import type { AgeId, BuildingType } from '../types';
-import { ageArtKey, artAgeFor, teamArtKey } from './art/architecture/ageStyle';
+import { ageArtKey, AGE_STYLED_BUILDINGS, artAgeFor, teamArtKey } from './art/architecture/ageStyle';
 import { paintBuilding, paintConstructionSite } from './art/buildings';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
@@ -142,6 +142,46 @@ export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeI
   const info = BUILDING_LIGHT.get(ageKey);
   if (info) BUILDING_LIGHT.set(key, info);
   return key;
+}
+
+/**
+ * Frees age styles nobody needs any more (texture memory budget): a
+ * team variant once its player has moved past that age, the (type, age)
+ * base — which owns the shared normal map — once every player has and
+ * its variants are gone. Nothing listed in `inUse` (keys on live
+ * sprites) is touched. `ageOf` returns undefined for players no longer
+ * in the game. Returns the number of textures removed.
+ */
+export function releaseStaleBuildingArt(
+  host: TextureHost,
+  ageOf: (playerId: number) => AgeId | undefined,
+  minAge: AgeId,
+  inUse: ReadonlySet<string>,
+): number {
+  let removed = 0;
+  const drop = (key: string, shared: boolean): void => {
+    // Variants borrow the base's normal source: detach it so removing them leaves it intact.
+    if (shared) host.textures.get(key).dataSource = [];
+    host.textures.remove(key);
+    BUILDING_LIGHT.delete(key);
+    removed++;
+  };
+  for (const type of AGE_STYLED_BUILDINGS) {
+    for (const age of [1, 2] as const) {
+      const ageKey = ageArtKey(BUILDING_SPECS[type].textureKey, type, age);
+      if (!host.textures.exists(ageKey)) continue;
+      const prefix = `${ageKey}@p`;
+      let variantsLeft = false;
+      for (const key of host.textures.getTextureKeys()) {
+        if (!key.startsWith(prefix)) continue;
+        const current = ageOf(Number(key.slice(prefix.length)));
+        if ((current === undefined || current > age) && !inUse.has(key)) drop(key, true);
+        else variantsLeft = true;
+      }
+      if (minAge > age && !variantsLeft && !inUse.has(ageKey)) drop(ageKey, false);
+    }
+  }
+  return removed;
 }
 
 /** Registers painted art with its normal map and remembers its lighting data. */

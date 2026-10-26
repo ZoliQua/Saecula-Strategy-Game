@@ -8,7 +8,7 @@ import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } fro
 import { PLAYER_COLORS } from '../../game/Player';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
-import { BUILDING_LIGHT, buildingTexture, constructionKey } from '../../iso/textures';
+import { BUILDING_LIGHT, buildingTexture, constructionKey, releaseStaleBuildingArt } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { AgeId } from '../../types';
 import type { Entity } from '../components';
@@ -67,6 +67,13 @@ export class RenderSystem {
   /** Where buildings read their owner's age (style shown on the sprite). */
   setAgeSource(ageOf: (playerId: number) => AgeId): void {
     this.ageOf = ageOf;
+  }
+
+  /** Frees building textures of age styles no sprite shows any more (texture memory budget). */
+  releaseStaleAgeArt(ageOf: (playerId: number) => AgeId | undefined, minAge: AgeId): number {
+    const inUse = new Set<string>();
+    for (const e of this.renderable) if (e.building && e.sprite) inUse.add(e.sprite.texture.key);
+    return releaseStaleBuildingArt(this.scene, ageOf, minAge, inUse);
   }
 
   /** Keeps a building in its old style until releaseReskin (age-up effect running). */
