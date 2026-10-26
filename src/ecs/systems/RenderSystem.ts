@@ -24,6 +24,7 @@ import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { BUILDING_DEATH_TTL_MS } from '../../config/balance';
 import { collapseHeightScale } from './buildingFx/damageMath';
+import { siteAlpha, sitePlateAlpha, siteShownHeight } from './buildingFx/siteLook';
 import { dyingAlpha, unitAnimState } from './unitAnim';
 import { WallBanners } from './wallJoins/WallBanners';
 import { WallJoinIndex } from './wallJoins/WallJoinIndex';
@@ -289,9 +290,9 @@ export class RenderSystem {
     // The Wonder shows its own scaffolding stages instead of rising out of a site.
     if (this.wonderStageOf(entity) !== null) return;
     const h = sprite.frame.height;
-    const shown = Math.max(BUILDING_BOTTOM_PAD + 4, h * (0.08 + 0.92 * t));
+    const shown = siteShownHeight(h, t);
     sprite.setCrop(0, h - shown, sprite.frame.width, shown);
-    sprite.setAlpha(0.75 + 0.25 * t);
+    sprite.setAlpha(siteAlpha(t));
     let site = this.sites.get(entity);
     if (!site && entity.building) {
       const key = constructionKey(entity.building.footprint.width);
@@ -302,7 +303,9 @@ export class RenderSystem {
     if (site) {
       site.setPosition(sprite.x, sprite.y);
       site.setDepth(sprite.depth + 0.01);
-      site.setAlpha(1 - t * 0.6);
+      // A destroyed site's plate fades out with its collapse.
+      const fade = entity.dying ? Math.max(0, entity.dying.ttlMs / BUILDING_DEATH_TTL_MS) : 1;
+      site.setAlpha(sitePlateAlpha(t) * fade);
     }
   }
 }

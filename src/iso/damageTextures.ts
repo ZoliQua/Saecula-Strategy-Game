@@ -80,3 +80,12 @@ function pruneOverlays(scene: TextureHost, inUse: ReadonlySet<string>, keep: str
     overlays.delete(key);
   }
 }
+
+/**
+ * True when `img` already draws the texture now registered under `key`.
+ * Compares the Texture objects: a key that was removed and repainted
+ * names a new texture, which a stale image would not show.
+ */
+export function showsTexture(img: { readonly texture: unknown }, textures: { get(key: string): unknown }, key: string): boolean {
+  return img.texture === textures.get(key);
+}

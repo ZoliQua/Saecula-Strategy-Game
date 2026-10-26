@@ -3,7 +3,7 @@ import { BUILDING_FX } from '../../../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../../iso/art/canvas';
 import { FLAME_FRAMES, FLAME_H, FLAME_ORIGIN_Y } from '../../../iso/art/fireArt';
 import { LightManager, type LightHandle } from '../../../iso/art/lighting/LightManager';
-import { damageOverlayTexture, DAMAGE_KEYS } from '../../../iso/damageTextures';
+import { damageOverlayTexture, DAMAGE_KEYS, showsTexture } from '../../../iso/damageTextures';
 import { BUILDING_LIGHT, FX_KEYS } from '../../../iso/textures';
 import type { Entity } from '../../components';
 import type { EcsWorld } from '../../world';
@@ -62,6 +62,7 @@ export class BuildingFires {
   private readonly flameImgs: ImagePool;
   private readonly glowImgs: ImagePool;
   private readonly lights: LightHandle[] = [];
+  private readonly unsubscribe: () => void;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -71,7 +72,7 @@ export class BuildingFires {
     this.overlays = new ImagePool(() => scene.add.image(0, 0, '__DEFAULT'));
     this.flameImgs = new ImagePool(() => scene.add.image(0, 0, DAMAGE_KEYS.flame, 0).setOrigin(0.5, FLAME_ORIGIN_Y));
     this.glowImgs = new ImagePool(() => scene.add.image(0, 0, FX_KEYS.glow).setBlendMode(Phaser.BlendModes.ADD));
-    world.with('building').onEntityRemoved.subscribe((e) => this.release(e));
+    this.unsubscribe = world.with('building').onEntityRemoved.subscribe((e) => this.release(e));
   }
 
   /** The crack / soot overlay shown on a building, if any (collapse poses it with the sprite). */
@@ -124,11 +125,11 @@ export class BuildingFires {
     const cy = view.centerY;
     const halls = burning.filter((b) => !b.wall);
     const walls = burning.filter((b) => b.wall);
-    const keep = [
+    const keep = new Set([
       ...pick(halls, nearestIndices(halls, cx, cy, BUILDING_FX.maxBurning)),
       ...pick(walls, nearestIndices(walls, cx, cy, BUILDING_FX.maxBurningWalls)),
-    ];
-    for (const b of burning) if (!keep.includes(b)) this.dropFlames(b.look);
+    ]);
+    for (const b of burning) if (!keep.has(b)) this.dropFlames(b.look);
     for (const b of keep) this.syncFlames(b, now);
     // Fire lights: the nearest big fires first, then walls.
     const lit = [...pick(halls, nearestIndices(halls, cx, cy, BUILDING_FX.maxFireLights))];
@@ -147,7 +148,8 @@ export class BuildingFires {
     if (!key) return;
     inUse.add(key);
     const img = look.overlay ?? (look.overlay = this.overlays.acquire());
-    if (img.texture.key !== key) img.setTexture(key, 0);
+    // Compare texture objects, not keys: a pruned overlay may be repainted under the same key.
+    if (!showsTexture(img, this.scene.textures, key)) img.setTexture(key, 0);
     img.setFrame(look.stage === 2 ? 1 : 0);
     img.setOrigin(sprite.originX, sprite.originY);
     img.setDisplaySize(sprite.displayWidth, sprite.displayHeight);
@@ -231,12 +233,14 @@ export class BuildingFires {
     this.dropFlames(look);
     if (look.overlay) {
       if (look.overlay.isCropped) look.overlay.setCrop();
-      this.overlays.release(look.overlay);
+      // Let go of the overlay texture so pruning can't leave a pooled image pointing at a destroyed one.
+      this.overlays.release(look.overlay.setTexture('__DEFAULT'));
     }
     this.looks.delete(e);
   }
 
   destroy(): void {
+    this.unsubscribe();
     for (const h of this.lights) h.remove();
     this.lights.length = 0;
     this.overlays.destroy();

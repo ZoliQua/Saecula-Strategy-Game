@@ -33,13 +33,14 @@ const STEP: Record<Direction, readonly [number, number]> = {
  */
 export class HammerDust {
   private readonly lastFrame = new Map<Entity, number>();
+  private readonly unsubscribe: () => void;
 
   constructor(
     private readonly scene: Phaser.Scene,
     world: EcsWorld,
     private readonly fx: BuildingEmitters,
   ) {
-    world.with('buildCommand').onEntityRemoved.subscribe((e) => this.lastFrame.delete(e));
+    this.unsubscribe = world.with('buildCommand').onEntityRemoved.subscribe((e) => this.lastFrame.delete(e));
   }
 
   update(world: EcsWorld, now: number): void {
@@ -60,6 +61,7 @@ export class HammerDust {
   }
 
   destroy(): void {
+    this.unsubscribe();
     this.lastFrame.clear();
   }
 }

@@ -16,6 +16,7 @@ import { TimedImages } from '../combatFx/TimedImages';
 import type { BuildingEmitters } from './BuildingEmitters';
 import type { BuildingFires } from './BuildingFires';
 import { collapsePose, collapseProgress, rubbleAlpha } from './damageMath';
+import { siteAlpha, siteShownHeight } from './siteLook';
 
 const SCALE = 1 / ART_SCALE;
 /** Collapses this far outside the camera view skip their particles (world px). */
@@ -49,6 +50,7 @@ interface Collapse {
 export class Collapses {
   private readonly active = new Map<Entity, Collapse>();
   private readonly rubble: TimedImages;
+  private readonly unsubscribe: Array<() => void> = [];
   private fog: FogOfWarData | null = null;
 
   constructor(
@@ -62,8 +64,10 @@ export class Collapses {
       MAX_RUBBLE,
     );
     const dying = world.with('dying', 'building', 'position');
-    dying.onEntityAdded.subscribe((e) => this.start(e));
-    dying.onEntityRemoved.subscribe((e) => this.active.delete(e));
+    this.unsubscribe.push(
+      dying.onEntityAdded.subscribe((e) => this.start(e)),
+      dying.onEntityRemoved.subscribe((e) => this.active.delete(e)),
+    );
   }
 
   setFogContext(fog: FogOfWarData): void {
@@ -110,18 +114,24 @@ export class Collapses {
     const t = collapseProgress(d.ttlMs, BUILDING_DEATH_TTL_MS);
     const pose = collapsePose(t, c.lean);
     const fh = sprite.frame.height;
-    const above = fh - BUILDING_BOTTOM_PAD;
+    // A destroyed site comes down from the height it had risen to (the Wonder's stages are whole sprites).
+    const uc = c.e.underConstruction;
+    const rising = !!uc && c.e.building?.type !== 'wonder';
+    const rise = uc ? Math.min(1, uc.elapsed / uc.totalTime) : 1;
+    const shown = rising ? siteShownHeight(fh, rise) : fh;
+    const above = shown - BUILDING_BOTTOM_PAD;
     const sinkTex = above * pose.sink;
     const x = sprite.x + pose.dx;
     const y = sprite.y + sinkTex * SCALE;
+    const alpha = pose.alpha * (rising ? siteAlpha(rise) : 1);
     const tint = mix(0xffffff, DUST_TINT, pose.darken * 0.7);
-    sprite.setPosition(x, y).setRotation(pose.rotation).setAlpha(pose.alpha).setTint(tint);
-    sprite.setCrop(0, 0, sprite.frame.width, Math.max(1, fh - BUILDING_BOTTOM_PAD - sinkTex));
+    sprite.setPosition(x, y).setRotation(pose.rotation).setAlpha(alpha).setTint(tint);
+    sprite.setCrop(0, fh - shown, sprite.frame.width, Math.max(1, above - sinkTex));
     const overlay = this.fires.overlayOf(c.e);
     if (overlay) {
       const k = overlay.frame.height / fh;
-      overlay.setPosition(x, y).setRotation(pose.rotation).setAlpha(pose.alpha);
-      overlay.setCrop(0, 0, overlay.frame.width, Math.max(1, (fh - BUILDING_BOTTOM_PAD - sinkTex) * k));
+      overlay.setPosition(x, y).setRotation(pose.rotation).setAlpha(alpha);
+      overlay.setCrop(0, (fh - shown) * k, overlay.frame.width, Math.max(1, (above - sinkTex) * k));
     }
     if (!sprite.visible || !this.nearView(c.cx, c.cy) || t >= 0.92) return;
     // Particles spread over the collapse at a steady rate per footprint tile.
@@ -151,6 +161,7 @@ export class Collapses {
   }
 
   destroy(): void {
+    for (const u of this.unsubscribe) u();
     this.rubble.destroy();
     this.active.clear();
   }
