@@ -308,6 +308,8 @@ export const AI_MEDIUM = {
   ] as readonly GatherWeights[],
   /** How strongly gatherers shift toward what the next age-up still lacks (0..1). */
   ageUpGatherShift: 0.6,
+  /** Wood always kept in the savings goal (houses, camps), so wood never dries up. */
+  woodBuffer: 150,
   /** Villager count until the opening split applies. */
   openingVillagers: 7,
   /** Villagers before the barracks goes up (build order step 5). */

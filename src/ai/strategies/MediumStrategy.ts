@@ -85,9 +85,9 @@ export class MediumStrategy extends BaseStrategy {
     return weightsForGoal(base, this.savingsGoal(ctx, view), ctx.player.resources, AI_MEDIUM.ageUpGatherShift);
   }
 
-  /** What the AI is saving for: the next age-up plus this age's military buildings still missing. */
+  /** What the AI is saving for: the next age-up, this age's missing military buildings and a wood buffer. */
   private savingsGoal(ctx: AIContext, view: WorldView): Resources {
-    const goal = { food: 0, wood: 0, gold: 0 };
+    const goal = { food: 0, wood: AI_MEDIUM.woodBuffer, gold: 0 };
     const add = (c: Resources) => {
       goal.food += c.food;
       goal.wood += c.wood;
@@ -204,9 +204,9 @@ export class MediumStrategy extends BaseStrategy {
     }
   }
 
-  /** Base under attack and short of defenders: cheapest available infantry, no savings kept. */
+  /** Base under attack and outnumbered: cheapest available infantry, no savings kept. */
   private trainDefenders(ctx: AIContext, view: WorldView): void {
-    if (view.military.length >= AI_MEDIUM.minDefenders * 2) return;
+    if (view.military.length >= Math.min(view.threats.length, AI_MEDIUM.minDefenders * 2)) return;
     const type: UnitType = isUnitAvailable('pikeman', ctx.player.age) ? 'pikeman' : 'swordsman';
     this.train(ctx, view, type, MILITARY_QUEUE);
   }

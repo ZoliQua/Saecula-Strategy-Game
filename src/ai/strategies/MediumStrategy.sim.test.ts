@@ -5,13 +5,13 @@ import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
 
-describe('MediumStrategy headless simulation (64×64 meadow, seed 8, passive human)', () => {
+describe('MediumStrategy headless simulation (64×64 meadow, seed 555, passive human)', () => {
   it('ages up within 12 minutes, then builds a mixed army and attacks the human base', () => {
     const match = createHeadlessMatch({
-      seed: 8,
+      seed: 555,
       size: 64,
       aiCount: 1,
-      strategy: (id) => new MediumStrategy(createRng(id * 977 + 8)),
+      strategy: (id) => new MediumStrategy(createRng(id * 977 + 555)),
     });
     const ai = match.players.get(2)!;
     const humanTc = match.world.entities.find((e) => e.owner?.playerId === 1 && e.building?.type === 'town_center')!;

@@ -33,7 +33,7 @@ export interface WorldView {
   readonly knownEnemyBuildings: readonly KnownBuilding[];
   /** Resource nodes on tiles the AI has explored (own farms included, foreign farms not). */
   readonly resources: Readonly<Record<ResourceType, readonly Entity[]>>;
-  /** Hostile units seen near the base right now. */
+  /** Hostile fighting units (not scouts or villagers passing by) seen near the base right now. */
   readonly threats: readonly Entity[];
   /** Decaying memory of enemy unit sightings by type. */
   readonly enemySightings: Readonly<Partial<Record<UnitType, number>>>;
@@ -124,7 +124,7 @@ export class Perception {
       visibleEnemyBuildings,
       knownEnemyBuildings: [...this.memory.values()],
       resources,
-      threats: visibleEnemyUnits.filter((u) => nearAny(u.position!, home, AI_COMMON.defendRadius)),
+      threats: visibleEnemyUnits.filter((u) => isArmed(u) && nearAny(u.position!, home, AI_COMMON.defendRadius)),
       enemySightings: { ...this.sightings },
     };
   }
@@ -152,6 +152,12 @@ export class Perception {
       this.sightings[t] = Math.max(now[t] ?? 0, (this.sightings[t] ?? 0) * decay);
     }
   }
+}
+
+/** A unit that counts as an attack on the base: armed, and neither a villager nor a scout. */
+function isArmed(u: Entity): boolean {
+  const type = u.unit?.unitType;
+  return u.attacker !== undefined && type !== 'villager' && type !== 'scout';
 }
 
 function nearAny(p: TileCoord, buildings: readonly Entity[], radius: number): boolean {

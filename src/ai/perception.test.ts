@@ -73,10 +73,14 @@ describe('Perception', () => {
     createBuilding(world, { type: 'house', origin: { tx: 20, ty: 20 }, playerId: 2, mapData: map });
     createUnit(world, { type: 'knight', tile: { tx: 24, ty: 20 }, playerId: 3 });
     createUnit(world, { type: 'knight', tile: { tx: 39, ty: 39 }, playerId: 1 });
+    // A scout or villager wandering by is no attack on the base.
+    createUnit(world, { type: 'scout', tile: { tx: 22, ty: 22 }, playerId: 1 });
+    createUnit(world, { type: 'villager', tile: { tx: 23, ty: 22 }, playerId: 1 });
     reveal(fog, 0, 0, 39, 39);
     const view = perception.update(ctx);
     expect(view.threats.map((t) => t.owner?.playerId)).toEqual([3]);
     expect(view.enemySightings.knight).toBe(2);
+    expect(view.enemySightings.scout).toBe(1);
     for (const e of [...world.entities]) if (e.unit) world.remove(e);
     const later = perception.update({ ...ctx, timeMs: 60_000 });
     expect(later.enemySightings.knight).toBeCloseTo(1.2, 5);

@@ -55,12 +55,14 @@ export function aiTrainAccount(world: EcsWorld, player: Player): TrainAccount {
   return { wallet: playerWallet(player), population: () => populationWithQueued(world, player) };
 }
 
+/**
+ * Whether `cost` can be paid while keeping `reserve` saved. The reserve
+ * only binds the resources the cost actually spends: a pikeman (no gold)
+ * stays affordable while the gold savings are still short.
+ */
 export function canAfford(have: Resources, cost: Resources, reserve: Resources = NO_RESERVE): boolean {
-  return (
-    have.food - cost.food >= reserve.food &&
-    have.wood - cost.wood >= reserve.wood &&
-    have.gold - cost.gold >= reserve.gold
-  );
+  const ok = (t: keyof Resources) => have[t] >= cost[t] && (cost[t] === 0 || have[t] - cost[t] >= reserve[t]);
+  return ok('food') && ok('wood') && ok('gold');
 }
 
 export const NO_RESERVE: Resources = { food: 0, wood: 0, gold: 0 };
