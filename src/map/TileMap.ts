@@ -27,7 +27,7 @@ const CLOUD_SCALE_X = 3;
 const CLOUD_SCALE_Y = 1.6;
 /** Screen px of cloud layer beyond each view edge. */
 const CLOUD_PAD = 64;
-const CHUNK = 1024;
+const CHUNK = 512;
 /** Distinguishes chunk texture keys of map views alive at once (menu diorama + game). */
 let tileMapSeq = 0;
 const CHUNK_OVERLAP = 3;

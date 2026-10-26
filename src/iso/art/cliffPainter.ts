@@ -2,10 +2,10 @@ import type { ReliefHit } from '../../map/cliffRelief';
 import { ellipse, makeCanvas, type Ctx } from './canvas';
 import { blockBounds, cliffColour, cliffNormal, groundTouch, hitAt, type CliffField } from './cliffArt';
 import { encodeNormal, N_UP } from './lighting/viewSpace';
-import { hash2, valueNoise } from './palette';
+import { hash2 } from './palette';
 
-/** Normal maps of cliff chunks / occluders are this many times smaller than the albedo. */
-export const CLIFF_NORMAL_DOWNSCALE = 2;
+/** Normal maps of cliff chunks / occluders are this many times smaller than the albedo (texture memory). */
+export const CLIFF_NORMAL_DOWNSCALE = 4;
 
 const NO_OWNER = -1;
 
@@ -77,8 +77,8 @@ const UNSET = -2;
 
 /** Full-resolution rock grain over the upscaled plateau tops (the low-res pass is soft). */
 function grainTop(data: Uint8ClampedArray, o: number, wx: number, wy: number): void {
-  const n = valueNoise(wx * 0.4, wy * 0.8, 81);
-  const k = 0.9 + n * 0.18 + (hash2(wx, wy, 83) < 0.06 ? 0.12 : 0) - (hash2(wx, wy, 85) < 0.05 ? 0.14 : 0);
+  const n = hash2(wx >> 1, wy, 81);
+  const k = 0.93 + n * 0.12 + (n > 0.95 ? 0.1 : 0) - (hash2(wx, wy, 85) < 0.05 ? 0.14 : 0);
   data[o] = (data[o] ?? 0) * k;
   data[o + 1] = (data[o + 1] ?? 0) * k;
   data[o + 2] = (data[o + 2] ?? 0) * k;
@@ -98,7 +98,9 @@ export class CliffChunkBake {
   private readonly codes: Int32Array;
   /** Per low-res sample: the touched ground colour (no rock), for refined pixels. */
   private readonly ground: Int32Array;
+  /** Normal map texels (CLIFF_NORMAL_DOWNSCALE px each), filled from the odd low-res samples at their centres. */
   private readonly normals: Uint8ClampedArray | null;
+  private readonly nsw: number;
   private readonly up = encodeNormal(N_UP);
 
   constructor(
@@ -113,7 +115,9 @@ export class CliffChunkBake {
   ) {
     this.codes = new Int32Array(sw * sh).fill(NO_OWNER);
     this.ground = new Int32Array(sw * sh);
-    this.normals = withNormals ? new Uint8ClampedArray(sw * sh * 4) : null;
+    if (CLIFF_NORMAL_DOWNSCALE !== step * 2) throw new Error('Cliff normals expect two ground samples per texel');
+    this.nsw = Math.ceil(sw / 2);
+    this.normals = withNormals ? new Uint8ClampedArray(this.nsw * Math.ceil(sh / 2) * 4) : null;
   }
 
   /** Pass 1: overrides low-res sample (i, j) of `data` (RGBA) where rock or scree shows. */
@@ -136,12 +140,13 @@ export class CliffChunkBake {
       data[o + 3] = 255;
       this.codes[k] = ownerOf(this.field, hit) * 2 + (hit.surface === 'face' ? 1 : 0);
     }
-    if (this.normals) {
+    if (this.normals && (i & 1) === 1 && (j & 1) === 1) {
       const [r, g, b] = hit ? encodeNormal(cliffNormal(this.field, hit, wx)) : this.up;
-      this.normals[o] = r;
-      this.normals[o + 1] = g;
-      this.normals[o + 2] = b;
-      this.normals[o + 3] = 255;
+      const q = ((j >> 1) * this.nsw + (i >> 1)) * 4;
+      this.normals[q] = r;
+      this.normals[q + 1] = g;
+      this.normals[q + 2] = b;
+      this.normals[q + 3] = 255;
       if (hit) this.copyNormal(ownerOf(this.field, hit), wx, wy, r, g, b);
     }
   }
@@ -210,7 +215,7 @@ export class CliffChunkBake {
     }
     ctx.putImageData(img, 0, 0);
     paintRubble(ctx, this.field, this.x0, this.y0, w, h);
-    return this.normalCanvas(Math.ceil(w / st), Math.ceil(h / st));
+    return this.normalCanvas(Math.ceil(w / CLIFF_NORMAL_DOWNSCALE), Math.ceil(h / CLIFF_NORMAL_DOWNSCALE));
   }
 
   /** Copies a uniformly owned chunk pixel into the owner's occluder cell. */
@@ -247,9 +252,11 @@ export class CliffChunkBake {
     if (!this.normals) return null;
     const { canvas, ctx } = makeCanvas(nw, nh);
     const img = ctx.createImageData(nw, nh);
+    const cols = Math.min(nw, this.nsw);
     for (let j = 0; j < nh; j++) {
-      const from = j * this.sw * 4;
-      img.data.set(this.normals.subarray(from, from + nw * 4), j * nw * 4);
+      const from = j * this.nsw * 4;
+      if (from >= this.normals.length) break;
+      img.data.set(this.normals.subarray(from, from + cols * 4), j * nw * 4);
     }
     ctx.putImageData(img, 0, 0);
     return canvas;
