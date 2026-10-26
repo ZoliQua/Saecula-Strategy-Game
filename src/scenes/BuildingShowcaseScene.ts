@@ -3,7 +3,7 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { AGE_STYLED_BUILDINGS } from '../iso/art/architecture/ageStyle';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { LightManager, lit } from '../iso/art/lighting/LightManager';
-import { BUILDING_LIGHT, buildingTexture, FX_KEYS, wallTexture } from '../iso/textures';
+import { BUILDING_LIGHT, buildingTexture, FX_KEYS, wallTexture, wonderStageTexture } from '../iso/textures';
 import { PLAYER_COLORS } from '../game/Player';
 import { wallNeighbourMaskBy } from '../game/wallNeighbours';
 import { tileToScreen } from '../iso/coordinates';
@@ -21,6 +21,8 @@ export interface BuildingShowcaseOptions {
   playerId?: number;
   /** Lay out wall rings, diagonal runs and gaps (one block per age) instead of the grid. */
   walls?: boolean;
+  /** Show the Wonder's construction stages and the finished basilica side by side. */
+  wonder?: boolean;
 }
 
 const CELL_W = 250;
@@ -51,6 +53,10 @@ export class BuildingShowcaseScene extends Phaser.Scene {
     });
     const types = this.opts.types ?? [...AGE_STYLED_BUILDINGS];
     const ages = this.opts.ages ?? [1, 2, 3];
+    if (this.opts.wonder) {
+      this.layWonder();
+      return;
+    }
     if (this.opts.walls) {
       this.layWalls(ages);
       return;
@@ -92,6 +98,25 @@ export class BuildingShowcaseScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setZoom(this.opts.zoom ?? 0.6);
     cam.centerOn((types.length * CELL_W) / 2, (ages.length * CELL_H) / 2);
+  }
+
+  private layWonder(): void {
+    const keys = [1, 2, 3].map((s) => wonderStageTexture(this, s));
+    keys.push(buildingTexture(this, 'wonder', 3, this.opts.playerId ?? 1));
+    keys.forEach((key, i) => {
+      const x = i * 330 + 165;
+      const y = 300;
+      const ground = this.add.graphics().setDepth(-1).fillStyle(0x587a3a, 1);
+      ground.fillPoints([[x, y + 10], [x + 150, y - 65], [x, y - 140], [x - 150, y - 65]].map(([a, b]) => new Phaser.Geom.Point(a, b)), true);
+      const img = lit(this.add.image(x, y, key).setScale(1 / ART_SCALE));
+      img.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
+      const info = BUILDING_LIGHT.get(key);
+      this.lighting?.attachBuilding({
+        sprite: img, type: 'wonder', footprint: { w: 4, h: 4 }, volume: info?.volume ?? [], glows: info?.glows ?? [],
+        lights: info?.lights ?? [], isComplete: () => i === 3, heightScale: () => 1,
+      });
+    });
+    this.cameras.main.setZoom(this.opts.zoom ?? 1).centerOn(660, 180);
   }
 
   /** Per age: a ring with a gap and a tower in one corner, a 45° run, a stair-stepped run. */

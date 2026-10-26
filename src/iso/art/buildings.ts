@@ -2,8 +2,9 @@ import type { AgeId, BuildingType } from '../../types';
 import { BAROQUE_ART } from './architecture/baroque';
 import { MEDIEVAL_ART } from './architecture/medieval';
 import { ROMAN_ART } from './architecture/roman';
-import { SINGLE_STYLE_ART } from './architecture/singleStyle';
 import { TOWER_ART } from './architecture/towers';
+import { FOUNDRY_ART } from './architecture/foundry';
+import { paintWonder, WONDER_ART } from './architecture/wonder';
 import type { AgeArtSet, BuildingArt } from './architecture/types';
 import { ellipse } from './canvas';
 import { IsoPainter } from './isoPainter';
@@ -20,10 +21,10 @@ const AGE_ART: Record<AgeId, AgeArtSet> = { 1: ROMAN_ART, 2: MEDIEVAL_ART, 3: BA
 
 /** The art for a type in an age style, falling back to age 1. */
 function artFor(type: BuildingType, age: AgeId): BuildingArt {
-  if (type === 'foundry') return { ...artFor('blacksmith', 1), size: 3 };
+  if (type === 'foundry') return FOUNDRY_ART;
   if (type === 'wall') return { size: 1, maxHeight: wallMaxHeight(age), paint: (p) => paintWallPieceInto(p, WALL_ICON_PIECE, age) };
   if (type === 'tower') return TOWER_ART[age];
-  if (type === 'wonder') return SINGLE_STYLE_ART[type];
+  if (type === 'wonder') return WONDER_ART;
   const art = AGE_ART[age][type] ?? ROMAN_ART[type];
   if (!art) throw new Error(`no art for ${type}`);
   return art;
@@ -49,6 +50,13 @@ export function paintBuilding(type: BuildingType, team: number, age: AgeId = 1, 
   const p = new IsoPainter(art.size, art.size, art.maxHeight, type.length * 977 + (age - 1) * 131);
   art.paint(p, team);
   return p.result(withNormals);
+}
+
+/** The Wonder at a scaffolding stage (no team colour shows yet). */
+export function paintWonderStage(stage: number): LitArt {
+  const p = new IsoPainter(WONDER_ART.size, WONDER_ART.size, WONDER_ART.maxHeight, 5077 + stage * 13);
+  paintWonder(p, 0xffffff, stage);
+  return p.result();
 }
 
 /** Foundation stones + scaffolding shown while a site is being built. */

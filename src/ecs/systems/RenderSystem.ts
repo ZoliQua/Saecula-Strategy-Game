@@ -8,7 +8,16 @@ import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } fro
 import { PLAYER_COLORS } from '../../game/Player';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
-import { BUILDING_LIGHT, buildingTexture, constructionKey, releaseStaleBuildingArt, wallTexture } from '../../iso/textures';
+import { wonderStage } from '../../iso/art/architecture/wonder';
+import {
+  BUILDING_LIGHT,
+  buildingTexture,
+  constructionKey,
+  releaseStaleBuildingArt,
+  releaseWonderStages,
+  wallTexture,
+  wonderStageTexture,
+} from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { AgeId } from '../../types';
 import type { Entity } from '../components';
@@ -188,16 +197,31 @@ export class RenderSystem {
     return this.ageOf(entity.owner?.playerId ?? 1);
   }
 
-  /** Age style plus, for walls, the piece: changes when either does (age < 4). */
+  /**
+   * What a building sprite should show, as a number that changes when the
+   * texture must: the age style (< 4), plus the wall piece for walls, or
+   * the scaffolding stage (negative) for a Wonder under construction.
+   */
   private lookOf(entity: Renderable): number {
     const age = this.ownerAge(entity);
-    return entity.building?.type === 'wall' ? age + 4 * (1 + this.joins.pieceOf(entity)) : age;
+    const type = entity.building?.type;
+    if (type === 'wall') return age + 4 * (1 + this.joins.pieceOf(entity));
+    const stage = this.wonderStageOf(entity);
+    return stage === null ? age : -stage;
+  }
+
+  private wonderStageOf(entity: Renderable): number | null {
+    const uc = entity.underConstruction;
+    if (entity.building?.type !== 'wonder' || !uc) return null;
+    return wonderStage(uc.elapsed / uc.totalTime);
   }
 
   private buildingKey(entity: Renderable): string {
     const type = entity.building?.type;
     const playerId = entity.owner?.playerId ?? 1;
     if (type === 'wall') return wallTexture(this.scene, this.joins.pieceOf(entity), this.ownerAge(entity));
+    const stage = this.wonderStageOf(entity);
+    if (stage !== null) return wonderStageTexture(this.scene, stage);
     return type ? buildingTexture(this.scene, type, this.ownerAge(entity), playerId) : entity.renderable.textureKey;
   }
 
@@ -206,6 +230,7 @@ export class RenderSystem {
     this.shownLook.set(entity, this.lookOf(entity));
     const key = this.buildingKey(entity);
     if (sprite.texture.key === key) return;
+    const wasStage = sprite.texture.key.startsWith('building_wonder~s');
     const cropped = sprite.isCropped;
     if (cropped) sprite.setCrop();
     sprite.setTexture(key);
@@ -213,6 +238,11 @@ export class RenderSystem {
     this.unlight.get(entity)?.();
     this.unlight.delete(entity);
     this.attachLighting(entity, sprite);
+    if (wasStage) {
+      const inUse = new Set<string>();
+      for (const e of this.renderable) if (e.building && e.sprite) inUse.add(e.sprite.texture.key);
+      releaseWonderStages(this.scene, inUse);
+    }
   }
 
   private attachLighting(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {
@@ -253,6 +283,8 @@ export class RenderSystem {
       return;
     }
     const t = Math.min(1, uc.elapsed / uc.totalTime);
+    // The Wonder shows its own scaffolding stages instead of rising out of a site.
+    if (this.wonderStageOf(entity) !== null) return;
     const h = sprite.frame.height;
     const shown = Math.max(BUILDING_BOTTOM_PAD + 4, h * (0.08 + 0.92 * t));
     sprite.setCrop(0, h - shown, sprite.frame.width, shown);

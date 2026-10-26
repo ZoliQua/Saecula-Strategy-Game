@@ -3,8 +3,9 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { PLAYER_COLORS } from '../game/Player';
 import type { AgeId, BuildingType } from '../types';
 import { ageArtKey, AGE_STYLED_BUILDINGS, artAgeFor, teamArtKey } from './art/architecture/ageStyle';
-import { paintBuilding, paintConstructionSite } from './art/buildings';
+import { paintBuilding, paintConstructionSite, paintWonderStage } from './art/buildings';
 import { paintWallBanner } from './art/walls/wallBanner';
+import { WONDER_STAGES } from './art/architecture/wonder';
 import { paintWallPiece, wallPieceKey, wallPieceKeyAge } from './art/walls/paintWall';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
@@ -157,6 +158,29 @@ export function wallTexture(host: TextureHost, piece: number, age: AgeId): strin
   const key = wallPieceKey(piece, age);
   if (!host.textures.exists(key)) registerLitArt(host, key, paintWallPiece(piece, age));
   return key;
+}
+
+const wonderStageKey = (stage: number): string => `building_wonder~s${stage}`;
+
+/** Texture key of the Wonder at a scaffolding stage (wonderStage), painted on first need. */
+export function wonderStageTexture(host: TextureHost, stage: number): string {
+  const key = wonderStageKey(stage);
+  if (!host.textures.exists(key)) registerLitArt(host, key, paintWonderStage(stage));
+  return key;
+}
+
+/** Frees the Wonder's scaffolding stages once no sprite shows one (they are large). */
+export function releaseWonderStages(host: TextureHost, inUse: ReadonlySet<string>): void {
+  for (let stage = 1; stage <= WONDER_STAGES; stage++) {
+    const key = wonderStageKey(stage);
+    if (inUse.has(key)) return;
+  }
+  for (let stage = 1; stage <= WONDER_STAGES; stage++) {
+    const key = wonderStageKey(stage);
+    if (!host.textures.exists(key)) continue;
+    host.textures.remove(key);
+    BUILDING_LIGHT.delete(key);
+  }
 }
 
 /**
