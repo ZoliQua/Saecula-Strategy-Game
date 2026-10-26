@@ -3,10 +3,13 @@ import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { findPath } from '../../map/pathfinding';
 import { TRAINER_BUILDINGS } from '../../config/balance';
-import { BUILDING_SPECS } from '../archetypes/building';
+import { BUILDING_SPECS, towerAttacker } from '../archetypes/building';
 import type { Entity } from '../components';
 import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
+
+/** How far (tiles) from the finished segment a builder looks for the next wall segment. */
+const CHAIN_RADIUS = 3;
 
 type Builder = With<Entity, 'position' | 'movable' | 'buildCommand' | 'owner'>;
 type Site = With<
@@ -37,7 +40,8 @@ export class ConstructionSystem {
       if (s.id !== undefined) sites.set(s.id, s);
     }
 
-    for (const b of builders) {
+    for (const b of [...builders]) {
+      if (!b.buildCommand) continue; // released earlier this tick
       const site = sites.get(b.buildCommand.targetId);
       if (!site || !site.underConstruction) {
         this.world.removeComponent(b as Entity, 'buildCommand');
@@ -64,7 +68,7 @@ export class ConstructionSystem {
       );
       if (pct >= 1) {
         this.complete(site);
-        this.world.removeComponent(b as Entity, 'buildCommand');
+        this.moveBuildersOn(site, builders);
       }
     }
   }
@@ -77,6 +81,9 @@ export class ConstructionSystem {
       this.world.addComponent(site as Entity, 'resourceDropoff', {
         accepts: spec.dropoffAccepts,
       });
+    }
+    if (site.building.type === 'tower' && !(site as Entity).attacker) {
+      this.world.addComponent(site as Entity, 'attacker', towerAttacker());
     }
     if (site.building.type === 'farm') {
       // Farms are harvestable food sources. Finite in M1 (no regen).
@@ -92,6 +99,37 @@ export class ConstructionSystem {
         maxQueue: 5,
       });
     }
+  }
+
+  /**
+   * A finished wall segment hands its builders to the nearest unfinished
+   * segment of the same owner nearby (so a dragged line is built through);
+   * anything else just releases them.
+   */
+  private moveBuildersOn(done: Site, builders: Iterable<Builder>): void {
+    for (const b of [...builders]) {
+      if (!b.buildCommand || b.buildCommand.targetId !== done.id) continue;
+      const next =
+        done.building.type === 'wall' ? this.nearestWallSite(done, b.position, b.owner.playerId) : null;
+      if (next?.id !== undefined) b.buildCommand.targetId = next.id;
+      else this.world.removeComponent(b as Entity, 'buildCommand');
+    }
+  }
+
+  private nearestWallSite(done: Site, from: TileCoord, playerId: number): Site | null {
+    let best: Site | null = null;
+    let bestD = Infinity;
+    for (const s of this.world.with('building', 'underConstruction', 'health', 'position', 'owner')) {
+      if (s.building.type !== 'wall' || s.owner.playerId !== playerId || s.id === done.id) continue;
+      const fromDone = Math.max(Math.abs(s.position.tx - done.position.tx), Math.abs(s.position.ty - done.position.ty));
+      if (fromDone > CHAIN_RADIUS) continue;
+      const d = Math.abs(s.position.tx - from.tx) + Math.abs(s.position.ty - from.ty);
+      if (d < bestD) {
+        bestD = d;
+        best = s as Site;
+      }
+    }
+    return best;
   }
 
   private walkToSite(b: Builder, site: Site): void {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MapData } from './MapData';
-import { findPath } from './pathfinding';
+import { findPath, findPathToNearest } from './pathfinding';
 import { TERRAIN } from './TerrainTypes';
 
 function grass(w: number, h: number): MapData {
@@ -99,5 +99,49 @@ describe('findPath', () => {
         throw new Error('path crossed a forest tile');
       }
     }
+  });
+});
+
+describe('findPathToNearest', () => {
+  function ring(): MapData {
+    const map = grass(12, 12);
+    for (let i = 4; i <= 8; i++) {
+      for (const [x, y] of [[i, 4], [i, 8], [4, i], [8, i]] as const) map.setBlocked(x, y, true);
+    }
+    return map;
+  }
+
+  it('walls block a direct path across them', () => {
+    const map = grass(9, 9);
+    for (let ty = 0; ty < 9; ty++) map.setBlocked(4, ty, true);
+    expect(findPath(map, { tx: 0, ty: 4 }, { tx: 8, ty: 4 })).toBeNull();
+  });
+
+  it('routes around a wall that has a gap', () => {
+    const map = grass(9, 9);
+    for (let ty = 0; ty < 8; ty++) map.setBlocked(4, ty, true);
+    const path = findPathToNearest(map, { tx: 0, ty: 4 }, { tx: 8, ty: 4 });
+    expect(path!.at(-1)).toEqual({ tx: 8, ty: 4 });
+    expect(Math.max(...path!.map((t) => t.ty))).toBe(8);
+  });
+
+  it('stops at the nearest reachable tile when the goal is inside a wall ring', () => {
+    const map = ring();
+    const path = findPathToNearest(map, { tx: 0, ty: 6 }, { tx: 6, ty: 6 });
+    expect(path).not.toBeNull();
+    expect(path!.at(-1)).toEqual({ tx: 3, ty: 6 });
+  });
+
+  it('goes next to a blocked goal tile rather than onto it', () => {
+    const map = grass(8, 8);
+    map.setBlocked(5, 4, true);
+    const end = findPathToNearest(map, { tx: 0, ty: 4 }, { tx: 5, ty: 4 })!.at(-1)!;
+    expect(map.isPassable(end.tx, end.ty)).toBe(true);
+    expect(Math.max(Math.abs(end.tx - 5), Math.abs(end.ty - 4))).toBe(1);
+  });
+
+  it('returns null when the unit is already as close as it can get', () => {
+    const map = ring();
+    expect(findPathToNearest(map, { tx: 3, ty: 6 }, { tx: 6, ty: 6 })).toBeNull();
   });
 });

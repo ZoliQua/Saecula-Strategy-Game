@@ -64,6 +64,8 @@ export interface UiState {
   /** How many entities are selected (primary is `selectedEntity`). */
   selectionCount: number;
   placementBuilding: BuildingType | null;
+  /** Wall line being dragged: segments to be built and their total wood cost. */
+  wallPreview: { segments: number; wood: number } | null;
   /** In-game clock for the HUD (display only). */
   gameTimeMs: number;
 }
@@ -76,6 +78,7 @@ export interface UiActions {
   setUniqueBuilt: (types: readonly BuildingType[]) => void;
   setSelectedEntity: (info: SelectedEntityInfo | null, count?: number) => void;
   setPlacementBuilding: (type: BuildingType | null) => void;
+  setWallPreview: (preview: { segments: number; wood: number } | null) => void;
   setGameTime: (ms: number) => void;
 }
 
@@ -90,6 +93,7 @@ const INITIAL: UiState = {
   selectedEntity: null,
   selectionCount: 0,
   placementBuilding: null,
+  wallPreview: null,
   gameTimeMs: 0,
 };
 
@@ -105,7 +109,8 @@ export function createUiStore(): StoreApi<UiStore> {
     setUniqueBuilt: (types) => set({ uniqueBuilt: types }),
     setSelectedEntity: (info, count) =>
       set({ selectedEntity: info, selectionCount: count ?? (info ? 1 : 0) }),
-    setPlacementBuilding: (type) => set({ placementBuilding: type }),
+    setPlacementBuilding: (type) => set({ placementBuilding: type, wallPreview: null }),
+    setWallPreview: (preview) => set({ wallPreview: preview }),
     setGameTime: (ms) => set({ gameTimeMs: ms }),
   }));
 }
@@ -120,6 +125,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     selectedEntity: null,
     selectionCount: 0,
     placementBuilding: null,
+    wallPreview: null,
     gameTimeMs: 0,
   });
 }

@@ -138,6 +138,8 @@ export const hu = {
     enemy: 'Ellenség',
     selectedMore: 'további kijelölve',
     population: 'Népesség',
+    wallLineHint: (segments: number, wood: number) => `${segments} szakasz · ${wood} fa`,
+    wallPlacementHint: 'húzd az egeret a fal lerakásához · Jobb klikk / ESC: mégse',
     placementHint: 'kattints a térképre az elhelyezéshez · Jobb klikk / ESC: mégse',
     notEnough: {
       food: 'Nincs elég étel',

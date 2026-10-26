@@ -9,10 +9,12 @@ import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import type { MapData } from '../../map/MapData';
 import type { AgeId, BuildingType } from '../../types';
 import { uiStore } from '../../ui/store';
+import { WallLinePlacement } from './WallLinePlacement';
 
 /** Building placement: translucent ghost under the cursor and site creation. */
 export class BuildPlacement {
   private ghost: Phaser.GameObjects.Image | null = null;
+  private readonly walls: WallLinePlacement;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -22,7 +24,31 @@ export class BuildPlacement {
     private readonly getHoverTile: () => TileCoord | null,
     private readonly getAge: () => AgeId = () => 1,
     private readonly playerId = 1,
-  ) {}
+  ) {
+    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId);
+  }
+
+  /** Walls are laid by dragging a line instead of a single click. */
+  isLineType(type: BuildingType | null): boolean {
+    return type === 'wall';
+  }
+
+  beginWallLine(tile: TileCoord): void {
+    if (this.canBuildType('wall')) this.walls.begin(tile);
+  }
+
+  isDraggingWallLine(): boolean {
+    return this.walls.isDragging();
+  }
+
+  /** Releases the drag: builds the line; the wall tool stays active for more. */
+  commitWallLine(hover: TileCoord | null): number {
+    return this.walls.commit(hover);
+  }
+
+  cancelWallLine(): void {
+    this.walls.cancel();
+  }
 
   /** Age gate and per-player limits; the UI greys these out but this is the rule. */
   canBuildType(type: BuildingType): boolean {
@@ -77,8 +103,15 @@ export class BuildPlacement {
   updateGhost(): void {
     const placement = uiStore.getState().placementBuilding;
     const hover = this.getHoverTile();
+    if (placement !== 'wall') this.walls.cancel();
     if (!placement || !hover) {
       this.ghost?.setVisible(false);
+      if (placement === 'wall') this.walls.updateGhosts(null);
+      return;
+    }
+    if (placement === 'wall') {
+      this.ghost?.setVisible(false);
+      this.walls.updateGhosts(hover);
       return;
     }
     const spec = BUILDING_SPECS[placement];

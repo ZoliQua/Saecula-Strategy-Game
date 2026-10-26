@@ -32,6 +32,7 @@ export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'stable',
   'blacksmith',
   'tower',
+  'wall',
   'foundry',
   'wonder',
 ];

@@ -4,6 +4,7 @@ import {
   BUILDING_BALANCE,
   BUILDING_MELEE_DEF,
   BUILDING_PIERCE_DEF,
+  TOWER_ATTACK,
   TRAINER_BUILDINGS,
 } from '../../config/balance';
 import type { BuildingType, ResourceType } from '../../types';
@@ -109,9 +110,24 @@ export function createBuilding(
   if (TRAINER_BUILDINGS.has(spec.type) && !underConstruction) {
     entity.trainingQueue = { entries: [], maxQueue: 5 };
   }
+  if (spec.type === 'tower' && !underConstruction) {
+    entity.attacker = towerAttacker();
+  }
   entity.fogEmitter = { sightRange: spec.los };
   world.add(entity);
   return entity;
+}
+
+/** Attack stats of a finished tower (TowerCombatSystem picks its targets). */
+export function towerAttacker(): NonNullable<Entity['attacker']> {
+  return {
+    meleeAtk: 0,
+    pierceAtk: TOWER_ATTACK.pierce,
+    bonusVsCavalry: 0,
+    range: TOWER_ATTACK.range,
+    cooldownMs: TOWER_ATTACK.cooldownMs,
+    cooldownRemaining: 0,
+  };
 }
 
 function blockFootprint(

@@ -1,7 +1,7 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
-import { findPath } from '../../map/pathfinding';
+import { findPathToNearest } from '../../map/pathfinding';
 import { TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
@@ -16,6 +16,7 @@ import type { EcsWorld } from '../world';
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
 
+const REPATH_RETRY_MS = 1500;
 const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 
 /**
@@ -31,6 +32,9 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 export class CombatSystem {
   private readonly world: EcsWorld;
   private readonly mapData: MapData;
+  /** Clock and per-unit earliest next repath, so walled-off targets are not re-planned every tick. */
+  private nowMs = 0;
+  private readonly repathAt = new WeakMap<object, number>();
 
   constructor(
     world: EcsWorld,
@@ -42,6 +46,7 @@ export class CombatSystem {
   }
 
   update(deltaMs: number): void {
+    this.nowMs += deltaMs;
     for (const a of this.world.with('position', 'attacker', 'owner')) {
       if (a.attacker.cooldownRemaining > 0) {
         a.attacker.cooldownRemaining = Math.max(
@@ -124,10 +129,14 @@ export class CombatSystem {
     if (!a.movable) return;
     // Already moving toward something? Keep going; we'll re-check next tick.
     if (a.movable.path.length > 0) return;
+    if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
     const goal = findAdjacentToTarget(this.mapData, target, a.position, a.attacker.range);
-    if (!goal) return;
-    const path = findPath(this.mapData, a.position, goal);
-    if (!path || path.length < 2) return;
+    const path = goal ? findPathToNearest(this.mapData, a.position, goal) : null;
+    if (!path || path.length < 2) {
+      // Walled off and already as close as possible: retry later, not every tick.
+      this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
+      return;
+    }
     a.movable.path = path.slice(1);
     a.movable.progress = 0;
   }

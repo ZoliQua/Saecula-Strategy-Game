@@ -42,6 +42,7 @@ export class PointerInput {
     input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
     input.keyboard?.on('keydown-ESC', () => {
+      this.placement.cancelWallLine();
       uiStore.getState().setPlacementBuilding(null);
     });
   }
@@ -91,11 +92,13 @@ export class PointerInput {
     const placement = uiStore.getState().placementBuilding;
     if (placement) {
       if (pointer.rightButtonDown()) {
+        this.placement.cancelWallLine();
         uiStore.getState().setPlacementBuilding(null);
         return;
       }
       if (pointer.leftButtonDown() && tile) {
-        this.placement.tryPlaceBuilding(tile, placement);
+        if (this.placement.isLineType(placement)) this.placement.beginWallLine(tile);
+        else this.placement.tryPlaceBuilding(tile, placement);
       }
       return;
     }
@@ -118,6 +121,11 @@ export class PointerInput {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
+    if (this.placement.isDraggingWallLine()) {
+      if (this.isPointerOverHud(pointer)) this.placement.cancelWallLine();
+      else this.placement.commitWallLine(this.pick(pointer));
+      return;
+    }
     if (this.isPointerOverHud(pointer)) {
       this.dragStart = null;
       this.clearDragRect();

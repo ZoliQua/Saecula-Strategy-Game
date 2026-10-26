@@ -17,6 +17,7 @@ import { ProjectileSystem } from '../../ecs/systems/ProjectileSystem';
 import { ResearchSystem } from '../../ecs/systems/ResearchSystem';
 import { RenderSystem } from '../../ecs/systems/RenderSystem';
 import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
+import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import type { EcsWorld } from '../../ecs/world';
 import type { Difficulty } from '../../game/GameSetupConfig';
@@ -39,6 +40,7 @@ export class SystemRunner {
   private readonly research: ResearchSystem;
   private readonly population: PopulationSystem;
   private readonly combat: CombatSystem;
+  private readonly towers: TowerCombatSystem;
   private readonly projectiles: ProjectileSystem;
   private readonly projectileRender: ProjectileRenderSystem;
   private readonly death: DeathSystem;
@@ -74,6 +76,7 @@ export class SystemRunner {
     this.death = new DeathSystem(world, mapData);
     this.healthBars = new HealthBarSystem(scene, world);
     this.fogData = new FogOfWarData(mapData.width, mapData.height);
+    this.towers = new TowerCombatSystem(world, this.fogData, 1);
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1);
     this.render.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);
@@ -94,6 +97,7 @@ export class SystemRunner {
     this.construction.update(delta);
     this.training.update(delta);
     this.research.update(delta);
+    this.towers.update(delta);
     this.combat.update(delta);
     this.projectiles.update(delta);
     this.movement.update(delta);
