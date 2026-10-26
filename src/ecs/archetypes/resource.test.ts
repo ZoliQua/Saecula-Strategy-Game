@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RESOURCE_NODE_AMOUNT } from '../../config/balance';
 import { createEcsWorld } from '../world';
 import { createResourceNode } from './resource';
 
@@ -26,7 +27,7 @@ describe('createResourceNode', () => {
     expect(e.resourceNode?.maxAmount).toBe(42);
   });
 
-  it('gold and food nodes have expected defaults', () => {
+  it('gold and food nodes default to RESOURCE_NODE_AMOUNT (a berry bush holds 125 food, AoE)', () => {
     const world = createEcsWorld();
     const gold = createResourceNode(world, {
       tile: { tx: 1, ty: 1 },
@@ -37,6 +38,7 @@ describe('createResourceNode', () => {
       type: 'food',
     });
     expect(gold.resourceNode?.amount).toBe(200);
-    expect(food.resourceNode?.amount).toBe(80);
+    expect(food.resourceNode?.amount).toBe(RESOURCE_NODE_AMOUNT.food);
+    expect(RESOURCE_NODE_AMOUNT.food).toBe(125);
   });
 });

@@ -12,10 +12,10 @@ import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import { createEcsWorld, type EcsWorld } from '../../ecs/world';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
-import { generateMap } from '../../map/generator';
+import { generateMap, type MapTemplate } from '../../map/generator';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
-import { spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
+import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
@@ -24,6 +24,8 @@ import { applyDifficulty } from '../createStrategy';
 export interface HeadlessMatchOptions {
   readonly seed: number;
   readonly size: number;
+  /** Map template (default meadow). */
+  readonly template?: MapTemplate;
   readonly aiCount: number;
   /** One strategy per AI player (ids 2..). */
   readonly strategy: (playerId: number) => AIStrategy;
@@ -44,7 +46,7 @@ export interface HeadlessMatch {
 }
 
 /**
- * A skirmish without Phaser: the meadow map, starting entities, every
+ * A skirmish without Phaser: the template's map (meadow by default), starting entities, every
  * gameplay system in SystemRunner order and the AI players. The human
  * (player 1) stays passive; AIs attack it unless `enemyOf` pits them
  * against each other. Used by AI simulation tests.
@@ -52,7 +54,7 @@ export interface HeadlessMatch {
 export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatch {
   resetUiStore();
   const generated = generateMap({
-    template: 'meadow',
+    template: options.template ?? 'meadow',
     width: options.size,
     height: options.size,
     seed: options.seed,
@@ -63,6 +65,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const players = createPlayers('hungarian', options.aiCount);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
+  spawnPresetWalls(world, players, map, generated.walls);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     return new AIPlayer(p, options.strategy(p.id));

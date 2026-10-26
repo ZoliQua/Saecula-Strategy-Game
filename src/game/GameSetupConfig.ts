@@ -1,4 +1,4 @@
-import type { MapTemplate } from '../map/generator';
+import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import type { CivId } from '../types';
 
 export type MapSizeId = 'small' | 'medium' | 'large';
@@ -20,7 +20,7 @@ export const MAP_SIZE_IDS: readonly MapSizeId[] = ['small', 'medium', 'large'];
 export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 /** Options that work today; the setup screen shows the rest as "coming soon". */
 export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
-export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = ['meadow'];
+export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
 export const AVAILABLE_CIVS: readonly CivId[] = ['hungarian'];
 
 export const MIN_AI = 1;

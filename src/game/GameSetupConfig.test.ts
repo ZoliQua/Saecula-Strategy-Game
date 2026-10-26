@@ -8,6 +8,7 @@ import {
   playerCount,
   randomSeed,
   withSetup,
+  type GameSetupConfig,
 } from './GameSetupConfig';
 
 describe('GameSetupConfig', () => {
@@ -56,10 +57,15 @@ describe('GameSetupConfig', () => {
     expect(c.civ).toBe('hungarian');
   });
 
-  it('falls back to meadow for templates that are not generated yet', () => {
-    for (const template of ['wilderness', 'islands', 'fortress', 'random'] as const) {
-      expect(withSetup(defaultSetupConfig(1), { template }).template).toBe('meadow');
+  it('offers every map template', () => {
+    for (const template of ['meadow', 'wilderness', 'islands', 'fortress', 'random'] as const) {
+      expect(withSetup(defaultSetupConfig(1), { template }).template).toBe(template);
     }
+  });
+
+  it('falls back to meadow for an unknown template', () => {
+    const bogus = 'volcano' as unknown as GameSetupConfig['template'];
+    expect(withSetup(defaultSetupConfig(1), { template: bogus }).template).toBe('meadow');
   });
 
   it('allows more AIs than recommended but flags it', () => {

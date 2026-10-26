@@ -1,14 +1,9 @@
+import { RESOURCE_NODE_AMOUNT } from '../../config/balance';
 import type { TileCoord } from '../../iso/coordinates';
 import { TERRAIN, type TerrainId } from '../../map/TerrainTypes';
 import type { ResourceType } from '../../types';
 import type { Entity } from '../components';
 import { assignEntityId, type EcsWorld } from '../world';
-
-const STARTING_AMOUNT: Record<ResourceType, number> = {
-  wood: 100,
-  gold: 200,
-  food: 80,
-};
 
 export const RESOURCE_TERRAIN: Record<ResourceType, TerrainId> = {
   wood: TERRAIN.forest,
@@ -37,7 +32,7 @@ export function createResourceNode(
   world: EcsWorld,
   options: CreateResourceNodeOptions,
 ): Entity {
-  const max = options.amount ?? STARTING_AMOUNT[options.type];
+  const max = options.amount ?? RESOURCE_NODE_AMOUNT[options.type];
   const entity: Entity = assignEntityId({
     position: { tx: options.tile.tx, ty: options.tile.ty },
     resourceNode: {

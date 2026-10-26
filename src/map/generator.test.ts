@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { START_ECONOMY } from '../config/balance';
 import { generateMap } from './generator';
 import { TERRAIN } from './TerrainTypes';
 
@@ -43,20 +44,20 @@ describe('generator — meadow', () => {
     }
   });
 
-  it('each player start has a gold mine within radius 5', () => {
+  it('each player start has a gold lode of START_ECONOMY.goldTiles tiles within radius 8', () => {
     const result = generateMap(baseOpts());
     for (const start of result.playerStarts) {
-      const found = findNearby(result.map, start, TERRAIN.gold_mine, 5);
-      expect(found).toBeGreaterThan(0);
+      const found = findNearby(result.map, start, TERRAIN.gold_mine, 8);
+      expect(found).toBeGreaterThanOrEqual(START_ECONOMY.goldTiles.min);
     }
   });
 
-  it('each player start has 4-6 berry bushes within radius 5', () => {
+  it('each player start has its START_ECONOMY berry bushes within radius 7', () => {
     const result = generateMap(baseOpts());
     for (const start of result.playerStarts) {
-      const found = findNearby(result.map, start, TERRAIN.berries, 5);
-      expect(found).toBeGreaterThanOrEqual(3);
-      expect(found).toBeLessThanOrEqual(8);
+      const found = findNearby(result.map, start, TERRAIN.berries, 7);
+      expect(found).toBeGreaterThanOrEqual(START_ECONOMY.berryBushes.min);
+      expect(found).toBeLessThanOrEqual(START_ECONOMY.berryBushes.max);
     }
   });
 

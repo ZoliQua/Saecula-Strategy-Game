@@ -18,6 +18,7 @@ import { resetUiStore, uiStore } from '../ui/store';
 import { BuildPlacement } from './game/BuildPlacement';
 import {
   generateGameMap,
+  spawnPresetWalls,
   spawnResourceNodes,
   spawnStartingEntities,
 } from './game/GameBootstrap';
@@ -52,7 +53,7 @@ export class GameScene extends Phaser.Scene {
 
     const config = withSetup(defaultSetupConfig(), data ?? {});
     this.players = createPlayers(config.civ, config.aiCount);
-    const { mapData, starts } = generateGameMap(config);
+    const { mapData, starts, walls } = generateGameMap(config);
     const playerStart = starts[0] ?? { tx: 10, ty: 10 };
     this.mapData = mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.
@@ -118,6 +119,7 @@ export class GameScene extends Phaser.Scene {
     });
     spawnResourceNodes(this.world, mapData);
     spawnStartingEntities(this.world, this.players, mapData, starts);
+    spawnPresetWalls(this.world, this.players, mapData, walls);
 
     this.victoryChecker = new VictoryChecker(this.world, this.players);
     this.gameElapsedMs = 0;

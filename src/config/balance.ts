@@ -254,3 +254,33 @@ export const REPATH_RETRY_MS = 1500;
  * the gather rate until drained and the regrowth rate after.
  */
 export const FARM_BALANCE = { capacity: 175, regenPerSec: 0.4 } as const;
+
+/** What one resource tile holds when the map is spawned (a forest tile is one tree, a gold tile one lode piece). */
+export const RESOURCE_NODE_AMOUNT: Readonly<Record<'food' | 'wood' | 'gold', number>> = {
+  wood: 100,
+  gold: 200,
+  food: 125,
+};
+
+/**
+ * Every player's start (all map templates): a gold lode of several
+ * adjacent tiles, a berry patch and a forest next to the town centre
+ * (AoE convention), sized so Feudalism (500 food, 300 gold) and the first
+ * army are paid for from home. Validation (src/map/validation.ts)
+ * requires at least the `min*` amounts reachable within `radius` tiles.
+ */
+export const START_ECONOMY = {
+  /** Gold tiles in the start lode ([min, max], inclusive). */
+  goldTiles: { min: 5, max: 6 },
+  /** Ring (tiles from the start) the lode sits in. */
+  goldRing: { min: 4, max: 6 },
+  berryBushes: { min: 6, max: 7 },
+  berryRing: { min: 4, max: 5 },
+  trees: { min: 12, max: 16 },
+  treeRing: { min: 5, max: 7 },
+  /** Validation radius (Chebyshev tiles from the start) for the minimums below. */
+  radius: 8,
+  minGold: 800,
+  minFood: 500,
+  minWood: 800,
+} as const;
