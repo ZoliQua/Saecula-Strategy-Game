@@ -5,9 +5,10 @@ import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
 /**
- * Fixed seeds; measured (64×64, passive human): age 2 at 12.6 / 12.0 / 13.0 / 13.0 / 13.2 / 12.2 / 11.6 / 12.4 min,
- * first raid 7.0 / 7.7 / 7.3 / 8.0 / 8.9 / 6.3 / 8.0 / 7.7 min. Seeds 11 and 2024 used to be left out (gatherers
- * ping-ponging between a node and the drop-off with a partial load of another type); GatheringSystem fixed that.
+ * Fixed seeds; measured (64×64, passive human, Task 17 start economy: a 5-6 tile gold lode, 6-7 berry bushes
+ * of 125 food): age 2 at 11.59 / 10.84 / 11.65 / 11.34 / 12.02 / 11.14 / 11.02 / 11.34 min (median 11.34),
+ * first raid 6.0 / 7.5 / 6.5 / 7.3 / 8.0 / 6.7 / 8.2 / 5.7 min. No seed is left out (11 and 2024 used to
+ * stall on gather ping-pong and far-away gold; both fixed).
  */
 const SEEDS = [4242, 7, 99, 1234, 555, 8, 11, 2024];
 
@@ -35,13 +36,13 @@ const median = (xs: number[]) => {
 };
 
 describe('MediumStrategy headless simulation (64×64 meadow, 8 seeds, passive human)', () => {
-  it('on the listed seeds: raids by 10 min, age 2 by 15 min each (measured worst 13.2), median ≤ 13.5 min', () => {
+  it('on the listed seeds: raids by 8.5 min (measured worst 8.2), age 2 by 12.25 min each (worst 12.02), median ≤ 11.5 min', () => {
     const runs = SEEDS.map(play);
-    for (const r of runs) {
-      expect(r.firstAttack).toBeLessThanOrEqual(10 * MIN);
-      expect(r.age2).toBeLessThanOrEqual(15 * MIN);
+    for (const [i, r] of runs.entries()) {
+      expect(r.firstAttack, `seed ${SEEDS[i]} raid`).toBeLessThanOrEqual(8.5 * MIN);
+      expect(r.age2, `seed ${SEEDS[i]} age 2`).toBeLessThanOrEqual(12.25 * MIN);
     }
-    expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(13.5 * MIN);
+    expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(11.5 * MIN);
   });
 
   it('by 26 min has a mixed age-2 army, techs, and has hit the human base (seed 8)', () => {

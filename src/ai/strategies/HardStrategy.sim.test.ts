@@ -49,7 +49,7 @@ function duel(seed: number, rival: (rng: () => number) => AIStrategy, minutes = 
 }
 
 describe('HardStrategy headless duels (64×64 meadow)', () => {
-  it('beats Easy on fixed seed 7 within 25 simulated minutes: Easy\'s TC destroyed (measured 10.6 min)', () => {
+  it('beats Easy on fixed seed 7 within 25 simulated minutes: Easy\'s TC destroyed (measured 12.1 min)', () => {
     const r = duel(7, (rng) => new EasyStrategy(rng));
     expect(r.wonAt).toBeLessThan(25 * MIN);
     // Two scouts out and a stance read from what it saw.
@@ -58,20 +58,20 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
   });
 
   /**
-   * Measured (this build) on seeds 1-8: Easy's TC falls at 11.2 / 12.9 / 10.8 / 11.3 / 11.4 / 12.4 / 10.6 /
-   * 10.6 min; the scout pressure (§10.3 first attack, rolled at 3-5 min) leaves at 5.0 / 5.3 / 4.8 / 5.1 /
-   * 5.4 / 5.0 / 4.7 / 4.7 min. No seed in 1-8 is left out.
+   * Measured (Task 17 start economy) on seeds 1-8: Easy's TC falls at 11.2 / 11.6 / 13.2 / 11.8 / 13.7 /
+   * 12.8 / 12.1 / 11.1 min; the scout pressure (§10.3 first attack, rolled at 3-5 min, leaves once three
+   * scouts are out) at 4.72 / 4.82 / 5.36 / 5.34 / 5.16 / 4.82 / 4.80 / 4.81 min. No seed in 1-8 is left out.
    */
-  it('on seeds 1-8: first attack leaves by 5.5 min (measured 4.7-5.4) and Easy\'s TC falls within 25 min', () => {
+  it('on seeds 1-8: first attack leaves at 3-5.5 min (measured 4.7-5.4) and Easy\'s TC falls within 16 min (worst 13.7)', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const r = duel(seed, (rng) => new EasyStrategy(rng));
       expect(r.firstAttackAt, `seed ${seed} first attack`).toBeGreaterThanOrEqual(3 * MIN);
       expect(r.firstAttackAt, `seed ${seed} first attack`).toBeLessThanOrEqual(5.5 * MIN);
-      expect(r.wonAt, `seed ${seed}`).toBeLessThan(25 * MIN);
+      expect(r.wonAt, `seed ${seed}`).toBeLessThan(16 * MIN);
     }
   });
 
-  it('beats Medium on fixed seed 4 within 25 minutes (measured 14.7 min)', () => {
+  it('beats Medium on fixed seed 4 within 25 minutes (measured 19.2 min)', () => {
     expect(duel(4, (rng) => new MediumStrategy(rng)).wonAt).toBeLessThan(25 * MIN);
   });
 });
