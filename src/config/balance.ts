@@ -145,6 +145,13 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },
 };
 
+/**
+ * Time a destroyed building stays in the world while it collapses (its
+ * footprint stays blocked until the entity is removed). Units use
+ * kill.ts DEATH_TTL_MS.
+ */
+export const BUILDING_DEATH_TTL_MS = 2400;
+
 /** Buildings a player may own only one of (finished or under construction). */
 export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
 

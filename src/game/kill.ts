@@ -1,7 +1,8 @@
+import { BUILDING_DEATH_TTL_MS } from '../config/balance';
 import type { Entity } from '../ecs/components';
 import type { EcsWorld } from '../ecs/world';
 
-/** Time a dying entity stays in the world (matches unitAnim DYING_MS). */
+/** Time a dying unit stays in the world (matches unitAnim DYING_MS); buildings use BUILDING_DEATH_TTL_MS. */
 export const DEATH_TTL_MS = 900;
 
 /**
@@ -26,7 +27,7 @@ export function killEntity(
   target: Entity & { health: { current: number; max: number } },
 ): void {
   target.health.current = 0;
-  world.addComponent(target, 'dying', { ttlMs: DEATH_TTL_MS });
+  world.addComponent(target, 'dying', { ttlMs: target.building ? BUILDING_DEATH_TTL_MS : DEATH_TTL_MS });
   if (target.attackIntent) world.removeComponent(target, 'attackIntent');
   if (target.gatherIntent) world.removeComponent(target, 'gatherIntent');
   if (target.moveIntent) world.removeComponent(target, 'moveIntent');
