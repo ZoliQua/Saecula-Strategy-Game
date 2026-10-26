@@ -46,6 +46,14 @@ export class MapData {
     return isPassable(this.tiles[idx] as TerrainId);
   }
 
+  /**
+   * Free grass a building may cover: walkable and not a resource. Berry
+   * bushes are walkable, but a building on one would bury the bush.
+   */
+  isBuildable(tx: number, ty: number): boolean {
+    return this.isPassable(tx, ty) && this.tiles[ty * this.width + tx] === TERRAIN.grass;
+  }
+
   setBlocked(tx: number, ty: number, blocked: boolean): void {
     if (!isInsideMap({ tx, ty }, this.width, this.height)) return;
     this.blocked[ty * this.width + tx] = blocked ? 1 : 0;

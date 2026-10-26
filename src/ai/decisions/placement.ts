@@ -22,7 +22,7 @@ export interface PlacementOptions {
   readonly natureMayTouch?: boolean;
 }
 
-/** Every footprint tile is free and allowed; with clearance, the ring around it is passable too. */
+/** Every footprint tile is free grass (MapData.isBuildable) and allowed; with clearance, the ring around it is passable too. */
 export function canPlaceAt(
   map: MapData,
   origin: TileCoord,
@@ -34,7 +34,7 @@ export function canPlaceAt(
     for (let dx = 0; dx < width; dx++) {
       const tx = origin.tx + dx;
       const ty = origin.ty + dy;
-      if (!map.isPassable(tx, ty)) return false;
+      if (!map.isBuildable(tx, ty)) return false;
       if (options.tileAllowed && !options.tileAllowed(tx, ty)) return false;
     }
   }

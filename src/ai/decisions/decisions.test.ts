@@ -71,6 +71,15 @@ describe('placement', () => {
     expect(canPlaceAt(map, { tx: 0, ty: 0 }, 2, 2, { clearance: 1 })).toBe(true);
   });
 
+  it('never covers a berry bush (the bush would be lost under the building)', () => {
+    const map = new MapData(12, 12);
+    map.setTile(4, 4, TERRAIN.berries);
+    expect(canPlaceAt(map, { tx: 3, ty: 3 }, 3, 3, { clearance: 0 })).toBe(false);
+    const spot = findPlacement(map, { tx: 4, ty: 4 }, 3, 3, { minRadius: 0, maxRadius: 4, clearance: 0 })!;
+    const covers = spot.tx <= 4 && spot.tx + 2 >= 4 && spot.ty <= 4 && spot.ty + 2 >= 4;
+    expect(covers).toBe(false);
+  });
+
   it('natureMayTouch: trees may touch, buildings may not, and the trees and the building stay reachable', () => {
     const map = new MapData(12, 12);
     map.setTile(5, 3, TERRAIN.forest);

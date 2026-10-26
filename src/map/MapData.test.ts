@@ -36,6 +36,19 @@ describe('MapData', () => {
     expect(map.isPassable(3, 0)).toBe(true);
   });
 
+  it('isBuildable: only free grass (berry bushes are walkable but never built over)', () => {
+    const map = new MapData(8, 8);
+    map.setTile(1, 1, TERRAIN.berries);
+    map.setTile(2, 2, TERRAIN.forest);
+    map.setBlocked(3, 3, true);
+    expect(map.isBuildable(0, 0)).toBe(true);
+    expect(map.isBuildable(1, 1)).toBe(false);
+    expect(map.isPassable(1, 1)).toBe(true);
+    expect(map.isBuildable(2, 2)).toBe(false);
+    expect(map.isBuildable(3, 3)).toBe(false);
+    expect(map.isBuildable(-1, 0)).toBe(false);
+  });
+
   it('isPassable returns false for out-of-bounds', () => {
     const map = new MapData(4, 4);
     expect(map.isPassable(-1, 0)).toBe(false);

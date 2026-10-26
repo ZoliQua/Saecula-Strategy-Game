@@ -54,7 +54,7 @@ export class WallLinePlacement {
     const tiles = wallLineTiles(this.start ?? hover, hover);
     return planWallSegments(
       tiles,
-      (t) => this.mapData.isPassable(t.tx, t.ty),
+      (t) => this.mapData.isBuildable(t.tx, t.ty),
       uiStore.getState().resources.wood,
       cost,
     );

@@ -60,7 +60,7 @@ export class BuildPlacement {
   canPlaceBuilding(origin: TileCoord, w: number, h: number): boolean {
     for (let dy = 0; dy < h; dy++) {
       for (let dx = 0; dx < w; dx++) {
-        if (!this.mapData.isPassable(origin.tx + dx, origin.ty + dy)) {
+        if (!this.mapData.isBuildable(origin.tx + dx, origin.ty + dy)) {
           return false;
         }
       }
