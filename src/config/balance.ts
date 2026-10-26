@@ -282,7 +282,7 @@ export const START_ECONOMY = {
   goldTiles: { min: 5, max: 6 },
   /** Ring (tiles from the start) the lode sits in. */
   goldRing: { min: 4, max: 6 },
-  berryBushes: { min: 6, max: 7 },
+  berryBushes: { min: 4, max: 6 },
   berryRing: { min: 4, max: 5 },
   trees: { min: 12, max: 16 },
   treeRing: { min: 5, max: 7 },

@@ -46,11 +46,19 @@ function workedNodes(view: WorldView): Set<number> {
   return taken;
 }
 
+/** workable() per view: a view is built once per AI tick, so enemy ground is judged once per tick. */
+const workableByView = new WeakMap<WorldView, Partial<Record<ResourceType, Entity[]>>>();
+
 /** Natural nodes the AI may send villagers to: known, and not inside a known enemy base. */
 function workable(view: WorldView, type: ResourceType): Entity[] {
-  return view.resources[type].filter(
+  let cache = workableByView.get(view);
+  if (!cache) {
+    cache = {};
+    workableByView.set(view, cache);
+  }
+  return (cache[type] ??= view.resources[type].filter(
     (n) => n.building !== undefined || !n.position || !onEnemyGround(n.position, view.knownEnemyBuildings, AI_COMMON.enemyGroundRadius),
-  );
+  ));
 }
 
 /** Best node of `type` for a villager at `from`: a free own farm first for food, else the nearest workable node. */

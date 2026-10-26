@@ -5,9 +5,9 @@ import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
 /**
- * Fixed seeds; measured (64×64, passive human, Task 17 start economy: a 5-6 tile gold lode, 6-7 berry bushes
- * of 125 food): age 2 at 11.59 / 10.84 / 11.65 / 11.34 / 12.02 / 11.14 / 11.02 / 11.34 min (median 11.34),
- * first raid 6.0 / 7.5 / 6.5 / 7.3 / 8.0 / 6.7 / 8.2 / 5.7 min. No seed is left out (11 and 2024 used to
+ * Fixed seeds; measured (64×64, passive human, Task 17 start economy: a 5-6 tile gold lode, 4-6 berry bushes
+ * of 125 food): age 2 at 11.79 / 12.00 / 11.67 / 12.00 / 12.55 / 11.77 / 11.50 / 12.65 min (median 11.9),
+ * first raid 6.0 / 7.7 / 6.6 / 7.6 / 7.9 / 6.6 / 8.0 / 6.1 min. No seed is left out (11 and 2024 used to
  * stall on gather ping-pong and far-away gold; both fixed).
  */
 const SEEDS = [4242, 7, 99, 1234, 555, 8, 11, 2024];
@@ -36,13 +36,13 @@ const median = (xs: number[]) => {
 };
 
 describe('MediumStrategy headless simulation (64×64 meadow, 8 seeds, passive human)', () => {
-  it('on the listed seeds: raids by 8.5 min (measured worst 8.2), age 2 by 12.25 min each (worst 12.02), median ≤ 11.5 min', () => {
+  it('on the listed seeds: raids by 8.5 min (measured worst 8.0), age 2 by 13 min each (worst 12.65), median ≤ 12 min', () => {
     const runs = SEEDS.map(play);
     for (const [i, r] of runs.entries()) {
       expect(r.firstAttack, `seed ${SEEDS[i]} raid`).toBeLessThanOrEqual(8.5 * MIN);
-      expect(r.age2, `seed ${SEEDS[i]} age 2`).toBeLessThanOrEqual(12.25 * MIN);
+      expect(r.age2, `seed ${SEEDS[i]} age 2`).toBeLessThanOrEqual(13 * MIN);
     }
-    expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(11.5 * MIN);
+    expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(12 * MIN);
   });
 
   it('by 26 min has a mixed age-2 army, techs, and has hit the human base (seed 8)', () => {

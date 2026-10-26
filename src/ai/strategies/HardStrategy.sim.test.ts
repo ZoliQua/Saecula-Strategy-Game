@@ -58,11 +58,11 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
   });
 
   /**
-   * Measured (Task 17 start economy) on seeds 1-8: Easy's TC falls at 11.2 / 11.6 / 13.2 / 11.8 / 13.7 /
-   * 12.8 / 12.1 / 11.1 min; the scout pressure (§10.3 first attack, rolled at 3-5 min, leaves once three
-   * scouts are out) at 4.72 / 4.82 / 5.36 / 5.34 / 5.16 / 4.82 / 4.80 / 4.81 min. No seed in 1-8 is left out.
+   * Measured (Task 17 start economy) on seeds 1-8: Easy's TC falls at 10.5 / 13.1 / 12.6 / 12.1 / 13.8 /
+   * 12.0 / 12.1 / 10.8 min; the scout pressure (§10.3 first attack, rolled at 3-5 min, leaves once three
+   * scouts are out) at 4.70 / 4.71 / 4.97 / 4.98 / 4.99 / 4.74 / 4.76 / 4.70 min. No seed in 1-8 is left out.
    */
-  it('on seeds 1-8: first attack leaves at 3-5.5 min (measured 4.7-5.4) and Easy\'s TC falls within 16 min (worst 13.7)', () => {
+  it('on seeds 1-8: first attack leaves at 3-5.5 min (measured 4.7-5.0) and Easy\'s TC falls within 16 min (worst 13.8)', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const r = duel(seed, (rng) => new EasyStrategy(rng));
       expect(r.firstAttackAt, `seed ${seed} first attack`).toBeGreaterThanOrEqual(3 * MIN);
@@ -71,7 +71,7 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
     }
   });
 
-  it('beats Medium on fixed seed 4 within 25 minutes (measured 19.2 min)', () => {
+  it('beats Medium on fixed seed 4 within 25 minutes (measured 22.0 min)', () => {
     expect(duel(4, (rng) => new MediumStrategy(rng)).wonAt).toBeLessThan(25 * MIN);
   });
 });
