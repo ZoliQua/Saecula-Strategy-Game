@@ -130,6 +130,7 @@ export const hu = {
     trainingBusy: 'A városháza éppen kiképez — várd meg vagy töröld a sort',
     researchBusy: 'A városháza éppen kutat — nem képezhet ki egységet',
     researchRunning: 'Már folyik egy kutatás',
+    researchElsewhere: 'Ezt a fejlesztést már egy másik épület kutatja',
     seconds: 'mp',
     ageReached: {
       2: 'Beléptél a Középkorba!',
