@@ -6,6 +6,7 @@ import { PlayerManager } from '../game/PlayerManager';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
+import { createRng } from '../map/random';
 import { TERRAIN } from '../map/TerrainTypes';
 import { resetUiStore, uiStore } from '../ui/store';
 import { createBuilding } from './archetypes/building';
@@ -155,7 +156,8 @@ describe('integration — M2 combat + AI loop', () => {
     }
     const player = players.get(2)!;
     player.resources = { food: 50, wood: 80, gold: 200 };
-    const ai = new AIPlayer(player, new EasyStrategy());
+    // Seeded: Easy's 20% random builds made this test flaky (a random lumber camp spends the wood).
+    const ai = new AIPlayer(player, new EasyStrategy(createRng(1)));
 
     for (let i = 0; i < 150; i++) {
       ai.update({ world, mapData: map }, 200);
