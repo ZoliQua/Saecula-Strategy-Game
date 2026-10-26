@@ -204,6 +204,38 @@ export const hu = {
     durationLabel: 'Játékidő',
   },
   loading: 'Betöltés…',
+  /** Dev-build only (AI thoughts overlay); never shown in production. */
+  dev: {
+    aiThoughts: {
+      title: 'AI gondolatai',
+      hint: '` / F9',
+      player: (id: number) => `${id}. játékos`,
+      age: (age: number) => `${age}. kor`,
+      plan: 'Terv',
+      recent: 'Döntések',
+      none: '—',
+      strategies: { easy: 'Könnyű', medium: 'Közepes', hard: 'Nehéz' } as Record<string, string>,
+      phases: {
+        opening: 'Nyitás',
+        ageUp: 'Korváltásra gyűjt',
+        buildUp: 'Építkezés',
+        attacking: 'Támadás',
+        defending: 'Védekezés',
+      },
+      kinds: {
+        train: 'Kiképzés',
+        build: 'Építés',
+        research: 'Fejlesztés',
+        ageUp: 'Korváltás',
+        attack: 'Támadás',
+        defend: 'Védekezés',
+        retreat: 'Visszavonulás',
+        scout: 'Felderítés',
+        explore: 'Felfedezés',
+        rebalance: 'Átcsoportosítás',
+      },
+    },
+  },
 } as const;
 
 export type I18nKey = keyof typeof hu;

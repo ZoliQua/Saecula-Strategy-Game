@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
 import { createStrategy } from '../../ai/createStrategy';
+import type { AIThoughts } from '../../ai/thoughts';
 import { AgeUpFxSystem } from '../../ecs/systems/AgeUpFxSystem';
 import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { BuildingFxSystem } from '../../ecs/systems/BuildingFxSystem';
@@ -112,6 +113,16 @@ export class SystemRunner {
         this.render.releaseStaleAgeArt((id) => active.find((p) => p.id === id)?.age, minAge);
       });
     });
+  }
+
+  /** What each AI is thinking, for the dev-only overlay. */
+  aiThoughtSources(): { playerId: number; color: number; age: number; thoughts: AIThoughts | undefined }[] {
+    return this.aiPlayers.map((ai) => ({
+      playerId: ai.player.id,
+      color: ai.player.color,
+      age: ai.player.age,
+      thoughts: ai.strategy.thoughts?.(),
+    }));
   }
 
   update(time: number, delta: number): void {

@@ -37,6 +37,8 @@ export class GameScene extends Phaser.Scene {
   private victoryChecker!: VictoryChecker;
   private lighting!: LightManager;
   private gameElapsedMs = 0;
+  /** Dev builds only (window.__timeScale): game time runs this much faster than real time. */
+  private timeScale = 1;
   private gameOverTriggered = false;
   private commandUnsubscribe: (() => void) | null = null;
 
@@ -82,7 +84,25 @@ export class GameScene extends Phaser.Scene {
     );
     this.applyCameraGrade();
     this.wireCommands();
+    let disposeDev = () => {};
+    if (import.meta.env.DEV) {
+      // Dev-only tools (AI thoughts overlay, time scale); this import is dropped from production builds.
+      let closed = false;
+      void import('./game/devTools').then(({ mountDevTools }) => {
+        if (closed) return;
+        disposeDev = mountDevTools(
+          () => this.runner.aiThoughtSources(),
+          (scale) => {
+            this.timeScale = scale;
+          },
+        );
+      });
+      disposeDev = () => {
+        closed = true;
+      };
+    }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      disposeDev();
       this.commandUnsubscribe?.();
       this.commandUnsubscribe = null;
       this.runner.destroy();
@@ -203,7 +223,8 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private onUpdate(time: number, delta: number): void {
+  private onUpdate(time: number, realDelta: number): void {
+    const delta = realDelta * this.timeScale;
     this.runner.update(time, delta);
     this.lighting.update(delta);
     this.placement.updateGhost();

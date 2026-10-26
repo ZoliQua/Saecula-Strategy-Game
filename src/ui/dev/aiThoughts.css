@@ -1,0 +1,42 @@
+/* Dev-only AI thoughts overlay — same warm glass as the HUD. */
+.ai-thoughts {
+  position: absolute; top: 72px; right: 14px; width: 300px; max-height: calc(100vh - 330px);
+  padding: 10px 10px 6px; overflow: auto; opacity: 0; transform: translateX(16px);
+  pointer-events: none; transition: opacity 0.25s var(--ease), transform 0.35s var(--ease);
+}
+.ai-thoughts.show { opacity: 1; transform: none; pointer-events: auto; }
+.ait-head { display: flex; justify-content: space-between; margin: 2px 4px 8px; }
+.ait-hint { color: var(--amber); letter-spacing: 0.04em; }
+.ait-list { display: flex; flex-direction: column; gap: 8px; }
+.ait-card {
+  border-radius: var(--r-md); padding: 9px 10px 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ait-card-head { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.ait-swatch { width: 9px; height: 9px; border-radius: 3px; box-shadow: 0 0 8px currentColor; }
+.ait-player { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.04em; }
+.ait-strategy { color: var(--amber-2); }
+.ait-age { margin-left: auto; color: var(--ink-3); font-size: 11px; }
+.ait-phase {
+  display: inline-block; margin: 7px 0 6px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: var(--amber-2); background: rgba(245, 168, 87, 0.14); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.3);
+}
+.ait-phase.p-attacking, .ait-phase.p-defending {
+  color: var(--red); background: rgba(255, 122, 107, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 122, 107, 0.35);
+  animation: ait-pulse 1.6s var(--ease) infinite;
+}
+@keyframes ait-pulse { 50% { box-shadow: inset 0 0 0 1px rgba(255, 122, 107, 0.7), 0 0 12px rgba(255, 122, 107, 0.25); } }
+.ait-row { display: flex; gap: 6px; font-size: 11.5px; margin-bottom: 6px; }
+.ait-key { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.ait-row .ait-key { flex: none; padding-top: 1px; }
+.ait-plan { color: var(--ink-2); }
+.ait-recent { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; }
+.ait-recent li { display: grid; grid-template-columns: 38px 92px 1fr; gap: 6px; color: var(--ink-2); }
+.ait-time { color: var(--ink-3); }
+.ait-kind { color: var(--ink); }
+.ait-kind.k-attack, .ait-kind.k-defend { color: var(--red); }
+.ait-kind.k-ageUp, .ait-kind.k-research { color: var(--gold); }
+.ait-kind.k-build { color: var(--wood); }
+.ait-kind.k-train { color: var(--green); }
+.ait-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
