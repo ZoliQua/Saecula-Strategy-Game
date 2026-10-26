@@ -4,7 +4,16 @@ import { createHeadlessMatch } from '../testing/headlessMatch';
 import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
-/** Fixed seeds; measured (64×64, passive human): age 2 at 15.1 / 14.2 / 13.8 / 13.5 / 14.1 / 12.7 min, first raid 7.8 / 7.7 / 7.5 / 8.0 / 9.4 / 6.5 min. */
+/**
+ * Fixed seeds; measured (64×64, passive human): age 2 at 15.1 / 14.2 / 13.8 / 13.5 / 14.1 / 12.7 min,
+ * first raid 7.8 / 7.7 / 7.5 / 8.0 / 9.4 / 6.5 min.
+ *
+ * Deliberately NOT in this set (economy pathology, not AI logic — gold miners walking to far center
+ * gold once the single 200-gold start mine is gone, and gatherers churning between resources while
+ * carrying loads; to be addressed by the richer start economy in Task 17):
+ *   - seed 11:   age 2 at 15.8 min (raid 9.0) — covered by the looser test below;
+ *   - seed 2024: age 2 at 24.0 min (raid 7.4) — not asserted.
+ */
 const SEEDS = [4242, 7, 99, 1234, 555, 8];
 
 interface Milestones {
@@ -17,7 +26,7 @@ function play(seed: number): Milestones {
   const ai = match.players.get(2)!;
   const strategy = match.ais[0]!.strategy;
   const m: Milestones = { age2: Infinity, firstAttack: Infinity };
-  match.run(16 * MIN, 100, (t) => {
+  match.run(17 * MIN, 100, (t) => {
     if (m.firstAttack === Infinity && strategy.thoughts!().recent.some((r) => r.kind === 'attack')) m.firstAttack = t;
     if (m.age2 === Infinity && ai.age >= 2) m.age2 = t;
     return m.age2 < Infinity && m.firstAttack < Infinity;
@@ -31,13 +40,19 @@ const median = (xs: number[]) => {
 };
 
 describe('MediumStrategy headless simulation (64×64 meadow, 6 seeds, passive human)', () => {
-  it('raids by 10 min in every game; reaches age 2 at a median ≤ 14.5 min, every game by 16 min (measured worst 15.1)', () => {
+  it('on the listed seeds only: raids by 10 min, age 2 by 16 min each (measured worst 15.1), median ≤ 14.5 min', () => {
     const runs = SEEDS.map(play);
     for (const r of runs) {
       expect(r.firstAttack).toBeLessThanOrEqual(10 * MIN);
       expect(r.age2).toBeLessThanOrEqual(16 * MIN);
     }
     expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(14.5 * MIN);
+  });
+
+  it('slow-gold seed 11 (excluded above) still raids by 10 min and reaches age 2 by 17 min (measured 15.8)', () => {
+    const r = play(11);
+    expect(r.firstAttack).toBeLessThanOrEqual(10 * MIN);
+    expect(r.age2).toBeLessThanOrEqual(17 * MIN);
   });
 
   it('by 26 min has a mixed age-2 army, techs, and has hit the human base (seed 8)', () => {

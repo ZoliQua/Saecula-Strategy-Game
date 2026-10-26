@@ -25,7 +25,6 @@ import type { WorldView } from '../perception';
 import { assignIdleVillagers, rebalanceGatherers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
-
 /**
  * Medium AI (PROGRAM_TERV.md §10.2): a preset build order, age-ups as
  * soon as they are affordable, blacksmith and economy techs, a mixed army

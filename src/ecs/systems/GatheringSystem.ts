@@ -75,7 +75,7 @@ export class GatheringSystem {
       | ResourceNode
       | undefined;
     // An empty farm regrows (FarmRegenSystem): its farmer waits instead of leaving.
-    const regrows = (node as Entity | undefined)?.building !== undefined && !(node as Entity | undefined)?.dying;
+    const regrows = (node as Entity | undefined)?.building?.type === 'farm' && !(node as Entity | undefined)?.dying;
     if (!node || !node.resourceNode || (node.resourceNode.amount <= 0 && !regrows)) {
       this.retarget(v);
       return;
