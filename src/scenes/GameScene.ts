@@ -152,7 +152,10 @@ export class GameScene extends Phaser.Scene {
       } else if (cmd.type === 'research') {
         const building = find(cmd.buildingId);
         if (building && human && building.owner?.playerId === human.id) {
-          startResearch(this.world, building, cmd.techId, human, uiWallet());
+          const result = startResearch(this.world, building, cmd.techId, human, uiWallet());
+          if (result.reason === 'already-in-progress') {
+            gameEvents.emit('researchRejected', { playerId: human.id, reason: result.reason });
+          }
         }
       } else if (cmd.type === 'cancel-research') {
         const building = find(cmd.buildingId);

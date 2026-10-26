@@ -1,3 +1,5 @@
+import { bonusesFor } from '../../game/modifiers';
+import type { PlayerManager } from '../../game/PlayerManager';
 import { directionFromDelta } from '../../types';
 import type { EcsWorld } from '../world';
 
@@ -10,7 +12,10 @@ import type { EcsWorld } from '../world';
 export class MovementSystem {
   private readonly world: EcsWorld;
 
-  constructor(world: EcsWorld) {
+  constructor(
+    world: EcsWorld,
+    private readonly players: PlayerManager | null = null,
+  ) {
     this.world = world;
   }
 
@@ -21,7 +26,7 @@ export class MovementSystem {
       const mv = entity.movable;
       if (mv.path.length === 0) continue;
 
-      mv.progress += mv.speed * dt;
+      mv.progress += mv.speed * bonusesFor(this.players, entity).speedMultiplier * dt;
       while (mv.progress >= 1 && mv.path.length > 0) {
         entity.position = { tx: mv.path[0]!.tx, ty: mv.path[0]!.ty };
         mv.path.shift();

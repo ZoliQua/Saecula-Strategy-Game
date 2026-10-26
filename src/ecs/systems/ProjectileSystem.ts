@@ -1,6 +1,8 @@
 import { PROJECTILE_HIT_RADIUS } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
+import { boostArmor, bonusesFor } from '../../game/modifiers';
+import type { PlayerManager } from '../../game/PlayerManager';
 import { distanceToEntity } from '../../game/targetGeometry';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -23,7 +25,10 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
  * impact either way.
  */
 export class ProjectileSystem {
-  constructor(private readonly world: EcsWorld) {}
+  constructor(
+    private readonly world: EcsWorld,
+    private readonly players: PlayerManager | null = null,
+  ) {}
 
   update(deltaMs: number): void {
     const landed: Entity[] = [];
@@ -52,7 +57,11 @@ export class ProjectileSystem {
       }
     }
     for (const v of victims) {
-      applyDamage(this.world, v, computeDamage(shot.payload, v.armor ?? NO_ARMOR, v.unit?.unitType));
+      applyDamage(
+        this.world,
+        v,
+        computeDamage(shot.payload, boostArmor(v.armor ?? NO_ARMOR, bonusesFor(this.players, v)), v.unit?.unitType),
+      );
     }
   }
 

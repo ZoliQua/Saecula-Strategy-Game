@@ -9,7 +9,29 @@ export const AGES: readonly { id: AgeId; nameKey: 'roman' | 'medieval' | 'enligh
 ] as const;
 
 /** Researchable technologies (see src/game/technologies.ts). */
-export type TechId = 'feudalism' | 'enlightenment';
+export type TechId =
+  | 'feudalism'
+  | 'enlightenment'
+  | 'blade_sharpening_1'
+  | 'blade_sharpening_2'
+  | 'arrow_sharpening_1'
+  | 'arrow_sharpening_2'
+  | 'armor_1'
+  | 'armor_2'
+  | 'shield_1'
+  | 'shield_2'
+  | 'double_saw'
+  | 'two_man_saw'
+  | 'steam_saw'
+  | 'gold_mining_1'
+  | 'gold_mining_2'
+  | 'deep_mining'
+  | 'crop_rotation'
+  | 'heavy_plow'
+  | 'mechanized_harvest'
+  | 'artisan_guilds'
+  | 'infantry_march'
+  | 'cavalry_training';
 
 export type CivId =
   | 'hungarian'

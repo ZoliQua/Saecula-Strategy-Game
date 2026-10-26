@@ -8,6 +8,8 @@ import type { AgeId, TechId } from '../types';
 export interface GameEvents {
   ageChanged: { playerId: number; age: AgeId };
   techResearched: { playerId: number; techId: TechId };
+  /** A research command was refused for a reason the player should hear about. */
+  researchRejected: { playerId: number; reason: 'already-in-progress' };
 }
 
 type Listener<K extends keyof GameEvents> = (payload: GameEvents[K]) => void;
@@ -15,6 +17,7 @@ type Listener<K extends keyof GameEvents> = (payload: GameEvents[K]) => void;
 const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   ageChanged: new Set(),
   techResearched: new Set(),
+  researchRejected: new Set(),
 };
 
 export const gameEvents = {

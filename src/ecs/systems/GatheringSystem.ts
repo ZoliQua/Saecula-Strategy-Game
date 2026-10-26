@@ -1,5 +1,6 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
+import { gatherMultiplier } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import type { MapData } from '../../map/MapData';
 import { findPath } from '../../map/pathfinding';
@@ -101,7 +102,7 @@ export class GatheringSystem {
 
     const wantType = node.resourceNode.type;
     const take = Math.min(
-      g.gatherRate * dt,
+      g.gatherRate * this.rateMultiplier(v, node) * dt,
       node.resourceNode.amount,
       g.capacity - g.carrying,
     );
@@ -117,6 +118,14 @@ export class GatheringSystem {
     if (g.carrying >= g.capacity) {
       this.handleFull(v);
     }
+  }
+
+  /** Technology multiplier on the gather rate; food bonuses apply to farms only. */
+  private rateMultiplier(v: Villager, node: ResourceNode): number {
+    const type = node.resourceNode.type;
+    if (type === 'food' && !(node as Entity).building) return 1;
+    const player = this.players?.get(v.owner.playerId);
+    return player ? gatherMultiplier(player, type) : 1;
   }
 
   private handleFull(v: Villager): void {

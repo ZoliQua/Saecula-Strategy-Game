@@ -18,6 +18,12 @@ export const TOWER_COOLDOWN_MS = 2000;
 /** Extra melee damage a pikeman deals to the cavalry class. */
 export const PIKEMAN_CAVALRY_BONUS = 22;
 export const CAVALRY_CLASS: readonly UnitType[] = ['scout', 'knight', 'cavalry'];
+/** Units affected by the infantry speed technology. */
+export const INFANTRY_CLASS: readonly UnitType[] = [
+  'swordsman', 'pikeman', 'archer', 'crossbowman', 'musketeer',
+];
+/** Units affected by the Arrow sharpening technologies. */
+export const ARROW_UNITS: readonly UnitType[] = ['archer', 'crossbowman', 'musketeer'];
 
 /** Building armour: melee 0, pierce 6 (towers and walls included). */
 export const BUILDING_MELEE_DEF = 0;
@@ -188,12 +194,43 @@ export interface TechBalance {
   readonly cost: Resources;
   /** Research time in seconds. */
   readonly time: number;
+  /**
+   * Effect magnitude: attack/defence points, a gather/speed/HP fraction
+   * (0.1 = +10%) or population cap points. Age-ups have none.
+   */
+  readonly value?: number;
 }
 
-/** Research costs and durations (PROGRAM_TERV.md section 9). */
+/** Research costs, durations and effect sizes (PROGRAM_TERV.md section 9). */
 export const TECH_BALANCE: Record<TechId, TechBalance> = {
   feudalism: { cost: c(500, 0, 300), time: 120 },
   enlightenment: { cost: c(800, 0, 500), time: 180 },
+  // 9.1 Blacksmith
+  blade_sharpening_1: { cost: c(100, 50, 0), time: 40, value: 1 },
+  blade_sharpening_2: { cost: c(200, 100, 0), time: 60, value: 1 },
+  arrow_sharpening_1: { cost: c(100, 50, 0), time: 40, value: 1 },
+  arrow_sharpening_2: { cost: c(200, 100, 0), time: 60, value: 1 },
+  armor_1: { cost: c(100, 0, 0), time: 40, value: 1 },
+  armor_2: { cost: c(150, 0, 50), time: 60, value: 1 },
+  shield_1: { cost: c(0, 100, 0), time: 40, value: 1 },
+  shield_2: { cost: c(0, 150, 50), time: 60, value: 1 },
+  // 9.2 Lumber camp
+  double_saw: { cost: c(100, 50, 0), time: 30, value: 0.1 },
+  two_man_saw: { cost: c(200, 150, 0), time: 50, value: 0.15 },
+  steam_saw: { cost: c(300, 200, 100), time: 60, value: 0.2 },
+  // 9.3 Mining camp
+  gold_mining_1: { cost: c(100, 0, 0), time: 30, value: 0.15 },
+  gold_mining_2: { cost: c(200, 0, 50), time: 50, value: 0.15 },
+  deep_mining: { cost: c(300, 100, 100), time: 60, value: 0.2 },
+  // 9.4 Farm
+  crop_rotation: { cost: c(75, 0, 0), time: 30, value: 0.15 },
+  heavy_plow: { cost: c(125, 75, 0), time: 50, value: 0.15 },
+  mechanized_harvest: { cost: c(200, 150, 100), time: 60, value: 0.2 },
+  // 9.5 House (researched at the town centre)
+  artisan_guilds: { cost: c(100, 100, 0), time: 45, value: 2 },
+  // 9.7 Barracks
+  infantry_march: { cost: c(150, 0, 50), time: 45, value: 0.1 },
+  cavalry_training: { cost: c(150, 0, 50), time: 45, value: 0.1 },
 };
 
 /** Easy AI: chance per game that it ever researches an age-up. */

@@ -1,4 +1,6 @@
 import { gameEvents } from '../../game/events';
+import { CAVALRY_CLASS } from '../../config/balance';
+import { scaleHealth } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { TECH_SPECS } from '../../game/technologies';
 import type { Entity } from '../components';
@@ -37,6 +39,15 @@ export class ResearchSystem {
       player.age = effect.age;
       gameEvents.emit('ageChanged', { playerId, age: effect.age });
     }
+    if (effect.kind === 'cavalryHp') this.scaleExistingHp(player.id, effect.bonus);
     gameEvents.emit('techResearched', { playerId, techId });
+  }
+
+  /** Existing units of the cavalry class gain the HP bonus once (new ones get it at spawn). */
+  private scaleExistingHp(playerId: number, bonus: number): void {
+    for (const e of this.world.with('unit', 'health', 'owner')) {
+      if (e.owner.playerId !== playerId) continue;
+      if (CAVALRY_CLASS.includes(e.unit.unitType)) scaleHealth(e.health, 1 + bonus);
+    }
   }
 }

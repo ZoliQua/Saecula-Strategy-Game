@@ -1,12 +1,14 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
+import { effectiveUnitStats } from '../../game/modifiers';
 import { hu } from '../../i18n/hu';
 import { decorKeys } from '../../iso/textures';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons, type IconName } from '../icons';
 import type { SelectedEntityInfo, UiStore } from '../store';
+import type { TechId } from '../../types';
 import { thumbnail, unitThumbnail } from '../thumbnails';
 
 const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', string> = {
@@ -38,10 +40,10 @@ export class SelectionPanel {
     }
     // Only rebuild when the shown data changes, so clicks on queue items
     // aren't lost to a re-render between pointerdown and click.
-    const key = `${JSON.stringify(sel)}#${state.selectionCount}`;
+    const key = `${JSON.stringify(sel)}#${state.selectionCount}#${state.researchedTechs.length}`;
     if (key === this.bodyKey) return;
     this.bodyKey = key;
-    this.body.replaceChildren(...this.bodyFor(sel, state.selectionCount));
+    this.body.replaceChildren(...this.bodyFor(sel, state.selectionCount, state.researchedTechs));
   }
 
   private setPortrait(sel: SelectedEntityInfo | null): void {
@@ -57,7 +59,7 @@ export class SelectionPanel {
     if (src) this.portrait.append(el('img', { src, alt: '' }));
   }
 
-  private bodyFor(sel: SelectedEntityInfo | null, count: number): Node[] {
+  private bodyFor(sel: SelectedEntityInfo | null, count: number, researched: readonly TechId[]): Node[] {
     if (!sel) {
       return [
         el('div', { class: 'sel-head' }, el('span', { class: 'sel-name' }, hu.hud.noSelection)),
@@ -76,11 +78,22 @@ export class SelectionPanel {
     const more = count > 1 ? `+${count - 1} ${hu.hud.selectedMore}` : undefined;
     if (sel.kind === 'unit') {
       const spec = UNIT_SPECS[sel.unitType];
+      // Technology bonuses are only known for the human's own units.
+      const eff = effectiveUnitStats({ researched: new Set(enemy ? [] : researched) }, sel.unitType);
+      const base = spec.balance;
+      const attackBonus = eff.meleeAtk - base.meleeAtk + (eff.pierceAtk - base.pierceAtk);
       const rows: Array<[IconName, string, string]> = [
-        ['sword', hu.hud.attack, `${spec.damage}`],
+        ['sword', hu.hud.attack, withBonus(spec.damage, attackBonus)],
         ['range', hu.hud.range, `${spec.range}`],
-        ['speed', hu.hud.speed, `${spec.speed}`],
+        ['speed', hu.hud.speed, `${spec.speed}${eff.speedMultiplier !== 1 ? ` (+${Math.round((eff.speedMultiplier - 1) * 100)}%)` : ''}`],
       ];
+      const meleeDefBonus = eff.meleeDef - base.meleeDef;
+      const pierceDefBonus = eff.pierceDef - base.pierceDef;
+      rows.push([
+        'range',
+        hu.hud.armor,
+        `${withBonus(base.meleeDef, meleeDefBonus)} / ${withBonus(base.pierceDef, pierceDefBonus)}`,
+      ]);
       if (sel.carrying) rows.push([sel.carrying.type, hu.hud.carrying, `${sel.carrying.amount}`]);
       return [
         head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], enemy, more),
@@ -169,4 +182,9 @@ function stats(rows: Array<[IconName, string, string]>): Node {
       el('span', { class: 'stat', title: label }, el('span', { html: icons[icon] }), el('span', {}, label), el('b', {}, value)),
     ),
   );
+}
+
+/** "7" or "7 (+1)" when a technology raised the value. */
+function withBonus(base: number, bonus: number): string {
+  return bonus > 0 ? `${base} (+${bonus})` : `${base}`;
 }

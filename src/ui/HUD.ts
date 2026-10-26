@@ -34,6 +34,7 @@ export class Hud {
   private readonly minimapSlot: HTMLElement;
   private readonly unsubscribe: () => void;
   private readonly unsubscribeAge: () => void;
+  private readonly unsubscribeResearch: () => void;
   private minimap: Minimap | null = null;
   private lastToast = '';
   private lastToastAt = 0;
@@ -76,6 +77,9 @@ export class Hud {
     this.unsubscribeAge = gameEvents.on('ageChanged', ({ playerId, age }) => {
       if (playerId === 1 && (age === 2 || age === 3)) this.toast(hu.hud.ageReached[age]);
     });
+    this.unsubscribeResearch = gameEvents.on('researchRejected', ({ playerId }) => {
+      if (playerId === 1) this.toast(hu.hud.researchElsewhere);
+    });
   }
 
   attachMinimap(minimap: Minimap): void {
@@ -115,6 +119,7 @@ export class Hud {
   destroy(): void {
     this.unsubscribe();
     this.unsubscribeAge();
+    this.unsubscribeResearch();
     this.minimap?.destroy();
     this.resources.destroy();
     this.selection.destroy();

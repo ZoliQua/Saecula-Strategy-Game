@@ -5,6 +5,8 @@ import { findPath } from '../../map/pathfinding';
 import { TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
+import { boostArmor, boostAttack, bonusesFor } from '../../game/modifiers';
+import type { PlayerManager } from '../../game/PlayerManager';
 import type { ProjectileKind } from '../../types';
 import { fireProjectile } from '../archetypes/projectile';
 import type { Entity } from '../components';
@@ -30,7 +32,11 @@ export class CombatSystem {
   private readonly world: EcsWorld;
   private readonly mapData: MapData;
 
-  constructor(world: EcsWorld, mapData: MapData) {
+  constructor(
+    world: EcsWorld,
+    mapData: MapData,
+    private readonly players: PlayerManager | null = null,
+  ) {
     this.world = world;
     this.mapData = mapData;
   }
@@ -87,6 +93,8 @@ export class CombatSystem {
 
     a.attacker.cooldownRemaining = a.attacker.cooldownMs;
 
+    // Technology bonuses are applied when the hit / payload is built.
+    const attack = boostAttack(a.attacker, bonusesFor(this.players, a));
     const kind = projectileKindFor(a);
     if (kind) {
       // Ranged: damage lands when the projectile arrives (ProjectileSystem).
@@ -95,7 +103,7 @@ export class CombatSystem {
         from: { x: a.position.tx, y: a.position.ty },
         target: target as Entity,
         ownerId: a.owner.playerId,
-        payload: a.attacker,
+        payload: attack,
       });
       return;
     }
@@ -103,7 +111,11 @@ export class CombatSystem {
     const killed = applyDamage(
       this.world,
       target,
-      computeDamage(a.attacker, (target as Entity).armor ?? NO_ARMOR, (target as Entity).unit?.unitType),
+      computeDamage(
+        attack,
+        boostArmor((target as Entity).armor ?? NO_ARMOR, bonusesFor(this.players, target as Entity)),
+        (target as Entity).unit?.unitType,
+      ),
     );
     if (killed) this.world.removeComponent(a as Entity, 'attackIntent');
   }

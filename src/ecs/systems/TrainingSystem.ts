@@ -1,6 +1,8 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import { bonusesFor, scaleHealth } from '../../game/modifiers';
+import type { PlayerManager } from '../../game/PlayerManager';
 import { createUnit } from '../archetypes/createUnit';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -19,7 +21,11 @@ export class TrainingSystem {
   private readonly world: EcsWorld;
   private readonly mapData: MapData;
 
-  constructor(world: EcsWorld, mapData: MapData) {
+  constructor(
+    world: EcsWorld,
+    mapData: MapData,
+    private readonly players: PlayerManager | null = null,
+  ) {
     this.world = world;
     this.mapData = mapData;
   }
@@ -56,11 +62,13 @@ export class TrainingSystem {
       });
       return;
     }
-    createUnit(this.world, {
+    const unit = createUnit(this.world, {
       type: entry.unitType,
       tile: spawn,
       playerId: trainer.owner.playerId,
     });
+    // HP is stored state: a new unit gets the owner's HP technology once.
+    if (unit.health) scaleHealth(unit.health, bonusesFor(this.players, unit).hpMultiplier);
     // PopulationSystem recomputes current/cap from world state every
     // tick; no need to increment here.
   }
