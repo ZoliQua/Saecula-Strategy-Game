@@ -16,8 +16,10 @@ export function attachNormalMap(scene: Pick<Phaser.Scene, 'textures'>, key: stri
 
 /**
  * Team-colour variants share geometry, so they reuse the base texture's
- * normal map source (one GPU texture for all players). Neither texture
- * is ever removed while the game runs, so the shared source is safe.
+ * normal map source (one GPU texture for all players). Removing any of
+ * them would destroy that shared source: remove a variant only after
+ * detaching it (`dataSource = []`), and the base only once no variant
+ * is left, as textures.ts releaseStaleBuildingArt does.
  */
 export function shareNormalMap(scene: Pick<Phaser.Scene, 'textures'>, fromKey: string, toKey: string): void {
   if (!scene.textures.exists(fromKey) || !scene.textures.exists(toKey)) return;

@@ -128,8 +128,9 @@ export function generateArt(scene: Phaser.Scene): void {
  * Texture key of a building in an age style and a player's colour,
  * painting it on first need: the (type, age) base once with its normal
  * map, each other team as an albedo-only variant sharing that map.
- * Painted textures are never removed (the shared normal source must
- * stay alive), so old age styles simply stay cached.
+ * Textures stay cached until releaseStaleBuildingArt frees age styles
+ * nobody shows; it detaches a variant's shared normal source before
+ * removing it, and removes a base only after all its variants.
  */
 export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeId, playerId: number): string {
   const ageKey = ageArtKey(BUILDING_SPECS[type].textureKey, type, age);

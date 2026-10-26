@@ -18,6 +18,8 @@ import { dyingAlpha, DYING_MS, unitAnimState } from './unitAnim';
 type Renderable = With<Entity, 'position' | 'renderable'>;
 
 const SPRITE_SCALE = 1 / ART_SCALE;
+/** Building re-skins (each may paint a texture) allowed per frame. */
+const RESKINS_PER_FRAME = 2;
 
 /**
  * Syncs ECS entities that have `position` + `renderable` into Phaser
@@ -100,17 +102,23 @@ export class RenderSystem {
   update(): void {
     const now = this.scene.time.now;
     pumpUnitArt(this.scene);
+    let reskinBudget = RESKINS_PER_FRAME;
     for (const entity of this.renderable) {
       const sprite = entity.sprite ?? this.ensureSprite(entity);
       const { sx, sy } = renderScreenPos(entity);
       sprite.setPosition(sx, sy);
       sprite.setDepth(renderDepth(entity));
+      const visible = isVisibleToViewer(entity, this.fog, this.viewerPlayerId);
       if (entity.building) {
-        if (!this.heldReskin.has(entity) && this.shownAge.get(entity) !== this.ownerAge(entity)) this.reskin(entity, sprite);
+        // Hidden buildings keep their old style until seen, and re-skins (which may paint
+        // a new texture) are spread over frames, so another player's age-up can't hitch.
+        if (visible && reskinBudget > 0 && !this.heldReskin.has(entity) && this.shownAge.get(entity) !== this.ownerAge(entity)) {
+          this.reskin(entity, sprite);
+          reskinBudget--;
+        }
         this.applyConstruction(sprite, entity);
       }
       applyDying(sprite, entity);
-      const visible = isVisibleToViewer(entity, this.fog, this.viewerPlayerId);
       sprite.setVisible(visible);
       const site = this.sites.get(entity);
       if (site) site.setVisible(visible);

@@ -13,8 +13,10 @@
  *        pillow + luminance-bump normal map; attachNormalMap(scene, key, n).
  *      - Team-colour variants: shareNormalMap(scene, baseKey, variantKey).
  *        Variants share ONE TextureSource with the base: removing either
- *        texture destroys the shared normal map for all of them, so never
- *        remove/re-register a base or variant texture mid-game.
+ *        texture as-is destroys the shared normal map for all of them, so
+ *        never re-register one mid-game; to free one, detach the variant
+ *        first (dataSource = []) and drop the base last (see textures.ts
+ *        releaseStaleBuildingArt).
  * 2. Pipeline. Lit GameObjects call `lit(gameObject)` (sets the
  *    IsoLight2D pipeline when lighting is active; no-op otherwise).
  *    UI, fog, particles, glows and shadows stay unlit.
