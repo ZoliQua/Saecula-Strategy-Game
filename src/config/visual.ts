@@ -83,3 +83,47 @@ export const POINT_LIGHT_HEIGHT = 28;
 export const FLASH_POOL_SIZE = 6;
 /** Persistent lights scale between day and full night by this range. */
 export const NIGHT_LIGHT_GAIN = { day: 0.3, night: 1 } as const;
+
+/** Per projectile kind: drawn look in flight (world px; see ProjectileRenderSystem). */
+export interface ShotLook {
+  /** Release height at the shooter / landing height at the target, px above ground. */
+  readonly liftFrom: number;
+  readonly liftTo: number;
+  /** Trail streak behind the shot (0 length = none). */
+  readonly trailLength: number;
+  readonly trailColor: number;
+  readonly trailAlpha: number;
+  /** Ground shadow width px and opacity at ground level. */
+  readonly shadowWidth: number;
+  readonly shadowAlpha: number;
+}
+
+export const SHOT_LOOK = {
+  arrow: { liftFrom: 19, liftTo: 9, trailLength: 22, trailColor: 0xfff4dc, trailAlpha: 0.32, shadowWidth: 16, shadowAlpha: 0.55 },
+  bolt: { liftFrom: 15, liftTo: 9, trailLength: 26, trailColor: 0xfff4dc, trailAlpha: 0.36, shadowWidth: 12, shadowAlpha: 0.55 },
+  bullet: { liftFrom: 18, liftTo: 11, trailLength: 0, trailColor: 0xffffff, trailAlpha: 0, shadowWidth: 0, shadowAlpha: 0 },
+  cannonball: { liftFrom: 11, liftTo: 4, trailLength: 34, trailColor: 0xcfc8bd, trailAlpha: 0.5, shadowWidth: 13, shadowAlpha: 0.55 },
+} as const satisfies Record<'arrow' | 'bolt' | 'bullet' | 'cannonball', ShotLook>;
+
+/** Combat VFX tuning (CombatFxSystem). Times in ms, sizes in world px. */
+export const COMBAT_FX = {
+  /** Muzzle point: px along the aim beyond the shot's release point (SHOT_LOOK.liftFrom). */
+  muzzle: { bullet: 9, cannonball: 18 },
+  muzzleFlashMs: { bullet: 70, cannonball: 110 },
+  /** Light flashes: colour, radius px, duration, intensity. */
+  light: {
+    musket: { color: 0xffc070, radius: 90, ms: 110, intensity: 1.5 },
+    cannon: { color: 0xffb060, radius: 170, ms: 180, intensity: 2.2 },
+    blast: { color: 0xff9a40, radius: 230, ms: 420, intensity: 2.6 },
+  },
+  explosionFrameMs: 72,
+  scorchLifeMs: 20_000,
+  /** Fraction of the scorch's life before it starts to fade. */
+  scorchHold: 0.35,
+  stuckArrowMs: 2_400,
+  hitFlashMs: 80,
+  /** Camera shake for an on-screen cannon impact. */
+  shake: { ms: 170, max: 0.0045, edgeKeep: 0.3 },
+  /** When the falling body hits the ground in the death animation. */
+  deathDustDelayMs: 380,
+} as const;

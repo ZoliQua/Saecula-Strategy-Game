@@ -3,7 +3,21 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { PLAYER_COLORS } from '../game/Player';
 import type { BuildingType } from '../types';
 import { paintBuilding, paintConstructionSite } from './art/buildings';
-import { makeCanvas, registerCanvas } from './art/canvas';
+import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
+import {
+  paintArrow,
+  paintBolt,
+  paintBulletStreak,
+  paintCannonball,
+  paintDebris,
+  paintGlow,
+  paintGunSmoke,
+  paintMuzzleFlash,
+  paintScorch,
+  paintSoftShadow,
+  paintTrail,
+} from './art/combatFx';
+import { EXPLOSION_FRAMES, EXPLOSION_SIZE, paintExplosionStrip } from './art/explosionArt';
 import {
   BUSH_VARIANTS,
   paintBerryBush,
@@ -41,6 +55,18 @@ export const FX_KEYS = {
   spark: 'fx_spark',
   mote: 'fx_mote',
   dust: 'fx_dust',
+  arrow: 'fx_arrow',
+  bolt: 'fx_bolt',
+  bullet: 'fx_bullet',
+  cannonball: 'fx_cannonball',
+  trail: 'fx_trail',
+  shotShadow: 'fx_shot_shadow',
+  muzzle: 'fx_muzzle',
+  gunSmoke: 'fx_gun_smoke',
+  scorch: 'fx_scorch',
+  debris: 'fx_debris',
+  glow: 'fx_glow',
+  explosion: 'fx_explosion',
 } as const;
 
 export function constructionKey(size: number): string {
@@ -128,6 +154,28 @@ function generateFx(scene: Phaser.Scene): void {
   radial(FX_KEYS.dust, 32, [[0, 'rgba(214,190,140,.8)'], [1, 'rgba(214,190,140,0)']]);
   radial(FX_KEYS.spark, 16, [[0, 'rgba(255,250,220,1)'], [0.4, 'rgba(255,200,90,.9)'], [1, 'rgba(255,140,40,0)']]);
   radial(FX_KEYS.mote, 12, [[0, 'rgba(255,248,210,.95)'], [1, 'rgba(255,248,210,0)']]);
+  generateCombatFx(scene);
+}
+
+/** Combat VFX (projectiles, muzzle flash, blasts); see art/combatFx.ts. */
+function generateCombatFx(scene: Phaser.Scene): void {
+  const once = (key: string, paint: () => HTMLCanvasElement): void => {
+    if (!scene.textures.exists(key)) registerCanvas(scene, key, paint());
+  };
+  once(FX_KEYS.arrow, paintArrow);
+  once(FX_KEYS.bolt, paintBolt);
+  once(FX_KEYS.bullet, paintBulletStreak);
+  once(FX_KEYS.cannonball, paintCannonball);
+  once(FX_KEYS.trail, paintTrail);
+  once(FX_KEYS.shotShadow, paintSoftShadow);
+  once(FX_KEYS.muzzle, paintMuzzleFlash);
+  once(FX_KEYS.gunSmoke, paintGunSmoke);
+  once(FX_KEYS.scorch, paintScorch);
+  once(FX_KEYS.debris, paintDebris);
+  once(FX_KEYS.glow, paintGlow);
+  if (!scene.textures.exists(FX_KEYS.explosion)) {
+    registerStrip(scene, FX_KEYS.explosion, paintExplosionStrip(), EXPLOSION_SIZE * ART_SCALE, EXPLOSION_FRAMES);
+  }
 }
 
 /** Tileable soft cloud-shadow mask (black with varying alpha). */
