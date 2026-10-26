@@ -125,6 +125,8 @@ export interface MediumTuning {
     readonly leadMs: number;
     /** While the squad is short, villager training waits (food goes to the raiders first). */
     readonly holdsVillagers: boolean;
+    /** While the squad is short, new farms wait too. */
+    readonly beforeFarms: boolean;
   };
   readonly militaryQueue: number;
   readonly trainPerDecision: number;
@@ -185,6 +187,7 @@ export const AI_MEDIUM: MediumTuning = {
     /** Raiders are trained ahead of villagers from this long before the first-attack time (ms). */
     leadMs: 150_000,
     holdsVillagers: true,
+    beforeFarms: false,
   },
   /** Military buildings keep at most this many units queued (resources stay liquid). */
   militaryQueue: 2,
@@ -270,6 +273,8 @@ export interface HardTuning extends MediumTuning {
   readonly stance: StanceTuning;
   /** Aggression (armed enemies seen at the base) decays by this factor per minute. */
   readonly aggressionDecayPerMin: number;
+  /** A (decaying) unit sighting counts toward the enemy's age while at least this strong. */
+  readonly enemyAgeMinSighting: number;
   readonly turtle: {
     /** Towers kept (age 2+) toward the side the attacks come from. */
     readonly towers: number;
@@ -277,6 +282,8 @@ export interface HardTuning extends MediumTuning {
     /** Wall lines laid across the attack side, how far out and how long (tiles each way). */
     readonly wallLines: number;
     readonly wallDistance: number;
+    /** Each further wall line goes this many tiles further out. */
+    readonly wallLineSpacing: number;
     readonly wallHalfLength: number;
     readonly wallBuilders: number;
     /** While turtling, the army only marches out at this size. */
@@ -306,7 +313,7 @@ export interface HardTuning extends MediumTuning {
 export const AI_HARD: HardTuning = {
   ...AI_MEDIUM,
   decisionMs: { min: 3_000, max: 5_000 },
-  villagerTarget: [0, 17, 32, 45],
+  // villagerTarget (Medium's table) is unused: Hard takes villagerShare of populationTarget.
   villagerShare: { peace: 0.65, war: 0.5 },
   populationTarget: [0, 26, 50, 70],
   gatherByAge: [
@@ -323,8 +330,12 @@ export const AI_HARD: HardTuning = {
   minDefenders: 6,
   attackWave: 10,
   firstAttackMs: { min: 3 * 60_000, max: 5 * 60_000 },
-  // Villagers keep coming while the raiders are trained (65% villagers, §10.3).
-  pressure: { unit: 'scout', minArmy: 3, leadMs: 75_000, holdsVillagers: true },
+  /**
+   * §10.3 first attack at 3-5 min: the raiders are trained from 2.5 min before the rolled time
+   * (more than three scouts' 30 s train time, since food is the limit), and while they are short
+   * both villagers and new farms wait for them.
+   */
+  pressure: { unit: 'scout', minArmy: 3, leadMs: 150_000, holdsVillagers: true, beforeFarms: true },
   trainPerDecision: 3,
   scouts: 2,
   scoutRetrainMs: 45_000,
@@ -357,7 +368,8 @@ export const AI_HARD: HardTuning = {
     rushExit: 4,
   },
   aggressionDecayPerMin: 0.5,
-  turtle: { towers: 3, towerDistance: 6, wallLines: 2, wallDistance: 9, wallHalfLength: 5, wallBuilders: 3, wave: 18 },
+  enemyAgeMinSighting: 0.5,
+  turtle: { towers: 3, towerDistance: 6, wallLines: 2, wallDistance: 9, wallLineSpacing: 3, wallHalfLength: 5, wallBuilders: 3, wave: 18 },
   rush: { wave: 7 },
   tech: { wave: 14, ageUpReserve: [0, 1, 1, 0.5] },
   harass: {

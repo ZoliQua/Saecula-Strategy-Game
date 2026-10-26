@@ -69,10 +69,13 @@ export class MediumStrategy extends BaseStrategy {
     this.army.update(ctx, view);
     this.army.scout(ctx, view);
     const waitingForTc = this.tryAgeUp(ctx, view);
+    const first = this.tune.pressure.beforeFarms;
+    // `beforeFarms`: while the raiders are short, their food comes first and new farms wait.
+    const raidingFirst = first && this.preparePressure(ctx, view);
     // Houses and farms come before more mouths: an unaffordable one keeps the food for it.
-    const saving = this.buildEssentials(ctx, view);
+    const saving = this.buildEssentials(ctx, view, raidingFirst);
     // Close to the first-attack time, the raiders come before more villagers.
-    const raiding = this.preparePressure(ctx, view);
+    const raiding = first ? raidingFirst : this.preparePressure(ctx, view);
     if (!waitingForTc && !saving && !raiding) this.trainVillagers(ctx, view);
     if (this.army.underAttack(view)) this.trainDefenders(ctx, view);
   }
@@ -223,9 +226,9 @@ export class MediumStrategy extends BaseStrategy {
 
   /**
    * House when the population nears the cap, farm when food spots run
-   * short. True when one is needed but not affordable yet (save for it).
+   * short (unless `farmsWait`). True when one is needed but not affordable yet (save for it).
    */
-  private buildEssentials(ctx: AIContext, view: WorldView): boolean {
+  private buildEssentials(ctx: AIContext, view: WorldView, farmsWait = false): boolean {
     const build = this.builder(ctx, view);
     const pop = populationWithQueued(ctx.world, ctx.player);
     const short = (type: BuildingType) => !canAfford(ctx.player.resources, BUILDING_SPECS[type].cost);
@@ -234,7 +237,7 @@ export class MediumStrategy extends BaseStrategy {
       saving = !buildHouseIfNeeded(view, pop, build) && short('house');
     }
     const wantedFood = this.wantedFood(ctx, view);
-    if (farmNeeded(view, wantedFood)) saving = (!buildFarmIfNeeded(view, wantedFood, build) && short('farm')) || saving;
+    if (!farmsWait && farmNeeded(view, wantedFood)) saving = (!buildFarmIfNeeded(view, wantedFood, build) && short('farm')) || saving;
     return saving;
   }
 

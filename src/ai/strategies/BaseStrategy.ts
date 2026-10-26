@@ -96,10 +96,13 @@ export abstract class BaseStrategy implements AIStrategy {
       // Farms hug the town centre (it is their drop-off); the gaps between farms keep it reachable.
       ...(tc ? { mayTouch: (tx: number, ty: number) => insideFootprint(tc, tx, ty) } : {}),
     };
-    // Little explored ground yet (no scout): settle for a spot closer in rather than none.
+    // Little explored ground yet (no scout): settle for a spot closer in, then one that only keeps
+    // clear of other buildings (trees may touch it), rather than none.
+    const closeIn = { ...options, minRadius: AI_PLACEMENT.closeInRadius };
     return (
       findPlacement(ctx.mapData, anchor, spec.width, spec.height, options) ??
-      findPlacement(ctx.mapData, anchor, spec.width, spec.height, { ...options, minRadius: AI_PLACEMENT.closeInRadius })
+      findPlacement(ctx.mapData, anchor, spec.width, spec.height, closeIn) ??
+      findPlacement(ctx.mapData, anchor, spec.width, spec.height, { ...closeIn, natureMayTouch: true })
     );
   }
 

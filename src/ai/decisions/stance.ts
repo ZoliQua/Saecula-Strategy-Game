@@ -38,8 +38,8 @@ function wantedStance(current: Stance, s: StanceSignals, t: StanceTuning): Stanc
   if (s.enemyAgeSeen > s.ownAge || s.enemyAgeSeen >= 3) return 'tech';
   const passiveAt = current === 'rush' ? t.rushExit : t.rushEnter;
   if (s.timeMs >= t.passiveAfterMs && s.enemyArmySeen <= passiveAt) return 'rush';
-  // Leaving rush or turtle without a clear new reading: back to balanced.
-  return current === 'tech' ? 'tech' : 'balanced';
+  // No decisive reading any more (e.g. the AI caught up with a teching enemy): back to balanced.
+  return 'balanced';
 }
 
 /**
@@ -76,7 +76,7 @@ export function enemyArmySeen(sightings: Readonly<Partial<Record<UnitType, numbe
 export function enemyAgeSeen(
   sightings: Readonly<Partial<Record<UnitType, number>>>,
   buildings: readonly { readonly type: BuildingType }[],
-  minCount = 0.5,
+  minCount: number,
 ): AgeId {
   let age: AgeId = 1;
   for (const [type, count] of Object.entries(sightings) as [UnitType, number][]) {

@@ -6,6 +6,7 @@ import { createEcsWorld } from '../../ecs/world';
 import { createPlayer } from '../../game/Player';
 import { MapData } from '../../map/MapData';
 import { createRng } from '../../map/random';
+import { AI_HARD } from '../../config/aiBalance';
 import { AIPlayer } from '../AIPlayer';
 import { HardStrategy } from './HardStrategy';
 
@@ -20,7 +21,7 @@ function setup(age: 1 | 2, gold = 2000) {
   const tick = (ms: number) => {
     for (let t = 0; t < ms; t += 500) ai.update({ world, mapData: map, enemyPlayerId: 1 }, 500);
   };
-  return { map, world, player, hard, tick };
+  return { map, world, player, hard, tick, ai };
 }
 
 const own = (world: ReturnType<typeof setup>['world'], type: string) =>
@@ -59,5 +60,17 @@ describe('HardStrategy', () => {
     tick(2000);
     const tc = own(world, 'town_center')[0]!;
     expect(tc.trainingQueue!.entries.some((e) => e.unitType === 'villager')).toBe(true);
+  });
+
+  it('sends a villager raid with its knights once enemy villagers were seen (after the earliest raid time)', () => {
+    const { world, hard, tick, ai, map } = setup(2, 0);
+    const knights = [0, 1, 2].map((i) => createUnit(world, { type: 'knight', tile: { tx: 30, ty: 19 + i }, playerId: 2 }));
+    const villagers = [0, 1].map((i) => createVillager(world, { tile: { tx: 33 + i, ty: 20 }, playerId: 1 }));
+    // Jump past the earliest raid time, then let it look around and decide.
+    ai.update({ world, mapData: map, enemyPlayerId: 1 }, AI_HARD.harass.notBeforeMs);
+    tick(6000);
+    expect(hard.raidsLaunched).toBe(1);
+    const prey = new Set(villagers.map((v) => v.id));
+    expect(knights.filter((k) => k.attackIntent && prey.has(k.attackIntent.targetId)).length).toBeGreaterThanOrEqual(2);
   });
 });

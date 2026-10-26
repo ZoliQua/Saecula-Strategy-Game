@@ -14,6 +14,8 @@ export interface PlacementOptions {
   readonly tileAllowed?: (tx: number, ty: number) => boolean;
   /** Ring tiles that may be blocked anyway (e.g. farms may hug the town centre they deliver to). */
   readonly mayTouch?: (tx: number, ty: number) => boolean;
+  /** The free ring only has to be clear of buildings: trees, mines and water may touch. */
+  readonly natureMayTouch?: boolean;
 }
 
 /** Every footprint tile is free and allowed; with clearance, the ring around it is passable too. */
@@ -22,7 +24,7 @@ export function canPlaceAt(
   origin: TileCoord,
   width: number,
   height: number,
-  options: Pick<PlacementOptions, 'clearance' | 'tileAllowed' | 'mayTouch'>,
+  options: Pick<PlacementOptions, 'clearance' | 'tileAllowed' | 'mayTouch' | 'natureMayTouch'>,
 ): boolean {
   for (let dy = 0; dy < height; dy++) {
     for (let dx = 0; dx < width; dx++) {
@@ -39,9 +41,11 @@ export function canPlaceAt(
       if (inside) continue;
       const tx = origin.tx + dx;
       const ty = origin.ty + dy;
-      // The map edge is fine; buildings, trees, water and mines are not.
+      // The map edge is fine; buildings, trees, water and mines are not (nature is, with natureMayTouch).
       if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) continue;
-      if (!map.isPassable(tx, ty) && !options.mayTouch?.(tx, ty)) return false;
+      if (map.isPassable(tx, ty) || options.mayTouch?.(tx, ty)) continue;
+      if (options.natureMayTouch && !map.isBlocked(tx, ty)) continue;
+      return false;
     }
   }
   return true;

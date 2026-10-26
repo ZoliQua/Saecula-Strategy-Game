@@ -108,7 +108,7 @@ export class HardStrategy extends MediumStrategy {
         timeMs: ctx.timeMs,
         aggression: this.aggression,
         enemyArmySeen: enemyArmySeen(view.enemySightings),
-        enemyAgeSeen: enemyAgeSeen(view.enemySightings, enemyBuildings),
+        enemyAgeSeen: enemyAgeSeen(view.enemySightings, enemyBuildings, this.hard.enemyAgeMinSighting),
         ownAge: ctx.player.age,
       },
       this.hard.stance,
@@ -167,7 +167,7 @@ export class HardStrategy extends MediumStrategy {
       this.startBuilding(ctx, view, 'tower', towerSpot, this.reserve(ctx, view));
     }
     if (this.wallLinesLaid < t.wallLines) {
-      const tiles = wallLineAcross(home, threat, t.wallDistance + this.wallLinesLaid * 3, t.wallHalfLength);
+      const tiles = wallLineAcross(home, threat, t.wallDistance + this.wallLinesLaid * t.wallLineSpacing, t.wallHalfLength);
       if (this.startWallLine(ctx, view, tiles, t.wallBuilders, this.reserve(ctx, view)) > 0) this.wallLinesLaid++;
     }
   }

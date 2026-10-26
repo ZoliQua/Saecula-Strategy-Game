@@ -53,6 +53,16 @@ describe('stance switching (Hard AI §10.3)', () => {
     expect(nextStance(at('balanced'), quiet(8 * MIN, { enemyAgeSeen: 2, ownAge: 2 }), T).stance).toBe('balanced');
   });
 
+  it('leaves tech after the dwell once there is no tech reading any more (the AI caught up)', () => {
+    let s = nextStance(at('balanced'), quiet(8 * MIN, { enemyAgeSeen: 2 }), T);
+    expect(s.stance).toBe('tech');
+    // Caught up inside the dwell time: still tech.
+    s = nextStance(s, quiet(9 * MIN, { enemyAgeSeen: 2, ownAge: 2 }), T);
+    expect(s.stance).toBe('tech');
+    s = nextStance(s, quiet(10.5 * MIN, { enemyAgeSeen: 2, ownAge: 2 }), T);
+    expect(s).toEqual({ stance: 'balanced', sinceMs: 10.5 * MIN });
+  });
+
   it('hysteresis: keeps a stance through the dwell time and between the enter / exit thresholds', () => {
     // Rush entered at 7 min; the enemy shows a little army (2: above rushEnter, below rushExit).
     let s = nextStance(at('balanced'), quiet(7 * MIN, { enemyArmySeen: 0 }), T);
@@ -92,11 +102,11 @@ describe('stance switching (Hard AI §10.3)', () => {
 
   it('reads army size and enemy age only from sightings and known buildings', () => {
     expect(enemyArmySeen({ villager: 9, scout: 2, swordsman: 3, archer: 1.5 })).toBeCloseTo(4.5, 6);
-    expect(enemyAgeSeen({ swordsman: 4 }, [{ type: 'barracks' }])).toBe(1);
-    expect(enemyAgeSeen({ knight: 1 }, [])).toBe(2);
+    expect(enemyAgeSeen({ swordsman: 4 }, [{ type: 'barracks' }], 0.5)).toBe(1);
+    expect(enemyAgeSeen({ knight: 1 }, [], 0.5)).toBe(2);
     // A faded sighting no longer counts.
-    expect(enemyAgeSeen({ musketeer: 0.1 }, [])).toBe(1);
-    expect(enemyAgeSeen({}, [{ type: 'foundry' }])).toBe(3);
+    expect(enemyAgeSeen({ musketeer: 0.1 }, [], 0.5)).toBe(1);
+    expect(enemyAgeSeen({}, [{ type: 'foundry' }], 0.5)).toBe(3);
   });
 });
 
