@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { GATHER_RETARGET_RADIUS } from '../../config/balance';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { uiStore } from '../../ui/store';
@@ -101,9 +100,10 @@ describe('GatheringSystem', () => {
     expect(villager.gatherer!.carrying).toBeGreaterThan(1);
   });
 
-  it('after its node runs out, a gatherer moves on to a nearby node of the same type but never across the map', () => {
+  it('after its node runs out, a gatherer moves on to a nearby node of the same type, else carries its load home and idles', () => {
     const map = new MapData(64, 16, TERRAIN.grass);
     const world = createEcsWorld();
+    createBuilding(world, { type: 'town_center', origin: { tx: 1, ty: 8 }, playerId: 1, mapData: map });
     for (const tx of [5, 7, 60]) map.setTile(tx, 5, TERRAIN.forest);
     const first = createResourceNode(world, { tile: { tx: 5, ty: 5 }, type: 'wood', amount: 0.5 });
     const near = createResourceNode(world, { tile: { tx: 7, ty: 5 }, type: 'wood', amount: 0.5 });
@@ -117,9 +117,20 @@ describe('GatheringSystem', () => {
     // The nearby tree is next (within GATHER_RETARGET_RADIUS)...
     expect(villager.gatherer!.targetNodeId).toBe(near.id);
     for (let i = 0; i < 10; i++) system.update(100);
-    // ...but once the patch is gone, the lone tree 53 tiles away is not.
+    // ...but once the patch is gone, the lone tree 53 tiles away (beyond GATHER_RETARGET_RADIUS) is not:
     expect(near.resourceNode!.amount).toBeCloseTo(0, 5);
-    expect(villager.gatherer!.targetNodeId).not.toBe(far.id);
-    expect(GATHER_RETARGET_RADIUS).toBeLessThan(53);
+    expect(villager.gatherer!.targetNodeId).toBeUndefined();
+    expect(far.resourceNode!.amount).toBe(100);
+    // the partial load (1 wood) goes home to the town centre, and the villager idles there.
+    const movement = new MovementSystem(world);
+    for (let i = 0; i < 100; i++) {
+      system.update(100);
+      movement.update(100);
+    }
+    expect(uiStore.getState().resources.wood).toBe(1);
+    expect(villager.gatherer!.carrying).toBe(0);
+    expect(villager.gatherer!.targetNodeId).toBeUndefined();
+    expect(villager.movable!.path).toHaveLength(0);
+    expect(Math.abs(villager.position!.tx - 2)).toBeLessThanOrEqual(2);
   });
 });

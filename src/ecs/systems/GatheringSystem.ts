@@ -71,7 +71,11 @@ export class GatheringSystem {
       this.handleFull(v);
       return;
     }
-    if (g.targetNodeId === undefined) return;
+    if (g.targetNodeId === undefined) {
+      // Out of work nearby (retarget): carry the partial load home, then idle there.
+      if (g.carrying > 0 && g.dropoffId !== undefined) this.handleFull(v);
+      return;
+    }
     const node = this.findEntityById(g.targetNodeId) as
       | ResourceNode
       | undefined;
@@ -193,15 +197,17 @@ export class GatheringSystem {
     v.movable.progress = 0;
   }
 
+  /**
+   * The node ran out: on to the nearest node of the same type within
+   * GATHER_RETARGET_RADIUS, or, when there is none, home to the drop-off
+   * with whatever is carried, to wait there for orders.
+   */
   private retarget(v: Villager): void {
     const g = v.gatherer;
-    if (!g.carryingType) {
-      g.targetNodeId = undefined;
-      return;
-    }
-    const next = this.findNearestNodeOfType(v, g.carryingType);
+    const next = g.carryingType ? this.findNearestNodeOfType(v, g.carryingType) : undefined;
     g.targetNodeId = next?.id ?? undefined;
-    if (g.carrying >= g.capacity) {
+    if (!next) g.dropoffId = undefined;
+    if (g.carrying >= g.capacity || (!next && g.carrying > 0)) {
       this.handleFull(v);
     } else if (next) {
       this.walkToNode(v);
