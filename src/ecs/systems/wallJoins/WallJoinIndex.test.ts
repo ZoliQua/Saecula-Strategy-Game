@@ -50,4 +50,17 @@ describe('WallJoinIndex', () => {
     expect(pieceArms(index.pieceOf(run[1]!))).toBe(WALL_E | WALL_W);
     expect(pieceHasPost(index.pieceOf(far))).toBe(true);
   });
+
+  it('a whole ring indexed before any piece is read joins every segment on its first read (preset fortress walls)', () => {
+    const index = new WallJoinIndex<JoinCandidate>();
+    const ring: JoinCandidate[] = [];
+    for (let t = 0; t <= 4; t++) ring.push(wall(t, 0), wall(t, 4));
+    for (let t = 1; t <= 3; t++) ring.push(wall(0, t), wall(4, t));
+    ring.forEach((w) => index.add(w));
+    const at = (tx: number, ty: number) => ring.find((w) => w.position!.tx === tx && w.position!.ty === ty)!;
+    expect(pieceArms(index.pieceOf(at(0, 0)))).toBe(WALL_E | WALL_S);
+    expect(pieceArms(index.pieceOf(at(2, 0)))).toBe(WALL_E | WALL_W);
+    expect(pieceArms(index.pieceOf(at(4, 4)))).toBe(WALL_N | WALL_W);
+    expect(pieceArms(index.pieceOf(at(4, 2)))).toBe(WALL_N | WALL_S);
+  });
 });

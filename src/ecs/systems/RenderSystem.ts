@@ -1,13 +1,10 @@
 import Phaser from 'phaser';
-import type { With } from 'miniplex';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import { LightManager, lit } from '../../iso/art/lighting/LightManager';
 import { frameIndex, headingSlot, unitSheetLayout } from '../../iso/art/units/layout';
 import { pumpUnitArt } from '../../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../../iso/art/units/unitSprite';
 import { PLAYER_COLORS } from '../../game/Player';
-import { tileToScreen } from '../../iso/coordinates';
-import { footprintDepth, tileDepth } from '../../iso/depth';
 import { wonderStage } from '../../iso/art/architecture/wonder';
 import {
   BUILDING_LIGHT,
@@ -25,11 +22,10 @@ import type { EcsWorld } from '../world';
 import { BUILDING_DEATH_TTL_MS } from '../../config/balance';
 import { collapseHeightScale } from './buildingFx/damageMath';
 import { siteAlpha, sitePlateAlpha, siteShownHeight } from './buildingFx/siteLook';
-import { dyingAlpha, unitAnimState } from './unitAnim';
+import { applyDying, isVisibleToViewer, renderDepth, renderScreenPos, type Renderable } from './renderPlacement';
+import { unitAnimState } from './unitAnim';
 import { WallBanners } from './wallJoins/WallBanners';
 import { WallJoinIndex } from './wallJoins/WallJoinIndex';
-
-type Renderable = With<Entity, 'position' | 'renderable'>;
 
 const SPRITE_SCALE = 1 / ART_SCALE;
 /** Building re-skins (each may paint a texture) allowed per frame. */
@@ -69,6 +65,10 @@ export class RenderSystem {
     this.renderable = this.world.with('position', 'renderable');
     this.banners = new WallBanners(scene);
 
+    // Walls are indexed as they enter the world, before any gets a sprite: a whole
+    // fortress ring spawned at once then joins right on its first paint.
+    for (const entity of this.renderable) this.joins.add(entity as Renderable);
+    this.renderable.onEntityAdded.subscribe((entity: Renderable) => this.joins.add(entity));
     this.renderable.onEntityRemoved.subscribe((entity: Renderable) => {
       this.unlight.get(entity)?.();
       this.unlight.delete(entity);
@@ -181,7 +181,6 @@ export class RenderSystem {
       this.units.set(entity, pair);
       sprite = pair.body;
     } else {
-      if (entity.building) this.joins.add(entity);
       sprite = this.scene.add.sprite(0, 0, this.buildingKey(entity));
       sprite.setScale(SPRITE_SCALE);
       sprite.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / sprite.height);
@@ -312,63 +311,4 @@ export class RenderSystem {
 
 function teamColor(playerId: number): number {
   return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
-}
-
-function renderScreenPos(entity: Renderable): { sx: number; sy: number } {
-  const current = entity.position;
-  if (entity.building) {
-    // Buildings render at the front corner of the footprint so the
-    // sprite's bottom edge sits on the ground at the front of the
-    // footprint diamond.
-    const bottom = {
-      tx: current.tx + entity.building.footprint.width - 1,
-      ty: current.ty + entity.building.footprint.height - 1,
-    };
-    const p = tileToScreen(bottom);
-    return { sx: p.sx, sy: p.sy + 16 };
-  }
-  const mv = entity.movable;
-  if (!mv || mv.path.length === 0 || mv.progress === 0) {
-    return tileToScreen(current);
-  }
-  const next = mv.path[0]!;
-  const t = Math.min(Math.max(mv.progress, 0), 1);
-  const from = tileToScreen(current);
-  const to = tileToScreen(next);
-  return {
-    sx: from.sx + (to.sx - from.sx) * t,
-    sy: from.sy + (to.sy - from.sy) * t,
-  };
-}
-
-function isVisibleToViewer(entity: Renderable, fog: FogOfWarData | null, viewerPlayerId: number): boolean {
-  if (!fog) return true;
-  if (entity.owner?.playerId === viewerPlayerId) return true;
-  // Enemy / neutral — only render on tiles that are currently visible.
-  return fog.isVisible(entity.position.tx, entity.position.ty);
-}
-
-/** Units play their death fall (unitAnim), then the corpse fades; buildings collapse (BuildingFxSystem). */
-function applyDying(sprite: Phaser.GameObjects.Sprite, entity: Renderable): void {
-  const d = entity.dying;
-  if (d && !entity.building) sprite.setAlpha(dyingAlpha(d.ttlMs));
-}
-
-function renderDepth(entity: Renderable): number {
-  if (entity.building) {
-    return footprintDepth(
-      entity.position,
-      entity.building.footprint.width,
-      entity.building.footprint.height,
-    ) + 0.2;
-  }
-  const mv = entity.movable;
-  if (!mv || mv.path.length === 0) return tileDepth(entity.position) + 0.3;
-  const next = mv.path[0]!;
-  const t = Math.min(Math.max(mv.progress, 0), 1);
-  return (
-    tileDepth(entity.position) +
-    (tileDepth(next) - tileDepth(entity.position)) * t +
-    0.3
-  );
 }
