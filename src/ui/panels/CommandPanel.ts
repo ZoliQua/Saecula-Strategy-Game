@@ -1,13 +1,26 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
+import {
+  buildingRequiredAge,
+  isTechAvailable,
+  techRequiredAge,
+  unitRequiredAge,
+} from '../../game/availability';
+import { TECH_SPECS } from '../../game/technologies';
 import { hu } from '../../i18n/hu';
-import type { BuildingType, ResourceType, Resources, UnitType } from '../../types';
+import type { AgeId, BuildingType, ResourceType, Resources, TechId, UnitType } from '../../types';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons } from '../icons';
 import { uiStore, type UiStore } from '../store';
 import { thumbnail, unitThumbnail } from '../thumbnails';
+
+const AGE_NAME: Record<AgeId, string> = {
+  1: hu.ages.roman,
+  2: hu.ages.medieval,
+  3: hu.ages.enlightenment,
+};
 
 export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'house',
@@ -26,6 +39,12 @@ interface Command {
   readonly image: string;
   readonly cost: Cost;
   readonly pop: number;
+  /** Age needed before the command unlocks (greyed with a hint until then). */
+  readonly requiredAge?: AgeId;
+  /** Research / build duration in seconds, shown in the tooltip. */
+  readonly time?: number;
+  /** Extra reason the command can't run right now (building busy, ...). */
+  readonly busy?: (state: UiStore) => string | null;
   readonly run: () => void;
 }
 
@@ -71,6 +90,10 @@ export class CommandPanel {
       const btn = this.buttons[i];
       if (!btn) return;
       btn.classList.toggle('disabled', !ok);
+      const locked = c.requiredAge !== undefined && c.requiredAge > state.currentAge;
+      btn.classList.toggle('locked', locked);
+      const lock = btn.querySelector<HTMLElement>('.tip-lock');
+      if (lock) lock.textContent = locked && c.requiredAge ? `${AGE_NAME[c.requiredAge]} ${hu.hud.ageRequired}` : '';
       btn.querySelectorAll<HTMLElement>('.cost').forEach((node) => {
         const r = node.dataset.res as ResourceType;
         node.classList.toggle('short', state.resources[r] < c.cost[r]);
@@ -87,18 +110,22 @@ export class CommandPanel {
         commands: BUILDABLE_BY_VILLAGER.map((type) => this.buildCommand(type)),
       };
     }
-    if (
-      sel?.kind === 'building' &&
-      sel.ownerId === 1 &&
-      sel.constructionProgress === undefined &&
-      sel.trainable &&
-      sel.trainable.length > 0
-    ) {
-      const trainerId = sel.id;
+    if (sel?.kind === 'building' && sel.ownerId === 1 && sel.constructionProgress === undefined) {
+      const units = sel.trainable ?? [];
+      const techs = (sel.researchable ?? []).filter(
+        (t) => !state.researchedTechs.includes(t),
+      );
+      if (units.length === 0 && techs.length === 0) {
+        return { title: hu.hud.commands, signature: 'none', commands: [] };
+      }
+      const id = sel.id;
       return {
-        title: hu.hud.train,
-        signature: `train:${trainerId}:${sel.trainable.join(',')}`,
-        commands: sel.trainable.map((u) => this.trainCommand(trainerId, u)),
+        title: techs.length > 0 ? hu.hud.commands : hu.hud.train,
+        signature: `building:${id}:${units.join(',')}:${techs.join(',')}`,
+        commands: [
+          ...units.map((u) => this.trainCommand(id, u)),
+          ...techs.map((t) => this.researchCommand(id, t)),
+        ],
       };
     }
     return { title: hu.hud.commands, signature: 'none', commands: [] };
@@ -113,6 +140,8 @@ export class CommandPanel {
       image: thumbnail(this.textures, spec.textureKey),
       cost: spec.cost,
       pop: 0,
+      requiredAge: buildingRequiredAge(type),
+      time: spec.buildTime,
       run: () => uiStore.getState().setPlacementBuilding(type),
     };
   }
@@ -126,12 +155,46 @@ export class CommandPanel {
       image: unitThumbnail(unitType),
       cost: spec.cost,
       pop: spec.populationCost,
+      requiredAge: unitRequiredAge(unitType),
+      time: spec.trainTime,
+      busy: (state) =>
+        state.selectedEntity?.kind === 'building' && state.selectedEntity.research
+          ? hu.hud.researchBusy
+          : null,
       run: () => dispatchCommand({ type: 'queue-unit', trainerId, unitType }),
+    };
+  }
+
+  private researchCommand(buildingId: number, techId: TechId): Command {
+    const spec = TECH_SPECS[techId];
+    return {
+      id: techId,
+      name: hu.techs[techId].name,
+      role: hu.techs[techId].role,
+      image: thumbnail(this.textures, BUILDING_SPECS[spec.building].textureKey),
+      cost: spec.cost,
+      pop: 0,
+      requiredAge: techRequiredAge(techId),
+      time: spec.time,
+      busy: (state) => {
+        const sel = state.selectedEntity;
+        if (sel?.kind !== 'building') return null;
+        if (sel.research) return hu.hud.researchRunning;
+        if ((sel.queue?.length ?? 0) > 0) return hu.hud.trainingBusy;
+        const progress = { age: state.currentAge, researched: new Set(state.researchedTechs) };
+        return isTechAvailable(techId, progress) ? null : hu.hud.ageRequired;
+      },
+      run: () => dispatchCommand({ type: 'research', buildingId, techId }),
     };
   }
 
   /** Reason the command can't run right now, or null. */
   private blocker(state: UiStore, c: Command): string | null {
+    if (c.requiredAge !== undefined && c.requiredAge > state.currentAge) {
+      return `${AGE_NAME[c.requiredAge]} ${hu.hud.ageRequired}`;
+    }
+    const busy = c.busy?.(state);
+    if (busy) return busy;
     const short = missingResource(state.resources, c.cost);
     if (short) return hu.hud.notEnough[short];
     if (c.pop > 0 && state.population.current + c.pop > state.population.cap) return hu.hud.populationFull;
@@ -151,7 +214,8 @@ export class CommandPanel {
         { class: 'tip' },
         el('div', { class: 'tip-name' }, c.name),
         el('div', { class: 'tip-role' }, c.role),
-        el('div', { class: 'costs' }, ...costs),
+        el('div', { class: 'costs' }, ...costs, c.time ? el('span', { class: 'cost time' }, `${c.time} ${hu.hud.seconds}`) : null),
+        el('div', { class: 'tip-lock' }),
       ),
     );
     btn.addEventListener('click', () => {

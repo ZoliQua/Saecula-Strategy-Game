@@ -14,6 +14,7 @@ import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
 import { ProjectileRenderSystem } from '../../ecs/systems/ProjectileRenderSystem';
 import { ProjectileSystem } from '../../ecs/systems/ProjectileSystem';
+import { ResearchSystem } from '../../ecs/systems/ResearchSystem';
 import { RenderSystem } from '../../ecs/systems/RenderSystem';
 import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
@@ -35,6 +36,7 @@ export class SystemRunner {
   private readonly gathering: GatheringSystem;
   private readonly construction: ConstructionSystem;
   private readonly training: TrainingSystem;
+  private readonly research: ResearchSystem;
   private readonly population: PopulationSystem;
   private readonly combat: CombatSystem;
   private readonly projectiles: ProjectileSystem;
@@ -64,6 +66,7 @@ export class SystemRunner {
     this.gathering = new GatheringSystem(world, mapData, players);
     this.construction = new ConstructionSystem(world, mapData);
     this.training = new TrainingSystem(world, mapData);
+    this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1);
     this.combat = new CombatSystem(world, mapData);
     this.projectiles = new ProjectileSystem(world);
@@ -90,6 +93,7 @@ export class SystemRunner {
     this.gathering.update(delta);
     this.construction.update(delta);
     this.training.update(delta);
+    this.research.update(delta);
     this.combat.update(delta);
     this.projectiles.update(delta);
     this.movement.update(delta);

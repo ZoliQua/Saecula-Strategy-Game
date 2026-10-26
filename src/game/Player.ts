@@ -1,4 +1,4 @@
-import type { AgeId, CivId, Resources } from '../types';
+import type { AgeId, CivId, Resources, TechId } from '../types';
 
 export interface Player {
   id: number;
@@ -7,6 +7,8 @@ export interface Player {
   color: number;
   resources: Resources;
   age: AgeId;
+  /** Technologies already researched (each can be researched once). */
+  researched: Set<TechId>;
   defeated: boolean;
 }
 
@@ -26,6 +28,7 @@ export function createPlayer(partial: Partial<Player> & { id: number }): Player 
     color: PLAYER_COLORS[(partial.id - 1) % PLAYER_COLORS.length] ?? 0xffffff,
     resources: { food: 200, wood: 200, gold: 100 },
     age: 1,
+    researched: new Set<TechId>(),
     defeated: false,
     ...partial,
   };

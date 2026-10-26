@@ -1,4 +1,4 @@
-import type { UnitType } from '../types';
+import type { TechId, UnitType } from '../types';
 
 /**
  * Thin event bus between HUDScene (clicks) and GameScene (ECS). The
@@ -8,7 +8,9 @@ import type { UnitType } from '../types';
  */
 export type GameCommand =
   | { type: 'queue-unit'; trainerId: number; unitType: UnitType }
-  | { type: 'cancel-queue'; trainerId: number; index: number };
+  | { type: 'cancel-queue'; trainerId: number; index: number }
+  | { type: 'research'; buildingId: number; techId: TechId }
+  | { type: 'cancel-research'; buildingId: number };
 
 type Listener = (cmd: GameCommand) => void;
 

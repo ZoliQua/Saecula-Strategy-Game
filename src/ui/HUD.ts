@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { gameEvents } from '../game/events';
 import { hu } from '../i18n/hu';
 import type { AgeId } from '../types';
 import { el, formatClock, uiRoot } from './dom';
@@ -32,6 +33,7 @@ export class Hud {
   private readonly toasts: HTMLElement;
   private readonly minimapSlot: HTMLElement;
   private readonly unsubscribe: () => void;
+  private readonly unsubscribeAge: () => void;
   private minimap: Minimap | null = null;
   private lastToast = '';
   private lastToastAt = 0;
@@ -70,6 +72,10 @@ export class Hud {
 
     this.render(uiStore.getState());
     this.unsubscribe = uiStore.subscribe((s) => this.render(s));
+    // Only the human gets the age toast (player 1).
+    this.unsubscribeAge = gameEvents.on('ageChanged', ({ playerId, age }) => {
+      if (playerId === 1 && (age === 2 || age === 3)) this.toast(hu.hud.ageReached[age]);
+    });
   }
 
   attachMinimap(minimap: Minimap): void {
@@ -108,6 +114,7 @@ export class Hud {
 
   destroy(): void {
     this.unsubscribe();
+    this.unsubscribeAge();
     this.minimap?.destroy();
     this.resources.destroy();
     this.selection.destroy();

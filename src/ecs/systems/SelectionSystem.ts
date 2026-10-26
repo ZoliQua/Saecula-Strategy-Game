@@ -4,6 +4,7 @@ import { tileToScreen } from '../../iso/coordinates';
 import { tileDepth } from '../../iso/depth';
 import type { UnitType } from '../../types';
 import { uiStore, type SelectedEntityInfo } from '../../ui/store';
+import { techsForBuilding } from '../../game/technologies';
 import { UNIT_SPECS } from '../archetypes/unit';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -26,7 +27,8 @@ function infoKey(info: SelectedEntityInfo | null): string {
       .join(',');
     const tr = (info.trainable ?? []).join(',');
     const cp = info.constructionProgress === undefined ? '-' : Math.round(info.constructionProgress * 100);
-    return `b:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}`;
+    const rs = info.research ? `${info.research.techId}@${Math.round(info.research.progress * 100)}` : '-';
+    return `b:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}`;
   }
   return `r:${info.id}:${info.amount}/${info.maxAmount}`;
 }
@@ -84,6 +86,10 @@ function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
         progress: Math.min(1, e.elapsed / e.totalTime),
       }));
     }
+    const researchable = techsForBuilding(entity.building.type);
+    if (researchable.length > 0) info.researchable = researchable;
+    const rs = (entity as Entity).research;
+    if (rs) info.research = { techId: rs.techId, progress: Math.min(1, rs.elapsed / rs.totalTime) };
     return info;
   }
   return null;

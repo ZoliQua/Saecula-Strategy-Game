@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import type { TileCoord } from '../iso/coordinates';
 import type {
   BuildingType,
+  TechId,
   Direction,
   ProjectileKind,
   ResourceType,
@@ -78,6 +79,8 @@ export interface Entity {
     entries: Array<{ unitType: UnitType; elapsed: number; totalTime: number }>;
     maxQueue: number;
   };
+  /** Research in progress on this building (one at a time). */
+  research?: { techId: TechId; elapsed: number; totalTime: number };
   owner?: { playerId: number };
   populationCost?: { amount: number };
   attacker?: {

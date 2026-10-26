@@ -67,6 +67,10 @@ export const hu = {
     medieval: 'Középkor',
     enlightenment: 'Felvilágosodás',
   },
+  techs: {
+    feudalism: { name: 'Feudalizmus', role: 'Belépés a Középkorba' },
+    enlightenment: { name: 'Felvilágosodás', role: 'Belépés a Felvilágosodás korába' },
+  },
   population: 'Népesség',
   units: {
     villager: 'Falusi',
@@ -121,6 +125,16 @@ export const hu = {
     },
     populationFull: 'Elérted a népesség-limitet — építs házat!',
     queueFull: 'A kiképzési sor megtelt',
+    researching: 'Kutatás',
+    ageRequired: 'szükséges',
+    trainingBusy: 'A városháza éppen kiképez — várd meg vagy töröld a sort',
+    researchBusy: 'A városháza éppen kutat — nem képezhet ki egységet',
+    researchRunning: 'Már folyik egy kutatás',
+    seconds: 'mp',
+    ageReached: {
+      2: 'Beléptél a Középkorba!',
+      3: 'Beléptél a Felvilágosodás korába!',
+    },
     controls: 'WASD: kamera · Görgő: zoom · Jobb klikk: parancs',
   },
   resourceNodes: {

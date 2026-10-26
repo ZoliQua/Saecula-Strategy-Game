@@ -2,6 +2,11 @@ import type { TileCoord } from '../../iso/coordinates';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import type { Entity } from '../../ecs/components';
+import { playerWallet, startResearch } from '../../ecs/research';
+import { isTechAvailable } from '../../game/availability';
+import { isAgeUp, TECH_SPECS } from '../../game/technologies';
+import { AI_EASY_AGE_UP_CHANCE, AI_EASY_AGE_UP_DELAY_MS } from '../../config/balance';
+import type { TechId } from '../../types';
 import type { AIContext, AIStrategy } from '../AIPlayer';
 
 const ATTACK_READY_COUNT = 4;
@@ -31,6 +36,16 @@ export class EasyStrategy implements AIStrategy {
   private builtHouse = false;
   private builtBarracks = false;
   private attacking = false;
+  /** Game time from which age-ups are attempted; Infinity when this game never ages up. */
+  private readonly ageUpFromMs: number;
+
+  /** `rng` returns [0, 1); injectable so tests are deterministic. */
+  constructor(rng: () => number = Math.random) {
+    const ages = rng() < AI_EASY_AGE_UP_CHANCE;
+    const { min, max } = AI_EASY_AGE_UP_DELAY_MS;
+    const delay = min + rng() * (max - min);
+    this.ageUpFromMs = ages ? delay : Infinity;
+  }
 
   update(ctx: AIContext, _deltaMs: number): void {
     if (ctx.timeMs - this.lastPlanMs < REPLAN_INTERVAL_MS) return;
@@ -40,6 +55,7 @@ export class EasyStrategy implements AIStrategy {
     this.manageBuildings(ctx);
     this.manageTraining(ctx);
     this.maybeAttack(ctx);
+    this.maybeAgeUp(ctx);
   }
 
   private assignGatherers(ctx: AIContext): void {
@@ -110,6 +126,19 @@ export class EasyStrategy implements AIStrategy {
       totalTime: UNIT_SPECS.swordsman.trainTime,
     });
     this.lastTrainMs = ctx.timeMs;
+  }
+
+  /** Once the (rolled) delay has passed, research the next age-up as soon as it is affordable. */
+  private maybeAgeUp(ctx: AIContext): void {
+    // Each further age waits another full delay, so the AI does not rush to age 3.
+    if (ctx.timeMs < this.ageUpFromMs * ctx.player.age) return;
+    const tc = [...ctx.world.with('building', 'owner')]
+      .find((b) => b.owner.playerId === ctx.player.id && b.building.type === 'town_center');
+    if (!tc || tc.research) return;
+    const next = (Object.keys(TECH_SPECS) as TechId[]).find(
+      (id) => isAgeUp(id) && isTechAvailable(id, ctx.player),
+    );
+    if (next) startResearch(tc as Entity, next, ctx.player, playerWallet(ctx.player));
   }
 
   private maybeAttack(ctx: AIContext): void {

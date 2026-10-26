@@ -1,4 +1,4 @@
-import type { AgeId, BuildingType, ProjectileKind, Resources, UnitType } from '../types';
+import type { AgeId, BuildingType, ProjectileKind, Resources, TechId, UnitType } from '../types';
 
 /**
  * Single source of truth for unit and building stats
@@ -180,3 +180,20 @@ export const PROJECTILE_MIN_FLIGHT_MS = 120;
 export const PROJECTILE_HIT_RADIUS = 0.75;
 /** Cannonball splash radius: full damage to every enemy within it, no friendly fire. */
 export const CANNON_AOE_RADIUS = 1;
+
+export interface TechBalance {
+  readonly cost: Resources;
+  /** Research time in seconds. */
+  readonly time: number;
+}
+
+/** Research costs and durations (PROGRAM_TERV.md section 9). */
+export const TECH_BALANCE: Record<TechId, TechBalance> = {
+  feudalism: { cost: c(500, 0, 300), time: 120 },
+  enlightenment: { cost: c(800, 0, 500), time: 180 },
+};
+
+/** Easy AI: chance per game that it ever researches an age-up. */
+export const AI_EASY_AGE_UP_CHANCE = 0.5;
+/** Easy AI: game-time window (ms) from which it first tries to age up. */
+export const AI_EASY_AGE_UP_DELAY_MS = { min: 8 * 60_000, max: 12 * 60_000 } as const;

@@ -3,6 +3,8 @@ import { defaultSetupConfig, withSetup, type GameSetupConfig } from '../game/Gam
 import { createPlayers, type PlayerManager } from '../game/PlayerManager';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
+import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
+import { gameEvents } from '../game/events';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
 import { DAY_START_PHASE } from '../config/visual';
 import { LightManager } from '../iso/art/lighting/LightManager';
@@ -132,17 +134,44 @@ export class GameScene extends Phaser.Scene {
   }
 
   private wireCommands(): void {
-    this.commandUnsubscribe = onCommand((cmd) => {
+    const human = this.players.human();
+    const find = (id: number) => this.world.entities.find((e) => e.id === id);
+    const unsubCommands = onCommand((cmd) => {
       if (cmd.type === 'queue-unit') {
-        const trainer = this.world.entities.find((e) => e.id === cmd.trainerId);
-        if (trainer) queueUnit(trainer, cmd.unitType);
+        const trainer = find(cmd.trainerId);
+        if (trainer) queueUnit(trainer, cmd.unitType, human?.age);
       } else if (cmd.type === 'cancel-queue') {
-        const trainer = this.world.entities.find((e) => e.id === cmd.trainerId);
+        const trainer = find(cmd.trainerId);
         if (trainer?.trainingQueue) {
           trainer.trainingQueue.entries.splice(cmd.index, 1);
         }
+      } else if (cmd.type === 'research') {
+        const building = find(cmd.buildingId);
+        if (building && human && building.owner?.playerId === human.id) {
+          startResearch(building, cmd.techId, human, uiWallet());
+        }
+      } else if (cmd.type === 'cancel-research') {
+        const building = find(cmd.buildingId);
+        if (building?.research && building.owner?.playerId === human?.id) {
+          cancelResearch(building, uiWallet());
+          this.world.removeComponent(building, 'research');
+        }
       }
     });
+    // Mirror the human's progress into the UI store (the store is display state only).
+    const unsubAge = gameEvents.on('ageChanged', ({ playerId, age }) => {
+      if (playerId === human?.id) uiStore.getState().setAge(age);
+    });
+    const unsubTech = gameEvents.on('techResearched', ({ playerId }) => {
+      if (human && playerId === human.id) {
+        uiStore.getState().setResearchedTechs([...human.researched]);
+      }
+    });
+    this.commandUnsubscribe = () => {
+      unsubCommands();
+      unsubAge();
+      unsubTech();
+    };
   }
 
   private launchHud(): void {

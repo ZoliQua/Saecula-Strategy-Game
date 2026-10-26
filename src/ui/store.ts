@@ -4,6 +4,7 @@ import type {
   BuildingType,
   Population,
   Resources,
+  TechId,
   UnitType,
 } from '../types';
 
@@ -32,6 +33,9 @@ export interface SelectedBuildingInfo {
   constructionProgress?: number;
   trainable?: readonly UnitType[];
   queue?: readonly TrainingEntryInfo[];
+  /** Technologies this building type researches. */
+  researchable?: readonly TechId[];
+  research?: { techId: TechId; progress: number };
 }
 
 export interface SelectedResourceInfo {
@@ -52,6 +56,8 @@ export interface UiState {
   resources: Resources;
   population: Population;
   currentAge: AgeId;
+  /** Technologies the human has finished. */
+  researchedTechs: readonly TechId[];
   selectedEntity: SelectedEntityInfo | null;
   /** How many entities are selected (primary is `selectedEntity`). */
   selectionCount: number;
@@ -64,6 +70,7 @@ export interface UiActions {
   setResources: (r: Partial<Resources>) => void;
   setPopulation: (p: Partial<Population>) => void;
   setAge: (age: AgeId) => void;
+  setResearchedTechs: (techs: readonly TechId[]) => void;
   setSelectedEntity: (info: SelectedEntityInfo | null, count?: number) => void;
   setPlacementBuilding: (type: BuildingType | null) => void;
   setGameTime: (ms: number) => void;
@@ -75,6 +82,7 @@ const INITIAL: UiState = {
   resources: { food: 200, wood: 200, gold: 100 },
   population: { current: 3, cap: 10 },
   currentAge: 1,
+  researchedTechs: [],
   selectedEntity: null,
   selectionCount: 0,
   placementBuilding: null,
@@ -89,6 +97,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setPopulation: (p) =>
       set((state) => ({ population: { ...state.population, ...p } })),
     setAge: (age) => set({ currentAge: age }),
+    setResearchedTechs: (techs) => set({ researchedTechs: techs }),
     setSelectedEntity: (info, count) =>
       set({ selectedEntity: info, selectionCount: count ?? (info ? 1 : 0) }),
     setPlacementBuilding: (type) => set({ placementBuilding: type }),
@@ -101,6 +110,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     resources: { ...INITIAL.resources },
     population: { ...INITIAL.population },
     currentAge: INITIAL.currentAge,
+    researchedTechs: [],
     selectedEntity: null,
     selectionCount: 0,
     placementBuilding: null,

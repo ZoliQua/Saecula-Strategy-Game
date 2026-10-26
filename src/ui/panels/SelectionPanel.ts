@@ -95,7 +95,27 @@ export class SelectionPanel {
       nodes.push(bar(sel.hp.current, sel.hp.max, hu.hud.hp));
     }
     if (sel.queue && sel.queue.length > 0) nodes.push(this.queue(sel.id, sel.queue));
+    if (sel.research && !enemy) nodes.push(this.research(sel));
     return nodes;
+  }
+
+  private research(sel: Extract<SelectedEntityInfo, { kind: 'building' }>): Node {
+    const research = sel.research;
+    if (!research) return el('div');
+    const name = hu.techs[research.techId].name;
+    const item = el(
+      'div',
+      { class: 'q-item', title: name },
+      el('span', { class: 'q-fill', style: `height:${Math.round(research.progress * 100)}%` }),
+      el('img', { src: thumbnail(this.textures, BUILDING_SPECS[sel.buildingType].textureKey), alt: '' }),
+    );
+    item.addEventListener('click', () => dispatchCommand({ type: 'cancel-research', buildingId: sel.id }));
+    return el(
+      'div',
+      { class: 'queue' },
+      item,
+      bar(Math.round(research.progress * 100), 100, `${hu.hud.researching}: ${name}`, 'build', '%'),
+    );
   }
 
   private queue(trainerId: number, queue: NonNullable<Extract<SelectedEntityInfo, { kind: 'building' }>['queue']>): Node {

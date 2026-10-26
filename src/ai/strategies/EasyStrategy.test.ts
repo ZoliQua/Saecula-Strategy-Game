@@ -95,4 +95,42 @@ describe('EasyStrategy', () => {
     expect(new Set(targets)).toEqual(new Set([humanTc.id]));
     expect(targets).not.toContain(rival.id);
   });
+
+  describe('age-up', () => {
+    const MIN = 8 * 60_000;
+    const rich = { food: 5000, wood: 500, gold: 5000 };
+
+    function aiWith(rolls: number[]) {
+      const base = setup();
+      const queue = [...rolls];
+      const ai = new AIPlayer(base.player, new EasyStrategy(() => queue.shift() ?? 0));
+      base.player.resources = { ...rich };
+      return { ...base, ai };
+    }
+    const tcOf = (world: ReturnType<typeof setup>['world']) =>
+      world.entities.find((e) => e.building?.type === 'town_center');
+
+    it('never researches when the 50% roll fails', () => {
+      const { world, map, ai, player } = aiWith([0.9, 0]);
+      ai.update({ world, mapData: map }, 20 * 60_000);
+      expect(tcOf(world)?.research).toBeUndefined();
+      expect(player.resources.food).toBe(5000);
+    });
+
+    it('waits for the delay, then researches Feudalism when affordable', () => {
+      const { world, map, ai, player } = aiWith([0.1, 0]);
+      ai.update({ world, mapData: map }, MIN - 5_000);
+      expect(tcOf(world)?.research).toBeUndefined();
+      ai.update({ world, mapData: map }, 10_000);
+      expect(tcOf(world)?.research?.techId).toBe('feudalism');
+      expect(player.resources.food).toBe(4500);
+    });
+
+    it('does not research when it cannot afford it', () => {
+      const { world, map, ai, player } = aiWith([0.1, 0]);
+      player.resources = { food: 100, wood: 0, gold: 0 };
+      ai.update({ world, mapData: map }, MIN + 5_000);
+      expect(tcOf(world)?.research).toBeUndefined();
+    });
+  });
 });

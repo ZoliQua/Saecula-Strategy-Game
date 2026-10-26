@@ -173,6 +173,7 @@
 .cmd img { width: 84%; height: 84%; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5)); }
 .cmd:hover { background: linear-gradient(180deg, rgba(245, 168, 87, 0.28), rgba(245, 168, 87, 0.08)); }
 .cmd:active { transform: scale(0.95); }
+.cmd.locked { outline: 1px dashed rgba(245, 168, 87, 0.35); outline-offset: -3px; }
 .cmd.disabled { filter: grayscale(0.9) brightness(0.6); }
 .cmd .tip {
   position: absolute; bottom: calc(100% + 10px); right: 0; width: 220px; padding: 10px 12px; text-align: left;
@@ -185,6 +186,9 @@
 .costs { display: flex; gap: 10px; font-size: 12px; color: var(--ink); }
 .cost { display: inline-flex; align-items: center; gap: 4px; }
 .cost svg { width: 13px; height: 13px; }
+.cost.time { color: var(--ink-2); margin-left: auto; }
+.tip-lock { margin-top: 6px; font-size: 11.5px; color: var(--amber, #f5a857); }
+.tip-lock:empty { display: none; }
 .cost.short { color: var(--red); }
 
 /* ---------- entrance ---------- */

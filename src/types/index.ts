@@ -8,6 +8,9 @@ export const AGES: readonly { id: AgeId; nameKey: 'roman' | 'medieval' | 'enligh
   { id: 3, nameKey: 'enlightenment' },
 ] as const;
 
+/** Researchable technologies (see src/game/technologies.ts). */
+export type TechId = 'feudalism' | 'enlightenment';
+
 export type CivId =
   | 'hungarian'
   | 'english'
