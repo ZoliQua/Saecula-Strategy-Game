@@ -31,7 +31,7 @@ export const hu = {
     comingSoon: 'hamarosan',
     template: 'Térkép típusa',
     templates: {
-      meadow: { name: 'Mezőség', desc: 'Nyílt rétek, elszórt erdőfoltok' },
+      meadow: { name: 'Mezőség', desc: 'Nyílt rétek, erdőfoltok' },
       wilderness: { name: 'Vadon', desc: 'Sűrű erdő, keskeny utak' },
       islands: { name: 'Szigetek', desc: 'Szigetek sziklák között, keskeny hidak' },
       fortress: { name: 'Erődítmény', desc: 'Falakkal védett kezdőzónák' },
