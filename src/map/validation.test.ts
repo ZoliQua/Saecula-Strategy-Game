@@ -30,7 +30,7 @@ describe('validateMap', () => {
 
   it('treats preset walls as blocked', () => {
     const g = twoStarts();
-    const walls = Array.from({ length: 20 }, (_, ty) => ({ tile: { tx: 20, ty }, playerIndex: 0 }));
+    const walls = Array.from({ length: 20 }, (_, ty) => ({ tile: { tx: 20, ty }, playerIndex: 0, minStyleAge: 2 as const }));
     expect(validateMap({ ...g, walls }).ok).toBe(false);
     // A gap in the wall is a gate.
     expect(validateMap({ ...g, walls: walls.filter((w) => w.tile.ty !== 10) }).ok).toBe(true);

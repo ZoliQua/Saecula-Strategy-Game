@@ -74,6 +74,6 @@ export function spawnPresetWalls(
   for (const wall of walls) {
     const player = all[wall.playerIndex];
     if (!player) throw new RangeError(`no player for wall slot ${wall.playerIndex}`);
-    createWall(world, { tile: wall.tile, playerId: player.id, mapData, underConstruction: false });
+    createWall(world, { tile: wall.tile, playerId: player.id, mapData, underConstruction: false, minStyleAge: wall.minStyleAge });
   }
 }

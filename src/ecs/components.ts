@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import type { TileCoord } from '../iso/coordinates';
 import type {
+  AgeId,
   BuildingType,
   TechId,
   Direction,
@@ -67,6 +68,8 @@ export interface Entity {
   building?: {
     type: BuildingType;
     footprint: { width: number; height: number };
+    /** Art shows at least this age's style, whatever the owner's age (fortress preset stone walls). */
+    minStyleAge?: AgeId;
   };
   underConstruction?: {
     /** Seconds of builder-effort required in total. */

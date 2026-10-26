@@ -22,7 +22,7 @@ import type { EcsWorld } from '../world';
 import { BUILDING_DEATH_TTL_MS } from '../../config/balance';
 import { collapseHeightScale } from './buildingFx/damageMath';
 import { siteAlpha, sitePlateAlpha, siteShownHeight } from './buildingFx/siteLook';
-import { applyDying, isVisibleToViewer, renderDepth, renderScreenPos, type Renderable } from './renderPlacement';
+import { applyDying, isVisibleToViewer, renderDepth, renderScreenPos, styleAge, type Renderable } from './renderPlacement';
 import { unitAnimState } from './unitAnim';
 import { WallBanners } from './wallJoins/WallBanners';
 import { WallJoinIndex } from './wallJoins/WallJoinIndex';
@@ -195,8 +195,9 @@ export class RenderSystem {
     return sprite;
   }
 
+  /** The age style a building shows (styleAge: the owner's age, at least the building's minimum). */
   private ownerAge(entity: Renderable): AgeId {
-    return this.ageOf(entity.owner?.playerId ?? 1);
+    return styleAge(this.ageOf(entity.owner?.playerId ?? 1), entity.building?.minStyleAge);
   }
 
   /**

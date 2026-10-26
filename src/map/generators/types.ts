@@ -1,4 +1,5 @@
 import type { TileCoord } from '../../iso/coordinates';
+import type { AgeId } from '../../types';
 import type { MapData } from '../MapData';
 
 /** Inputs every template generator takes. */
@@ -14,6 +15,8 @@ export interface PresetWall {
   readonly tile: TileCoord;
   /** Index into `playerStarts` (0 is the human). */
   readonly playerIndex: number;
+  /** The wall shows at least this age's style (fortress: medieval stone from the start, §11.4 "kőfal"). */
+  readonly minStyleAge: AgeId;
 }
 
 export interface GeneratedMap {

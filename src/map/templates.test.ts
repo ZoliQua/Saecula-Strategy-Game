@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { START_ECONOMY } from '../config/balance';
-import { MAP_TEMPLATES, TEMPLATE_GENERATORS, type MapTemplate } from './generator';
+import { MAP_TEMPLATES, TEMPLATE_GENERATORS, type MapTemplate, type PresetWall } from './generator';
 import { terrainShare } from './generators/regions';
 import { channelAngles } from './generators/islands';
 import { FORTRESS_RING_RADIUS } from './generators/fortress';
@@ -94,6 +94,8 @@ describe('template character', () => {
       const s = g.playerStarts[i]!;
       expect(own.length).toBeGreaterThan(40);
       for (const w of own) {
+        // Stone (§11.4): the medieval wall style from the Roman age on.
+        expect(w.minStyleAge).toBe(2);
         expect(Math.max(Math.abs(w.tile.tx - s.tx), Math.abs(w.tile.ty - s.ty))).toBeLessThanOrEqual(FORTRESS_RING_RADIUS);
         expect(g.map.getTile(w.tile.tx, w.tile.ty)).toBe(TERRAIN.grass);
       }
@@ -118,14 +120,14 @@ describe('template character', () => {
 /** The open tiles of each fortress ring (its gates). */
 function gateTiles(g: ReturnType<typeof gen>) {
   const walled = new Set(g.walls.map((w) => `${w.tile.tx},${w.tile.ty}`));
-  const out: { tile: { tx: number; ty: number }; playerIndex: number }[] = [];
+  const out: PresetWall[] = [];
   g.playerStarts.forEach((s, playerIndex) => {
     const own = g.walls.filter((w) => w.playerIndex === playerIndex);
     const r = Math.max(...own.map((w) => Math.max(Math.abs(w.tile.tx - s.tx), Math.abs(w.tile.ty - s.ty))));
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || walled.has(`${s.tx + dx},${s.ty + dy}`)) continue;
-        out.push({ tile: { tx: s.tx + dx, ty: s.ty + dy }, playerIndex });
+        out.push({ tile: { tx: s.tx + dx, ty: s.ty + dy }, playerIndex, minStyleAge: 2 });
       }
     }
   });

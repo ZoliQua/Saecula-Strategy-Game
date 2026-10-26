@@ -9,6 +9,8 @@ import { assertPlayerCount, type GeneratedMap, type PresetWall, type TemplateOpt
 export const FORTRESS_RING_RADIUS = 9;
 /** ...shrunk down to this on crowded maps so neighbouring rings keep a road between them. */
 const MIN_RING_RADIUS = 7;
+/** Preset walls are stone (§11.4): the medieval wall style, even for a Roman-age owner. */
+const STONE_WALL_AGE = 2;
 /** Tiles left open in the middle of a gated side. */
 export const FORTRESS_GATE_WIDTH = 3;
 
@@ -47,7 +49,7 @@ export function generateFortress(options: TemplateOptions): GeneratedMap {
       const key = tile.ty * width + tile.tx;
       if (taken.has(key) || insideOther(tile, playerIndex)) continue;
       taken.add(key);
-      walls.push({ tile, playerIndex });
+      walls.push({ tile, playerIndex, minStyleAge: STONE_WALL_AGE });
     }
   });
   return { map, playerStarts, walls };

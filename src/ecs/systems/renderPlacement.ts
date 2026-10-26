@@ -3,8 +3,14 @@ import type { With } from 'miniplex';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
 import type { FogOfWarData } from '../../map/FogOfWarData';
+import type { AgeId } from '../../types';
 import type { Entity } from '../components';
 import { dyingAlpha } from './unitAnim';
+
+/** The age style a building shows: its owner's age, raised to the building's own minimum (preset stone walls). */
+export function styleAge(ownerAge: AgeId, minStyleAge: AgeId | undefined): AgeId {
+  return minStyleAge !== undefined && minStyleAge > ownerAge ? minStyleAge : ownerAge;
+}
 
 /** What RenderSystem draws: entities with a tile position and a renderable. */
 export type Renderable = With<Entity, 'position' | 'renderable'>;
