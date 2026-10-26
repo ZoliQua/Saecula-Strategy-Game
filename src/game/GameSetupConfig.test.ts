@@ -51,6 +51,12 @@ describe('GameSetupConfig', () => {
     expect(c.civ).toBe('hungarian');
   });
 
+  it('falls back to meadow for templates that are not generated yet', () => {
+    for (const template of ['wilderness', 'islands', 'fortress', 'random'] as const) {
+      expect(withSetup(defaultSetupConfig(1), { template }).template).toBe('meadow');
+    }
+  });
+
   it('allows more AIs than recommended but flags it', () => {
     const small = withSetup(defaultSetupConfig(1), { mapSize: 'small', aiCount: 2 });
     expect(exceedsRecommendedAi(small)).toBe(false);

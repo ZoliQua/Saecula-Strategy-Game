@@ -15,7 +15,7 @@ import {
   withSetup,
   type GameSetupConfig,
 } from '../../game/GameSetupConfig';
-import type { MapTemplate } from '../../map/generator';
+import { MAP_TEMPLATES } from '../../map/generator';
 import { hu } from '../../i18n/hu';
 import type { CivId } from '../../types';
 import { el, uiRoot } from '../dom';
@@ -28,7 +28,6 @@ const ARROW = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" strok
 const BACK = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4 3 8l4 4"/></svg>`;
 const DICE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>`;
 
-const TEMPLATE_IDS = ['meadow', 'river', 'forest'] as const;
 const CIV_IDS: readonly CivId[] = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish'];
 
 export interface GameSetupHandlers {
@@ -53,6 +52,7 @@ export class GameSetup {
   private readonly startBtn: HTMLButtonElement;
   private readonly backBtn: HTMLButtonElement;
   private readonly civChips: HTMLButtonElement[] = [];
+  private readonly templateChips: HTMLButtonElement[] = [];
   private busy = false;
   private teardown = 0;
   private readonly onKey = (e: KeyboardEvent) => {
@@ -65,13 +65,20 @@ export class GameSetup {
     let row = 0;
     const delay = () => `animation-delay:${(0.18 + row++ * 0.07).toFixed(2)}s`;
 
-    const templateItems: SegmentItem<string>[] = TEMPLATE_IDS.map((id) => ({
-      value: id,
-      label: t.templates[id].name,
-      sub: t.templates[id].desc,
-      disabled: !AVAILABLE_TEMPLATES.includes(id as MapTemplate),
-    }));
-    const templateSeg = new Segmented('template', t.template, templateItems, this.config.template, () => undefined);
+    const templateGrid = el('div', { class: 'tpl-grid', role: 'radiogroup', 'aria-label': t.template });
+    for (const id of MAP_TEMPLATES) {
+      const available = AVAILABLE_TEMPLATES.includes(id);
+      const chip = el(
+        'button',
+        { class: 'civ-chip tpl-chip', type: 'button', role: 'radio', 'aria-checked': available && this.config.template === id, disabled: !available },
+        el('span', { class: 'civ-name' }, t.templates[id].name),
+        el('span', { class: available ? 'tpl-desc' : 'soon' }, available ? t.templates[id].desc : t.comingSoon),
+      );
+      if (available) chip.addEventListener('click', () => this.change({ template: id }));
+      chip.dataset['tpl'] = id;
+      this.templateChips.push(chip);
+      templateGrid.append(chip);
+    }
     const sizeItems: SegmentItem<string>[] = MAP_SIZE_IDS.map((id) => ({
       value: id,
       label: t.sizes[id],
@@ -153,7 +160,7 @@ export class GameSetup {
       el(
         'div',
         { class: 'setup-body' },
-        field(t.template, templateSeg.root),
+        field(t.template, templateGrid),
         field(t.size, this.sizeSeg.root),
         field(t.opponents, this.aiSeg.root, this.aiHint),
         field(t.difficulty, diffSeg.root),
@@ -219,6 +226,7 @@ export class GameSetup {
     const c = this.config;
     this.sizeSeg.set(c.mapSize);
     this.aiSeg.set(String(c.aiCount));
+    for (const chip of this.templateChips) chip.setAttribute('aria-checked', String(chip.dataset['tpl'] === c.template));
     for (const chip of this.civChips) chip.setAttribute('aria-checked', String(chip.dataset['civ'] === c.civ));
     if (document.activeElement !== this.seedInput) this.seedInput.value = String(c.seed);
     const crowded = exceedsRecommendedAi(c);

@@ -47,6 +47,8 @@ export class GameSetupScene extends Phaser.Scene {
   }
 
   private close(): void {
+    if (this.leaving) return;
+    this.leaving = true;
     this.setup?.leave();
     this.menuScene().showMenu();
     this.time.delayedCall(380, () => this.scene.stop());
