@@ -28,11 +28,10 @@ import {
   paintBerryBush,
   paintGoldRocks,
   paintStump,
-  paintTree,
   ROCK_VARIANTS,
-  TREE_VARIANTS,
   type DecorArt,
 } from './art/decor';
+import { paintTreeAtlas } from './art/trees';
 import { attachNormalMap, registerShadowSilhouette, shareNormalMap } from './art/lighting/litTextures';
 import {
   FOLIAGE_DERIVE,
@@ -49,7 +48,8 @@ import { hash2 } from './art/palette';
 export const DECOR_ORIGIN_Y = new Map<string, number>();
 
 export const decorKeys = {
-  tree: (i: number) => `decor_tree_${i}`,
+  /** Atlas of every tree frame (see art/trees.ts TREE_FRAMES). */
+  trees: 'decor_trees',
   gold: (i: number) => `decor_gold_${i}`,
   bush: (i: number) => `decor_bush_${i}`,
   stump: 'decor_stump',
@@ -122,7 +122,15 @@ export function generateArt(scene: Phaser.Scene): void {
     attachNormalMap(scene, key, normalMapFor(art.canvas, null, foliage ? FOLIAGE_DERIVE : ROCK_DERIVE));
     if (casts) registerShadowSilhouette(scene, key);
   };
-  for (let i = 0; i < TREE_VARIANTS; i++) decor(decorKeys.tree(i), paintTree(i), true, true);
+  if (!scene.textures.exists(decorKeys.trees)) {
+    const atlas = paintTreeAtlas();
+    DECOR_ORIGIN_Y.set(decorKeys.trees, atlas.originY);
+    registerCanvas(scene, decorKeys.trees, atlas.canvas);
+    const tex = scene.textures.get(decorKeys.trees);
+    atlas.frames.forEach((f, i) => tex.add(i, 0, f.x, f.y, f.w, f.h));
+    attachNormalMap(scene, decorKeys.trees, normalMapFor(atlas.canvas, null, FOLIAGE_DERIVE));
+    registerShadowSilhouette(scene, decorKeys.trees);
+  }
   for (let i = 0; i < ROCK_VARIANTS; i++) decor(decorKeys.gold(i), paintGoldRocks(i), false, false);
   for (let i = 0; i < BUSH_VARIANTS; i++) decor(decorKeys.bush(i), paintBerryBush(i), true, false);
   decor(decorKeys.stump, paintStump(), false, false);

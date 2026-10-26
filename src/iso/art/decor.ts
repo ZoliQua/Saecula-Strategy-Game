@@ -1,5 +1,5 @@
-import { ellipse, makeCanvas, softShadow, type Ctx } from './canvas';
-import { css, mix, rng, shade } from './palette';
+import { ellipse, makeCanvas, softShadow } from './canvas';
+import { css, rng, shade } from './palette';
 
 export interface DecorArt {
   readonly canvas: HTMLCanvasElement;
@@ -7,104 +7,8 @@ export interface DecorArt {
   readonly originY: number;
 }
 
-export const TREE_VARIANTS = 6;
 export const ROCK_VARIANTS = 3;
 export const BUSH_VARIANTS = 3;
-
-/** Tree variants: even = conifer, odd = broadleaf. */
-export function paintTree(variant: number): DecorArt {
-  const W = 104;
-  const H = 156;
-  const baseY = 140;
-  const { canvas, ctx } = makeCanvas(W, H);
-  const r = rng(1000 + variant * 17);
-  const cx = W / 2 + (r() - 0.5) * 6;
-  softShadow(ctx, cx + 6, baseY, 30, 11, 0.42);
-  // Trunk.
-  const tg = ctx.createLinearGradient(cx - 5, 0, cx + 5, 0);
-  tg.addColorStop(0, '#8a5a32');
-  tg.addColorStop(1, '#4a2e18');
-  ctx.fillStyle = tg;
-  ctx.beginPath();
-  ctx.moveTo(cx - 5, baseY);
-  ctx.lineTo(cx - 3, baseY - 40);
-  ctx.lineTo(cx + 3, baseY - 40);
-  ctx.lineTo(cx + 5, baseY);
-  ctx.closePath();
-  ctx.fill();
-  if (variant % 2 === 0) conifer(ctx, cx, baseY, r, variant);
-  else broadleaf(ctx, cx, baseY, r, variant);
-  return { canvas, originY: baseY / H };
-}
-
-function conifer(ctx: Ctx, cx: number, baseY: number, r: () => number, variant: number): void {
-  const base = mix(0x2f5a32, 0x3b6b3a, (variant % 3) / 2);
-  const tiers = 4;
-  const top = baseY - 120 - r() * 10;
-  for (let i = 0; i < tiers; i++) {
-    const t = i / tiers;
-    const yBottom = baseY - 22 - t * 80;
-    const half = 34 - t * 20;
-    const yTop = i === tiers - 1 ? top : yBottom - 46;
-    const g = ctx.createLinearGradient(cx - half, 0, cx + half, 0);
-    g.addColorStop(0, css(shade(base, 1.35)));
-    g.addColorStop(0.45, css(shade(base, 1.0)));
-    g.addColorStop(1, css(shade(base, 0.55)));
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(cx, yTop);
-    // Jagged needle edge.
-    const steps = 7;
-    for (let s = 0; s <= steps; s++) {
-      const k = s / steps;
-      ctx.lineTo(cx + half * k + (s % 2 ? 3 : -1), yTop + (yBottom - yTop) * k + (s % 2 ? -3 : 2));
-    }
-    ctx.quadraticCurveTo(cx, yBottom + 7, cx - half, yBottom);
-    for (let s = steps; s >= 0; s--) {
-      const k = s / steps;
-      ctx.lineTo(cx - half * k - (s % 2 ? 3 : -1), yTop + (yBottom - yTop) * k + (s % 2 ? -3 : 2));
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(16,30,14,.55)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-  }
-}
-
-function broadleaf(ctx: Ctx, cx: number, baseY: number, r: () => number, variant: number): void {
-  const base = mix(0x4a7a34, 0x6b8a2e, ((variant >> 1) % 3) / 2);
-  const cy = baseY - 78;
-  const blobs: Array<[number, number, number]> = [];
-  for (let i = 0; i < 9; i++) {
-    const a = r() * Math.PI * 2;
-    const d = r() * 20;
-    blobs.push([cx + Math.cos(a) * d * 1.2, cy + Math.sin(a) * d * 0.9, 17 + r() * 9]);
-  }
-  blobs.sort((a, b) => a[1] - b[1]);
-  // Dark silhouette first gives every blob a soft outline.
-  for (const [x, y, rad] of blobs) {
-    ellipse(ctx, x, y, rad + 1.5, rad * 0.92 + 1.5);
-    ctx.fillStyle = css(shade(base, 0.4));
-    ctx.fill();
-  }
-  for (const [x, y, rad] of blobs) {
-    const g = ctx.createRadialGradient(x - rad * 0.4, y - rad * 0.45, rad * 0.1, x, y, rad);
-    g.addColorStop(0, css(shade(base, 1.45)));
-    g.addColorStop(0.6, css(shade(base, 1.0)));
-    g.addColorStop(1, css(shade(base, 0.68)));
-    ellipse(ctx, x, y, rad, rad * 0.92);
-    ctx.fillStyle = g;
-    ctx.fill();
-  }
-  // Leaf speckle highlights.
-  for (let i = 0; i < 40; i++) {
-    const x = cx + (r() - 0.6) * 50;
-    const y = cy + (r() - 0.7) * 44;
-    ctx.fillStyle = css(shade(base, 1.6), 0.5);
-    ctx.fillRect(x, y, 2, 2);
-  }
-}
 
 export function paintStump(): DecorArt {
   const { canvas, ctx } = makeCanvas(48, 40);

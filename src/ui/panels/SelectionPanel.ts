@@ -11,10 +11,11 @@ import type { SelectedEntityInfo, UiStore } from '../store';
 import type { TechId } from '../../types';
 import { thumbnail, unitThumbnail } from '../thumbnails';
 
-const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', string> = {
-  food: decorKeys.bush(0),
-  wood: decorKeys.tree(1),
-  gold: decorKeys.gold(0),
+const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', { key: string; frame?: number }> = {
+  food: { key: decorKeys.bush(0) },
+  /** A broadleaf frame of the tree atlas. */
+  wood: { key: decorKeys.trees, frame: 2 },
+  gold: { key: decorKeys.gold(0) },
 };
 
 /** Bottom-centre card describing the primary selection. */
@@ -56,7 +57,7 @@ export class SelectionPanel {
         ? unitThumbnail(sel.unitType)
         : sel.kind === 'building'
           ? thumbnail(this.textures, sel.textureKey ?? BUILDING_SPECS[sel.buildingType].textureKey)
-          : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType]);
+          : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType].key, RESOURCE_PORTRAIT[sel.resourceType].frame);
     if (src) this.portrait.append(el('img', { src, alt: '' }));
   }
 

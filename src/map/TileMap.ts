@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { ART_SCALE } from '../iso/art/canvas';
-import { LightManager, lit } from '../iso/art/lighting/LightManager';
+import { lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap, flatGroundNormal } from '../iso/art/lighting/litTextures';
-import { BUSH_VARIANTS, ROCK_VARIANTS, TREE_VARIANTS } from '../iso/art/decor';
+import { BUSH_VARIANTS, ROCK_VARIANTS } from '../iso/art/decor';
 import { hash2, tileVariant } from '../iso/art/palette';
 import { paintTerrainChunk } from '../iso/art/terrain';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
@@ -11,6 +11,7 @@ import { DECOR_ORIGIN_Y, decorKeys, FX_KEYS } from '../iso/textures';
 import type { MapData } from './MapData';
 import { TERRAIN } from './TerrainTypes';
 import { FogLayer } from './FogLayer';
+import { ForestLayer } from './ForestLayer';
 import type { FogOfWarData } from './FogOfWarData';
 
 const HIGHLIGHT_DEPTH_OFFSET = 0.5;
@@ -28,10 +29,7 @@ const HOVER_COLOR = 0xf5a857;
 
 interface Decor {
   sprite: Phaser.GameObjects.Image;
-  kind: 'tree' | 'gold' | 'bush' | 'stump';
-  phase: number;
-  /** Removes the cast shadow (trees). */
-  unshadow: (() => void) | null;
+  kind: 'gold' | 'bush' | 'stump';
 }
 
 /**
@@ -48,6 +46,7 @@ export class TileMap {
   private readonly mapData: MapData;
   private readonly chunks: Phaser.GameObjects.Image[] = [];
   private readonly decor = new Map<number, Decor>();
+  private forest!: ForestLayer;
   private readonly clouds: Phaser.GameObjects.TileSprite;
   /** Cloud drift in texture px. */
   private readonly cloudDrift = { x: 0, y: 0 };
@@ -98,13 +97,12 @@ export class TileMap {
   }
 
   private placeDecor(): void {
+    this.forest = new ForestLayer(this.scene, this.mapData);
     this.mapData.forEachTile(({ tx, ty }) => this.syncDecor(tx, ty));
   }
 
   private decorFor(tx: number, ty: number): { key: string; kind: Decor['kind'] } | null {
     switch (this.mapData.getTile(tx, ty)) {
-      case TERRAIN.forest:
-        return { key: decorKeys.tree(tileVariant(tx, ty, TREE_VARIANTS)), kind: 'tree' };
       case TERRAIN.gold_mine:
         return { key: decorKeys.gold(tileVariant(tx, ty, ROCK_VARIANTS)), kind: 'gold' };
       case TERRAIN.berries:
@@ -114,21 +112,22 @@ export class TileMap {
     }
   }
 
-  /** Creates, swaps or removes the decor sprite for one tile. */
+  /** Creates, swaps or removes the decor sprite for one tile (trees: see ForestLayer). */
   private syncDecor(tx: number, ty: number): void {
     const id = ty * this.width + tx;
+    if (this.forest.has(tx, ty) && this.mapData.getTile(tx, ty) !== TERRAIN.forest) {
+      // A chopped-down tree leaves its stump.
+      this.forest.remove(tx, ty);
+      this.addDecor(id, tx, ty, decorKeys.stump, 'stump');
+      return;
+    }
     const want = this.decorFor(tx, ty);
     const have = this.decor.get(id);
     if (have && want && have.sprite.texture.key === want.key) return;
     if (have) {
-      const wasTree = have.kind === 'tree';
-      have.unshadow?.();
+      if (have.kind === 'stump' && !want) return;
       have.sprite.destroy();
       this.decor.delete(id);
-      if (wasTree && !want) {
-        this.addDecor(id, tx, ty, decorKeys.stump, 'stump');
-        return;
-      }
     }
     if (want) this.addDecor(id, tx, ty, want.key, want.kind);
   }
@@ -138,7 +137,7 @@ export class TileMap {
     // Small jitter breaks up the grid; trees stay inside their tile.
     const jx = (hash2(tx, ty, 201) - 0.5) * 10;
     const jy = (hash2(tx, ty, 202) - 0.5) * 5;
-    const scale = (1 / ART_SCALE) * (kind === 'tree' ? 0.9 + hash2(tx, ty, 203) * 0.25 : 1);
+    const scale = 1 / ART_SCALE;
     const sprite = this.scene.add
       .image(sx + jx, sy + jy, key)
       .setOrigin(0.5, DECOR_ORIGIN_Y.get(key) ?? 0.85)
@@ -146,9 +145,7 @@ export class TileMap {
       .setFlipX(hash2(tx, ty, 204) > 0.5)
       .setDepth(tileDepth({ tx, ty }) + DECOR_DEPTH_OFFSET);
     lit(sprite);
-    const unshadow = kind === 'tree' ? LightManager.of(this.scene)?.attachCaster(sprite, key) ?? null : null;
-    const d: Decor = { sprite, kind, phase: hash2(tx, ty, 205) * Math.PI * 2, unshadow };
-    this.decor.set(id, d);
+    this.decor.set(id, { sprite, kind });
   }
 
   /** Re-reads terrain for one tile (e.g. a depleted resource). */
@@ -166,10 +163,8 @@ export class TileMap {
       const s = d.sprite;
       const inView = !(s.x < view.x - margin || s.x > view.right + margin || s.y < view.y - margin || s.y > view.bottom + margin * 2);
       s.setVisible(inView);
-      if (inView && d.kind === 'tree') {
-        s.rotation = Math.sin(time * 0.0011 + d.phase) * 0.025 + Math.sin(time * 0.0031 + d.phase * 2) * 0.008;
-      }
     }
+    this.forest.update(time);
     for (const c of this.chunks) {
       c.setVisible(c.x < view.right && c.x + c.width > view.x && c.y < view.bottom && c.y + c.height > view.y);
     }
@@ -254,10 +249,8 @@ export class TileMap {
 
   destroy(): void {
     for (const c of this.chunks) c.destroy();
-    for (const d of this.decor.values()) {
-      d.unshadow?.();
-      d.sprite.destroy();
-    }
+    for (const d of this.decor.values()) d.sprite.destroy();
+    this.forest.destroy();
     this.decor.clear();
     this.clouds.destroy();
     this.fog.destroy();

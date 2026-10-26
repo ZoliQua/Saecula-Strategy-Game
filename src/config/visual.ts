@@ -182,3 +182,18 @@ export const BUILDING_FX = {
   /** Hammer dust per strike of a builder's tool. */
   hammerDust: 4,
 } as const;
+
+/** Terrain relief and animated surfaces (Task 18). Sizes in world px unless noted. */
+export const TERRAIN_LOOK = {
+  /** Screen height of a cliff plateau above the ground (its vertical faces are this tall). */
+  cliffHeight: 30,
+  /** Water mask texels per tile (coverage + shore distance for the water shader). */
+  waterMaskRes: 4,
+  /** Shore distance (tiles) at which water reaches its deepest tint. */
+  waterDeepTiles: 3.5,
+  /** Forest: scale of trees on the forest edge vs. inside it (before per-tree jitter). */
+  edgeTreeScale: 1.18,
+  interiorTreeScale: 0.95,
+  /** Zoom below which trees stop swaying (saves vertex work when the whole map is in view). */
+  swayMinZoom: 0.7,
+} as const;
