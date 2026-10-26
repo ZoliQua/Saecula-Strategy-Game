@@ -22,6 +22,13 @@ const MENU_MAP_SIZE = 48;
 const MENU_SEED = 7;
 /** The diorama shows off the grand Enlightenment-era town the player builds towards. */
 const MENU_AGE = 3;
+/** Pond (a few overlapping discs for an irregular shore) and rock outcrop, relative to the settlement (tiles). */
+const MENU_POND: ReadonlyArray<{ tx: number; ty: number; r: number }> = [
+  { tx: 7, ty: 7, r: 2.6 },
+  { tx: 9.5, ty: 7.5, r: 2.1 },
+  { tx: 6, ty: 9.8, r: 1.7 },
+];
+const MENU_ROCK = { tx: -9, ty: -3, r: 2.6 } as const;
 
 interface Walker {
   sprites: UnitSprites;
@@ -65,6 +72,11 @@ export class MainMenuScene extends Phaser.Scene {
     // Clear a settlement clearing before the map is painted.
     map.forEachTile(({ tx, ty }) => {
       if (Math.abs(tx - start.tx) + Math.abs(ty - start.ty) <= 6) map.setTile(tx, ty, TERRAIN.grass);
+      // A pond and a rock outcrop in view show off the animated water and the raised cliffs.
+      const pond = Math.min(...MENU_POND.map((p) => Math.hypot(tx - p.tx - start.tx, ty - p.ty - start.ty) - p.r));
+      if (pond <= 0) map.setTile(tx, ty, TERRAIN.water);
+      else if (pond <= 1.6 && map.getTile(tx, ty) === TERRAIN.forest) map.setTile(tx, ty, TERRAIN.grass);
+      if (Math.hypot(tx - MENU_ROCK.tx - start.tx, ty - MENU_ROCK.ty - start.ty) <= MENU_ROCK.r) map.setTile(tx, ty, TERRAIN.cliff);
     });
     this.lighting = new LightManager(this, { phase: MENU_PHASE, fixed: true });
     this.tileMap = new TileMap(this, map);
