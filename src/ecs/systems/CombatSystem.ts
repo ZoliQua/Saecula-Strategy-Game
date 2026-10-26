@@ -2,7 +2,8 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { findPathToNearest } from '../../map/pathfinding';
-import { TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
+import { BREACH_SEARCH_RADIUS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
+import { findBreachTarget } from '../../game/breach';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
 import { boostArmor, boostAttack, bonusesFor } from '../../game/modifiers';
@@ -29,6 +30,10 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
  *
  * When target HP hits 0 we attach a `dying` tag (DeathSystem handles
  * the rest) and strip components that would let the corpse act.
+ *
+ * Walls: a unit that cannot get within reach of its target (enclosed by
+ * enemy walls / buildings) attacks the nearest hostile building in the
+ * way and goes back to the real target once it has fallen.
  */
 export class CombatSystem {
   private readonly world: EcsWorld;
@@ -77,7 +82,7 @@ export class CombatSystem {
       | Target
       | undefined;
     if (!target || !target.owner || !target.health || (target as Entity).dying) {
-      this.world.removeComponent(a as Entity, 'attackIntent');
+      this.endTarget(a);
       return;
     }
     if (target.owner.playerId === a.owner.playerId) {
@@ -126,7 +131,38 @@ export class CombatSystem {
         (target as Entity).unit?.unitType,
       ),
     );
-    if (killed) this.world.removeComponent(a as Entity, 'attackIntent');
+    if (killed) this.endTarget(a);
+  }
+
+  /** The current target is gone: resume the breached-for target, or stop attacking. */
+  private endTarget(a: Attacker): void {
+    const resume = a.attackIntent.resumeTargetId;
+    if (resume === undefined) {
+      this.world.removeComponent(a as Entity, 'attackIntent');
+      return;
+    }
+    a.attackIntent.targetId = resume;
+    delete a.attackIntent.resumeTargetId;
+    this.repathAt.delete(a);
+  }
+
+  /**
+   * Stuck short of `target`: switch to the hostile building blocking the
+   * way. Returns false when nothing hostile is in the way, or while a
+   * blocking building is still collapsing (the caller retries later).
+   */
+  private tryBreach(a: Attacker, target: Target): boolean {
+    const decision = findBreachTarget(
+      this.world.with('building', 'position', 'owner', 'health'),
+      a.position,
+      target,
+      a.owner.playerId,
+      Math.max(BREACH_SEARCH_RADIUS, Math.floor(a.attacker.range)),
+    );
+    if (decision?.kind !== 'attack' || decision.target.id === undefined) return false;
+    a.attackIntent.resumeTargetId ??= a.attackIntent.targetId;
+    a.attackIntent.targetId = decision.target.id;
+    return true;
   }
 
   private walkIntoRange(a: Attacker, target: Target): void {
@@ -134,10 +170,13 @@ export class CombatSystem {
     // Already moving toward something? Keep going; we'll re-check next tick.
     if (a.movable.path.length > 0) return;
     if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
-    const goal = findAdjacentToTarget(this.mapData, target, a.position, a.attacker.range);
-    const path = goal ? findPathToNearest(this.mapData, a.position, goal) : null;
+    // Every tile in reach blocked (e.g. ringed by walls): head for the target itself;
+    // findPathToNearest stops at the closest reachable tile.
+    const goal = findAdjacentToTarget(this.mapData, target, a.position, a.attacker.range) ?? target.position;
+    const path = findPathToNearest(this.mapData, a.position, goal);
     if (!path || path.length < 2) {
-      // Walled off and already as close as possible: retry later, not every tick.
+      // Walled off and already as close as possible: breach, or retry later (not every tick).
+      if (this.tryBreach(a, target)) return;
       this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
       return;
     }

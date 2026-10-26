@@ -70,17 +70,12 @@ describe('research', () => {
 
   it('TC busy rule: training blocks research and research blocks training', () => {
     const { world, tc, player, wallet } = setup();
-    expect(queueUnit(tc, 'villager').ok).toBe(true);
+    expect(queueUnit(tc, 'villager', 1).ok).toBe(true);
     expect(startResearch(world, tc, 'feudalism', player, wallet).reason).toBe('training-busy');
     tc.trainingQueue?.entries.splice(0);
     startResearch(world, tc, 'feudalism', player, wallet);
-    expect(queueUnit(tc, 'villager').reason).toBe('researching');
+    expect(queueUnit(tc, 'villager', 1).reason).toBe('researching');
     expect(tc.trainingQueue?.entries.length).toBe(0);
-  });
-
-  it('queueUnit refuses units above the player age', () => {
-    const { tc } = setup();
-    expect(queueUnit(tc, 'knight', 1).reason).toBe('age-locked');
   });
 
   it('completes after its duration, raises the age once and emits ageChanged', () => {

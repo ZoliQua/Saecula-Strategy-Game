@@ -31,7 +31,7 @@ describe('TrainingSystem', () => {
   it('queueUnit deducts food cost and pushes an entry', () => {
     const { tc } = setup();
     const beforeFood = uiStore.getState().resources.food;
-    const result = queueUnit(tc, 'villager');
+    const result = queueUnit(tc, 'villager', 1);
     expect(result.ok).toBe(true);
     expect(uiStore.getState().resources.food).toBe(beforeFood - 50);
     expect(tc.trainingQueue?.entries.length).toBe(1);
@@ -40,7 +40,7 @@ describe('TrainingSystem', () => {
   it('queueUnit refuses when resources are insufficient', () => {
     const { tc } = setup();
     uiStore.getState().setResources({ food: 10 });
-    const result = queueUnit(tc, 'villager');
+    const result = queueUnit(tc, 'villager', 1);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('insufficient-resources');
     expect(tc.trainingQueue?.entries.length ?? 0).toBe(0);
@@ -48,7 +48,7 @@ describe('TrainingSystem', () => {
 
   it('completes training and spawns a villager', () => {
     const { tc, system, world } = setup();
-    queueUnit(tc, 'villager');
+    queueUnit(tc, 'villager', 1);
     const trainTime = tc.trainingQueue!.entries[0]!.totalTime;
     system.update(trainTime * 1000 + 100);
     expect(tc.trainingQueue!.entries.length).toBe(0);
@@ -58,8 +58,8 @@ describe('TrainingSystem', () => {
 
   it('respects the max queue size', () => {
     const { tc } = setup();
-    for (let i = 0; i < 5; i++) queueUnit(tc, 'villager');
-    const result = queueUnit(tc, 'villager');
+    for (let i = 0; i < 5; i++) queueUnit(tc, 'villager', 1);
+    const result = queueUnit(tc, 'villager', 1);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('queue-full');
   });
@@ -67,7 +67,7 @@ describe('TrainingSystem', () => {
   it('rejects training while at population cap', () => {
     const { tc } = setup();
     uiStore.setState({ population: { current: 50, cap: 50 } });
-    const result = queueUnit(tc, 'villager');
+    const result = queueUnit(tc, 'villager', 1);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('pop-cap');
   });

@@ -1,4 +1,5 @@
 import type { Entity } from '../../ecs/components';
+import { clearUnitOrders } from '../../ecs/orders';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
@@ -21,7 +22,7 @@ export class OrderIssuer {
       // Any new right-click order overrides whatever the unit was
       // doing — clear gather state + build command so the villager
       // actually listens.
-      this.clearUnitOrders(entity);
+      clearUnitOrders(this.world, entity);
       if (enemy && entity.attacker) {
         this.world.addComponent(entity, 'attackIntent', {
           targetId: enemy.id ?? 0,
@@ -36,16 +37,6 @@ export class OrderIssuer {
       }
       this.world.addComponent(entity, 'moveIntent', { target: tile });
     }
-  }
-
-  private clearUnitOrders(entity: Entity): void {
-    if (entity.gatherer) {
-      entity.gatherer.targetNodeId = undefined;
-      entity.gatherer.dropoffId = undefined;
-    }
-    if (entity.gatherIntent) this.world.removeComponent(entity, 'gatherIntent');
-    if (entity.attackIntent) this.world.removeComponent(entity, 'attackIntent');
-    if (entity.buildCommand) this.world.removeComponent(entity, 'buildCommand');
   }
 
   private findEnemyAt(tx: number, ty: number, actor: Entity): Entity | null {

@@ -1,27 +1,33 @@
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { EcsWorld } from '../world';
 
-const SCAN_INTERVAL_MS = 250;
+/** Default scan interval: the human's fog (AIs pass a longer one). */
+export const FOG_SCAN_INTERVAL_MS = 250;
 
 /**
- * Recomputes per-tile visibility for the human player. On each scan:
+ * Recomputes per-tile visibility for one viewing player (the human, or
+ * an AI for its own perception). On each scan:
  *   1) All currently-visible tiles drop to 'explored'.
  *   2) Every player-owned entity with a fogEmitter stamps a circular
  *      Chebyshev-distance area back to 'visible'.
- * Runs every 250ms — more than enough for unit motion at 2.5 tiles/s.
+ * Runs every `intervalMs` (250 ms by default — plenty for unit motion at
+ * 2.5 tiles/s). The first update always scans.
  */
 export class FogOfWarSystem {
-  private elapsedMs = SCAN_INTERVAL_MS;
+  private elapsedMs: number;
 
   constructor(
     private readonly world: EcsWorld,
     private readonly fog: FogOfWarData,
     private readonly viewerPlayerId: number,
-  ) {}
+    private readonly intervalMs = FOG_SCAN_INTERVAL_MS,
+  ) {
+    this.elapsedMs = intervalMs;
+  }
 
   update(deltaMs: number): void {
     this.elapsedMs += deltaMs;
-    if (this.elapsedMs < SCAN_INTERVAL_MS) return;
+    if (this.elapsedMs < this.intervalMs) return;
     this.elapsedMs = 0;
 
     this.fog.dimVisibleToExplored();

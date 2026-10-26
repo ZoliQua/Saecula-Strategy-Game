@@ -25,6 +25,9 @@ export const INFANTRY_CLASS: readonly UnitType[] = [
 /** Units affected by the Arrow sharpening technologies. */
 export const ARROW_UNITS: readonly UnitType[] = ['archer', 'crossbowman', 'musketeer'];
 
+/** How far (tiles) from where a walled-off attacker is stuck it looks for an enemy wall / building to breach. */
+export const BREACH_SEARCH_RADIUS = 2;
+
 /** Building armour: melee 0, pierce 6 (towers and walls included). */
 export const BUILDING_MELEE_DEF = 0;
 export const BUILDING_PIERCE_DEF = 6;

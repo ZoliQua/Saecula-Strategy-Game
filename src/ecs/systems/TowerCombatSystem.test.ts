@@ -23,7 +23,7 @@ function setup(fog: FogOfWarData | null = null) {
     world,
     tower,
     unitAt,
-    towers: new TowerCombatSystem(world, fog, 1),
+    towers: new TowerCombatSystem(world, (id) => (id === 1 ? fog : null)),
     combat: new CombatSystem(world, map),
     projectiles: new ProjectileSystem(world, null),
   };
@@ -66,6 +66,22 @@ describe('TowerCombatSystem', () => {
     towers.update(300);
     expect(tower.attackIntent).toBeUndefined();
     fog.markVisible(12, 10);
+    towers.update(300);
+    expect(tower.attackIntent).toBeDefined();
+  });
+
+  it('an AI-owned tower aims through its owner\'s own fog of war', () => {
+    const map = new MapData(24, 24, TERRAIN.grass);
+    const world = createEcsWorld();
+    const aiFog = new FogOfWarData(24, 24);
+    const humanFog = new FogOfWarData(24, 24);
+    const tower = createBuilding(world, { type: 'tower', origin: { tx: 10, ty: 10 }, playerId: 2, mapData: map });
+    createUnit(world, { type: 'swordsman', tile: { tx: 12, ty: 10 }, playerId: 1 });
+    const towers = new TowerCombatSystem(world, (id) => (id === 2 ? aiFog : id === 1 ? humanFog : null));
+    humanFog.markVisible(12, 10); // the human seeing the tile does not help the AI tower
+    towers.update(300);
+    expect(tower.attackIntent).toBeUndefined();
+    aiFog.markVisible(12, 10);
     towers.update(300);
     expect(tower.attackIntent).toBeDefined();
   });

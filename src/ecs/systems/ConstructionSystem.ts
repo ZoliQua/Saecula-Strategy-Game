@@ -10,6 +10,8 @@ import type { EcsWorld } from '../world';
 
 /** How far (tiles) from the finished segment a builder looks for the next wall segment. */
 const CHAIN_RADIUS = 3;
+/** A builder that found no path to its site waits this long before planning again. */
+const REPATH_RETRY_MS = 1500;
 
 type Builder = With<Entity, 'position' | 'movable' | 'buildCommand' | 'owner'>;
 type Site = With<
@@ -26,6 +28,9 @@ type Site = With<
 export class ConstructionSystem {
   private readonly world: EcsWorld;
   private readonly mapData: MapData;
+  /** Clock and per-builder earliest next repath, so enclosed sites are not re-planned every tick. */
+  private nowMs = 0;
+  private readonly repathAt = new WeakMap<object, number>();
 
   constructor(world: EcsWorld, mapData: MapData) {
     this.world = world;
@@ -33,6 +38,7 @@ export class ConstructionSystem {
   }
 
   update(deltaMs: number): void {
+    this.nowMs += deltaMs;
     const dt = deltaMs / 1000;
     const builders = this.world.with('position', 'movable', 'buildCommand', 'owner');
     const sites = new Map<number, Site>();
@@ -134,10 +140,13 @@ export class ConstructionSystem {
   }
 
   private walkToSite(b: Builder, site: Site): void {
+    if ((this.repathAt.get(b) ?? 0) > this.nowMs) return;
     const goal = findAdjacent(this.mapData, site, b.position);
-    if (!goal) return;
-    const path = findPath(this.mapData, b.position, goal);
-    if (!path) return;
+    const path = goal ? findPath(this.mapData, b.position, goal) : null;
+    if (!path) {
+      this.repathAt.set(b, this.nowMs + REPATH_RETRY_MS);
+      return;
+    }
     b.movable.path = path.slice(1);
     b.movable.progress = 0;
   }

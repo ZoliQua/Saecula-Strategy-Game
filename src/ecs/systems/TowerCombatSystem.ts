@@ -8,20 +8,17 @@ const RETARGET_INTERVAL_MS = 250;
  * Gives every finished tower an `attackIntent` on the nearest enemy unit in
  * range; CombatSystem then fires the arrow when the cooldown allows.
  *
- * Visibility: a tower of the fog viewer's player only shoots units the viewer
- * can currently see. Other players (the AIs) have no fog data yet, so their
- * towers use a plain range check, which equals line of sight here because
- * the tower's sight range (9) exceeds its attack range (5) and there is no
- * sight-blocking terrain. Per-AI fog (Task 15) can replace this via
- * `isVisibleTo`.
+ * Visibility: a tower only shoots units its owner can currently see in that
+ * player's own fog of war (the human's and every AI's). A player without fog
+ * data (headless tests) falls back to a plain range check.
  */
 export class TowerCombatSystem {
   private elapsedMs = RETARGET_INTERVAL_MS;
 
   constructor(
     private readonly world: EcsWorld,
-    private readonly fog: FogOfWarData | null = null,
-    private readonly fogViewerId = 1,
+    /** Fog of war of a player, or null when that player has none. */
+    private readonly fogFor: (playerId: number) => FogOfWarData | null = () => null,
   ) {}
 
   update(deltaMs: number): void {
@@ -73,8 +70,8 @@ export class TowerCombatSystem {
   }
 
   private isVisibleTo(playerId: number, tx: number, ty: number): boolean {
-    if (this.fog && playerId === this.fogViewerId) return this.fog.isVisible(tx, ty);
-    return true;
+    const fog = this.fogFor(playerId);
+    return fog ? fog.isVisible(tx, ty) : true;
   }
 
   private findById(id: number): Entity | undefined {

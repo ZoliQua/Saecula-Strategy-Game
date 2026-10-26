@@ -143,7 +143,9 @@ export class GameScene extends Phaser.Scene {
     const unsubCommands = onCommand((cmd) => {
       if (cmd.type === 'queue-unit') {
         const trainer = find(cmd.trainerId);
-        if (trainer) queueUnit(trainer, cmd.unitType, human?.age);
+        if (trainer && human && trainer.owner?.playerId === human.id) {
+          queueUnit(trainer, cmd.unitType, human.age);
+        }
       } else if (cmd.type === 'cancel-queue') {
         const trainer = find(cmd.trainerId);
         if (trainer?.trainingQueue) {

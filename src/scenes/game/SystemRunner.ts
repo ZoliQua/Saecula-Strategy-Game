@@ -84,7 +84,7 @@ export class SystemRunner {
     this.death = new DeathSystem(world, mapData);
     this.healthBars = new HealthBarSystem(scene, world);
     this.fogData = new FogOfWarData(mapData.width, mapData.height);
-    this.towers = new TowerCombatSystem(world, this.fogData, 1);
+    this.towers = new TowerCombatSystem(world, (id) => (id === 1 ? this.fogData : null));
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1);
     this.render.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);

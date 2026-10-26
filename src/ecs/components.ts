@@ -99,7 +99,11 @@ export interface Entity {
   };
   /** Damage reduction per attack type; lives on the entity so techs can raise it. */
   armor?: { melee: number; pierce: number };
-  attackIntent?: { targetId: number };
+  attackIntent?: {
+    targetId: number;
+    /** Set while breaching: the real target to go back to once the blocking building falls. */
+    resumeTargetId?: number;
+  };
   dying?: { ttlMs: number };
   fogEmitter?: { sightRange: number };
   /**
