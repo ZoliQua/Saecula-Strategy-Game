@@ -78,4 +78,21 @@ describe('EasyStrategy', () => {
     );
     expect(attacking.length).toBeGreaterThan(0);
   });
+
+  it('attacks the human TC rather than another AI when several AIs exist', () => {
+    const { world, ai, map } = setup();
+    const rival = createBuilding(world, { type: 'town_center', origin: { tx: 5, ty: 12 }, playerId: 3, mapData: map });
+    const humanTc = createBuilding(world, { type: 'town_center', origin: { tx: 15, ty: 15 }, playerId: 1, mapData: map });
+    for (let i = 0; i < 4; i++) {
+      const s = createVillager(world, { tile: { tx: 5, ty: 7 + i }, playerId: 2 });
+      s.unit = { unitType: 'swordsman' };
+    }
+    ai.update({ world, mapData: map, enemyPlayerId: 1 }, 2000);
+    const targets = world.entities
+      .filter((e) => e.attackIntent && e.owner?.playerId === 2)
+      .map((e) => e.attackIntent!.targetId);
+    expect(targets.length).toBeGreaterThan(0);
+    expect(new Set(targets)).toEqual(new Set([humanTc.id]));
+    expect(targets).not.toContain(rival.id);
+  });
 });

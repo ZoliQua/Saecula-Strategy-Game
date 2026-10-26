@@ -110,8 +110,8 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     this.menu = new MainMenu(() => {
-      this.cameras.main.fadeOut(350, 9, 12, 18);
-      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('GameScene'));
+      this.menu?.setAway(true);
+      this.scene.launch('GameSetupScene');
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.menu?.destroy();
@@ -122,6 +122,17 @@ export class MainMenuScene extends Phaser.Scene {
       this.lighting = null;
       this.walkers.length = 0;
     });
+  }
+
+  /** The setup card was closed: bring the hero copy back. */
+  showMenu(): void {
+    this.menu?.setAway(false);
+  }
+
+  /** Fades the diorama out, then runs `done` (used when the game starts). */
+  fadeOutThen(done: () => void): void {
+    this.cameras.main.fadeOut(350, 9, 12, 18);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, done);
   }
 
   /** A unit strolling back and forth between two tiles. */

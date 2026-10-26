@@ -23,5 +23,6 @@ if (import.meta.env.DEV) {
     game.scene.start('UnitShowcaseScene', opts);
   };
   (window as unknown as { __unitArt: typeof unitArtStats }).__unitArt = unitArtStats;
+  (window as unknown as { __prewarm: () => unknown }).__prewarm = () => import('./scenes/GameSetupScene').then((m) => ({ ...m.prewarmReport }));
   (window as unknown as { __unitArtTiming: typeof unitArtTiming }).__unitArtTiming = unitArtTiming;
 }

@@ -118,7 +118,7 @@ export class EasyStrategy implements AIStrategy {
     if (!this.attacking && swords.length < ATTACK_READY_COUNT) return;
     this.attacking = true;
     const enemyTC = [...ctx.world.with('building', 'owner', 'position')]
-      .find((b) => b.owner.playerId !== ctx.player.id && b.building.type === 'town_center');
+      .find((b) => b.building.type === 'town_center' && !b.dying && isEnemy(b.owner.playerId, ctx));
     if (!enemyTC) return;
     for (const s of swords) {
       if ((s as Entity).attackIntent) continue;
@@ -186,6 +186,11 @@ export class EasyStrategy implements AIStrategy {
     }
     return true;
   }
+}
+
+function isEnemy(playerId: number, ctx: AIContext): boolean {
+  if (playerId === ctx.player.id) return false;
+  return ctx.enemyPlayerId === undefined || playerId === ctx.enemyPlayerId;
 }
 
 function nearestByManhattan<T extends { position: TileCoord }>(

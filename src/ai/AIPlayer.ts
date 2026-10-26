@@ -11,6 +11,8 @@ export interface AIContext {
   readonly world: EcsWorld;
   readonly mapData: MapData;
   readonly player: Player;
+  /** Player the AI attacks (the human); any opponent when unset. */
+  readonly enemyPlayerId?: number;
   /** Absolute game time in ms. */
   readonly timeMs: number;
 }

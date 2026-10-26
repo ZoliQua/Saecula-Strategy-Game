@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
-import { EasyStrategy } from '../../ai/strategies/EasyStrategy';
+import { createStrategy } from '../../ai/createStrategy';
 import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
@@ -18,6 +18,7 @@ import { RenderSystem } from '../../ecs/systems/RenderSystem';
 import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import type { EcsWorld } from '../../ecs/world';
+import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
@@ -44,6 +45,7 @@ export class SystemRunner {
   private readonly ambientFx: AmbientFxSystem;
   private readonly combatFx: CombatFxSystem;
   private aiPlayers: AIPlayer[] = [];
+  private readonly humanId: number | undefined;
 
   constructor(
     scene: Phaser.Scene,
@@ -52,7 +54,9 @@ export class SystemRunner {
     private readonly tileMap: TileMap,
     private readonly cameraController: CameraController,
     players: PlayerManager,
+    difficulty: Difficulty,
   ) {
+    this.humanId = players.human()?.id;
     this.render = new RenderSystem(scene, world);
     this.selection = new SelectionSystem(scene, world);
     this.pathfinding = new PathfindingSystem(world, mapData);
@@ -76,7 +80,7 @@ export class SystemRunner {
     this.combatFx.setFogContext(this.fogData);
     this.aiPlayers = players
       .ais()
-      .map((p) => new AIPlayer(p, new EasyStrategy()));
+      .map((p) => new AIPlayer(p, createStrategy(difficulty)));
   }
 
   update(time: number, delta: number): void {
@@ -91,7 +95,12 @@ export class SystemRunner {
     this.movement.update(delta);
     this.death.update(delta);
     for (const ai of this.aiPlayers) {
-      ai.update({ world: this.world, mapData: this.mapData }, delta);
+      ai.update(
+        this.humanId === undefined
+          ? { world: this.world, mapData: this.mapData }
+          : { world: this.world, mapData: this.mapData, enemyPlayerId: this.humanId },
+        delta,
+      );
     }
     this.population.update();
     this.fogOfWar.update(delta);

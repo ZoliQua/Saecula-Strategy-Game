@@ -1,3 +1,4 @@
+import type { CivId } from '../types';
 import type { Player } from './Player';
 import { createPlayer } from './Player';
 
@@ -38,9 +39,15 @@ export class PlayerManager {
   }
 }
 
+/** Human (id 1) plus `aiCount` AI players (ids 2..aiCount + 1), each with its own colour. */
+export function createPlayers(humanCiv: CivId, aiCount: number): PlayerManager {
+  const players = [createPlayer({ id: 1, isHuman: true, civ: humanCiv })];
+  for (let i = 0; i < aiCount; i++) {
+    players.push(createPlayer({ id: i + 2, isHuman: false, civ: 'english' }));
+  }
+  return new PlayerManager(players);
+}
+
 export function createDefaultPlayers(): PlayerManager {
-  return new PlayerManager([
-    createPlayer({ id: 1, isHuman: true, civ: 'hungarian' }),
-    createPlayer({ id: 2, isHuman: false, civ: 'english' }),
-  ]);
+  return createPlayers('hungarian', 1);
 }

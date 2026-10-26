@@ -55,4 +55,40 @@ describe('VictoryChecker', () => {
     const result = vc.check();
     expect(result.kind).toBe('defeat');
   });
+
+  it('keeps playing until every AI is defeated', () => {
+    const map = new MapData(40, 40, TERRAIN.grass);
+    const world = createEcsWorld();
+    const players = new PlayerManager([
+      createPlayer({ id: 1, isHuman: true }),
+      createPlayer({ id: 2 }),
+      createPlayer({ id: 3 }),
+    ]);
+    [1, 2, 3].forEach((id, i) =>
+      createBuilding(world, { type: 'town_center', origin: { tx: 4 + i * 12, ty: 4 }, playerId: id, mapData: map }),
+    );
+    const vc = new VictoryChecker(world, players);
+    const kill = (id: number) => {
+      const tc = world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === id)!;
+      world.addComponent(tc, 'dying', { ttlMs: 0 });
+    };
+    kill(2);
+    expect(vc.check().kind).toBe('playing');
+    kill(3);
+    expect(vc.check()).toEqual({ kind: 'victory', winnerId: 1 });
+  });
+
+  it('human defeat ends the match even while several AIs survive', () => {
+    const map = new MapData(40, 40, TERRAIN.grass);
+    const world = createEcsWorld();
+    const players = new PlayerManager([
+      createPlayer({ id: 1, isHuman: true }),
+      createPlayer({ id: 2 }),
+      createPlayer({ id: 3 }),
+    ]);
+    [2, 3].forEach((id, i) =>
+      createBuilding(world, { type: 'town_center', origin: { tx: 4 + i * 12, ty: 4 }, playerId: id, mapData: map }),
+    );
+    expect(new VictoryChecker(world, players).check().kind).toBe('defeat');
+  });
 });

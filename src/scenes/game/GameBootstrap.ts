@@ -1,4 +1,3 @@
-import { DEFAULT_MAP_SIZE } from '../../config/constants';
 import { createBuilding } from '../../ecs/archetypes/building';
 import {
   createResourceNode,
@@ -9,28 +8,26 @@ import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
 import { generateMap } from '../../map/generator';
 import type { MapData } from '../../map/MapData';
+import { mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 
 export interface GeneratedGame {
   mapData: MapData;
-  playerStart: TileCoord;
-  aiStart: TileCoord;
+  /** Start tile per player, in player id order (index 0 is the human). */
+  starts: readonly TileCoord[];
 }
 
-/** Generates the skirmish map and picks the human / AI start tiles. */
-export function generateGameMap(players: PlayerManager): GeneratedGame {
+/** Generates the skirmish map from the setup config; one start tile per player. */
+export function generateGameMap(config: GameSetupConfig): GeneratedGame {
+  const size = mapTiles(config);
   const generated = generateMap({
-    template: 'meadow',
-    width: DEFAULT_MAP_SIZE,
-    height: DEFAULT_MAP_SIZE,
-    seed: 42,
-    playerCount: players.all().length,
+    template: config.template,
+    width: size,
+    height: size,
+    seed: config.seed,
+    playerCount: playerCount(config),
   });
-  return {
-    mapData: generated.map,
-    playerStart: generated.playerStarts[0] ?? { tx: 10, ty: 10 },
-    aiStart: generated.playerStarts[1] ?? { tx: 50, ty: 50 },
-  };
+  return { mapData: generated.map, starts: generated.playerStarts };
 }
 
 /** Creates one resource-node entity per resource terrain tile. */
@@ -42,16 +39,16 @@ export function spawnResourceNodes(world: EcsWorld, mapData: MapData): void {
   });
 }
 
-/** Town center plus three villagers for every player. */
+/** Town center plus three villagers for every player, on their own start tile. */
 export function spawnStartingEntities(
   world: EcsWorld,
   players: PlayerManager,
   mapData: MapData,
-  playerStart: TileCoord,
-  aiStart: TileCoord,
+  starts: readonly TileCoord[],
 ): void {
-  for (const player of players.all()) {
-    const start = player.isHuman ? playerStart : aiStart;
+  players.all().forEach((player, i) => {
+    const start = starts[i];
+    if (!start) throw new RangeError(`no start tile for player ${player.id}`);
     const tcOrigin = { tx: start.tx - 1, ty: start.ty - 1 };
     createBuilding(world, {
       type: 'town_center',
@@ -65,5 +62,5 @@ export function spawnStartingEntities(
         playerId: player.id,
       });
     }
-  }
+  });
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createPlayer } from './Player';
-import { createDefaultPlayers, PlayerManager } from './PlayerManager';
+import { createDefaultPlayers, createPlayers, PlayerManager } from './PlayerManager';
 
 describe('PlayerManager', () => {
   it('returns human and AI correctly', () => {
@@ -30,5 +30,12 @@ describe('PlayerManager', () => {
     const p7 = createPlayer({ id: 7 });
     const p1 = createPlayer({ id: 1 });
     expect(p7.color).toBe(p1.color);
+  });
+
+  it('createPlayers gives every AI its own id and colour', () => {
+    const mgr = createPlayers('hungarian', 5);
+    expect(mgr.all().map((p) => p.id)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(mgr.ais()).toHaveLength(5);
+    expect(new Set(mgr.all().map((p) => p.color)).size).toBe(6);
   });
 });

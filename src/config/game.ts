@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene';
+import { GameSetupScene } from '../scenes/GameSetupScene';
 import { GameOverScene } from '../scenes/GameOverScene';
 import { GameScene } from '../scenes/GameScene';
 import { HUDScene } from '../scenes/HUDScene';
@@ -37,6 +38,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     BootScene,
     PreloadScene,
     MainMenuScene,
+    GameSetupScene,
     GameScene,
     HUDScene,
     GameOverScene,

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { createDefaultPlayers, type PlayerManager } from '../game/PlayerManager';
+import { defaultSetupConfig, withSetup, type GameSetupConfig } from '../game/GameSetupConfig';
+import { createPlayers, type PlayerManager } from '../game/PlayerManager';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
@@ -39,12 +40,14 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  create(): void {
+  create(data?: Partial<GameSetupConfig>): void {
     this.cameras.main.setBackgroundColor('#090c12');
     resetUiStore();
 
-    this.players = createDefaultPlayers();
-    const { mapData, playerStart, aiStart } = generateGameMap(this.players);
+    const config = withSetup(defaultSetupConfig(), data ?? {});
+    this.players = createPlayers(config.civ, config.aiCount);
+    const { mapData, starts } = generateGameMap(config);
+    const playerStart = starts[0] ?? { tx: 10, ty: 10 };
     this.mapData = mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
@@ -71,6 +74,7 @@ export class GameScene extends Phaser.Scene {
       this.tileMap,
       cameraController,
       this.players,
+      config.difficulty,
     );
     this.applyCameraGrade();
     this.wireCommands();
@@ -89,7 +93,7 @@ export class GameScene extends Phaser.Scene {
       }
     });
     spawnResourceNodes(this.world, mapData);
-    spawnStartingEntities(this.world, this.players, mapData, playerStart, aiStart);
+    spawnStartingEntities(this.world, this.players, mapData, starts);
 
     this.victoryChecker = new VictoryChecker(this.world, this.players);
     this.gameElapsedMs = 0;
