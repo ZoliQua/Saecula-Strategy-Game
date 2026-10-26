@@ -18,15 +18,13 @@ const CHIMNEYS: Partial<Record<BuildingType, ReadonlyArray<readonly [number, num
 
 /**
  * Purely cosmetic particles: chimney smoke, dust puffs over building
- * sites, sparks when a unit lands a blow, and drifting pollen motes in
- * the camera view. Reads the ECS, never writes it.
+ * sites and drifting pollen motes in the camera view (combat effects
+ * live in CombatFxSystem). Reads the ECS, never writes it.
  */
 export class AmbientFxSystem {
   private readonly smoke: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly dust: Phaser.GameObjects.Particles.ParticleEmitter;
-  private readonly sparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly motes: Phaser.GameObjects.Particles.ParticleEmitter;
-  private readonly lastCooldown = new Map<Entity, number>();
   private smokeTimer = 0;
   private dustTimer = 0;
   private fog: FogOfWarData | null = null;
@@ -57,17 +55,6 @@ export class AmbientFxSystem {
         alpha: { start: 0.6, end: 0 },
       })
       .setDepth(FX_DEPTH);
-    this.sparks = scene.add
-      .particles(0, 0, FX_KEYS.spark, {
-        emitting: false,
-        lifespan: 380,
-        speed: { min: 30, max: 80 },
-        angle: { min: 200, max: 340 },
-        gravityY: 160,
-        scale: { start: 0.7, end: 0 },
-        blendMode: Phaser.BlendModes.ADD,
-      })
-      .setDepth(FX_DEPTH + 1);
     this.motes = scene.add
       .particles(0, 0, FX_KEYS.mote, {
         frequency: 160,
@@ -111,17 +98,6 @@ export class AmbientFxSystem {
       }
     }
 
-    for (const e of this.world.with('attacker', 'position')) {
-      const last = this.lastCooldown.get(e) ?? 0;
-      const cur = e.attacker.cooldownRemaining;
-      if (cur > last + 1 && e.attackIntent && this.isSeen(e)) {
-        const { sx, sy } = tileToScreen(e.position);
-        const dir = e.sprite?.flipX ? -1 : 1;
-        this.sparks.explode(6, sx + dir * 10, sy - 14);
-      }
-      this.lastCooldown.set(e, cur);
-    }
-
     const view = this.scene.cameras.main.worldView;
     const zone = this.motes.emitZones[0] as unknown as { source: Phaser.Geom.Rectangle } | undefined;
     zone?.source.setTo(view.x - 100, view.y, view.width + 100, view.height);
@@ -136,9 +112,7 @@ export class AmbientFxSystem {
   destroy(): void {
     this.smoke.destroy();
     this.dust.destroy();
-    this.sparks.destroy();
     this.motes.destroy();
-    this.lastCooldown.clear();
   }
 }
 

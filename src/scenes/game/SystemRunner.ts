@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
 import { EasyStrategy } from '../../ai/strategies/EasyStrategy';
 import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
+import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
@@ -41,6 +42,7 @@ export class SystemRunner {
   private readonly healthBars: HealthBarSystem;
   private readonly fogOfWar: FogOfWarSystem;
   private readonly ambientFx: AmbientFxSystem;
+  private readonly combatFx: CombatFxSystem;
   private aiPlayers: AIPlayer[] = [];
 
   constructor(
@@ -69,6 +71,9 @@ export class SystemRunner {
     this.render.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);
     this.ambientFx.setFogContext(this.fogData, 1);
+    this.projectileRender.setFogContext(this.fogData);
+    this.combatFx = new CombatFxSystem(scene, world, this.render);
+    this.combatFx.setFogContext(this.fogData);
     this.aiPlayers = players
       .ais()
       .map((p) => new AIPlayer(p, new EasyStrategy()));
@@ -96,10 +101,12 @@ export class SystemRunner {
     this.projectileRender.update();
     this.healthBars.update();
     this.ambientFx.update(delta);
+    this.combatFx.update();
   }
 
   destroy(): void {
     this.ambientFx.destroy();
+    this.combatFx.destroy();
     this.projectileRender.destroy();
   }
 }

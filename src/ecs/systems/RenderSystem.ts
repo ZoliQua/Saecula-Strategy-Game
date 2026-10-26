@@ -33,6 +33,8 @@ export class RenderSystem {
   private readonly units = new Map<Entity, UnitSprites>();
   /** Detaches shadows / glows / torches registered with the LightManager. */
   private readonly unlight = new Map<Entity, () => void>();
+  /** Units showing the white hit flash, by the time it ends. */
+  private readonly hitUntil = new Map<Entity, number>();
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -50,7 +52,13 @@ export class RenderSystem {
       this.units.delete(entity);
       this.sites.get(entity)?.destroy();
       this.sites.delete(entity);
+      this.hitUntil.delete(entity);
     });
+  }
+
+  /** Brief white flash on a unit that just took damage (cosmetic). */
+  flashHit(entity: Entity, durationMs: number): void {
+    if (this.units.has(entity)) this.hitUntil.set(entity, this.scene.time.now + durationMs);
   }
 
   setFogContext(fog: FogOfWarData, viewerPlayerId: number): void {
@@ -80,18 +88,31 @@ export class RenderSystem {
         const { slot, flip } = headingSlot(heading);
         setUnitFrame(unit, frameIndex(unitSheetLayout(unit.type), slot, anim, i), flip);
         syncTeamSprite(unit);
+        this.applyHitFlash(entity, unit, now);
         // Units whose textures were deferred get their cast shadow once they exist.
         if (unit.art && !this.unlight.has(entity)) this.attachLighting(entity, sprite);
       }
     }
   }
 
+  private applyHitFlash(entity: Renderable, unit: UnitSprites, now: number): void {
+    const until = this.hitUntil.get(entity);
+    if (until === undefined) return;
+    if (now < until) {
+      unit.body.setTintFill(0xffffff);
+      unit.team.setTintFill(0xffffff);
+      return;
+    }
+    this.hitUntil.delete(entity);
+    unit.body.clearTint();
+    unit.team.setTint(teamColor(entity.owner?.playerId ?? 1));
+  }
+
   private ensureSprite(entity: Renderable): Phaser.GameObjects.Sprite {
     const playerId = entity.owner?.playerId ?? 1;
     let sprite: Phaser.GameObjects.Sprite;
     if (entity.unit) {
-      const color = PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
-      const pair = createUnitSprites(this.scene, entity.unit.unitType, entity.renderable.textureKey, color);
+      const pair = createUnitSprites(this.scene, entity.unit.unitType, entity.renderable.textureKey, teamColor(playerId));
       this.units.set(entity, pair);
       sprite = pair.body;
     } else {
@@ -163,6 +184,10 @@ export class RenderSystem {
       site.setAlpha(1 - t * 0.6);
     }
   }
+}
+
+function teamColor(playerId: number): number {
+  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
 }
 
 function renderScreenPos(entity: Renderable): { sx: number; sy: number } {
