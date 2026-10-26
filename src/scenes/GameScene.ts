@@ -148,7 +148,7 @@ export class GameScene extends Phaser.Scene {
       } else if (cmd.type === 'research') {
         const building = find(cmd.buildingId);
         if (building && human && building.owner?.playerId === human.id) {
-          startResearch(building, cmd.techId, human, uiWallet());
+          startResearch(this.world, building, cmd.techId, human, uiWallet());
         }
       } else if (cmd.type === 'cancel-research') {
         const building = find(cmd.buildingId);

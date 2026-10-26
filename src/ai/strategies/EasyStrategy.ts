@@ -138,7 +138,7 @@ export class EasyStrategy implements AIStrategy {
     const next = (Object.keys(TECH_SPECS) as TechId[]).find(
       (id) => isAgeUp(id) && isTechAvailable(id, ctx.player),
     );
-    if (next) startResearch(tc as Entity, next, ctx.player, playerWallet(ctx.player));
+    if (next) startResearch(ctx.world, tc as Entity, next, ctx.player, playerWallet(ctx.player));
   }
 
   private maybeAttack(ctx: AIContext): void {
