@@ -217,6 +217,7 @@ export class TileMap {
 
   applyFog(fog: FogOfWarData): void {
     this.fog.setTarget(fog);
+    this.forest.setFog(fog);
   }
 
   setHoverTile(tile: TileCoord | null): void {

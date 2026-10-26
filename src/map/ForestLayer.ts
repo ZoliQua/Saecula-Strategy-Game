@@ -8,6 +8,7 @@ import { SHADOW_DEPTH } from '../iso/art/lighting/CastShadows';
 import { TREE_VARIANTS } from '../iso/art/trees';
 import { DECOR_ORIGIN_Y, decorKeys } from '../iso/textures';
 import { depthRow, lowerBound, treePlacement, visibleRows, type ForestSource } from './forestLayout';
+import { FOG_UNEXPLORED, type FogOfWarData } from './FogOfWarData';
 import { TERRAIN } from './TerrainTypes';
 
 /** Trees draw just above units' ground decals on their row (units sit at +0.3). */
@@ -46,6 +47,11 @@ class TreeRow extends Phaser.GameObjects.Image {
   renderWebGL(renderer: WebGL, _src: this, camera: Phaser.Cameras.Scene2D.Camera): void {
     this.layer.drawRow(this.index, this, renderer, camera);
   }
+
+  /** Canvas renderer fallback: plain unlit, unswayed trees. */
+  renderCanvas(renderer: Phaser.Renderer.Canvas.CanvasRenderer, _src: this, camera: Phaser.Cameras.Scene2D.Camera): void {
+    this.layer.drawRowCanvas(this.index, this, renderer.currentContext, camera);
+  }
 }
 
 /** All tree cast shadows in one batch, under every caster. */
@@ -60,6 +66,11 @@ class TreeShadows extends Phaser.GameObjects.Image {
 
   renderWebGL(renderer: WebGL, _src: this, camera: Phaser.Cameras.Scene2D.Camera): void {
     this.layer.drawShadows(this, renderer, camera);
+  }
+
+  /** Cast shadows are WebGL-only (see LightManager). */
+  renderCanvas(): void {
+    return;
   }
 }
 
@@ -83,6 +94,8 @@ export class ForestLayer {
   private readonly originY: number;
   private time = 0;
   private sway = true;
+  /** Trees on never-explored tiles are not drawn (their crowns would poke out of the flat fog). */
+  private fog: FogOfWarData | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -127,6 +140,16 @@ export class ForestLayer {
     }
   }
 
+  /** Live fog of the viewing player (TileMap.applyFog). */
+  setFog(fog: FogOfWarData): void {
+    this.fog = fog;
+  }
+
+  private hidden(id: number): boolean {
+    const w = this.map.width;
+    return this.fog !== null && this.fog.get(id % w, Math.floor(id / w)) === FOG_UNEXPLORED;
+  }
+
   /** True when the tile still shows a standing tree. */
   has(tx: number, ty: number): boolean {
     return this.alive[ty * this.map.width + tx] === 1;
@@ -160,7 +183,7 @@ export class ForestLayer {
     const end = view.right + REACH_X;
     for (let k = lowerBound(row.xs, view.x - REACH_X); k < row.ids.length && (row.xs[k] ?? Infinity) <= end; k++) {
       const id = row.ids[k] ?? 0;
-      if (this.alive[id] !== 1) continue;
+      if (this.alive[id] !== 1 || this.hidden(id)) continue;
       const f = tex.get(this.frame[id] ?? 0);
       const s = this.scale[id] ?? 1;
       const w = f.cutWidth * s;
@@ -189,6 +212,29 @@ export class ForestLayer {
     }
   }
 
+  drawRowCanvas(index: number, obj: TreeRow, ctx: CanvasRenderingContext2D, camera: Phaser.Cameras.Scene2D.Camera): void {
+    const row = this.rowAt[index];
+    if (!row) return;
+    const view = camera.worldView;
+    const m = (camera as unknown as { matrix: Matrix }).matrix;
+    ctx.save();
+    ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
+    ctx.translate(-camera.scrollX, -camera.scrollY);
+    ctx.globalAlpha = camera.alpha * obj.alpha;
+    const end = view.right + REACH_X;
+    for (let k = lowerBound(row.xs, view.x - REACH_X); k < row.ids.length && (row.xs[k] ?? Infinity) <= end; k++) {
+      const id = row.ids[k] ?? 0;
+      if (this.alive[id] !== 1 || this.hidden(id)) continue;
+      const f = obj.texture.get(this.frame[id] ?? 0);
+      const s = this.scale[id] ?? 1;
+      const w = f.cutWidth * s;
+      const h = f.cutHeight * s;
+      const img = f.source.image as CanvasImageSource;
+      ctx.drawImage(img, f.cutX, f.cutY, f.cutWidth, f.cutHeight, (this.x[id] ?? 0) - w / 2, (this.y[id] ?? 0) - this.originY * h, w, h);
+    }
+    ctx.restore();
+  }
+
   drawShadows(obj: TreeShadows, renderer: WebGL, camera: Phaser.Cameras.Scene2D.Camera): void {
     const sv = LightManager.of(this.scene)?.shadows?.vector;
     if (!sv || sv.strength < 0.02) return;
@@ -205,7 +251,7 @@ export class ForestLayer {
       const end = view.right + reach;
       for (let k = lowerBound(row.xs, view.x - reach); k < row.ids.length && (row.xs[k] ?? Infinity) <= end; k++) {
         const id = row.ids[k] ?? 0;
-        if (this.alive[id] !== 1) continue;
+        if (this.alive[id] !== 1 || this.hidden(id)) continue;
         const f = tex.get(this.frame[id] ?? 0);
         const s = this.scale[id] ?? 1;
         const w = f.cutWidth * s;
