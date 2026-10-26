@@ -80,6 +80,12 @@ export class GatheringSystem {
       this.retarget(v);
       return;
     }
+    // A partial load of another type (sent to new work) goes to the drop-off first; deciding
+    // that only at the node made villagers ping-pong between node and drop-off forever.
+    if (g.carryingType && g.carrying > 0 && g.carryingType !== node.resourceNode.type) {
+      this.handleFull(v);
+      return;
+    }
     if (isAdjacentToNode(v.position, node)) {
       this.gather(v, node, dt);
       return;

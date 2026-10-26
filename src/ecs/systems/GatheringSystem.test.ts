@@ -7,6 +7,7 @@ import { createResourceNode } from '../archetypes/resource';
 import { createVillager } from '../archetypes/villager';
 import { createEcsWorld } from '../world';
 import { GatheringSystem } from './GatheringSystem';
+import { MovementSystem } from './MovementSystem';
 
 function setup() {
   // Small map: TC at (0,0) 3x3, tree at (5,5), villager at (4,5).
@@ -78,5 +79,24 @@ describe('GatheringSystem', () => {
     expect(uiStore.getState().resources.wood).toBe(5);
     expect(villager.gatherer!.carrying).toBe(0);
     expect(villager.gatherer!.carryingType).toBeNull();
+  });
+
+  it('a villager sent to new work with a partial load of another type drops it off first (no ping-pong)', () => {
+    const { map, world, system, villager } = setup();
+    // Gold one tile off the TC's corner ring: (3,3) touches the TC, (3,4) touches the mine.
+    map.setTile(4, 5, TERRAIN.gold_mine);
+    const mine = createResourceNode(world, { tile: { tx: 4, ty: 5 }, type: 'gold', amount: 100 });
+    villager.position = { tx: 3, ty: 3 };
+    villager.gatherer!.carrying = 3;
+    villager.gatherer!.carryingType = 'wood';
+    villager.gatherIntent = { nodeId: mine.id! };
+    const movement = new MovementSystem(world);
+    for (let i = 0; i < 100; i++) {
+      system.update(100);
+      movement.update(100);
+    }
+    expect(uiStore.getState().resources.wood).toBe(3);
+    expect(villager.gatherer!.carryingType).toBe('gold');
+    expect(villager.gatherer!.carrying).toBeGreaterThan(1);
   });
 });
