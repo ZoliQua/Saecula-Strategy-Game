@@ -1,4 +1,5 @@
 import { TERRAIN, type TerrainId } from './TerrainTypes';
+import { bilinearShare, tileShare } from './tileShare';
 
 export interface WaterSource {
   readonly width: number;
@@ -25,17 +26,41 @@ function smooth(t: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/** Smoothed bilinear water weight at tile coordinates (u, v); matches terrain.ts. */
+const nearCache = new WeakMap<WaterSource, Uint8Array>();
+
+/** Per tile: 1 when a water tile lies within two tiles (water never changes during a game). */
+function nearWater(map: WaterSource): Uint8Array {
+  const hit = nearCache.get(map);
+  if (hit) return hit;
+  const near = new Uint8Array(map.width * map.height);
+  for (let ty = 0; ty < map.height; ty++) {
+    for (let tx = 0; tx < map.width; tx++) {
+      if (map.getTile(tx, ty) !== TERRAIN.water) continue;
+      for (let y = Math.max(0, ty - 2); y <= Math.min(map.height - 1, ty + 2); y++) {
+        for (let x = Math.max(0, tx - 2); x <= Math.min(map.width - 1, tx + 2); x++) near[y * map.width + x] = 1;
+      }
+    }
+  }
+  nearCache.set(map, near);
+  return near;
+}
+
+/**
+ * 0..1 water coverage at tile coordinates (u, v): a flowing shore line
+ * (tileShare) sharpened to about half a tile. Shared by the terrain
+ * chunks (static water and wet sand) and the water shader's mask.
+ */
 export function waterCoverage(map: WaterSource, u: number, v: number): number {
-  const fx = Math.floor(u);
-  const fy = Math.floor(v);
-  const ax = u - fx;
-  const ay = v - fy;
-  const at = (x: number, y: number): number =>
-    x < 0 || y < 0 || x >= map.width || y >= map.height ? 0 : map.getTile(x, y) === TERRAIN.water ? 1 : 0;
-  const top = at(fx, fy) * (1 - ax) + at(fx + 1, fy) * ax;
-  const bot = at(fx, fy + 1) * (1 - ax) + at(fx + 1, fy + 1) * ax;
-  return smooth(top * (1 - ay) + bot * ay);
+  const fx = Math.floor(u + 0.5);
+  const fy = Math.floor(v + 0.5);
+  if (fx < -2 || fy < -2 || fx > map.width + 1 || fy > map.height + 1) return 0;
+  // Fast path: no water tile within the kernel reach.
+  const near = nearWater(map);
+  if (near[Math.min(map.height - 1, Math.max(0, fy)) * map.width + Math.min(map.width - 1, Math.max(0, fx))] !== 1) return 0;
+  const isWater = (x: number, y: number) => map.getTile(x, y) === TERRAIN.water;
+  // The flowing outline may round off corners but never floods a land tile's centre (trees, units stand there).
+  const share = Math.min(tileShare(isWater, map.width, map.height, u, v), bilinearShare(isWater, map.width, map.height, u, v) + 0.35);
+  return smooth(Math.max(0, Math.min(1, (share - 0.3) / 0.4)));
 }
 
 /** True when the map has at least one water tile. */

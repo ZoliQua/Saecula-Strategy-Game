@@ -45,15 +45,8 @@ export interface CliffField {
 /** Builds a CliffField from a terrain grid (1 = cliff). */
 export function cliffField(width: number, height: number, cliff: Uint8Array, cliffHeight: number, seed = 0, res = 8): CliffField {
   const isCliff: CliffTest = (x, y) => x >= 0 && y >= 0 && x < width && y < height && cliff[y * width + x] === 1;
-  const pass = new Uint8Array(width * height);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (isCliff(x, y)) continue;
-      if ((isCliff(x - 1, y) && isCliff(x + 1, y)) || (isCliff(x, y - 1) && isCliff(x, y + 1))) pass[y * width + x] = 1;
-    }
-  }
-  const isPass: CliffTest = (x, y) => x >= 0 && y >= 0 && x < width && y < height && pass[y * width + x] === 1;
   const relief = buildRelief(isCliff, width, height, cliffHeight, seed, res);
+  const isPass: CliffTest = (x, y) => x >= 0 && y >= 0 && x < width && y < height && relief.pass[y * width + x] === 1;
   const grass = new Float32Array(relief.top.length);
   const cols = width * relief.res + 1;
   for (let i = 0; i < grass.length; i++) {

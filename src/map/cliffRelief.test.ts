@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CliffTest } from './cliffGeometry';
-import { buildRelief, footDistance, marchRelief, rockAt, sampleRelief } from './cliffRelief';
+import { buildRelief, findPasses, footDistance, marchRelief, rockAt, sampleRelief } from './cliffRelief';
 
 const H = 30;
 /** A 6×6 plateau at tiles 4..9 on a 16×16 map. */
@@ -45,5 +45,28 @@ describe('cliff relief', () => {
   it('measures the foot distance as zero at the rock and growing outward', () => {
     expect(footDistance(relief, 6.5, 6.5)).toBe(0);
     expect(footDistance(relief, 11, 7)).toBeGreaterThan(footDistance(relief, 10, 7));
+  });
+});
+
+describe('mountain passes', () => {
+  /** A ridge along x = 6..10 on a 20×20 map with a 1-tile lane cut through at y = 10. */
+  const ridge: CliffTest = (x, y) => x >= 6 && x <= 10 && y >= 0 && y < 20 && y !== 10;
+
+  it('finds 1–2 tile lanes between rock on opposite sides', () => {
+    const pass = findPasses(ridge, 20, 20);
+    expect(pass[10 * 20 + 8]).toBe(1);
+    expect(pass[10 * 20 + 3]).toBe(0);
+    expect(pass[3 * 20 + 3]).toBe(0);
+    const wide: CliffTest = (x, y) => x >= 6 && x <= 10 && (y < 9 || y > 10);
+    const w = findPasses(wide, 20, 20);
+    expect(w[9 * 20 + 8]).toBe(1);
+    expect(w[10 * 20 + 8]).toBe(1);
+  });
+
+  it('lowers the rock beside a pass into a saddle', () => {
+    const r = buildRelief(ridge, 20, 20, H, 3);
+    const beside = sampleRelief(r, r.top, 8, 9);
+    const far = sampleRelief(r, r.top, 8, 3);
+    expect(beside).toBeLessThan(far * 0.75);
   });
 });

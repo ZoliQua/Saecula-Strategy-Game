@@ -23,6 +23,14 @@ describe('water mask', () => {
     expect(waterCoverage(map, 8.5, 5)).toBeCloseTo(0.5);
   });
 
+  it('keeps land tile centres dry even in a tight bay', () => {
+    // Water on three sides of tile (5, 5).
+    const map = new MapData(12, 12, TERRAIN.water);
+    for (let y = 5; y < 12; y++) map.setTile(5, y, TERRAIN.grass);
+    expect(waterCoverage(map, 5, 5)).toBeLessThan(0.1);
+    expect(waterCoverage(map, 5, 8)).toBeLessThan(0.1);
+  });
+
   it('grows depth from the shore towards the middle of a lake', () => {
     const map = lake(16, 2, 13);
     const m = buildWaterMask(map, 4);

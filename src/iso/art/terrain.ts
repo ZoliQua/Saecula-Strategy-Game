@@ -3,6 +3,7 @@ import { TERRAIN, type TerrainId } from '../../map/TerrainTypes';
 import { screenToTile } from '../coordinates';
 import { makeCanvas } from './canvas';
 import type { CliffField } from './cliffArt';
+import { waterCoverage } from '../../map/waterMask';
 import { CliffChunkBake, rectTouchesCliffs, type OccluderSink } from './cliffPainter';
 import { css, fbm, hash2, hexToRgb, mix, shade } from './palette';
 
@@ -96,7 +97,7 @@ export function paintTerrainChunk(
       }
       const rock = smooth(weight(tx, ty, TERRAIN.gold_mine));
       if (rock > 0) c = mix(c, shade(ROCKY, 0.85 + fine * 0.3), rock * 0.8);
-      const water = smooth(weight(tx, ty, TERRAIN.water));
+      const water = waterCoverage(map, tx, ty);
       if (water > 0) {
         // Wet sand along the shore, then the (static) water the surface shader animates over.
         c = mix(c, shade(WET_SAND, 0.88 + fine * 0.24), Math.min(1, water / 0.4) * 0.85);

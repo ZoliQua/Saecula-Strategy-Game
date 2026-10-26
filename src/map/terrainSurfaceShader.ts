@@ -140,9 +140,9 @@ void main() {
   col += (uAmbient * vec3(0.45, 0.55, 0.7) + uSunColor * 0.25) * fres * 0.6;
   // Sun glints: sharp specular, sparkling with fine noise.
   vec3 r = reflect(-uGlintDir, n);
-  float spec = pow(max(r.z, 0.0), 18.0);
+  float spec = pow(max(r.z, 0.0), 48.0);
   float sparkle = pow(max(r.z, 0.0), 70.0) * smoothstep(0.86, 0.95, noise(p * 24.0 + vec2(t * 1.6, -t * 1.1)));
-  col += uSunColor * (spec * 0.32 + sparkle * 2.6);
+  col += uSunColor * (spec * 0.22 + sparkle * 2.6);
   // Shore foam: soft lacy bands rolling in towards the shore, and a thin wet line at the edge.
   float shore = 1.0 - smoothstep(0.0, 0.3, depth);
   float lace = noise(p * 7.0 + vec2(t * 0.35, -t * 0.2)) * 0.6 + noise(p * 17.0 - vec2(t * 0.5, 0.0)) * 0.4;

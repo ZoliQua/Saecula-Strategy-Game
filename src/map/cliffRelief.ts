@@ -1,6 +1,7 @@
 import { TILE_HEIGHT } from '../config/constants';
 import { fbm } from '../iso/art/palette';
 import type { CliffTest } from './cliffGeometry';
+import { tileShare } from './tileShare';
 
 /**
  * Organic relief over the tile grid of cliffs. Gameplay is per tile
@@ -22,6 +23,8 @@ export interface Relief {
   readonly top: Float32Array;
   /** Per tile: 1 when a cliff tile lies within −1..+2 tiles on both axes (fast reject). */
   readonly near: Uint8Array;
+  /** Per tile: 1 on a mountain pass (see findPasses). */
+  readonly pass: Uint8Array;
 }
 
 export interface ReliefHit {
@@ -40,37 +43,53 @@ export interface ReliefHit {
 const EROSION = 0.27;
 const WOBBLE = 0.75;
 
-/** Radius (tiles) of the smoothing kernel that turns the tile staircase into a flowing outline. */
-const SMOOTH_RADIUS = 1.5;
-
 /**
- * Kernel-weighted share of cliff tiles around (u, v): 1 deep inside a
- * plateau, 0.5 on a straight edge, a smooth ramp along diagonal
- * staircases. Off-map tiles are left out (the map rim stays neutral).
+ * Walkable tiles in a 1–2 tile lane cut through rock: cliff within two
+ * tiles on both sides along one axis (the Islands "bridges").
  */
-export function cliffShare(isCliff: CliffTest, width: number, height: number, u: number, v: number): number {
-  let sum = 0;
-  let total = 0;
-  const r = SMOOTH_RADIUS;
-  for (let y = Math.ceil(v - r); y <= Math.floor(v + r); y++) {
-    for (let x = Math.ceil(u - r); x <= Math.floor(u + r); x++) {
-      if (x < 0 || y < 0 || x >= width || y >= height) continue;
-      const d2 = ((x - u) ** 2 + (y - v) ** 2) / (r * r);
-      if (d2 >= 1) continue;
-      const k = (1 - d2) * (1 - d2);
-      total += k;
-      if (isCliff(x, y)) sum += k;
+export function findPasses(isCliff: CliffTest, width: number, height: number): Uint8Array {
+  const pass = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (isCliff(x, y)) continue;
+      const near = (dx: number, dy: number) => isCliff(x + dx, y + dy) || isCliff(x + 2 * dx, y + 2 * dy);
+      if ((near(-1, 0) && near(1, 0)) || (near(0, -1) && near(0, 1))) pass[y * width + x] = 1;
     }
   }
-  return total > 0 ? sum / total : 0;
+  return pass;
 }
 
-function bilinearShare(isCliff: CliffTest, u: number, v: number): number {
+/** Tiles of rock around a pass that slope down to it and stand back from the lane. */
+const PASS_REACH = 3;
+
+/** Per tile: 0 on a pass … 1 at PASS_REACH tiles or more from one. */
+function passFalloff(pass: Uint8Array, width: number, height: number): Float32Array {
+  const out = new Float32Array(width * height).fill(1);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (pass[y * width + x] !== 1) continue;
+      for (let dy = -PASS_REACH; dy <= PASS_REACH; dy++) {
+        for (let dx = -PASS_REACH; dx <= PASS_REACH; dx++) {
+          const tx = x + dx;
+          const ty = y + dy;
+          if (tx < 0 || ty < 0 || tx >= width || ty >= height) continue;
+          const i = ty * width + tx;
+          out[i] = Math.min(out[i] ?? 1, Math.min(1, Math.hypot(dx, dy) / PASS_REACH));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Bilinear sample of a per-tile field at tile coordinates (clamped to the map). */
+function bilinear(field: Float32Array, width: number, height: number, u: number, v: number): number {
+  const at = (x: number, y: number) =>
+    field[Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))] ?? 1;
   const fx = Math.floor(u);
   const fy = Math.floor(v);
   const ax = u - fx;
   const ay = v - fy;
-  const at = (x: number, y: number) => (isCliff(x, y) ? 1 : 0);
   return (at(fx, fy) * (1 - ax) + at(fx + 1, fy) * ax) * (1 - ay) + (at(fx, fy + 1) * (1 - ax) + at(fx + 1, fy + 1) * ax) * ay;
 }
 
@@ -90,6 +109,8 @@ function touchesOpen(isCliff: CliffTest, width: number, height: number, u: numbe
 export function buildRelief(isCliff: CliffTest, width: number, height: number, baseHeight: number, seed = 0, res = 8): Relief {
   const cols = width * res + 1;
   const rows = height * res + 1;
+  const pass = findPasses(isCliff, width, height);
+  const falloff = passFalloff(pass, width, height);
   const edge = new Float32Array(cols * rows);
   const top = new Float32Array(cols * rows);
   for (let b = 0; b < rows; b++) {
@@ -97,13 +118,15 @@ export function buildRelief(isCliff: CliffTest, width: number, height: number, b
       const u = a / res - 0.5;
       const v = b / res - 0.5;
       // The smooth share shapes long outlines; the bilinear one keeps thin cliffs (1–2 tiles) visible as rock.
-      const w = Math.max(cliffShare(isCliff, width, height, u, v), 0.95 * bilinearShare(isCliff, u, v));
+      const w = tileShare(isCliff, width, height, u, v);
       const i = b * cols + a;
       // Full wobble along the rim, little deep inside (no pits in the plateau).
-      const e = w - EROSION + (fbm(u * 0.9, v * 0.9, seed + 301) - 0.5) * WOBBLE * (1 - 0.8 * w * w);
+      // Near a pass the walls stand back from the lane and slope down to a saddle, so units in it stay visible.
+      const nearPass = 1 - bilinear(falloff, width, height, u, v);
+      const e = w - EROSION - 0.22 * nearPass + (fbm(u * 0.9, v * 0.9, seed + 301) - 0.5) * WOBBLE * (1 - 0.8 * w * w);
       // Rock never reaches into an open tile: every grid point a sample inside one interpolates from stays below 0.5.
       edge[i] = e > OPEN_EDGE && touchesOpen(isCliff, width, height, u, v, 1 / res) ? OPEN_EDGE : e;
-      top[i] = baseHeight * (0.82 + 0.4 * fbm(u * 0.22, v * 0.22, seed + 307));
+      top[i] = baseHeight * (0.82 + 0.4 * fbm(u * 0.22, v * 0.22, seed + 307)) * (1 - 0.6 * nearPass);
     }
   }
   const near = new Uint8Array(width * height);
@@ -115,7 +138,7 @@ export function buildRelief(isCliff: CliffTest, width: number, height: number, b
       }
     }
   }
-  return { width, height, res, isCliff, maxHeight: baseHeight * 1.22, edge, top, near };
+  return { width, height, res, isCliff, maxHeight: baseHeight * 1.22, edge, top, near, pass };
 }
 
 /** Bilinear sample of a relief grid at tile coordinates (u, v). */
