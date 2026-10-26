@@ -21,6 +21,7 @@ import {
   paintSoftShadow,
   paintTrail,
 } from './art/combatFx';
+import { generateDamageArt } from './damageTextures';
 import { EXPLOSION_FRAMES, EXPLOSION_SIZE, paintExplosionStrip } from './art/explosionArt';
 import {
   BUSH_VARIANTS,
@@ -251,6 +252,7 @@ function generateFx(scene: Phaser.Scene): void {
   radial(FX_KEYS.spark, 16, [[0, 'rgba(255,250,220,1)'], [0.4, 'rgba(255,200,90,.9)'], [1, 'rgba(255,140,40,0)']]);
   radial(FX_KEYS.mote, 12, [[0, 'rgba(255,248,210,.95)'], [1, 'rgba(255,248,210,0)']]);
   generateCombatFx(scene);
+  generateDamageArt(scene);
 }
 
 /** Combat VFX (projectiles, muzzle flash, blasts); see art/combatFx.ts. */
