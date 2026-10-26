@@ -1,242 +1,102 @@
-import type { TileCoord } from '../../iso/coordinates';
-import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
-import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
-import { UNIT_SPECS } from '../../ecs/archetypes/unit';
-import type { Entity } from '../../ecs/components';
-import { playerWallet, startResearch } from '../../ecs/research';
-import { isTechAvailable } from '../../game/availability';
-import { isAgeUp, TECH_SPECS } from '../../game/technologies';
-import { AI_EASY_AGE_UP_CHANCE, AI_EASY_AGE_UP_DELAY_MS } from '../../config/balance';
-import type { TechId } from '../../types';
-import type { AIContext, AIStrategy } from '../AIPlayer';
+import {
+  AI_EASY,
+  AI_EASY_AGE_UP_CHANCE,
+  AI_EASY_AGE_UP_DELAY_MS,
+  type GatherWeights,
+} from '../../config/balance';
+import { TECH_SPECS } from '../../game/technologies';
+import type { BuildingType } from '../../types';
+import type { AIContext } from '../AIPlayer';
+import { ArmyControl } from '../ArmyControl';
+import { attackReady } from '../decisions/combat';
+import { canAfford, snapshotEconomy } from '../economy';
+import { baseAnchor } from '../economyBuildings';
+import type { WorldView } from '../perception';
+import { assignIdleVillagers } from '../workforce';
+import { BaseStrategy } from './BaseStrategy';
 
-const ATTACK_READY_COUNT = 4;
-// Thresholds leave some headroom above the build cost.
-const HOUSE_MIN_WOOD = BUILDING_SPECS.house.cost.wood + 70;
-const BARRACKS_MIN_WOOD = BUILDING_SPECS.barracks.cost.wood;
-const TRAIN_COOLDOWN_MS = 3_000;
-const REPLAN_INTERVAL_MS = 1_500;
+/** Easy keeps a simple, wood-heavy split and never scouts. */
+const EASY_GATHER: GatherWeights = { food: 0.4, wood: 0.5, gold: 0.1 };
+/** What the 20% "random" decisions may put up. */
+const RANDOM_BUILDS: readonly BuildingType[] = ['house', 'farm', 'barracks', 'lumber_camp', 'mining_camp'];
 
 /**
- * Economy-first AI with a simple win condition push:
- *   - Idle villagers get sent to the nearest wood / food / gold node.
- *   - When the AI has 100+ wood it builds a house near the TC.
- *   - When it has 150+ wood it builds a barracks.
- *   - Barracks trains swordsmen (1 at a time, 3s cooldown between
- *     queue pushes) up to 4; when ready the AI pushes the stack at
- *     the human town centre.
- *
- * All resource / pop bookkeeping uses the Player.resources object —
- * the UI store only tracks the human. The AI never touches uiStore.
+ * Easy AI (PROGRAM_TERV.md §10.1): a slow decision every 20-30 s that
+ * follows a short decision tree 80% of the time (and builds something
+ * random otherwise), about half villagers and half swordsmen, no scout,
+ * one age-up attempt with a 50% chance after a long delay, and attack
+ * waves of 8+ swordsmen from a random 8-15 min onwards. It defends its
+ * base like every AI.
  */
-export class EasyStrategy implements AIStrategy {
+export class EasyStrategy extends BaseStrategy {
   readonly name = 'easy';
-
-  private lastPlanMs = -REPLAN_INTERVAL_MS;
-  private lastTrainMs = -TRAIN_COOLDOWN_MS;
-  private builtHouse = false;
-  private builtBarracks = false;
-  private attacking = false;
+  private readonly army: ArmyControl;
   /** Game time from which age-ups are attempted; Infinity when this game never ages up. */
   private readonly ageUpFromMs: number;
+  private readonly firstAttackAtMs: number;
 
   /** `rng` returns [0, 1); injectable so tests are deterministic. */
   constructor(rng: () => number = Math.random) {
+    super(rng, AI_EASY.decisionMs);
     const ages = rng() < AI_EASY_AGE_UP_CHANCE;
-    const { min, max } = AI_EASY_AGE_UP_DELAY_MS;
-    const delay = min + rng() * (max - min);
+    const delay = this.roll(AI_EASY_AGE_UP_DELAY_MS);
     this.ageUpFromMs = ages ? delay : Infinity;
+    this.firstAttackAtMs = this.roll(AI_EASY.firstAttackMs);
+    this.army = new ArmyControl(this.log, rng);
   }
 
-  update(ctx: AIContext, _deltaMs: number): void {
-    if (ctx.timeMs - this.lastPlanMs < REPLAN_INTERVAL_MS) return;
-    this.lastPlanMs = ctx.timeMs;
-
-    this.assignGatherers(ctx);
-    this.manageBuildings(ctx);
-    this.manageTraining(ctx);
-    this.maybeAttack(ctx);
-    this.maybeAgeUp(ctx);
+  protected upkeep(ctx: AIContext, view: WorldView): void {
+    assignIdleVillagers(ctx.world, view, EASY_GATHER);
+    this.army.update(ctx, view);
+    this.maybeAgeUp(ctx, view);
   }
 
-  private assignGatherers(ctx: AIContext): void {
-    const villagers = [...ctx.world.with('gatherer', 'owner', 'position')]
-      .filter((v) => v.owner.playerId === ctx.player.id);
-    const woodNodes = [...ctx.world.with('resourceNode', 'position')]
-      .filter((n) => n.resourceNode.type === 'wood');
-    const foodNodes = [...ctx.world.with('resourceNode', 'position')]
-      .filter((n) => n.resourceNode.type === 'food');
+  protected decide(ctx: AIContext, view: WorldView): void {
+    if (this.rng() < AI_EASY.buildOrderAdherence) this.followTree(ctx, view);
+    else this.randomBuild(ctx, view);
+    const swords = view.military.length;
+    if (!this.army.attacking && attackReady({
+      armySize: swords,
+      wave: AI_EASY.attackWave,
+      timeMs: ctx.timeMs,
+      notBeforeMs: this.firstAttackAtMs,
+    })) {
+      this.army.launchWave(ctx, view);
+    }
+    this.log.phase = this.army.underAttack(view) ? 'defending' : this.army.attacking ? 'attacking' : 'buildUp';
+  }
 
-    for (const v of villagers) {
-      if (v.gatherer.targetNodeId !== undefined) continue;
-      if (v.gatherIntent) continue;
-      // 3 woodcutters, 1 food-gatherer baseline.
-      const idx = villagers.indexOf(v);
-      const wantFood = idx === 3;
-      const source = wantFood && foodNodes.length > 0 ? foodNodes : woodNodes;
-      if (source.length === 0) continue;
-      const nearest = nearestByManhattan(source, v.position);
-      if (!nearest) continue;
-      ctx.world.addComponent(v as Entity, 'gatherIntent', {
-        nodeId: nearest.id ?? 0,
-      });
+  /** §10.1 decision tree: one step per decision. */
+  private followTree(ctx: AIContext, view: WorldView): void {
+    const econ = snapshotEconomy(ctx.world, ctx.player, view);
+    const anchor = baseAnchor(view);
+    const houses = this.ownCount(view, 'house');
+    const militaryTarget = Math.max(AI_EASY.minMilitary, view.villagers.length * AI_EASY.militaryPerVillager);
+    this.log.plan = ['villager', 'house', 'barracks', 'swordsman'];
+    if (view.villagers.length < AI_EASY.villagerTarget) {
+      this.train(ctx, view, 'villager', 1);
+    } else if (anchor && houses < econ.population.current / 5 + 2) {
+      this.startBuilding(ctx, view, 'house', anchor);
+    } else if (anchor && this.ownCount(view, 'barracks') === 0) {
+      this.startBuilding(ctx, view, 'barracks', anchor);
+    } else if (view.military.length < militaryTarget) {
+      this.train(ctx, view, 'swordsman', 2);
     }
   }
 
-  private manageBuildings(ctx: AIContext): void {
-    const resources = ctx.player.resources;
-    const tc = [...ctx.world.with('building', 'owner', 'position')]
-      .find((b) => b.owner.playerId === ctx.player.id && b.building.type === 'town_center');
-    if (!tc) return;
-
-    if (!this.builtHouse && resources.wood >= HOUSE_MIN_WOOD) {
-      const spot = this.findBuildSpot(ctx, tc.position, 2);
-      if (spot) {
-        this.startBuild(ctx, 'house', spot);
-        this.builtHouse = true;
-      }
-    }
-    if (!this.builtBarracks && resources.wood >= BARRACKS_MIN_WOOD) {
-      const spot = this.findBuildSpot(ctx, tc.position, 3);
-      if (spot) {
-        this.startBuild(ctx, 'barracks', spot);
-        this.builtBarracks = true;
-      }
-    }
-  }
-
-  private manageTraining(ctx: AIContext): void {
-    if (ctx.timeMs - this.lastTrainMs < TRAIN_COOLDOWN_MS) return;
-    const barracks = [...ctx.world.with('trainingQueue', 'building', 'owner')]
-      .find((b) => b.owner.playerId === ctx.player.id && b.building.type === 'barracks');
-    if (!barracks) return;
-    if (barracks.trainingQueue.entries.length >= 3) return;
-    const resources = ctx.player.resources;
-    const cost = UNIT_SPECS.swordsman.cost;
-    if (
-      resources.food < cost.food ||
-      resources.gold < cost.gold
-    ) {
-      return;
-    }
-    resources.food -= cost.food;
-    resources.gold -= cost.gold;
-    barracks.trainingQueue.entries.push({
-      unitType: 'swordsman',
-      elapsed: 0,
-      totalTime: UNIT_SPECS.swordsman.trainTime,
-    });
-    this.lastTrainMs = ctx.timeMs;
+  private randomBuild(ctx: AIContext, view: WorldView): void {
+    const anchor = baseAnchor(view);
+    const type = RANDOM_BUILDS[Math.floor(this.rng() * RANDOM_BUILDS.length)];
+    if (anchor && type) this.startBuilding(ctx, view, type, anchor);
   }
 
   /** Once the (rolled) delay has passed, research the next age-up as soon as it is affordable. */
-  private maybeAgeUp(ctx: AIContext): void {
+  private maybeAgeUp(ctx: AIContext, view: WorldView): void {
     // Each further age waits another full delay, so the AI does not rush to age 3.
     if (ctx.timeMs < this.ageUpFromMs * ctx.player.age) return;
-    const tc = [...ctx.world.with('building', 'owner')]
-      .find((b) => b.owner.playerId === ctx.player.id && b.building.type === 'town_center');
-    if (!tc || tc.research) return;
-    const next = (Object.keys(TECH_SPECS) as TechId[]).find(
-      (id) => isAgeUp(id) && isTechAvailable(id, ctx.player),
-    );
-    if (next) startResearch(ctx.world, tc as Entity, next, ctx.player, playerWallet(ctx.player));
-  }
-
-  private maybeAttack(ctx: AIContext): void {
-    const swords = [...ctx.world.with('attacker', 'owner', 'position')]
-      .filter((s) => s.owner.playerId === ctx.player.id && s.unit?.unitType === 'swordsman');
-    if (!this.attacking && swords.length < ATTACK_READY_COUNT) return;
-    this.attacking = true;
-    const enemyTC = [...ctx.world.with('building', 'owner', 'position')]
-      .find((b) => b.building.type === 'town_center' && !b.dying && isEnemy(b.owner.playerId, ctx));
-    if (!enemyTC) return;
-    for (const s of swords) {
-      if ((s as Entity).attackIntent) continue;
-      ctx.world.addComponent(s as Entity, 'attackIntent', {
-        targetId: enemyTC.id ?? 0,
-      });
+    const next = this.nextAgeUp(ctx);
+    if (next && !this.agingUp(view) && canAfford(ctx.player.resources, TECH_SPECS[next].cost)) {
+      this.research(ctx, view, next);
     }
   }
-
-  private startBuild(
-    ctx: AIContext,
-    type: 'house' | 'barracks',
-    origin: TileCoord,
-  ): void {
-    const existing = countPlayerBuildings(ctx.world.entities, ctx.player.id, type);
-    if (buildBlocker(type, ctx.player.age, existing) !== null) return;
-    const spec = BUILDING_SPECS[type].cost;
-    if (ctx.player.resources.wood < spec.wood) return;
-    ctx.player.resources.wood -= spec.wood;
-    const site = createBuilding(ctx.world, {
-      type,
-      origin,
-      playerId: ctx.player.id,
-      mapData: ctx.mapData,
-      underConstruction: true,
-    });
-    // Assign any two nearby idle villagers to the site.
-    const builders = [...ctx.world.with('gatherer', 'owner', 'position')]
-      .filter((v) => v.owner.playerId === ctx.player.id)
-      .slice(0, 2);
-    for (const v of builders) {
-      if (v.buildCommand) continue;
-      ctx.world.addComponent(v as Entity, 'buildCommand', { targetId: site.id ?? 0 });
-    }
-  }
-
-  private findBuildSpot(
-    ctx: AIContext,
-    anchor: TileCoord,
-    size: number,
-  ): TileCoord | null {
-    const maxRadius = 6;
-    for (let r = 2; r <= maxRadius; r++) {
-      for (let dx = -r; dx <= r; dx++) {
-        for (let dy = -r; dy <= r; dy++) {
-          if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-          const origin = { tx: anchor.tx + dx, ty: anchor.ty + dy };
-          if (this.canPlace(ctx, origin, size, size)) return origin;
-        }
-      }
-    }
-    return null;
-  }
-
-  private canPlace(
-    ctx: AIContext,
-    origin: TileCoord,
-    w: number,
-    h: number,
-  ): boolean {
-    for (let dy = 0; dy < h; dy++) {
-      for (let dx = 0; dx < w; dx++) {
-        if (!ctx.mapData.isPassable(origin.tx + dx, origin.ty + dy)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-}
-
-function isEnemy(playerId: number, ctx: AIContext): boolean {
-  if (playerId === ctx.player.id) return false;
-  return ctx.enemyPlayerId === undefined || playerId === ctx.enemyPlayerId;
-}
-
-function nearestByManhattan<T extends { position: TileCoord }>(
-  list: readonly T[],
-  from: TileCoord,
-): T | undefined {
-  let best: T | undefined;
-  let bestDist = Infinity;
-  for (const item of list) {
-    const d = Math.abs(item.position.tx - from.tx) + Math.abs(item.position.ty - from.ty);
-    if (d < bestDist) {
-      bestDist = d;
-      best = item;
-    }
-  }
-  return best;
 }

@@ -19,7 +19,7 @@ export const MAP_SIZES: Readonly<Record<MapSizeId, MapSizeSpec>> = {
 export const MAP_SIZE_IDS: readonly MapSizeId[] = ['small', 'medium', 'large'];
 export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 /** Options that work today; the setup screen shows the rest as "coming soon". */
-export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy'];
+export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium'];
 export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = ['meadow'];
 export const AVAILABLE_CIVS: readonly CivId[] = ['hungarian'];
 

@@ -22,6 +22,7 @@ import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import type { EcsWorld } from '../../ecs/world';
+import { AI_COMMON } from '../../config/balance';
 import { AGE_UP_FX } from '../../config/visual';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
@@ -84,7 +85,14 @@ export class SystemRunner {
     this.death = new DeathSystem(world, mapData);
     this.healthBars = new HealthBarSystem(scene, world);
     this.fogData = new FogOfWarData(mapData.width, mapData.height);
-    this.towers = new TowerCombatSystem(world, (id) => (id === 1 ? this.fogData : null));
+    // Each AI sees through its own fog (perception, towers); scans are staggered across frames.
+    const fogs = new Map<number, FogOfWarData>([[1, this.fogData]]);
+    this.aiPlayers = players.ais().map((p, i, all) => {
+      const fog = new FogOfWarData(mapData.width, mapData.height);
+      fogs.set(p.id, fog);
+      return new AIPlayer(p, createStrategy(difficulty), { fog, fogPhaseMs: (AI_COMMON.fogScanMs * i) / all.length });
+    });
+    this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null);
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1);
     this.render.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);
@@ -104,9 +112,6 @@ export class SystemRunner {
         this.render.releaseStaleAgeArt((id) => active.find((p) => p.id === id)?.age, minAge);
       });
     });
-    this.aiPlayers = players
-      .ais()
-      .map((p) => new AIPlayer(p, createStrategy(difficulty)));
   }
 
   update(time: number, delta: number): void {

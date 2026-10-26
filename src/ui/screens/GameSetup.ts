@@ -46,6 +46,7 @@ export class GameSetup {
   private config: GameSetupConfig;
   private readonly aiSeg: Segmented<string>;
   private readonly sizeSeg: Segmented<string>;
+  private readonly diffSeg: Segmented<string>;
   private readonly seedInput: HTMLInputElement;
   private readonly aiHint: HTMLElement;
   private readonly summary: HTMLElement;
@@ -93,7 +94,9 @@ export class GameSetup {
       label: t.difficulties[id],
       disabled: !AVAILABLE_DIFFICULTIES.includes(id),
     }));
-    const diffSeg = new Segmented('difficulty', t.difficulty, diffItems, this.config.difficulty, () => undefined);
+    this.diffSeg = new Segmented('difficulty', t.difficulty, diffItems, this.config.difficulty, (v) =>
+      this.change({ difficulty: v as GameSetupConfig['difficulty'] }),
+    );
 
     this.aiHint = el('div', { class: 'setup-hint', 'aria-live': 'polite' });
 
@@ -163,7 +166,7 @@ export class GameSetup {
         field(t.template, templateGrid),
         field(t.size, this.sizeSeg.root),
         field(t.opponents, this.aiSeg.root, this.aiHint),
-        field(t.difficulty, diffSeg.root),
+        field(t.difficulty, this.diffSeg.root),
         field(t.civ, civGrid),
         field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
       ),
@@ -226,6 +229,7 @@ export class GameSetup {
     const c = this.config;
     this.sizeSeg.set(c.mapSize);
     this.aiSeg.set(String(c.aiCount));
+    this.diffSeg.set(c.difficulty);
     for (const chip of this.templateChips) chip.setAttribute('aria-checked', String(chip.dataset['tpl'] === c.template));
     for (const chip of this.civChips) chip.setAttribute('aria-checked', String(chip.dataset['civ'] === c.civ));
     if (document.activeElement !== this.seedInput) this.seedInput.value = String(c.seed);
