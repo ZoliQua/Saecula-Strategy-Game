@@ -6,13 +6,15 @@ import { clearUnitOrders } from '../../ecs/orders';
 import { queueUnit } from '../../ecs/queueUnit';
 import { playerWallet, startResearch } from '../../ecs/research';
 import { isTechAvailable } from '../../game/availability';
+import { createWall } from '../../ecs/archetypes/wall';
 import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
+import { planWallSegments } from '../../game/wallLine';
 import { isAgeUp, TECH_SPECS } from '../../game/technologies';
 import type { TileCoord } from '../../iso/coordinates';
 import { FOG_UNEXPLORED } from '../../map/FogOfWarData';
 import type { BuildingType, Resources, TechId, UnitType } from '../../types';
 import type { AIContext, AIStrategy } from '../AIPlayer';
-import { findPlacement } from '../decisions/placement';
+import { canPlaceAt, findPlacement } from '../decisions/placement';
 import { aiTrainAccount, canAfford, NO_RESERVE } from '../economy';
 import { Perception, type WorldView } from '../perception';
 import { ThoughtLog, type AIThoughts } from '../thoughts';
@@ -87,13 +89,18 @@ export abstract class BaseStrategy implements AIStrategy {
     const spec = BUILDING_SPECS[type];
     const ring = AI_PLACEMENT.byType[type] ?? AI_PLACEMENT.fallback;
     const tc = type === 'farm' ? view.townCenter : undefined;
-    return findPlacement(ctx.mapData, anchor, spec.width, spec.height, {
+    const options = {
       ...ring,
-      clearance: 1,
-      tileAllowed: (tx, ty) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED,
+      clearance: 1 as const,
+      tileAllowed: (tx: number, ty: number) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED,
       // Farms hug the town centre (it is their drop-off); the gaps between farms keep it reachable.
       ...(tc ? { mayTouch: (tx: number, ty: number) => insideFootprint(tc, tx, ty) } : {}),
-    });
+    };
+    // Little explored ground yet (no scout): settle for a spot closer in rather than none.
+    return (
+      findPlacement(ctx.mapData, anchor, spec.width, spec.height, options) ??
+      findPlacement(ctx.mapData, anchor, spec.width, spec.height, { ...options, minRadius: AI_PLACEMENT.closeInRadius })
+    );
   }
 
   /**
@@ -125,6 +132,32 @@ export abstract class BaseStrategy implements AIStrategy {
     this.assignBuilders(ctx, view, site, AI_COMMON.buildersPerSite);
     this.log.add(ctx.timeMs, 'build', type);
     return site;
+  }
+
+  /**
+   * Lays a wall line like the player's wall drag: each free, explored tile
+   * (keeping a free ring so the base is not sealed) becomes a segment site
+   * while the wood above `reserve` lasts; the nearest `builders` villagers
+   * start on it and chain along the line. Returns the segments placed.
+   */
+  protected startWallLine(
+    ctx: AIContext,
+    view: WorldView,
+    tiles: readonly TileCoord[],
+    builders: number,
+    reserve: Resources = NO_RESERVE,
+  ): number {
+    if (buildBlocker('wall', ctx.player.age, 0) !== null) return 0;
+    const cost = BUILDING_SPECS.wall.cost;
+    const free = (t: TileCoord) =>
+      canPlaceAt(ctx.mapData, t, 1, 1, { clearance: 1, tileAllowed: (tx, ty) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED });
+    const plan = planWallSegments(tiles, free, Math.max(0, ctx.player.resources.wood - reserve.wood), cost.wood);
+    if (plan.build.length === 0) return 0;
+    ctx.player.resources = { ...ctx.player.resources, wood: ctx.player.resources.wood - cost.wood * plan.build.length };
+    const sites = plan.build.map((tile) => createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true }));
+    this.assignBuilders(ctx, view, sites[Math.floor(sites.length / 2)]!, builders);
+    this.log.add(ctx.timeMs, 'build', 'wall');
+    return plan.build.length;
   }
 
   /** Sends the `count` nearest villagers that are not already building to `site`. */

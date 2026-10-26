@@ -10,6 +10,11 @@ export interface Player {
   /** Technologies already researched (each can be researched once). */
   researched: Set<TechId>;
   defeated: boolean;
+  /**
+   * Difficulty handicap on every gather rate (§10.3: the Hard AI gathers
+   * 20% faster); 1 for the human and the other difficulties.
+   */
+  gatherHandicap: number;
 }
 
 export const PLAYER_COLORS: readonly number[] = [
@@ -30,6 +35,7 @@ export function createPlayer(partial: Partial<Player> & { id: number }): Player 
     age: 1,
     researched: new Set<TechId>(),
     defeated: false,
+    gatherHandicap: 1,
     ...partial,
   };
 }

@@ -115,6 +115,25 @@ export function gatherMultiplier(player: Researched, resource: ResourceType): nu
   return m;
 }
 
+/** A player's difficulty gather handicap (only the Hard AI has one, §10.3). */
+export interface Handicapped {
+  readonly gatherHandicap: number;
+}
+
+/**
+ * Full gather-rate multiplier for one villager: the owner's technology
+ * bonus (food bonuses only on farms) times its difficulty handicap, which
+ * applies to every resource. The handicap speeds up gathering only; it
+ * never grants resources or vision.
+ */
+export function gatherRateMultiplier(
+  player: Researched & Handicapped,
+  resource: ResourceType,
+  techApplies: boolean,
+): number {
+  return (techApplies ? gatherMultiplier(player, resource) : 1) * player.gatherHandicap;
+}
+
 /** Extra population cap provided by every finished house. */
 export function houseBonus(player: Researched): number {
   let bonus = 0;

@@ -5,3 +5,6 @@ export * from './housing';
 export * from './placement';
 export * from './research';
 export * from './scouting';
+export * from './fortify';
+export * from './harass';
+export * from './stance';

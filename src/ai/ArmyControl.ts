@@ -16,6 +16,8 @@ const isBusy = (u: Entity) => u.attackIntent !== undefined || u.moveIntent !== u
  * (sent at the remembered enemy, or exploring until it is found),
  * engaging what the units can see, falling back when a wave is spent, and
  * the scout's endless exploration. Stateful: remembers the current wave.
+ * Units `isReserved` reports (another controller's, e.g. a raid) are
+ * never drafted into the wave or into home defence.
  */
 export class ArmyControl {
   private readonly wave = new Set<number>();
@@ -25,6 +27,7 @@ export class ArmyControl {
   constructor(
     private readonly log: ThoughtLog,
     private readonly rng: () => number,
+    private readonly isReserved: (u: Entity) => boolean = () => false,
   ) {}
 
   get attacking(): boolean {
@@ -45,7 +48,7 @@ export class ArmyControl {
    * together with any wave already out. Returns the wave size.
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
-    for (const u of units) if (u.id !== undefined) this.wave.add(u.id);
+    for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
     this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId);
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
     this.steerWave(ctx, view);
@@ -74,7 +77,7 @@ export class ArmyControl {
     if (view.threats.length === 0) return;
     let logged = false;
     for (const u of view.military) {
-      if (u.id === undefined || this.wave.has(u.id) || u.attackIntent || !u.position) continue;
+      if (u.id === undefined || this.wave.has(u.id) || u.attackIntent || !u.position || this.isReserved(u)) continue;
       const threat = nearest(view.threats, u.position);
       if (threat?.id === undefined) continue;
       clearUnitOrders(ctx.world, u);
@@ -162,7 +165,7 @@ export class ArmyControl {
   /** Keeps every idle scout exploring. */
   scout(ctx: AIContext, view: WorldView): void {
     for (const s of view.scouts) {
-      if (!s.position || isBusy(s) || this.inWave(s)) continue;
+      if (!s.position || isBusy(s) || this.inWave(s) || this.isReserved(s)) continue;
       const goal = nextExploreTarget(ctx.fog, ctx.mapData, s.position, this.rng);
       if (!goal) continue;
       ctx.world.addComponent(s, 'moveIntent', { target: goal });

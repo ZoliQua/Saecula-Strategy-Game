@@ -45,13 +45,14 @@ describe('GameSetupConfig', () => {
     expect(clampSeed(Number.POSITIVE_INFINITY)).toBe(1);
   });
 
-  it('offers the easy and medium AI', () => {
-    expect(withSetup(defaultSetupConfig(1), { difficulty: 'medium' }).difficulty).toBe('medium');
+  it('offers all three AI difficulties', () => {
+    for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+      expect(withSetup(defaultSetupConfig(1), { difficulty }).difficulty).toBe(difficulty);
+    }
   });
 
   it('falls back from options that are not implemented yet', () => {
-    const c = withSetup(defaultSetupConfig(1), { difficulty: 'hard', civ: 'finnish' });
-    expect(c.difficulty).toBe('easy');
+    const c = withSetup(defaultSetupConfig(1), { civ: 'finnish' });
     expect(c.civ).toBe('hungarian');
   });
 

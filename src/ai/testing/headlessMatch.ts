@@ -17,7 +17,9 @@ import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
 import { spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
+import type { Difficulty } from '../../game/GameSetupConfig';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
+import { applyDifficulty } from '../createStrategy';
 
 export interface HeadlessMatchOptions {
   readonly seed: number;
@@ -25,6 +27,10 @@ export interface HeadlessMatchOptions {
   readonly aiCount: number;
   /** One strategy per AI player (ids 2..). */
   readonly strategy: (playerId: number) => AIStrategy;
+  /** Whom each AI attacks (default: the passive human, player 1). */
+  readonly enemyOf?: (playerId: number) => number;
+  /** Difficulty handicap per AI player (default: none). */
+  readonly difficulty?: (playerId: number) => Difficulty;
 }
 
 export interface HeadlessMatch {
@@ -40,7 +46,8 @@ export interface HeadlessMatch {
 /**
  * A skirmish without Phaser: the meadow map, starting entities, every
  * gameplay system in SystemRunner order and the AI players. The human
- * (player 1) stays passive. Used by AI simulation tests.
+ * (player 1) stays passive; AIs attack it unless `enemyOf` pits them
+ * against each other. Used by AI simulation tests.
  */
 export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatch {
   resetUiStore();
@@ -56,7 +63,11 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const players = createPlayers('hungarian', options.aiCount);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
-  const ais = players.ais().map((p) => new AIPlayer(p, options.strategy(p.id)));
+  const ais = players.ais().map((p) => {
+    if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
+    return new AIPlayer(p, options.strategy(p.id));
+  });
+  const enemyOf = options.enemyOf ?? (() => 1);
   const fogFor = (id: number): FogOfWarData | null => ais.find((a) => a.player.id === id)?.fog ?? null;
   const systems = {
     pathfinding: new PathfindingSystem(world, map),
@@ -86,7 +97,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     systems.projectiles.update(dt);
     systems.movement.update(dt);
     systems.death.update(dt);
-    for (const ai of ais) ai.update({ world, mapData: map, enemyPlayerId: 1 }, dt);
+    for (const ai of ais) ai.update({ world, mapData: map, enemyPlayerId: enemyOf(ai.player.id) }, dt);
     systems.population.update();
   };
   return {

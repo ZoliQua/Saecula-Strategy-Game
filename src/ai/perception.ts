@@ -14,6 +14,14 @@ export interface KnownBuilding {
   readonly footprint: { readonly width: number; readonly height: number };
 }
 
+/** Where an enemy villager was last seen (by id), for villager raids. */
+export interface VillagerSighting {
+  readonly id: number;
+  readonly ownerId: number;
+  readonly position: TileCoord;
+  readonly seenAtMs: number;
+}
+
 /** Everything one AI knows this tick. Own entities are always known; the rest only through its fog. */
 export interface WorldView {
   readonly playerId: number;
@@ -37,6 +45,8 @@ export interface WorldView {
   readonly threats: readonly Entity[];
   /** Decaying memory of enemy unit sightings by type. */
   readonly enemySightings: Readonly<Partial<Record<UnitType, number>>>;
+  /** Last place each enemy villager was seen (forgotten after AI_COMMON.villagerMemoryMs). */
+  readonly enemyVillagers: readonly VillagerSighting[];
 }
 
 /** Any tile of the entity's footprint is currently visible. */
@@ -71,6 +81,7 @@ const isHostile = (ownerId: number, me: number) => ownerId !== me && ownerId !==
 export class Perception {
   private readonly memory = new Map<number, KnownBuilding>();
   private readonly sightings: Partial<Record<UnitType, number>> = {};
+  private readonly villagerMemory = new Map<number, VillagerSighting>();
   private lastMs: number | null = null;
 
   update(ctx: AIContext): WorldView {
@@ -108,8 +119,12 @@ export class Perception {
         continue;
       }
       if (!isHostile(e.owner.playerId, me) || !isEntityVisible(fog, placed)) continue;
-      if (e.unit) visibleEnemyUnits.push(e);
-      else if (e.building && e.id !== undefined) {
+      if (e.unit) {
+        visibleEnemyUnits.push(e);
+        if (e.unit.unitType === 'villager' && e.id !== undefined) {
+          this.villagerMemory.set(e.id, { id: e.id, ownerId: e.owner.playerId, position: { ...e.position }, seenAtMs: ctx.timeMs });
+        }
+      } else if (e.building && e.id !== undefined) {
         visibleEnemyBuildings.push(e);
         this.memory.set(e.id, {
           id: e.id,
@@ -121,6 +136,7 @@ export class Perception {
       }
     }
     this.forgetGone(fog, byId);
+    this.forgetVillagers(ctx.timeMs, fog);
     this.recordSightings(ctx.timeMs, visibleEnemyUnits);
     const home = [...buildings];
     return {
@@ -137,7 +153,21 @@ export class Perception {
       resources,
       threats: visibleEnemyUnits.filter((u) => isArmed(u) && nearAny(u.position!, home, AI_COMMON.defendRadius)),
       enemySightings: { ...this.sightings },
+      enemyVillagers: [...this.villagerMemory.values()],
     };
+  }
+
+  /**
+   * Villager sightings expire; one whose spot is in sight again without the
+   * villager there (moved on or dead) is dropped at once. Nothing is
+   * forgotten from knowledge the fog does not give (no cheating).
+   */
+  private forgetVillagers(timeMs: number, fog: FogOfWarData): void {
+    for (const [id, seen] of this.villagerMemory) {
+      if (seen.seenAtMs === timeMs) continue;
+      const expired = timeMs - seen.seenAtMs > AI_COMMON.villagerMemoryMs;
+      if (expired || fog.isVisible(seen.position.tx, seen.position.ty)) this.villagerMemory.delete(id);
+    }
   }
 
   /** A remembered building whose spot is in sight again but which is gone (or collapsing) is forgotten. */

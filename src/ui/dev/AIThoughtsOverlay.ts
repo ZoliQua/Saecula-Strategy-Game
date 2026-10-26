@@ -21,7 +21,7 @@ function label(id: string): string {
   const techs = hu.techs as Record<string, { name: string }>;
   const resources = hu.resources as Record<string, string>;
   if (id.includes('>')) return id.split('>').map(label).join(' → ');
-  return units[id] ?? buildings[id] ?? techs[id]?.name ?? resources[id] ?? id;
+  return units[id] ?? buildings[id] ?? techs[id]?.name ?? resources[id] ?? t.stances[id] ?? (t.kinds as Record<string, string>)[id] ?? id;
 }
 
 function thoughtLine(th: Thought): HTMLElement {
@@ -100,6 +100,14 @@ export class AIThoughtsOverlay {
       { class: 'ait-card' },
       head,
       el('div', { class: `ait-phase p-${th.phase}` }, t.phases[th.phase]),
+      th.stance === undefined
+        ? null
+        : el(
+            'div',
+            { class: 'ait-row' },
+            el('span', { class: 'ait-key' }, t.stanceLabel),
+            el('span', { class: `ait-stance s-${th.stance}` }, t.stances[th.stance] ?? th.stance),
+          ),
       el('div', { class: 'ait-row' }, el('span', { class: 'ait-key' }, t.plan), el('span', { class: 'ait-plan' }, plan)),
       el('div', { class: 'ait-key' }, t.recent),
       recent,

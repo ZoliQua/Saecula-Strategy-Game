@@ -233,7 +233,16 @@ export const hu = {
         scout: 'Felderítés',
         explore: 'Felfedezés',
         rebalance: 'Átcsoportosítás',
+        harass: 'Portyázás',
+        stance: 'Stratégiaváltás',
       },
+      stanceLabel: 'Stratégia',
+      stances: {
+        balanced: 'Kiegyensúlyozott',
+        turtle: 'Védekező (tornyok, falak)',
+        rush: 'Roham',
+        tech: 'Fejlesztés',
+      } as Record<string, string>,
     },
   },
 } as const;

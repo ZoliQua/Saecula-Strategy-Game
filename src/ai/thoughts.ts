@@ -13,7 +13,9 @@ export type ThoughtKind =
   | 'retreat'
   | 'scout'
   | 'explore'
-  | 'rebalance';
+  | 'rebalance'
+  | 'harass'
+  | 'stance';
 
 export interface Thought {
   readonly timeMs: number;
@@ -28,6 +30,8 @@ export type AIPhase = 'opening' | 'ageUp' | 'buildUp' | 'attacking' | 'defending
 export interface AIThoughts {
   readonly strategy: string;
   readonly phase: AIPhase;
+  /** Hard AI strategy stance (balanced / turtle / rush / tech); absent for the other strategies. */
+  readonly stance?: string;
   /** Next planned steps (building / unit / tech ids). */
   readonly plan: readonly string[];
   /** Newest last. */
@@ -39,6 +43,7 @@ const KEEP = 10;
 /** Ring buffer of recent decisions plus the current phase and plan. */
 export class ThoughtLog {
   phase: AIPhase = 'opening';
+  stance: string | null = null;
   plan: string[] = [];
   private readonly entries: Thought[] = [];
 
@@ -48,6 +53,7 @@ export class ThoughtLog {
   }
 
   snapshot(strategy: string): AIThoughts {
-    return { strategy, phase: this.phase, plan: [...this.plan], recent: [...this.entries] };
+    const base = { strategy, phase: this.phase, plan: [...this.plan], recent: [...this.entries] };
+    return this.stance === null ? base : { ...base, stance: this.stance };
   }
 }

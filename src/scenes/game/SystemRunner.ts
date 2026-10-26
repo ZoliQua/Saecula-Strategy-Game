@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
-import { createStrategy } from '../../ai/createStrategy';
+import { applyDifficulty, createStrategy } from '../../ai/createStrategy';
 import type { AIThoughts } from '../../ai/thoughts';
 import { AgeUpFxSystem } from '../../ecs/systems/AgeUpFxSystem';
 import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
@@ -94,6 +94,7 @@ export class SystemRunner {
     this.aiPlayers = players.ais().map((p, i, all) => {
       const fog = new FogOfWarData(mapData.width, mapData.height);
       fogs.set(p.id, fog);
+      applyDifficulty(p, difficulty);
       return new AIPlayer(p, createStrategy(difficulty), { fog, fogPhaseMs: (AI_COMMON.fogScanMs * i) / all.length });
     });
     this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null);

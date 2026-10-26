@@ -40,3 +40,9 @@
 .ait-kind.k-build { color: var(--wood); }
 .ait-kind.k-train { color: var(--green); }
 .ait-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ait-stance { font-weight: 600; color: var(--amber-2); }
+.ait-stance.s-turtle { color: var(--wood); }
+.ait-stance.s-rush { color: var(--red); }
+.ait-stance.s-tech { color: var(--gold); }
+.ait-kind.k-harass { color: var(--red); }
+.ait-kind.k-stance { color: var(--amber); }

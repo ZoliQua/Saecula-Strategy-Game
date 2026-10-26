@@ -1,5 +1,5 @@
 import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS } from '../../config/balance';
-import { AI_COUNTERS } from '../../config/aiBalance';
+import { AI_COUNTERS, AI_MEDIUM, type CounterTuning } from '../../config/aiBalance';
 import type { UnitType } from '../../types';
 
 export type ArmyMix = Readonly<Partial<Record<UnitType, number>>>;
@@ -27,17 +27,23 @@ export function enemyClassShares(seen: Sightings): Record<keyof typeof AI_COUNTE
  * every enemy class above the threshold boosts its counters (§7.5:
  * pikemen vs cavalry; knights / swordsmen / cavalry vs archers; ranged vs
  * infantry), and a lot of archers also drops the pikemen. Only units in
- * `allowed` are kept. Returns weights that sum to 1 (or an empty mix).
+ * `allowed` are kept. `tuning` sets how early and how strongly it reacts.
+ * Returns weights that sum to 1 (or an empty mix).
  */
-export function counterMix(base: ArmyMix, seen: Sightings, allowed: readonly UnitType[]): ArmyMix {
+export function counterMix(
+  base: ArmyMix,
+  seen: Sightings,
+  allowed: readonly UnitType[],
+  tuning: CounterTuning = AI_MEDIUM.counters,
+): ArmyMix {
   const mix: Partial<Record<UnitType, number>> = {};
   for (const t of allowed) if ((base[t] ?? 0) > 0) mix[t] = base[t]!;
   const shares = enemyClassShares(seen);
   for (const cls of Object.keys(shares) as (keyof typeof shares)[]) {
     const share = shares[cls];
-    if (share < AI_COUNTERS.threshold) continue;
+    if (share < tuning.threshold) continue;
     for (const t of AI_COUNTERS.vs[cls]) {
-      if (allowed.includes(t)) mix[t] = (mix[t] ?? 0) + AI_COUNTERS.boost * share;
+      if (allowed.includes(t)) mix[t] = (mix[t] ?? 0) + tuning.boost * share;
     }
     if (cls === 'archers' && mix.pikeman !== undefined) mix.pikeman *= 1 - share;
   }

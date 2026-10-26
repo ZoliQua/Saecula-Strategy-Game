@@ -1,4 +1,4 @@
-import { AI_COMMON, AI_MEDIUM, type GatherWeights } from '../../config/aiBalance';
+import { AI_COMMON, AI_MEDIUM, type GatherWeights, type MediumTuning } from '../../config/aiBalance';
 import type { Entity } from '../../ecs/components';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
@@ -33,16 +33,35 @@ import { BaseStrategy } from './BaseStrategy';
  * defence whenever its base is attacked.
  */
 export class MediumStrategy extends BaseStrategy {
-  readonly name = 'medium';
+  readonly name: string = 'medium';
   protected readonly army: ArmyControl;
-  private readonly firstAttackAtMs: number;
+  protected readonly firstAttackAtMs: number;
   private lastScoutMs = -Infinity;
-  private pressureSent = false;
+  protected pressureSent = false;
 
-  constructor(rng: () => number = Math.random) {
-    super(rng, AI_MEDIUM.decisionMs);
-    this.army = new ArmyControl(this.log, rng);
-    this.firstAttackAtMs = this.roll(AI_MEDIUM.firstAttackMs);
+  /** `tune` is the strategy's table (AI_MEDIUM; Hard passes its own). */
+  constructor(
+    rng: () => number = Math.random,
+    protected readonly tune: MediumTuning = AI_MEDIUM,
+  ) {
+    super(rng, tune.decisionMs);
+    this.army = new ArmyControl(this.log, rng, (u) => this.isReserved(u));
+    this.firstAttackAtMs = this.roll(tune.firstAttackMs);
+  }
+
+  /** Units another controller (Hard's raids) owns; the army and pressure squad leave them alone. */
+  protected isReserved(_u: Entity): boolean {
+    return false;
+  }
+
+  /** Army size that launches a main wave (Infinity holds the army at home). */
+  protected waveThreshold(_ctx: AIContext, _view: WorldView): number {
+    return this.tune.attackWave;
+  }
+
+  /** Whether the main army is trained in the current age. */
+  protected trainsArmy(ctx: AIContext): boolean {
+    return ctx.player.age >= 2;
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
@@ -59,8 +78,7 @@ export class MediumStrategy extends BaseStrategy {
   }
 
   protected decide(ctx: AIContext, view: WorldView): void {
-    const moved = rebalanceGatherers(ctx.world, view, this.gatherWeights(ctx, view), AI_MEDIUM.rebalancePerDecision);
-    for (const m of moved) this.log.add(ctx.timeMs, 'rebalance', `${m.from}>${m.to}`);
+    this.rebalance(ctx, view);
     this.buildEconomy(ctx, view);
     this.buildMilitary(ctx, view);
     this.keepScouting(ctx, view);
@@ -68,8 +86,8 @@ export class MediumStrategy extends BaseStrategy {
     this.researchTechs(ctx, view);
     this.pressure(ctx, view);
     if (this.pressureSent && !this.army.attacking && attackReady({
-      armySize: view.military.length,
-      wave: AI_MEDIUM.attackWave,
+      armySize: view.military.filter((u) => !this.isReserved(u)).length,
+      wave: this.waveThreshold(ctx, view),
       timeMs: ctx.timeMs,
       notBeforeMs: this.firstAttackAtMs,
     })) {
@@ -86,49 +104,72 @@ export class MediumStrategy extends BaseStrategy {
   private pressure(ctx: AIContext, view: WorldView): void {
     if (this.pressureSent) return;
     const squad = this.pressureSquad(view);
-    if (ctx.timeMs < this.firstAttackAtMs || squad.length < AI_MEDIUM.pressure.minArmy || this.army.attacking) return;
+    if (ctx.timeMs < this.firstAttackAtMs || squad.length < this.tune.pressure.minArmy || this.army.attacking) return;
     this.army.launchWave(ctx, view, squad);
     this.pressureSent = true;
   }
 
-  /** Pressure units besides the exploring scout. */
+  /**
+   * Scouts wanted exploring: one until the pressure raid has left (food
+   * goes to the raid first), then `tune.scouts`.
+   */
+  private explorersWanted(): number {
+    return this.pressureSent ? this.tune.scouts : Math.min(1, this.tune.scouts);
+  }
+
+  /** Scouts kept exploring (never wave or reserved units). */
+  protected explorers(view: WorldView): Entity[] {
+    return view.scouts.filter((s) => !this.army.inWave(s) && !this.isReserved(s)).slice(0, this.explorersWanted());
+  }
+
+  /** Pressure units besides the exploring scouts. */
   private pressureSquad(view: WorldView): Entity[] {
-    const scout = view.scouts.find((s) => !this.army.inWave(s));
-    return [...view.military, ...view.scouts].filter((u) => u !== scout && u.unit?.unitType === AI_MEDIUM.pressure.unit);
+    const explorers = new Set(this.explorers(view));
+    return [...view.military, ...view.scouts].filter(
+      (u) => !explorers.has(u) && !this.isReserved(u) && u.unit?.unitType === this.tune.pressure.unit,
+    );
   }
 
   /**
    * From `leadMs` before the first-attack time until the raid leaves,
    * trains the pressure squad (queued units counted). True while the squad
-   * is still short, so the caller holds back villager training.
+   * is still short and `holdsVillagers` is set: the caller then holds back
+   * villager training.
    */
   private preparePressure(ctx: AIContext, view: WorldView): boolean {
-    const { unit, minArmy, leadMs } = AI_MEDIUM.pressure;
+    const { unit, minArmy, leadMs } = this.tune.pressure;
     if (this.pressureSent || ctx.timeMs < this.firstAttackAtMs - leadMs) return false;
     const queued = view.buildings.reduce(
       (n, b) => n + (b.trainingQueue?.entries.filter((e) => e.unitType === unit).length ?? 0),
       0,
     );
-    // Without an exploring scout, the next scout trained goes exploring first.
-    const wanted = minArmy + (unit === 'scout' && !view.scouts.some((s) => !this.army.inWave(s)) ? 1 : 0);
+    // Missing explorers: the next scouts trained go exploring first.
+    const wanted = minArmy + (unit === 'scout' ? this.explorersWanted() - this.explorers(view).length : 0);
     const have = this.pressureSquad(view).length + queued;
     if (have >= wanted) return false;
-    this.train(ctx, view, unit, AI_MEDIUM.militaryQueue);
-    return true;
+    this.train(ctx, view, unit, this.tune.militaryQueue);
+    // Without a finished trainer there is nothing to save for yet: villagers go on.
+    return this.tune.pressure.holdsVillagers && this.trainersFor(view, unit, Infinity).length > 0;
   }
 
   // ------------------------------------------------------------ economy
 
+  /** Moves gatherers when the split drifts from the wanted one. */
+  protected rebalance(ctx: AIContext, view: WorldView): void {
+    const moved = rebalanceGatherers(ctx.world, view, this.gatherWeights(ctx, view), this.tune.rebalancePerDecision);
+    for (const m of moved) this.log.add(ctx.timeMs, 'rebalance', `${m.from}>${m.to}`);
+  }
+
   /** Age split, leaning toward whatever the next age-up still lacks. */
   protected gatherWeights(ctx: AIContext, view: WorldView): GatherWeights {
-    if (view.villagers.length < AI_MEDIUM.openingVillagers) return AI_MEDIUM.gatherOpening;
-    const base = AI_MEDIUM.gatherByAge[ctx.player.age] ?? AI_MEDIUM.gatherOpening;
-    return weightsForGoal(base, this.savingsGoal(ctx, view), ctx.player.resources, AI_MEDIUM.ageUpGatherShift);
+    if (view.villagers.length < this.tune.openingVillagers) return this.tune.gatherOpening;
+    const base = this.tune.gatherByAge[ctx.player.age] ?? this.tune.gatherOpening;
+    return weightsForGoal(base, this.savingsGoal(ctx, view), ctx.player.resources, this.tune.ageUpGatherShift);
   }
 
   /** What the AI is saving for: the next age-up, this age's missing military buildings and a wood buffer. */
   private savingsGoal(ctx: AIContext, view: WorldView): Resources {
-    const goal = { food: 0, wood: AI_MEDIUM.woodBuffer, gold: 0 };
+    const goal = { food: 0, wood: this.tune.woodBuffer, gold: 0 };
     const add = (c: Resources) => {
       goal.food += c.food;
       goal.wood += c.wood;
@@ -136,21 +177,21 @@ export class MediumStrategy extends BaseStrategy {
     };
     const next = this.nextAgeUp(ctx);
     if (next && !this.agingUp(view)) add(TECH_SPECS[next].cost);
-    for (const t of AI_MEDIUM.militaryBuildings[ctx.player.age] ?? []) {
+    for (const t of this.tune.militaryBuildings[ctx.player.age] ?? []) {
       if (this.ownCount(view, t) === 0) add(BUILDING_SPECS[t].cost);
     }
     return goal;
   }
 
-  private villagerTarget(ctx: AIContext): number {
-    return AI_MEDIUM.villagerTarget[ctx.player.age] ?? 0;
+  protected villagerTarget(ctx: AIContext, _view: WorldView): number {
+    return this.tune.villagerTarget[ctx.player.age] ?? 0;
   }
 
   private trainVillagers(ctx: AIContext, view: WorldView): void {
     const queued = view.townCenter?.trainingQueue?.entries.length ?? 0;
-    if (view.villagers.length + queued >= this.villagerTarget(ctx)) return;
+    if (view.villagers.length + queued >= this.villagerTarget(ctx, view)) return;
     // Under attack with too few defenders, food goes to soldiers first.
-    if (this.army.underAttack(view) && view.military.length < AI_MEDIUM.minDefenders) return;
+    if (this.army.underAttack(view) && view.military.length < this.tune.minDefenders) return;
     this.train(ctx, view, 'villager', 1);
   }
 
@@ -167,8 +208,13 @@ export class MediumStrategy extends BaseStrategy {
   protected reserve(ctx: AIContext, view: WorldView): Resources {
     const next = this.nextAgeUp(ctx);
     if (!next || this.agingUp(view)) return NO_RESERVE;
-    if (view.military.length < AI_MEDIUM.minDefenders && ctx.player.age > 1) return NO_RESERVE;
-    return scaleCost(TECH_SPECS[next].cost, AI_MEDIUM.ageUpReserve[ctx.player.age] ?? 0);
+    if (view.military.length < this.tune.minDefenders && ctx.player.age > 1) return NO_RESERVE;
+    return scaleCost(TECH_SPECS[next].cost, this.ageUpReserveShare(ctx));
+  }
+
+  /** Share of the next age-up's cost kept saved while spending (see `tune.ageUpReserve`). */
+  protected ageUpReserveShare(ctx: AIContext): number {
+    return this.tune.ageUpReserve[ctx.player.age] ?? 0;
   }
 
   private wantedFood(ctx: AIContext, view: WorldView): number {
@@ -200,8 +246,8 @@ export class MediumStrategy extends BaseStrategy {
 
   /** The age's military buildings in build order, one site at a time. */
   private buildMilitary(ctx: AIContext, view: WorldView): void {
-    if (ctx.player.age === 1 && view.villagers.length < AI_MEDIUM.barracksAtVillagers) return;
-    const wanted = AI_MEDIUM.militaryBuildings[ctx.player.age] ?? [];
+    if (ctx.player.age === 1 && view.villagers.length < this.tune.barracksAtVillagers) return;
+    const wanted = this.tune.militaryBuildings[ctx.player.age] ?? [];
     const missing = wanted.find((t) => this.ownCount(view, t) === 0);
     if (!missing || wanted.some((t) => this.sitesInProgress(view, t) > 0)) return;
     const reserve = ctx.player.age > 1 ? this.reserve(ctx, view) : NO_RESERVE;
@@ -216,70 +262,70 @@ export class MediumStrategy extends BaseStrategy {
   // ------------------------------------------------------------ army
 
   private keepScouting(ctx: AIContext, view: WorldView): void {
-    if (view.scouts.some((s) => !this.army.inWave(s))) return;
-    if (ctx.timeMs - this.lastScoutMs < AI_MEDIUM.scoutRetrainMs) return;
+    if (this.explorers(view).length >= this.explorersWanted()) return;
+    if (ctx.timeMs - this.lastScoutMs < this.tune.scoutRetrainMs) return;
     const queued = view.buildings.some((b) => b.trainingQueue?.entries.some((e) => e.unitType === 'scout'));
     if (!queued && this.train(ctx, view, 'scout', 1)) this.lastScoutMs = ctx.timeMs;
   }
 
   /** Mix for the current age, countered against what has been seen, limited to what is unlocked. */
   protected armyMix(ctx: AIContext, view: WorldView): ReturnType<typeof counterMix> {
-    const base = AI_MEDIUM.armyByAge[ctx.player.age] ?? {};
+    const base = this.tune.armyByAge[ctx.player.age] ?? {};
     const allowed = (Object.keys(UNIT_SPECS) as UnitType[]).filter(
       (t) => t !== 'villager' && t !== 'scout' && isUnitAvailable(t, ctx.player.age),
     );
-    return counterMix(base, view.enemySightings, allowed);
+    return counterMix(base, view.enemySightings, allowed, this.tune.counters);
   }
 
   /** Age 2+: every free military building trains the unit furthest below its share. */
   private trainArmy(ctx: AIContext, view: WorldView): void {
-    if (ctx.player.age < 2) return;
+    if (!this.trainsArmy(ctx)) return;
     const mix = this.armyMix(ctx, view);
     const reserve = this.reserve(ctx, view);
     const counts = countByType(view.military);
-    for (let i = 0; i < AI_MEDIUM.trainPerDecision; i++) {
-      const type = nextUnitToTrain(mix, counts, (t) => this.trainersFor(view, t, AI_MEDIUM.militaryQueue).length > 0
+    for (let i = 0; i < this.tune.trainPerDecision; i++) {
+      const type = nextUnitToTrain(mix, counts, (t) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0
         && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, reserve));
-      if (!type || !this.train(ctx, view, type, AI_MEDIUM.militaryQueue, reserve)) return;
+      if (!type || !this.train(ctx, view, type, this.tune.militaryQueue, reserve)) return;
       counts[type] = (counts[type] ?? 0) + 1;
     }
   }
 
   /** Base under attack and outnumbered: cheapest available infantry, no savings kept. */
   private trainDefenders(ctx: AIContext, view: WorldView): void {
-    if (view.military.length >= Math.min(view.threats.length, AI_MEDIUM.minDefenders * 2)) return;
+    if (view.military.length >= Math.min(view.threats.length, this.tune.minDefenders * 2)) return;
     const type: UnitType = isUnitAvailable('pikeman', ctx.player.age) ? 'pikeman' : 'swordsman';
-    this.train(ctx, view, type, AI_MEDIUM.militaryQueue);
+    this.train(ctx, view, type, this.tune.militaryQueue);
   }
 
   private researchTechs(ctx: AIContext, view: WorldView): void {
     const reserve = this.reserve(ctx, view);
     const ready = (id: TechId) =>
       this.researchable(ctx, view, id) && canAfford(ctx.player.resources, TECH_SPECS[id].cost, reserve);
-    const tech = pickResearch(AI_MEDIUM.techPriority, ready);
+    const tech = pickResearch(this.tune.techPriority, ready);
     if (tech) this.research(ctx, view, tech, reserve);
   }
 
   // ------------------------------------------------------------ overlay
 
-  private updateThoughts(ctx: AIContext, view: WorldView): void {
+  protected updateThoughts(ctx: AIContext, view: WorldView): void {
     this.log.phase = this.army.underAttack(view)
       ? 'defending'
       : this.army.attacking
         ? 'attacking'
-        : this.nextAgeUp(ctx) && (this.agingUp(view) || view.villagers.length >= this.villagerTarget(ctx))
+        : this.nextAgeUp(ctx) && (this.agingUp(view) || view.villagers.length >= this.villagerTarget(ctx, view))
           ? 'ageUp'
           : ctx.player.age === 1
             ? 'opening'
             : 'buildUp';
     const plan: string[] = [];
-    const missing = (AI_MEDIUM.militaryBuildings[ctx.player.age] ?? []).filter((t) => this.ownCount(view, t) === 0);
+    const missing = (this.tune.militaryBuildings[ctx.player.age] ?? []).filter((t) => this.ownCount(view, t) === 0);
     plan.push(...missing);
     const next = this.nextAgeUp(ctx);
     if (next && !this.agingUp(view)) plan.push(next);
     const unit = nextUnitToTrain(this.armyMix(ctx, view), countByType(view.military), () => true);
-    if (unit && ctx.player.age > 1) plan.push(unit);
-    const tech = pickResearch(AI_MEDIUM.techPriority, (id) => this.researchable(ctx, view, id));
+    if (unit && this.trainsArmy(ctx)) plan.push(unit);
+    const tech = pickResearch(this.tune.techPriority, (id) => this.researchable(ctx, view, id));
     if (tech) plan.push(tech);
     this.log.plan = plan;
   }
