@@ -242,7 +242,7 @@ export class GatheringSystem {
     const dropoffs = this.world.with('position', 'resourceDropoff', 'building');
     for (const d of dropoffs) {
       if (!d.resourceDropoff.accepts.includes(type)) continue;
-      if (d.owner?.playerId !== v.owner.playerId) continue;
+      if (d.owner?.playerId !== v.owner.playerId || (d as Entity).dying) continue;
       const dist = footprintDistance(v.position, d);
       if (dist < bestDist) {
         bestDist = dist;

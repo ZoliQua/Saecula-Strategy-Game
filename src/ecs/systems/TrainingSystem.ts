@@ -39,7 +39,8 @@ export class TrainingSystem {
       'owner',
     );
     for (const trainer of trainers) {
-      if ((trainer as Entity).underConstruction) continue;
+      // A collapsing (dying) building trains nothing; its queue is lost with it.
+      if ((trainer as Entity).underConstruction || (trainer as Entity).dying) continue;
       const entry = trainer.trainingQueue.entries[0];
       if (!entry) continue;
       entry.elapsed += dt;

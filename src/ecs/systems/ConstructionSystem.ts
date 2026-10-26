@@ -37,7 +37,8 @@ export class ConstructionSystem {
     const builders = this.world.with('position', 'movable', 'buildCommand', 'owner');
     const sites = new Map<number, Site>();
     for (const s of this.world.with('building', 'underConstruction', 'health', 'position')) {
-      if (s.id !== undefined) sites.set(s.id, s);
+      // A destroyed (dying) site can't be worked on: its builders are released below.
+      if (s.id !== undefined && !(s as Entity).dying) sites.set(s.id, s);
     }
 
     for (const b of [...builders]) {

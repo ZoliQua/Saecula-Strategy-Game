@@ -21,7 +21,7 @@ export class ResearchSystem {
     // Research in a destroyed building is lost without refund (AoE convention).
     for (const building of [...this.world.with('research', 'owner')]) {
       const research = building.research;
-      if ((building as Entity).underConstruction) continue;
+      if ((building as Entity).underConstruction || (building as Entity).dying) continue;
       research.elapsed += dt;
       if (research.elapsed < research.totalTime) continue;
       const { techId } = research;

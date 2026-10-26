@@ -35,7 +35,7 @@ export class PopulationSystem {
     const perHouse = player ? houseBonus(player) : 0;
     for (const b of this.world.with('building', 'owner')) {
       if (b.owner.playerId !== this.playerId) continue;
-      if ((b as { underConstruction?: unknown }).underConstruction) continue;
+      if ((b as { underConstruction?: unknown; dying?: unknown }).underConstruction || (b as { dying?: unknown }).dying) continue;
       cap += BUILDING_BALANCE[b.building.type].popBonus;
       if (b.building.type === 'house') cap += perHouse;
     }
