@@ -67,8 +67,9 @@ export class CombatSystem {
       'attackIntent',
       'owner',
     );
-    for (const a of attackers) {
-      this.tick(a, deltaMs);
+    // Snapshot: a kill also strips the victim's attackIntent, which would shift the live query mid-loop.
+    for (const a of [...attackers]) {
+      if (a.attackIntent) this.tick(a, deltaMs);
     }
   }
 

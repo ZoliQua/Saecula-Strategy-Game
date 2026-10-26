@@ -92,4 +92,20 @@ describe('CombatSystem', () => {
     combat.update(100);
     expect(attacker.movable!.path.length).toBeGreaterThan(0);
   });
+
+  it('a kill that also ends the victim\'s own attack does not break the attacker loop', () => {
+    const map = new MapData(16, 16, TERRAIN.grass);
+    const world = createEcsWorld();
+    // Pairs fighting back: each victim is one hit from death and attacks its killer.
+    const fighters = [0, 1, 2].flatMap((i) => {
+      const a = createUnit(world, { type: 'swordsman', tile: { tx: 2, ty: 2 + i * 3 }, playerId: 1 });
+      const b = createUnit(world, { type: 'villager', tile: { tx: 3, ty: 2 + i * 3 }, playerId: 2 });
+      b.health!.current = 1;
+      world.addComponent(b, 'attackIntent', { targetId: a.id! });
+      world.addComponent(a, 'attackIntent', { targetId: b.id! });
+      return [a, b];
+    });
+    expect(() => new CombatSystem(world, map).update(100)).not.toThrow();
+    expect(fighters.filter((f) => f.dying).length).toBe(3);
+  });
 });
