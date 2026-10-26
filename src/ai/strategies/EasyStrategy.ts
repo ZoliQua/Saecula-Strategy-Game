@@ -1,4 +1,5 @@
 import type { TileCoord } from '../../iso/coordinates';
+import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import type { Entity } from '../../ecs/components';
@@ -162,6 +163,8 @@ export class EasyStrategy implements AIStrategy {
     type: 'house' | 'barracks',
     origin: TileCoord,
   ): void {
+    const existing = countPlayerBuildings(ctx.world.entities, ctx.player.id, type);
+    if (buildBlocker(type, ctx.player.age, existing) !== null) return;
     const spec = BUILDING_SPECS[type].cost;
     if (ctx.player.resources.wood < spec.wood) return;
     ctx.player.resources.wood -= spec.wood;

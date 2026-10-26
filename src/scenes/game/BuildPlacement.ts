@@ -5,8 +5,9 @@ import type { EcsWorld } from '../../ecs/world';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import type { TileCoord } from '../../iso/coordinates';
 import { tileToScreen } from '../../iso/coordinates';
+import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import type { MapData } from '../../map/MapData';
-import type { BuildingType } from '../../types';
+import type { AgeId, BuildingType } from '../../types';
 import { uiStore } from '../../ui/store';
 
 /** Building placement: translucent ghost under the cursor and site creation. */
@@ -19,7 +20,15 @@ export class BuildPlacement {
     private readonly mapData: MapData,
     private readonly selection: SelectionSystem,
     private readonly getHoverTile: () => TileCoord | null,
+    private readonly getAge: () => AgeId = () => 1,
+    private readonly playerId = 1,
   ) {}
+
+  /** Age gate and per-player limits; the UI greys these out but this is the rule. */
+  canBuildType(type: BuildingType): boolean {
+    const existing = countPlayerBuildings(this.world.entities, this.playerId, type);
+    return buildBlocker(type, this.getAge(), existing) === null;
+  }
 
   canPlaceBuilding(origin: TileCoord, w: number, h: number): boolean {
     for (let dy = 0; dy < h; dy++) {
@@ -34,6 +43,7 @@ export class BuildPlacement {
 
   tryPlaceBuilding(origin: TileCoord, type: BuildingType): void {
     const spec = BUILDING_SPECS[type];
+    if (!this.canBuildType(type)) return;
     if (!this.canPlaceBuilding(origin, spec.width, spec.height)) return;
     const state = uiStore.getState();
     if (
@@ -51,7 +61,7 @@ export class BuildPlacement {
     const site = createBuilding(this.world, {
       type,
       origin,
-      playerId: 1,
+      playerId: this.playerId,
       mapData: this.mapData,
       underConstruction: true,
     });
@@ -86,7 +96,7 @@ export class BuildPlacement {
     const { sx, sy } = tileToScreen(bottom);
     this.ghost.setPosition(sx, sy + 16);
     this.ghost.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / this.ghost.height);
-    const valid = this.canPlaceBuilding(hover, spec.width, spec.height);
+    const valid = this.canBuildType(placement) && this.canPlaceBuilding(hover, spec.width, spec.height);
     this.ghost.setTint(valid ? 0xbfffd0 : 0xff6666);
     this.ghost.setDepth(bottom.tx + bottom.ty + 0.25);
     this.ghost.setVisible(true);

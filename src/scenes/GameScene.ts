@@ -6,6 +6,8 @@ import { queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
+import { UNIQUE_BUILDINGS } from '../config/balance';
+import { countPlayerBuildings } from '../game/buildRules';
 import { DAY_START_PHASE } from '../config/visual';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { tileToScreen } from '../iso/coordinates';
@@ -112,6 +114,8 @@ export class GameScene extends Phaser.Scene {
       mapData,
       this.runner.selection,
       () => pointer?.getHoverTile() ?? null,
+      () => this.players.human()?.age ?? 1,
+      this.players.human()?.id ?? 1,
     );
     pointer = new PointerInput(
       this,
@@ -203,8 +207,22 @@ export class GameScene extends Phaser.Scene {
     this.gameElapsedMs += delta;
     if (Math.floor(this.gameElapsedMs / 1000) !== prevSecond) {
       uiStore.getState().setGameTime(this.gameElapsedMs);
+      this.syncUniqueBuildings();
     }
     this.checkVictory();
+  }
+
+  /** Publishes which limited buildings (wonder) the human already has, for the build menu. */
+  private syncUniqueBuildings(): void {
+    const human = this.players.human();
+    if (!human) return;
+    const owned = [...UNIQUE_BUILDINGS].filter(
+      (t) => countPlayerBuildings(this.world.entities, human.id, t) > 0,
+    );
+    const prev = uiStore.getState().uniqueBuilt;
+    if (owned.length !== prev.length || owned.some((t, i) => t !== prev[i])) {
+      uiStore.getState().setUniqueBuilt(owned);
+    }
   }
 
   private checkVictory(): void {

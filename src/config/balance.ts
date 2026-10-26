@@ -139,6 +139,9 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },
 };
 
+/** Buildings a player may own only one of (finished or under construction). */
+export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
+
 /** Tiles per second used by the game. */
 export function gameSpeed(tableSpeed: number): number {
   return tableSpeed * SPEED_SCALE;

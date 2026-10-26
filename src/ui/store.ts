@@ -58,6 +58,8 @@ export interface UiState {
   currentAge: AgeId;
   /** Technologies the human has finished. */
   researchedTechs: readonly TechId[];
+  /** Limited buildings (wonder) the human already owns or is building. */
+  uniqueBuilt: readonly BuildingType[];
   selectedEntity: SelectedEntityInfo | null;
   /** How many entities are selected (primary is `selectedEntity`). */
   selectionCount: number;
@@ -71,6 +73,7 @@ export interface UiActions {
   setPopulation: (p: Partial<Population>) => void;
   setAge: (age: AgeId) => void;
   setResearchedTechs: (techs: readonly TechId[]) => void;
+  setUniqueBuilt: (types: readonly BuildingType[]) => void;
   setSelectedEntity: (info: SelectedEntityInfo | null, count?: number) => void;
   setPlacementBuilding: (type: BuildingType | null) => void;
   setGameTime: (ms: number) => void;
@@ -83,6 +86,7 @@ const INITIAL: UiState = {
   population: { current: 3, cap: 10 },
   currentAge: 1,
   researchedTechs: [],
+  uniqueBuilt: [],
   selectedEntity: null,
   selectionCount: 0,
   placementBuilding: null,
@@ -98,6 +102,7 @@ export function createUiStore(): StoreApi<UiStore> {
       set((state) => ({ population: { ...state.population, ...p } })),
     setAge: (age) => set({ currentAge: age }),
     setResearchedTechs: (techs) => set({ researchedTechs: techs }),
+    setUniqueBuilt: (types) => set({ uniqueBuilt: types }),
     setSelectedEntity: (info, count) =>
       set({ selectedEntity: info, selectionCount: count ?? (info ? 1 : 0) }),
     setPlacementBuilding: (type) => set({ placementBuilding: type }),
@@ -111,6 +116,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     population: { ...INITIAL.population },
     currentAge: INITIAL.currentAge,
     researchedTechs: [],
+    uniqueBuilt: [],
     selectedEntity: null,
     selectionCount: 0,
     placementBuilding: null,

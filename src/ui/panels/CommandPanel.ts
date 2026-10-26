@@ -28,6 +28,12 @@ export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'lumber_camp',
   'mining_camp',
   'barracks',
+  'archery_range',
+  'stable',
+  'blacksmith',
+  'tower',
+  'foundry',
+  'wonder',
 ];
 
 type Cost = Readonly<Resources>;
@@ -142,6 +148,7 @@ export class CommandPanel {
       pop: 0,
       requiredAge: buildingRequiredAge(type),
       time: spec.buildTime,
+      busy: (state) => (state.uniqueBuilt.includes(type) ? hu.hud.uniqueBuilt : null),
       run: () => uiStore.getState().setPlacementBuilding(type),
     };
   }
