@@ -5,16 +5,11 @@ import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
 /**
- * Fixed seeds; measured (64×64, passive human): age 2 at 15.1 / 14.2 / 13.8 / 13.5 / 14.1 / 12.7 min,
- * first raid 7.8 / 7.7 / 7.5 / 8.0 / 9.4 / 6.5 min.
- *
- * Deliberately NOT in this set (economy pathology, not AI logic — gold miners walking to far center
- * gold once the single 200-gold start mine is gone, and gatherers churning between resources while
- * carrying loads; to be addressed by the richer start economy in Task 17):
- *   - seed 11:   age 2 at 15.8 min (raid 9.0) — covered by the looser test below;
- *   - seed 2024: age 2 at 24.0 min (raid 7.4) — not asserted.
+ * Fixed seeds; measured (64×64, passive human): age 2 at 12.6 / 12.0 / 13.0 / 13.0 / 13.2 / 12.2 / 11.6 / 12.4 min,
+ * first raid 7.0 / 7.7 / 7.3 / 8.0 / 8.9 / 6.3 / 8.0 / 7.7 min. Seeds 11 and 2024 used to be left out (gatherers
+ * ping-ponging between a node and the drop-off with a partial load of another type); GatheringSystem fixed that.
  */
-const SEEDS = [4242, 7, 99, 1234, 555, 8];
+const SEEDS = [4242, 7, 99, 1234, 555, 8, 11, 2024];
 
 interface Milestones {
   age2: number;
@@ -39,20 +34,14 @@ const median = (xs: number[]) => {
   return (s[(s.length - 1) >> 1]! + s[s.length >> 1]!) / 2;
 };
 
-describe('MediumStrategy headless simulation (64×64 meadow, 6 seeds, passive human)', () => {
-  it('on the listed seeds only: raids by 10 min, age 2 by 16 min each (measured worst 15.1), median ≤ 14.5 min', () => {
+describe('MediumStrategy headless simulation (64×64 meadow, 8 seeds, passive human)', () => {
+  it('on the listed seeds: raids by 10 min, age 2 by 15 min each (measured worst 13.2), median ≤ 13.5 min', () => {
     const runs = SEEDS.map(play);
     for (const r of runs) {
       expect(r.firstAttack).toBeLessThanOrEqual(10 * MIN);
-      expect(r.age2).toBeLessThanOrEqual(16 * MIN);
+      expect(r.age2).toBeLessThanOrEqual(15 * MIN);
     }
-    expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(14.5 * MIN);
-  });
-
-  it('slow-gold seed 11 (excluded above) still raids by 10 min and reaches age 2 by 17 min (measured 15.8)', () => {
-    const r = play(11);
-    expect(r.firstAttack).toBeLessThanOrEqual(10 * MIN);
-    expect(r.age2).toBeLessThanOrEqual(17 * MIN);
+    expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(13.5 * MIN);
   });
 
   it('by 26 min has a mixed age-2 army, techs, and has hit the human base (seed 8)', () => {
