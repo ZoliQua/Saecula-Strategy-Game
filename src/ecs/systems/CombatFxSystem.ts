@@ -12,7 +12,7 @@ import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { CombatEmitters } from './combatFx/CombatEmitters';
 import { GROUND_FX_DEPTH, STANDING_FX_DEPTH, tileSeen } from './combatFx/fxContext';
-import { decalAlpha, frameAt, shakeIntensity, shotPose } from './combatFx/fxMath';
+import { decalAlpha, frameAt, releaseLift, shakeIntensity, shotPose } from './combatFx/fxMath';
 import { TimedImages } from './combatFx/TimedImages';
 import type { RenderSystem } from './RenderSystem';
 
@@ -103,7 +103,7 @@ export class CombatFxSystem {
     if (shot.kind !== 'bullet' && shot.kind !== 'cannonball') return;
     if (!this.shows(shot.from.x, shot.from.y)) return;
     const look = SHOT_LOOK[shot.kind];
-    const pose = shotPose(shot.from, shot.to, 0, shot.arcHeight, look.liftFrom, look.liftTo);
+    const pose = shotPose(shot.from, shot.to, 0, shot.arcHeight, releaseLift(shot, look), look.liftTo);
     const d = { x: Math.cos(pose.angle), y: Math.sin(pose.angle) };
     const reach = COMBAT_FX.muzzle[shot.kind];
     const mx = pose.sx + d.x * reach;
@@ -137,7 +137,7 @@ export class CombatFxSystem {
     this.fx.puff(g.sx, g.sy, 2);
     if (shot.kind === 'bullet') return;
     const look = SHOT_LOOK[shot.kind];
-    const end = shotPose(shot.from, shot.to, 1, shot.arcHeight, look.liftFrom, look.liftTo);
+    const end = shotPose(shot.from, shot.to, 1, shot.arcHeight, releaseLift(shot, look), look.liftTo);
     // Planted in the turf: tip in the ground, shaft along the incoming angle.
     const angle = Math.max(0.35, Math.min(Math.PI - 0.35, end.angle));
     const { tx, ty } = { tx: shot.to.x, ty: shot.to.y };

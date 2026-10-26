@@ -10,6 +10,7 @@ import { CombatSystem } from './CombatSystem';
 import { ConstructionSystem } from './ConstructionSystem';
 import { ProjectileSystem } from './ProjectileSystem';
 import { TowerCombatSystem } from './TowerCombatSystem';
+import { releaseLift, towerLaunchHeight } from './combatFx/fxMath';
 
 function setup(fog: FogOfWarData | null = null) {
   const map = new MapData(24, 24, TERRAIN.grass);
@@ -134,5 +135,18 @@ describe('walls in the world', () => {
     for (let i = 0; i < 40; i++) construction.update(1000);
     for (const s of sites) expect(s.underConstruction).toBeUndefined();
     expect(builder.buildCommand).toBeUndefined();
+  });
+
+  it('looses its arrows from the tower top (launch height), units from their hands', () => {
+    const { towers, combat, world, unitAt } = setup();
+    unitAt(12, 10);
+    towers.update(300);
+    combat.update(16);
+    const shots = [...world.with('projectile')];
+    expect(shots).toHaveLength(1);
+    expect(shots[0]!.projectile.launchHeight).toBe(towerLaunchHeight(1));
+    expect(towerLaunchHeight(3)).toBeGreaterThan(towerLaunchHeight(1));
+    expect(releaseLift(shots[0]!.projectile, { liftFrom: 19 })).toBe(towerLaunchHeight(1));
+    expect(releaseLift({}, { liftFrom: 19 })).toBe(19);
   });
 });

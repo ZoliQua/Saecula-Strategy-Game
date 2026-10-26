@@ -17,6 +17,8 @@ export interface FireProjectileOptions {
   readonly target: Entity;
   readonly ownerId: number;
   readonly payload: { meleeAtk: number; pierceAtk: number; bonusVsCavalry: number };
+  /** Cosmetic release height in screen px (towers shoot from their top). */
+  readonly launchHeight?: number;
 }
 
 /**
@@ -42,6 +44,7 @@ export function fireProjectile(world: EcsWorld, o: FireProjectileOptions): Entit
       payload: { ...o.payload },
       targetId: t.id ?? -1,
       aoeRadius: o.kind === 'cannonball' ? CANNON_AOE_RADIUS : 0,
+      ...(o.launchHeight !== undefined ? { launchHeight: o.launchHeight } : {}),
     },
   });
   world.add(entity);

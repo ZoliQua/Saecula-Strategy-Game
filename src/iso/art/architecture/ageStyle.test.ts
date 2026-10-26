@@ -12,15 +12,22 @@ describe('age art keys', () => {
   });
 
   it('falls back to age-1 art for single-style buildings', () => {
-    for (const type of ['wall', 'tower', 'foundry', 'wonder'] as const) {
+    for (const type of ['foundry', 'wonder'] as const) {
       expect(artAgeFor(type, 3)).toBe(1);
       expect(ageArtKey(`building_${type}`, type, 3)).toBe(`building_${type}`);
     }
   });
 
-  it('covers the nine civic / economic / military buildings', () => {
-    expect(AGE_STYLED_BUILDINGS).toHaveLength(9);
-    expect(AGE_STYLED_BUILDINGS).not.toContain('wall');
+  it('covers the civic / economic / military buildings, towers and walls', () => {
+    expect(AGE_STYLED_BUILDINGS).toHaveLength(11);
+    expect(AGE_STYLED_BUILDINGS).toContain('tower');
+    expect(AGE_STYLED_BUILDINGS).toContain('wall');
+    expect(AGE_STYLED_BUILDINGS).not.toContain('wonder');
+  });
+
+  it('styles towers and wall icons per age', () => {
+    expect(ageArtKey('building_tower', 'tower', 2)).toBe('building_tower~a2');
+    expect(ageArtKey('building_wall', 'wall', 3)).toBe('building_wall~a3');
   });
 
   it('adds the team suffix after the age suffix', () => {

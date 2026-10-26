@@ -26,7 +26,7 @@ export class BuildPlacement {
     private readonly getAge: () => AgeId = () => 1,
     private readonly playerId = 1,
   ) {
-    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId);
+    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId, getAge);
   }
 
   /** Walls are laid by dragging a line instead of a single click. */

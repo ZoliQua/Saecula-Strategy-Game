@@ -4,6 +4,8 @@ import { PLAYER_COLORS } from '../game/Player';
 import type { AgeId, BuildingType } from '../types';
 import { ageArtKey, AGE_STYLED_BUILDINGS, artAgeFor, teamArtKey } from './art/architecture/ageStyle';
 import { paintBuilding, paintConstructionSite } from './art/buildings';
+import { paintWallBanner } from './art/walls/wallBanner';
+import { paintWallPiece, wallPieceKey, wallPieceKeyAge } from './art/walls/paintWall';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
   paintArrow,
@@ -69,6 +71,7 @@ export const FX_KEYS = {
   debris: 'fx_debris',
   glow: 'fx_glow',
   explosion: 'fx_explosion',
+  wallBanner: 'fx_wall_banner',
 } as const;
 
 export function constructionKey(size: number): string {
@@ -146,6 +149,17 @@ export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeI
 }
 
 /**
+ * Texture key of a wall piece (wallPiece) in an age style, painting it
+ * on first need. Walls carry no team colour in the texture (banners are
+ * a tinted overlay), so one texture per (piece, age) serves everyone.
+ */
+export function wallTexture(host: TextureHost, piece: number, age: AgeId): string {
+  const key = wallPieceKey(piece, age);
+  if (!host.textures.exists(key)) registerLitArt(host, key, paintWallPiece(piece, age));
+  return key;
+}
+
+/**
  * Frees age styles nobody needs any more (texture memory budget): a
  * team variant once its player has moved past that age, the (type, age)
  * base — which owns the shared normal map — once every player has and
@@ -181,6 +195,11 @@ export function releaseStaleBuildingArt(
       }
       if (minAge > age && !variantsLeft && !inUse.has(ageKey)) drop(ageKey, false);
     }
+  }
+  // Wall pieces own their normal maps (no team variants): drop past ages not on screen.
+  for (const key of host.textures.getTextureKeys()) {
+    const age = wallPieceKeyAge(key);
+    if (age !== undefined && minAge > age && !inUse.has(key)) drop(key, false);
   }
   return removed;
 }
@@ -226,6 +245,11 @@ function generateCombatFx(scene: Phaser.Scene): void {
   once(FX_KEYS.scorch, paintScorch);
   once(FX_KEYS.debris, paintDebris);
   once(FX_KEYS.glow, paintGlow);
+  if (!scene.textures.exists(FX_KEYS.wallBanner)) {
+    const banner = paintWallBanner();
+    registerCanvas(scene, FX_KEYS.wallBanner, banner);
+    attachNormalMap(scene, FX_KEYS.wallBanner, normalMapFor(banner, null, FOLIAGE_DERIVE));
+  }
   if (!scene.textures.exists(FX_KEYS.explosion)) {
     registerStrip(scene, FX_KEYS.explosion, paintExplosionStrip(), EXPLOSION_SIZE * ART_SCALE, EXPLOSION_FRAMES);
   }

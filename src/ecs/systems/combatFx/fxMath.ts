@@ -1,4 +1,7 @@
+import { TOWER_PLATFORM_Z } from '../../../config/visual';
+import { ART_SCALE } from '../../../iso/art/canvas';
 import { tileToScreen } from '../../../iso/coordinates';
+import type { AgeId } from '../../../types';
 import { projectileMotion, type ProjectilePoint } from '../projectileMotion';
 
 /** Where and how a projectile is drawn at flight fraction t. */
@@ -81,4 +84,14 @@ export function decalAlpha(ageMs: number, lifeMs: number, holdFrac: number): num
 export function frameAt(elapsedMs: number, frameMs: number, count: number): number {
   const f = Math.floor(Math.max(0, elapsedMs) / frameMs);
   return f >= count ? -1 : f;
+}
+
+/** Screen px above the ground at which a tower of an age style looses its arrows (the archer's bow). */
+export function towerLaunchHeight(age: AgeId): number {
+  return (TOWER_PLATFORM_Z[age] + 22) / ART_SCALE;
+}
+
+/** Release height of a shot: its own (towers) or its kind's default. */
+export function releaseLift(shot: { readonly launchHeight?: number }, look: { readonly liftFrom: number }): number {
+  return shot.launchHeight ?? look.liftFrom;
 }

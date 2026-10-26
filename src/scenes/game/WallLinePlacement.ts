@@ -9,6 +9,10 @@ import type { TileCoord } from '../../iso/coordinates';
 import { tileToScreen } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { uiStore } from '../../ui/store';
+import { wallNeighbourMaskBy } from '../../game/wallNeighbours';
+import { wallPiece } from '../../iso/art/walls/wallPiece';
+import { wallTexture } from '../../iso/textures';
+import type { AgeId } from '../../types';
 
 /**
  * Click-drag wall laying: press on the first tile, drag, release to place a
@@ -27,6 +31,7 @@ export class WallLinePlacement {
     private readonly mapData: MapData,
     private readonly selection: SelectionSystem,
     private readonly playerId: number,
+    private readonly getAge: () => AgeId = () => 1,
   ) {}
 
   isDragging(): boolean {
@@ -86,8 +91,14 @@ export class WallLinePlacement {
     const plan = this.plan(hover);
     const buildKeys = new Set(plan.build.map((t) => `${t.tx},${t.ty}`));
     const tiles = wallLineTiles(this.start ?? hover, hover);
+    // Ghosts join up along the dragged line in the player's current wall style.
+    const onLine = new Set(tiles.map((t) => `${t.tx},${t.ty}`));
+    const age = this.getAge();
     tiles.forEach((tile, i) => {
       const g = this.ghostAt(i);
+      const piece = wallPiece(wallNeighbourMaskBy((tx, ty) => onLine.has(`${tx},${ty}`), tile), tile.tx, tile.ty);
+      const key = wallTexture(this.scene, piece, age);
+      if (g.texture.key !== key) g.setTexture(key);
       const bottom = tileToScreen(tile);
       g.setPosition(bottom.sx, bottom.sy + 16);
       g.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / g.height);
@@ -116,7 +127,7 @@ export class WallLinePlacement {
   private ghostAt(i: number): Phaser.GameObjects.Image {
     let g = this.ghosts[i];
     if (!g) {
-      g = this.scene.add.image(0, 0, BUILDING_SPECS.wall.textureKey);
+      g = this.scene.add.image(0, 0, wallTexture(this.scene, wallPiece(0, 0, 0), this.getAge()));
       g.setAlpha(0.6).setScale(1 / ART_SCALE);
       this.ghosts[i] = g;
     }

@@ -11,6 +11,7 @@ import type { ProjectileKind } from '../../types';
 import { fireProjectile } from '../archetypes/projectile';
 import type { Entity } from '../components';
 import { faceToward } from './facing';
+import { towerLaunchHeight } from './combatFx/fxMath';
 import type { EcsWorld } from '../world';
 
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
@@ -109,6 +110,9 @@ export class CombatSystem {
         target: target as Entity,
         ownerId: a.owner.playerId,
         payload: attack,
+        ...((a as Entity).building?.type === 'tower'
+          ? { launchHeight: towerLaunchHeight(this.players?.get(a.owner.playerId)?.age ?? 1) }
+          : {}),
       });
       return;
     }

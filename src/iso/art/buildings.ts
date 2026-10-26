@@ -3,18 +3,27 @@ import { BAROQUE_ART } from './architecture/baroque';
 import { MEDIEVAL_ART } from './architecture/medieval';
 import { ROMAN_ART } from './architecture/roman';
 import { SINGLE_STYLE_ART } from './architecture/singleStyle';
+import { TOWER_ART } from './architecture/towers';
 import type { AgeArtSet, BuildingArt } from './architecture/types';
 import { ellipse } from './canvas';
 import { IsoPainter } from './isoPainter';
 import type { LitArt } from './lighting/normalLayer';
+import { paintWallPieceInto, wallMaxHeight } from './walls/paintWall';
+import { wallPiece } from './walls/wallPiece';
+import { WALL_E, WALL_W } from '../../game/wallNeighbours';
 import { css, shade } from './palette';
+
+/** The piece shown for walls outside the world (build menu, placement): a run with a post. */
+const WALL_ICON_PIECE = wallPiece(WALL_E | WALL_W, 0, 0);
 
 const AGE_ART: Record<AgeId, AgeArtSet> = { 1: ROMAN_ART, 2: MEDIEVAL_ART, 3: BAROQUE_ART };
 
-/** The art for a type in an age style, falling back to age 1 (and foundry to the age-1 blacksmith). */
+/** The art for a type in an age style, falling back to age 1. */
 function artFor(type: BuildingType, age: AgeId): BuildingArt {
   if (type === 'foundry') return { ...artFor('blacksmith', 1), size: 3 };
-  if (type === 'tower' || type === 'wall' || type === 'wonder') return SINGLE_STYLE_ART[type];
+  if (type === 'wall') return { size: 1, maxHeight: wallMaxHeight(age), paint: (p) => paintWallPieceInto(p, WALL_ICON_PIECE, age) };
+  if (type === 'tower') return TOWER_ART[age];
+  if (type === 'wonder') return SINGLE_STYLE_ART[type];
   const art = AGE_ART[age][type] ?? ROMAN_ART[type];
   if (!art) throw new Error(`no art for ${type}`);
   return art;

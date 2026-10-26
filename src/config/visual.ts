@@ -144,3 +144,10 @@ export const AGE_UP_FX = {
   dustPerTile: 7,
   sparksPerTile: 5,
 } as const;
+
+/**
+ * Tower archer platforms per age style (art px above the ground, painted
+ * at ART_SCALE): the tower art stands its archer there and tower arrows
+ * are released from that height (towerLaunchHeight).
+ */
+export const TOWER_PLATFORM_Z = { 1: 124, 2: 132, 3: 140 } as const;

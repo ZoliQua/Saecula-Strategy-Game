@@ -8,12 +8,14 @@ import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } fro
 import { PLAYER_COLORS } from '../../game/Player';
 import { tileToScreen } from '../../iso/coordinates';
 import { footprintDepth, tileDepth } from '../../iso/depth';
-import { BUILDING_LIGHT, buildingTexture, constructionKey, releaseStaleBuildingArt } from '../../iso/textures';
+import { BUILDING_LIGHT, buildingTexture, constructionKey, releaseStaleBuildingArt, wallTexture } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { AgeId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { dyingAlpha, DYING_MS, unitAnimState } from './unitAnim';
+import { WallBanners } from './wallJoins/WallBanners';
+import { WallJoinIndex } from './wallJoins/WallJoinIndex';
 
 type Renderable = With<Entity, 'position' | 'renderable'>;
 
@@ -38,8 +40,11 @@ export class RenderSystem {
   private readonly unlight = new Map<Entity, () => void>();
   /** Units showing the white hit flash, by the time it ends. */
   private readonly hitUntil = new Map<Entity, number>();
-  /** Age style each building sprite currently shows (render state, not game state). */
-  private readonly shownAge = new Map<Entity, AgeId>();
+  /** Look each building sprite currently shows: age style (+ wall piece) — render state, not game state. */
+  private readonly shownLook = new Map<Entity, number>();
+  /** Which wall piece (arms + post) each wall segment shows. */
+  private readonly joins = new WallJoinIndex<Renderable>();
+  private readonly banners: WallBanners;
   /** Buildings whose re-skin waits for their age-up effect (AgeUpFxSystem). */
   private readonly heldReskin = new Set<Entity>();
   private ageOf: (playerId: number) => AgeId = () => 1;
@@ -50,6 +55,7 @@ export class RenderSystem {
     this.scene = scene;
     this.world = world;
     this.renderable = this.world.with('position', 'renderable');
+    this.banners = new WallBanners(scene);
 
     this.renderable.onEntityRemoved.subscribe((entity: Renderable) => {
       this.unlight.get(entity)?.();
@@ -61,8 +67,10 @@ export class RenderSystem {
       this.sites.get(entity)?.destroy();
       this.sites.delete(entity);
       this.hitUntil.delete(entity);
-      this.shownAge.delete(entity);
+      this.shownLook.delete(entity);
       this.heldReskin.delete(entity);
+      this.joins.remove(entity);
+      this.banners.remove(entity);
     });
   }
 
@@ -112,11 +120,16 @@ export class RenderSystem {
       if (entity.building) {
         // Hidden buildings keep their old style until seen, and re-skins (which may paint
         // a new texture) are spread over frames, so another player's age-up can't hitch.
-        if (visible && reskinBudget > 0 && !this.heldReskin.has(entity) && this.shownAge.get(entity) !== this.ownerAge(entity)) {
+        if (visible && reskinBudget > 0 && !this.heldReskin.has(entity) && this.shownLook.get(entity) !== this.lookOf(entity)) {
           this.reskin(entity, sprite);
           reskinBudget--;
         }
         this.applyConstruction(sprite, entity);
+        if (entity.building.type === 'wall') {
+          const shownAge = ((this.shownLook.get(entity) ?? 1) % 4) as AgeId;
+          const show = visible && !entity.underConstruction;
+          this.banners.sync(entity, sprite, this.joins.pieceOf(entity), shownAge, teamColor(entity.owner?.playerId ?? 1), show);
+        }
       }
       applyDying(sprite, entity);
       sprite.setVisible(visible);
@@ -156,11 +169,12 @@ export class RenderSystem {
       this.units.set(entity, pair);
       sprite = pair.body;
     } else {
+      if (entity.building) this.joins.add(entity);
       sprite = this.scene.add.sprite(0, 0, this.buildingKey(entity));
       sprite.setScale(SPRITE_SCALE);
       sprite.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / sprite.height);
       lit(sprite);
-      if (entity.building) this.shownAge.set(entity, this.ownerAge(entity));
+      if (entity.building) this.shownLook.set(entity, this.lookOf(entity));
     }
     entity.sprite = sprite;
     // Position first so building-anchored lights land on the right spot.
@@ -174,16 +188,22 @@ export class RenderSystem {
     return this.ageOf(entity.owner?.playerId ?? 1);
   }
 
+  /** Age style plus, for walls, the piece: changes when either does (age < 4). */
+  private lookOf(entity: Renderable): number {
+    const age = this.ownerAge(entity);
+    return entity.building?.type === 'wall' ? age + 4 * (1 + this.joins.pieceOf(entity)) : age;
+  }
+
   private buildingKey(entity: Renderable): string {
     const type = entity.building?.type;
     const playerId = entity.owner?.playerId ?? 1;
+    if (type === 'wall') return wallTexture(this.scene, this.joins.pieceOf(entity), this.ownerAge(entity));
     return type ? buildingTexture(this.scene, type, this.ownerAge(entity), playerId) : entity.renderable.textureKey;
   }
 
   /** Swaps a building sprite to its owner's current age style (texture, origin, lights). */
   private reskin(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {
-    const age = this.ownerAge(entity);
-    this.shownAge.set(entity, age);
+    this.shownLook.set(entity, this.lookOf(entity));
     const key = this.buildingKey(entity);
     if (sprite.texture.key === key) return;
     const cropped = sprite.isCropped;

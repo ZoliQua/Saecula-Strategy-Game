@@ -78,7 +78,7 @@ describe('releaseStaleBuildingArt', () => {
   });
 
   it('never touches the current top age or single-style buildings', () => {
-    const keys = ['building_house~a3', 'building_house~a3@p2', 'building_wall', 'building_wall@p2', 'building_tower@p3'];
+    const keys = ['building_house~a3', 'building_house~a3@p2', 'building_foundry', 'building_wonder@p2', 'building_wall~j256~a3'];
     const { host, map } = fakeHost(keys);
     expect(releaseStaleBuildingArt(host, ages({ 1: 3, 2: 3, 3: 3 }), 3, new Set())).toBe(0);
     expect([...map.keys()].sort()).toEqual([...keys].sort());
@@ -91,5 +91,11 @@ describe('releaseStaleBuildingArt', () => {
     expect(map.has('building_house~a2@p2')).toBe(true);
     expect(map.has('building_house~a2')).toBe(true);
     expect(map.has('building_house')).toBe(true);
+  });
+
+  it('drops wall pieces of ages every player has left, unless shown', () => {
+    const { host, map } = fakeHost(['building_wall~j10~a1', 'building_wall~j266~a1', 'building_wall~j10~a2', 'building_wall~j10~a3']);
+    releaseStaleBuildingArt(host, ages({ 1: 3, 2: 2 }), 2, new Set(['building_wall~j266~a1']));
+    expect([...map.keys()].sort()).toEqual(['building_wall~j10~a2', 'building_wall~j10~a3', 'building_wall~j266~a1']);
   });
 });

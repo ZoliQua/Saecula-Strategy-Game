@@ -124,5 +124,7 @@ export interface Entity {
     targetId: number;
     /** Splash radius in tiles; 0 = single target. */
     aoeRadius: number;
+    /** Cosmetic: release height in screen px (tower tops); absent = the shooter's hands (SHOT_LOOK). */
+    launchHeight?: number;
   };
 }

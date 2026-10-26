@@ -66,7 +66,8 @@ export class AgeUpFxSystem {
     for (const e of this.world.with('building', 'position', 'owner')) {
       const sprite = e.sprite;
       if (e.owner.playerId !== playerId || !sprite || e.dying || !sprite.visible) continue;
-      if (!AGE_STYLED_BUILDINGS.includes(e.building.type)) continue;
+      // Walls re-skin silently: a ring of scaffolds per segment would drown the wave.
+      if (!AGE_STYLED_BUILDINGS.includes(e.building.type) || e.building.type === 'wall') continue;
       if (!Phaser.Geom.Rectangle.Overlaps(view, sprite.getBounds())) continue;
       const fp = e.building.footprint;
       targets.push({ item: e, tx: e.position.tx + fp.width / 2, ty: e.position.ty + fp.height / 2 });

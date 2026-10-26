@@ -8,7 +8,7 @@ import type { ProjectileKind } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { SHOT_SHADOW_DEPTH, STANDING_FX_DEPTH, sunShadow, tileSeen } from './combatFx/fxContext';
-import { shotPose } from './combatFx/fxMath';
+import { releaseLift, shotPose } from './combatFx/fxMath';
 import { ImagePool } from './combatFx/ImagePool';
 
 type Shot = Entity & { projectile: NonNullable<Entity['projectile']> };
@@ -82,7 +82,7 @@ export class ProjectileRenderSystem {
       v.shadow.setVisible(seen && look.shadowWidth > 0);
       if (!seen) continue;
 
-      const pose = shotPose(p.from, p.to, t, p.arcHeight, look.liftFrom, look.liftTo);
+      const pose = shotPose(p.from, p.to, t, p.arcHeight, releaseLift(p, look), look.liftTo);
       const depth = gx + gy + STANDING_FX_DEPTH;
       v.body.setPosition(pose.sx, pose.sy).setDepth(depth);
       if (p.kind !== 'cannonball') v.body.setRotation(pose.angle);
