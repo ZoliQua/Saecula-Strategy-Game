@@ -46,6 +46,8 @@ export const AI_COMMON = {
   buildersPerSite: 2,
   /** Villagers / farms wait for a short pressure squad at most this long past the first-attack time (ms). */
   pressureHoldCapMs: 90_000,
+  /** Resources this close (tiles) to a known enemy building are its base: the AI never sends villagers there. */
+  enemyGroundRadius: 10,
   /** How long an enemy villager's last seen spot is remembered (ms). */
   villagerMemoryMs: 180_000,
 } as const;

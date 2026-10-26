@@ -255,6 +255,14 @@ export const REPATH_RETRY_MS = 1500;
  */
 export const FARM_BALANCE = { capacity: 175, regenPerSec: 0.4 } as const;
 
+/**
+ * A gatherer whose node runs out moves on by itself only to a node of the
+ * same type this close (Chebyshev tiles); beyond that it drops off and
+ * waits for orders, instead of trekking across the map (or into another
+ * player's base) for the globally nearest one.
+ */
+export const GATHER_RETARGET_RADIUS = 8;
+
 /** What one resource tile holds when the map is spawned (a forest tile is one tree, a gold tile one lode piece). */
 export const RESOURCE_NODE_AMOUNT: Readonly<Record<'food' | 'wood' | 'gold', number>> = {
   wood: 100,

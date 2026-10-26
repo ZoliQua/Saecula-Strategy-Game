@@ -4,7 +4,7 @@ import { clearUnitOrders } from '../ecs/orders';
 import type { EcsWorld } from '../ecs/world';
 import type { TileCoord } from '../iso/coordinates';
 import type { ResourceType } from '../types';
-import { nearest, pickGatherType, pickRebalance } from './decisions/gathering';
+import { nearest, onEnemyGround, pickGatherType, pickRebalance } from './decisions/gathering';
 import { villagerTask, type VillagerTask } from './economy';
 import type { WorldView } from './perception';
 
@@ -46,9 +46,16 @@ function workedNodes(view: WorldView): Set<number> {
   return taken;
 }
 
-/** Best node of `type` for a villager at `from`: a free own farm first for food, else the nearest known node. */
+/** Natural nodes the AI may send villagers to: known, and not inside a known enemy base. */
+function workable(view: WorldView, type: ResourceType): Entity[] {
+  return view.resources[type].filter(
+    (n) => n.building !== undefined || !n.position || !onEnemyGround(n.position, view.knownEnemyBuildings, AI_COMMON.enemyGroundRadius),
+  );
+}
+
+/** Best node of `type` for a villager at `from`: a free own farm first for food, else the nearest workable node. */
 function nodeFor(view: WorldView, type: ResourceType, from: TileCoord, taken: Set<number>): Entity | undefined {
-  const nodes = view.resources[type];
+  const nodes = workable(view, type);
   if (type === 'food') {
     const farm = nearest(nodes, from, (n) => n.building !== undefined && n.id !== undefined && !taken.has(n.id));
     if (farm) return farm;
@@ -59,7 +66,7 @@ function nodeFor(view: WorldView, type: ResourceType, from: TileCoord, taken: Se
 
 /** Whether `type` has anything left to gather for this AI. */
 function gatherable(view: WorldView, type: ResourceType, taken: Set<number>): boolean {
-  const nodes = view.resources[type];
+  const nodes = workable(view, type);
   if (type !== 'food') return nodes.length > 0;
   return nodes.some((n) => !n.building || (n.id !== undefined && !taken.has(n.id)));
 }

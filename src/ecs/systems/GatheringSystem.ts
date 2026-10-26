@@ -1,4 +1,5 @@
 import type { With } from 'miniplex';
+import { GATHER_RETARGET_RADIUS } from '../../config/balance';
 import type { TileCoord } from '../../iso/coordinates';
 import { gatherRateMultiplier } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -256,7 +257,10 @@ export class GatheringSystem {
     return best;
   }
 
-  /** Nearest node of `type` for `v`; a farm only if it is its owner's and nobody else works it. */
+  /**
+   * Nearest node of `type` within GATHER_RETARGET_RADIUS of `v`; a farm
+   * only if it is its owner's and nobody else works it.
+   */
   private findNearestNodeOfType(v: Villager, type: ResourceType): ResourceNode | undefined {
     let best: ResourceNode | undefined;
     let bestDist = Infinity;
@@ -264,6 +268,7 @@ export class GatheringSystem {
     for (const n of nodes) {
       if (n.resourceNode.type !== type) continue;
       if (n.resourceNode.amount <= 0) continue;
+      if (Math.max(Math.abs(n.position.tx - v.position.tx), Math.abs(n.position.ty - v.position.ty)) > GATHER_RETARGET_RADIUS) continue;
       const dist = manhattan(v.position, n.position);
       if (dist >= bestDist) continue;
       if ((n as Entity).building && !this.isFreeFarmFor(n as Entity, v)) continue;

@@ -1,6 +1,7 @@
 import type { TileCoord } from '../../iso/coordinates';
 import type { GatherWeights } from '../../config/aiBalance';
 import type { ResourceType } from '../../types';
+import type { KnownBuilding } from '../perception';
 
 const TYPES: readonly ResourceType[] = ['food', 'wood', 'gold'];
 
@@ -75,6 +76,21 @@ export function nearest<T extends { position?: TileCoord }>(
     }
   }
   return best;
+}
+
+/**
+ * True when `p` lies within `radius` tiles (Chebyshev, from the footprint
+ * edge) of a building the AI knows belongs to an enemy: that gold or
+ * berry patch is someone else's base, not a place to send villagers.
+ * Walls don't count: they run far out (a fortress ring) and mark no base.
+ */
+export function onEnemyGround(p: TileCoord, known: readonly KnownBuilding[], radius: number): boolean {
+  return known.some((b) => {
+    if (b.type === 'wall') return false;
+    const dx = Math.max(b.position.tx - p.tx, 0, p.tx - (b.position.tx + b.footprint.width - 1));
+    const dy = Math.max(b.position.ty - p.ty, 0, p.ty - (b.position.ty + b.footprint.height - 1));
+    return Math.max(dx, dy) <= radius;
+  });
 }
 
 export function chebyshev(a: TileCoord, b: TileCoord): number {

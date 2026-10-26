@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { GATHER_RETARGET_RADIUS } from '../../config/balance';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { uiStore } from '../../ui/store';
@@ -98,5 +99,27 @@ describe('GatheringSystem', () => {
     expect(uiStore.getState().resources.wood).toBe(3);
     expect(villager.gatherer!.carryingType).toBe('gold');
     expect(villager.gatherer!.carrying).toBeGreaterThan(1);
+  });
+
+  it('after its node runs out, a gatherer moves on to a nearby node of the same type but never across the map', () => {
+    const map = new MapData(64, 16, TERRAIN.grass);
+    const world = createEcsWorld();
+    for (const tx of [5, 7, 60]) map.setTile(tx, 5, TERRAIN.forest);
+    const first = createResourceNode(world, { tile: { tx: 5, ty: 5 }, type: 'wood', amount: 0.5 });
+    const near = createResourceNode(world, { tile: { tx: 7, ty: 5 }, type: 'wood', amount: 0.5 });
+    const far = createResourceNode(world, { tile: { tx: 60, ty: 5 }, type: 'wood' });
+    const villager = createVillager(world, { tile: { tx: 6, ty: 5 } });
+    villager.gatherer!.capacity = 20;
+    const system = new GatheringSystem(world, map);
+    villager.gatherIntent = { nodeId: first.id! };
+    for (let i = 0; i < 10; i++) system.update(100);
+    expect(first.resourceNode!.amount).toBeCloseTo(0, 5);
+    // The nearby tree is next (within GATHER_RETARGET_RADIUS)...
+    expect(villager.gatherer!.targetNodeId).toBe(near.id);
+    for (let i = 0; i < 10; i++) system.update(100);
+    // ...but once the patch is gone, the lone tree 53 tiles away is not.
+    expect(near.resourceNode!.amount).toBeCloseTo(0, 5);
+    expect(villager.gatherer!.targetNodeId).not.toBe(far.id);
+    expect(GATHER_RETARGET_RADIUS).toBeLessThan(53);
   });
 });

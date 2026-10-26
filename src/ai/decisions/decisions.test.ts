@@ -13,6 +13,7 @@ import {
   enemyClassShares,
   findPlacement,
   needsHouse,
+  onEnemyGround,
   nextExploreTarget,
   nextUnitToTrain,
   pickAttackTarget,
@@ -40,6 +41,19 @@ describe('gathering decisions', () => {
     expect(pickRebalance({ food: 5, wood: 4, gold: 0 }, w, all)).toBeNull();
     expect(pickRebalance({ food: 8, wood: 2, gold: 0 }, w, all)).toEqual({ from: 'food', to: 'wood' });
     expect(pickRebalance({ food: 3, wood: 3, gold: 2 }, w, all)).toEqual({ from: 'gold', to: 'food' });
+  });
+
+  it('a resource next to a known enemy building is enemy ground (not worked)', () => {
+    const known: KnownBuilding[] = [
+      { id: 1, type: 'town_center', ownerId: 1, position: { tx: 30, ty: 8 }, footprint: { width: 3, height: 3 } },
+    ];
+    expect(onEnemyGround({ tx: 28, ty: 12 }, known, 10)).toBe(true);
+    // Measured from the footprint's edge, not its corner.
+    expect(onEnemyGround({ tx: 42, ty: 9 }, known, 10)).toBe(true);
+    expect(onEnemyGround({ tx: 44, ty: 9 }, known, 10)).toBe(false);
+    expect(onEnemyGround({ tx: 30, ty: 40 }, known, 10)).toBe(false);
+    const wall: KnownBuilding = { id: 2, type: 'wall', ownerId: 1, position: { tx: 30, ty: 38 }, footprint: { width: 1, height: 1 } };
+    expect(onEnemyGround({ tx: 30, ty: 40 }, [...known, wall], 10)).toBe(false);
   });
 
   it('leans toward what a savings goal still lacks', () => {
