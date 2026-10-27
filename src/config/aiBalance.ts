@@ -171,9 +171,11 @@ export const AI_MEDIUM: MediumTuning = {
   /**
    * While saving for the next age-up, military / tech spending keeps this
    * share of its cost in reserve (index = current age): all of it in the
-   * Roman age (age-up first), half later so the army keeps growing.
+   * Roman and Middle ages. With half kept in the Middle age the gold went
+   * to the army and the map's gold ran out before 500 were saved (Task 19:
+   * age 3 on 1 of 8 seeds within 40 min; with all of it, 18.8-20.9 min).
    */
-  ageUpReserve: [0, 1, 0.5, 0],
+  ageUpReserve: [0, 1, 1, 0],
   /** Army size kept at home regardless of saving. */
   minDefenders: 5,
   /** Attack when this many military units (scouts excluded) exist. */
@@ -330,7 +332,8 @@ export const AI_HARD: HardTuning = {
   barracksAtVillagers: 5,
   rebalancePerDecision: 2,
   rebalanceMs: 12_000,
-  ageUpReserve: [0, 1, 0.6, 0.2],
+  /** Full reserve through the Middle age too (see AI_MEDIUM.ageUpReserve; Hard reached age 3 on 1 of 3 seeds otherwise). */
+  ageUpReserve: [0, 1, 1, 0.2],
   minDefenders: 6,
   attackWave: 10,
   firstAttackMs: { min: 3 * 60_000, max: 5 * 60_000 },
