@@ -9,6 +9,7 @@ import { cliffField, type CliffField } from '../iso/art/cliffArt';
 import { TERRAIN_LOOK } from '../config/visual';
 import { TerrainSurface } from './TerrainSurface';
 import { buildWaterMask, hasWater } from './waterMask';
+import { marchRelief } from './cliffRelief';
 import { CliffOccluders, planOccluders, type OccluderPlan } from './CliffOccluders';
 import { screenToTile, tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
@@ -95,7 +96,16 @@ export class TileMap {
       .setOrigin(0, 0)
       .setDepth(CLOUD_DEPTH)
       .setAlpha(0.2);
-    this.fog = new FogLayer(scene, mapData.width, mapData.height);
+    const relief = this.cliffs?.relief;
+    const w = mapData.width;
+    // Fog over raised rock follows the rock's own tile (no cliff silhouettes leaking at fog borders).
+    const rockAt = relief
+      ? (u: number, v: number) => {
+          const hit = marchRelief(relief, u, v);
+          return hit ? hit.ty * w + hit.tx : -1;
+        }
+      : null;
+    this.fog = new FogLayer(scene, mapData.width, mapData.height, rockAt);
   }
 
   private bakeTerrain(plan: OccluderPlan | null): void {

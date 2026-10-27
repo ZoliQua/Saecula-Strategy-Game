@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
 import { FOG_UNEXPLORED, type FogOfWarData } from './FogOfWarData';
-import { fogAlphaTarget, stepFogAlpha } from './fogAlpha';
+import { fogAlphaTarget, fogOwners, stepFogAlpha } from './fogAlpha';
 
 const FOG_DEPTH = 10_000;
 /** Canvas pixels per tile. */
@@ -10,6 +10,9 @@ const RES = 4;
 const PAD = 3;
 const REDRAW_INTERVAL_MS = 60;
 const FOG_RGB = '9,12,18';
+const FOG_R = 9;
+const FOG_G = 12;
+const FOG_B = 18;
 
 /**
  * Soft fog of war. Per-tile alpha lives in a small canvas (RES px per
@@ -28,12 +31,16 @@ export class FogLayer {
   private sinceRedraw = REDRAW_INTERVAL_MS;
   private settled = false;
   private hasTarget = false;
+  /** With cliffs: tile whose fog applies per canvas pixel (see fogOwners), and the pixel buffer it is drawn through. */
+  private readonly owners: Int32Array | null;
+  private readonly pixels: ImageData | null;
   private static seq = 0;
 
   constructor(
     scene: Phaser.Scene,
     private readonly width: number,
     private readonly height: number,
+    rockAt: ((u: number, v: number) => number) | null = null,
   ) {
     const cw = (width + PAD * 2) * RES;
     const ch = (height + PAD * 2) * RES;
@@ -49,6 +56,8 @@ export class FogLayer {
     this.rawCtx = ctx;
     this.current = new Float32Array(width * height).fill(1);
     this.target = new Float32Array(width * height).fill(1);
+    this.owners = rockAt ? fogOwners(width, height, RES, PAD, rockAt) : null;
+    this.pixels = rockAt ? ctx.createImageData(cw, ch) : null;
 
     const image = scene.add.image(0, 0, key).setOrigin(0, 0);
     image.setAngle(45);
@@ -93,6 +102,32 @@ export class FogLayer {
     const ctx = this.rawCtx;
     const cw = this.raw.width;
     const ch = this.raw.height;
+    if (this.owners && this.pixels) this.drawOwned(this.owners, this.pixels);
+    else this.drawTiles(ctx, cw, ch);
+    const out = this.texture.getContext();
+    out.clearRect(0, 0, cw, ch);
+    out.filter = 'blur(3px)';
+    out.drawImage(this.raw, 0, 0);
+    out.filter = 'none';
+    this.texture.refresh();
+  }
+
+  /** Per pixel, the fog of the tile whose surface shows there (raised rock takes its own tile's fog). */
+  private drawOwned(owners: Int32Array, img: ImageData): void {
+    const d = img.data;
+    for (let i = 0; i < owners.length; i++) {
+      const t = owners[i] ?? -1;
+      const a = t < 0 ? 1 : (this.current[t] ?? 1);
+      const o = i * 4;
+      d[o] = FOG_R;
+      d[o + 1] = FOG_G;
+      d[o + 2] = FOG_B;
+      d[o + 3] = Math.round(a * 255);
+    }
+    this.rawCtx.putImageData(img, 0, 0);
+  }
+
+  private drawTiles(ctx: CanvasRenderingContext2D, cw: number, ch: number): void {
     ctx.clearRect(0, 0, cw, ch);
     ctx.fillStyle = `rgba(${FOG_RGB},1)`;
     ctx.fillRect(0, 0, cw, ch);
@@ -109,12 +144,6 @@ export class FogLayer {
         }
       }
     }
-    const out = this.texture.getContext();
-    out.clearRect(0, 0, cw, ch);
-    out.filter = 'blur(3px)';
-    out.drawImage(this.raw, 0, 0);
-    out.filter = 'none';
-    this.texture.refresh();
   }
 
   destroy(): void {
