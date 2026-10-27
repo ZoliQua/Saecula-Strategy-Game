@@ -175,9 +175,10 @@ export class SystemRunner {
     this.population.update();
     this.fogOfWar.update(delta);
     this.tileMap.applyFog(this.fogData);
-    this.selection.update();
     this.render.update();
     this.xray.update();
+    // After the X-ray: selection rings follow this frame's raised depths (xray.raisedDepth).
+    this.selection.update();
     this.buildingFx.update(delta);
     this.projectileRender.update();
     this.healthBars.update();
