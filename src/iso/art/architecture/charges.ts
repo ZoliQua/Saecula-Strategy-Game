@@ -11,7 +11,7 @@ import { ENGLISH_CHARGES } from './english/englishCharge';
 export type ChargePainter = (ctx: Ctx, x: number, y: number, s: number) => void;
 
 /** The base (Hungarian) charge: the double cross (kettőskereszt) in white. */
-const BASE_CHARGES = {
+export const BASE_CHARGES = {
   double_cross: (ctx, x, y, s) => {
     ctx.fillStyle = 'rgba(250,244,230,.92)';
     ctx.fillRect(x - s * 0.1, y - s * 0.8, s * 0.2, s * 1.5);

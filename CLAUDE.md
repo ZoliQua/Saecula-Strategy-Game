@@ -705,7 +705,9 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
      `UnitLookId`) és a nép `CIV_DEFS` sora (`available: true` csak akkor,
      ha a nép teljesen kész).
   2. `src/iso/art/architecture/<nép>/`: stílusok, festők, Csoda,
-     címer-töltet; egy-egy sor a `registry.ts`-ben és a `charges.ts`-ben.
+     címer-töltet; egy-egy sor a `registry.ts`-ben és a `charges.ts`-ben;
+     saját festőcsaládnál egy `ArchFamily` tag a `style.ts`-ben. A legalább
+     két nép által használt festő a `architecture/kits/` mappába kerül.
   3. `src/iso/art/walls/<nép>/`: falstílusok; egy sor a `wallStyles.ts`-ben.
   4. `src/iso/art/units/<nép>/`: kinézet, felszerelés, anyagok; egy-egy sor
      a `looks.ts`-ben és a `gearRegistry.ts`-ben.

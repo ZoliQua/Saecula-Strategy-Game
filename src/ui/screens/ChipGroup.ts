@@ -31,11 +31,13 @@ export class ChipGroup<T extends string> {
     this.value = value;
     this.root = el('div', { class: `chip-group chips-${name}`, role: 'radiogroup', 'aria-label': label });
     items.forEach((item, i) => {
+      const descId = item.description ? `chip-${name}-${item.value}-desc` : undefined;
       const b = el(
         'button',
-        { class: 'pick-chip', type: 'button', role: 'radio', 'aria-checked': false, 'aria-description': item.description },
+        { class: 'pick-chip', type: 'button', role: 'radio', 'aria-checked': false, 'aria-describedby': descId },
         el('i', { class: 'pick-swatch', style: `background:${item.swatch}`, 'aria-hidden': 'true' }),
         el('span', { class: 'pick-label' }, item.label),
+        descId ? el('span', { class: 'sr-only', id: descId }, item.description) : null,
       );
       b.addEventListener('click', () => this.pick(item.value));
       b.addEventListener('keydown', (e) => this.onKey(e, i));
@@ -47,10 +49,11 @@ export class ChipGroup<T extends string> {
 
   set(value: T): void {
     this.value = value;
-    const idx = Math.max(0, this.items.findIndex((it) => it.value === value));
+    // An unknown value checks nothing; the first chip still takes Tab focus.
+    const idx = this.items.findIndex((it) => it.value === value);
     this.buttons.forEach((b, i) => {
       b.setAttribute('aria-checked', String(i === idx));
-      b.tabIndex = i === idx ? 0 : -1;
+      b.tabIndex = i === Math.max(0, idx) ? 0 : -1;
     });
   }
 

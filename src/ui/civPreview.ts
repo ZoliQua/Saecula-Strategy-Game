@@ -47,16 +47,17 @@ export function paintNextCivPreview(textures: Phaser.Textures.TextureManager): C
   // Player 1's variant of the base, should player 1 not be this civ's base owner (in a match).
   const variantKey = teamArtKey(ageKey, 1, 0);
   const had = { base: textures.exists(ageKey), variant: textures.exists(variantKey) };
-  const key = buildingTexture({ textures }, 'town_center', 1, 1, civ);
   let preview: CivPreview | null = null;
   try {
+    // Inside the try: a half-written civ painter throws here.
+    buildingTexture({ textures }, 'town_center', 1, 1, civ);
     preview = paintPreview(textures, ageKey);
   } catch (err) {
     // A broken paint must not throw every frame: the card shows its placeholder instead.
     console.warn(`civ preview failed (${civ})`, err);
   } finally {
     // A team variant (player 1 is not this civ's base owner) goes before its base.
-    if (key !== ageKey && !had.variant) releaseBuildingTexture({ textures }, key);
+    if (!had.variant) releaseBuildingTexture({ textures }, variantKey);
     if (!had.base) releaseBuildingTexture({ textures }, ageKey);
   }
   // A failed paint (no canvas) still counts as done, so it is not retried every frame.

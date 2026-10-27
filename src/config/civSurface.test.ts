@@ -41,7 +41,9 @@ function sourceFiles(dir: string): string[] {
 }
 
 const rel = (path: string): string => relative(SRC, path).split(sep).join('/');
-const inCivFolder = (file: string): boolean => CIV_IDS.some((civ) => file.split('/').slice(0, -1).includes(civ));
+/** A civ's own art folders: iso/art/(architecture|walls|units)/<civ>/. */
+const inCivFolder = (file: string): boolean =>
+  CIV_IDS.some((civ) => new RegExp(`^iso/art/(architecture|walls|units)/${civ}/`).test(file));
 
 /** Source without comments (a civ named in prose is fine). */
 function code(text: string): string {
@@ -82,6 +84,13 @@ describe('civ extension surface', () => {
     expect(f, painter).toBeDefined();
     const imports = [...(f?.text ?? '').matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1] ?? '');
     expect(imports.filter((spec) => CIV_IDS.some((civ) => spec.split('/').includes(civ)))).toEqual([]);
+  });
+
+  it("accepts only a civ's own art folders, not any folder named after a civ", () => {
+    expect(inCivFolder('iso/art/units/english/englishGear.ts')).toBe(true);
+    expect(inCivFolder('iso/art/architecture/german/germanStyles.ts')).toBe(true);
+    expect(inCivFolder('ai/german/plan.ts')).toBe(false);
+    expect(inCivFolder('ui/english/panel.ts')).toBe(false);
   });
 
   it('spots civ ids in code, not in comments or import paths', () => {

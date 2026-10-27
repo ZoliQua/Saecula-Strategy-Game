@@ -77,7 +77,7 @@ describe.each(LOOKS)('%s unit sheets, packed per frame', (civ) => {
       const g = sheetGeometry(type, civ);
       ratios[type] = +((g.width * g.height) / m4BlockArea(type, civ)).toFixed(3);
     }
-    console.log(`${civ} packed sheet / M4 block area:`, JSON.stringify(ratios));
+    if (process.env['PRINT_ART_HASHES']) console.log(`${civ} packed sheet / M4 block area:`, JSON.stringify(ratios));
     for (const ratio of Object.values(ratios)) expect(ratio).toBeLessThanOrEqual(0.6);
   });
 });

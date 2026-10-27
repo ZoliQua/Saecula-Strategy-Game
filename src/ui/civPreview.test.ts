@@ -15,6 +15,7 @@ interface FakeCanvas {
 }
 
 let contexts = true;
+let paintThrows = false;
 
 function fakeCanvas(width = 300, height = 150): FakeCanvas {
   const ctx = {
@@ -28,7 +29,10 @@ function fakeCanvas(width = 300, height = 150): FakeCanvas {
 }
 
 vi.mock('../iso/art/buildings', () => ({
-  paintBuilding: () => ({ canvas: fakeCanvas(220, 180), normal: fakeCanvas(220, 180), volume: [], glows: [{ x: 40, y: 60, r: 3 }], lights: [], smoke: [] }),
+  paintBuilding: () => {
+    if (paintThrows) throw new Error('half-written painter');
+    return { canvas: fakeCanvas(220, 180), normal: fakeCanvas(220, 180), volume: [], glows: [{ x: 40, y: 60, r: 3 }], lights: [], smoke: [] };
+  },
   paintWonderStage: () => ({ canvas: fakeCanvas(), normal: null, volume: [], glows: [], lights: [], smoke: [] }),
 }));
 vi.mock('../iso/art/trimArt', () => ({
@@ -74,6 +78,7 @@ describe('civ previews', () => {
   beforeEach(() => {
     vi.resetModules();
     contexts = true;
+    paintThrows = false;
     (globalThis as Record<string, unknown>)['document'] = { createElement: () => fakeCanvas() };
   });
 
@@ -122,5 +127,20 @@ describe('civ previews', () => {
     expect(preview.civPreview('hungarian')).toEqual({ art: '', glow: '' });
     expect(map.size).toBe(0);
     expect(preview.paintNextCivPreview(textures)).toBe('english');
+  });
+
+  it('a painter that throws marks that civ failed once (placeholder, no retry) and never throws out', async () => {
+    const { preview } = await load();
+    const { textures, map } = fakeTextures();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    paintThrows = true;
+    expect(() => preview.paintNextCivPreview(textures)).not.toThrow();
+    expect(preview.civPreview('hungarian')).toEqual({ art: '', glow: '' });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(map.size).toBe(0);
+    expect(preview.paintNextCivPreview(textures)).toBe('english');
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(preview.paintNextCivPreview(textures)).toBeNull();
+    warn.mockRestore();
   });
 });
