@@ -167,8 +167,9 @@ export class CliffChunkBake {
 
   /**
    * After pass 1: darkens open ground right beside raised rock on screen
-   * (a soft dark line along every outline). Edge-on ridges, whose side
-   * walls are invisible in the iso view, read as height through it.
+   * (a soft dark line along every outline, beside it on the row or above
+   * it on screen). Edge-on ridges, whose side walls are invisible in the
+   * iso view, and back rims read as height through it.
    */
   outline(data: Uint8ClampedArray): void {
     const { sw, sh } = this;
@@ -180,6 +181,8 @@ export class CliffChunkBake {
         for (let s = 1; s <= OUTLINE_REACH && d === 0; s++) {
           if (i - s >= 0 && (this.codes[k - s] ?? NO_OWNER) >= 0) d = s;
           else if (i + s < sw && (this.codes[k + s] ?? NO_OWNER) >= 0) d = s;
+          // Rock below on screen: a back rim, nearly horizontal on screen where the row search misses it.
+          else if (j + s < sh && (this.codes[k + s * sw] ?? NO_OWNER) >= 0) d = s;
         }
         if (d === 0) continue;
         const f = OUTLINE_SHADE[d - 1] ?? 1;

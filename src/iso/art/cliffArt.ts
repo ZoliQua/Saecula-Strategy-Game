@@ -14,9 +14,13 @@ import { baked } from './lighting/normalLayer';
 import { dot, normalize, tileToView, type Vec3 } from './lighting/viewSpace';
 import { fbm, hash2, mix, shade, valueNoise } from './palette';
 
-/** Plateau tops: cool pale limestone, clearly apart from dirt (#8a7352) and dry grass (#93a849). */
-const ROCK_TOP = 0x8e8d88;
-const ROCK_TOP_LIGHT = 0xbdb9ae;
+/**
+ * Plateau tops: cool pale limestone, clearly apart from dirt (#8a7352) and
+ * dry grass (#93a849). A touch of blue keeps them grey under the warm
+ * dusk sun instead of warming to a dirt brown.
+ */
+const ROCK_TOP = 0x898d91;
+const ROCK_TOP_LIGHT = 0xb8bbbb;
 const HIGHLAND_GRASS = 0x5f7535;
 const HIGHLAND_GRASS_DRY = 0x87884a;
 const FACE_WARM = 0xa38a68;
@@ -136,7 +140,7 @@ export function cliffColour(field: CliffField, hit: ReliefHit, wx: number, wy: n
     else k = 1;
     // Grass keeps back from the rim; the rim itself is a bright worn lip.
     const rim = Math.max(0, Math.min(1, (sampleRelief(r, r.edge, u, v) - 0.5) / 0.35));
-    const grass = Math.max(0, Math.min(1, (sampleRelief(r, field.grass, u, v) - 0.5) / 0.16)) * rim;
+    const grass = Math.max(0, Math.min(1, (sampleRelief(r, field.grass, u, v) - 0.56) / 0.16)) * rim;
     R *= k;
     G *= k;
     B *= k;
