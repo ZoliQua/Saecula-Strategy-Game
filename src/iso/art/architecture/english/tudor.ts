@@ -1,4 +1,3 @@
-import { ellipse } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { archedOpening, R } from '../facade';
@@ -8,7 +7,7 @@ import { roofLift, styledGable } from '../styledRoofs';
 import { medievalTower } from '../towers';
 import { parapet } from '../towerParts';
 import type { AgeArtSet } from '../types';
-import { brickStack, hangingBanner, hedge } from './englishParts';
+import { brickStack, dummy, hangingBanner, hedge } from './englishParts';
 import { framedGable, halfTimberLattice, jettyStorey, leadedWindow } from './halfTimber';
 import { normanKeep } from './normanKeep';
 import { tudorWorkArt } from './tudorWork';
@@ -19,7 +18,7 @@ import { tudorWorkArt } from './tudorWork';
  * steep red-brown peg-tile roofs and tall clustered brick stacks.
  */
 
-/** Stone ground storey with framing-free leaded windows (face-local painters supplied by the caller). */
+/** Plain fieldstone ground storey (windows and doors are painted on its faces by the caller). */
 function stoneStorey(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, z1: number): void {
   p.box(u0, v0, u1, v1, 0, z1, { color: s.palette.stone, detail: 'fieldstone' });
 }
@@ -148,15 +147,7 @@ export function tudorArt(s: ArchStyle): AgeArtSet {
         torch(p, 2.28, 1.05, 26, 2.5, 1.05);
         gatehouse(p, s, 2.25, 2.25, 0.62, 84, team);
         // Yard: pike rack and dummies.
-        for (const u of [0.55, 1.05, 1.55]) {
-          const [x, y] = p.p(u, 2.3, 0);
-          ctx.fillStyle = '#3a2e25';
-          ctx.fillRect(x - 1.5, y - 26, 3, 26);
-          ctx.fillRect(x - 9, y - 20, 18, 3);
-          ellipse(ctx, x, y - 29, 4.5, 4.5);
-          ctx.fillStyle = '#b9a06a';
-          ctx.fill();
-        }
+        for (const u of [0.55, 1.05, 1.55]) dummy(p, u, 2.3, 0x3a2e25);
         for (let k = 0; k < 6; k++) post(p, 0.3 + k * 0.08, 2.85, 0, 46, 0.9, 0x6b5440);
         hedge(p, 0.1, 2.92, 2.1, 2.92, 10);
       },

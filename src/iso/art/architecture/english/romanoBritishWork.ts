@@ -46,6 +46,53 @@ function granary(p: IsoPainter, s: ArchStyle, uc: number, vc: number, r: number)
   coneRoof(p, uc, vc, r + 0.1, 26, 26 * s.roof.pitch, s.palette.thatch, 'thatch');
 }
 
+/** Timber shear legs (tripod) over a shaft with a rope wheel at the apex. */
+function shearLegs(p: IsoPainter, s: ArchStyle, u: number, v: number, h: number): void {
+  const ctx = p.ctx;
+  const [sx, sy] = p.p(u, v, 0);
+  ellipse(ctx, sx, sy, 16, 8);
+  ctx.fillStyle = '#504a42';
+  ctx.fill();
+  ellipse(ctx, sx, sy, 11, 5.5);
+  ctx.fillStyle = '#0d0a08';
+  ctx.fill();
+  const apex = p.p(u, v, h);
+  ctx.strokeStyle = css(s.palette.timber);
+  ctx.lineCap = 'round';
+  for (const [du, dv, w] of [[-0.3, -0.3, 3.2], [0.32, -0.12, 3.6], [-0.12, 0.32, 4]] as const) {
+    const [x, y] = p.p(u + du, v + dv, 0);
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(apex[0], apex[1]);
+    ctx.stroke();
+    p.normalCylinder(Math.min(x, apex[0]) - 2, apex[1], Math.abs(x - apex[0]) + 4, y - apex[1]);
+  }
+  ctx.strokeStyle = '#2a221c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(apex[0], apex[1] + 5, 6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = '#c9b08a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(apex[0] + 6, apex[1] + 5);
+  ctx.lineTo(sx + 6, sy - 10);
+  ctx.stroke();
+  ctx.fillStyle = '#6b4a2c';
+  ctx.fillRect(sx + 2, sy - 14, 8, 7);
+  p.addVolumePoint(u, v, h);
+}
+
+/** Stacked lead pigs (ingots). */
+function leadPigs(p: IsoPainter, u: number, v: number): void {
+  for (let i = 0; i < 5; i++) {
+    const [x, y] = p.p(u + (i % 3) * 0.1, v, 0);
+    p.ctx.fillStyle = i < 3 ? '#7d838a' : '#9aa1a8';
+    p.ctx.fillRect(x - 6, y - 4 - (i < 3 ? 0 : 4), 11, 4);
+  }
+}
+
 /** Age 1 English workplaces. */
 export function romanoBritishWorkArt(s: ArchStyle): AgeArtSet {
   const c = s.palette;
@@ -98,43 +145,15 @@ export function romanoBritishWorkArt(s: ArchStyle): AgeArtSet {
     },
     mining_camp: {
       size: 2,
-      maxHeight: 120,
+      maxHeight: 130,
       paint: (p, team) => {
-        const ctx = p.ctx;
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x7e786c);
-        spoilHeap(p, 1.45, 0.42, 26, 24, 0x7a7a74);
-        p.box(0.2, 0.95, 1.05, 1.75, 0, 30, { color: c.stone, detail: 'fieldstone' });
-        p.leftFace(0.2, 1.05, 1.75, 0, (w) => {
-          p.door(w * 0.42, 14, 22, c.doors.work);
-          p.window(w * 0.14, -24, 6, 8);
-        }, 30);
-        styledGable(p, s, 0.2, 0.95, 1.05, 1.75, 30, 34, c.roof, c.stone, 'u', 0.12);
-        // Windlass over the shaft.
-        const [sx, sy] = p.p(1.3, 1.1, 0);
-        ellipse(ctx, sx, sy, 15, 7.5);
-        ctx.fillStyle = '#504a42';
-        ctx.fill();
-        ellipse(ctx, sx, sy, 11, 5.5);
-        ctx.fillStyle = '#0d0a08';
-        ctx.fill();
-        post(p, 1.1, 1.1, 0, 26, 2.4, c.timber);
-        post(p, 1.5, 1.1, 0, 26, 2.4, c.timber);
-        const a = p.p(1.1, 1.1, 24);
-        const b = p.p(1.5, 1.1, 24);
-        ctx.strokeStyle = '#5b4836';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(a[0], a[1]);
-        ctx.lineTo(b[0], b[1]);
-        ctx.stroke();
-        // Lead pigs stacked by the hut and a heap of ore.
-        for (let i = 0; i < 5; i++) {
-          const [x, y] = p.p(1.3 + (i % 3) * 0.1, 1.62, 0);
-          ctx.fillStyle = i < 3 ? '#7d838a' : '#9aa1a8';
-          ctx.fillRect(x - 6, y - 4 - (i < 3 ? 0 : 4), 11, 4);
-        }
-        goldPile(p, 1.68, 1.4);
+        spoilHeap(p, 0.55, 0.42, 34, 30, 0x7a7a74);
+        shearLegs(p, s, 1.3, 0.62, 72);
+        roundhouse(p, s, 0.68, 1.32, { r: 0.42, wall: 26, rise: 38, door: 1.0, detail: 'stone', color: c.stone });
+        leadPigs(p, 1.3, 1.62);
+        goldPile(p, 1.68, 1.3);
         p.flag(1.86, 1.86, 0, 30, team);
       },
     },

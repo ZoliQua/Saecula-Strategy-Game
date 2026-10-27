@@ -126,6 +126,7 @@ export function hedge(p: IsoPainter, u0: number, v0: number, u1: number, v1: num
     ctx.lineTo(x + r, y);
     ctx.closePath();
     ctx.fill();
+    p.normalCylinder(x - r, top - r * 0.5, r * 2, y - top + r * 0.5);
     if (i % 3 === 0) {
       ellipse(ctx, x + (p.random() - 0.5) * 6, top + 3, 1.6, 1.4);
       ctx.fillStyle = i % 2 ? '#f2efe2' : '#b23a2e';
@@ -167,6 +168,7 @@ export function spoilHeap(p: IsoPainter, u: number, v: number, r: number, h: num
   ctx.quadraticCurveTo(x + r * 0.45, y - h * 1.05, x + r, y);
   ctx.quadraticCurveTo(x, y + r * 0.3, x - r, y);
   ctx.fill();
+  p.normalCylinder(x - r, y - h, r * 2, h);
   for (let k = 0; k < r * 1.6; k++) {
     const sx = x + (p.random() - 0.5) * r * 1.6;
     const sy = y - p.random() * h * (1 - Math.abs(sx - x) / r) * 0.9;
@@ -221,6 +223,7 @@ export function earthButt(p: IsoPainter, u: number, v: number): void {
   ctx.lineTo(x + 20, y + 2);
   ctx.quadraticCurveTo(x, y + 8, x - 20, y + 2);
   ctx.fill();
+  p.normalCylinder(x - 20, y - 26, 40, 28);
   ctx.strokeStyle = 'rgba(40,52,22,.55)';
   ctx.lineWidth = 0.8;
   for (let k = 1; k < 4; k++) {
@@ -235,4 +238,47 @@ export function earthButt(p: IsoPainter, u: number, v: number): void {
     ctx.fill();
   }
   p.addVolumePoint(u, v, 24);
+}
+
+/** Training dummy: a straw head on a cross-post. */
+export function dummy(p: IsoPainter, u: number, v: number, wood = 0x4a3624): void {
+  const ctx = p.ctx;
+  const [x, y] = p.p(u, v, 0);
+  ctx.fillStyle = css(wood);
+  ctx.fillRect(x - 1.5, y - 26, 3, 26);
+  ctx.fillRect(x - 9, y - 20, 18, 3);
+  ellipse(ctx, x, y - 29, 4.5, 4.5);
+  ctx.fillStyle = '#b9a06a';
+  ctx.fill();
+  p.normalCylinder(x - 9, y - 34, 18, 34);
+}
+
+/**
+ * Half of a round wattle-and-rail paddock fence centred on (uc, vc):
+ * paint 'back' before whatever stands inside, then 'front'.
+ */
+export function roundFence(p: IsoPainter, uc: number, vc: number, r: number, h: number, half: 'back' | 'front', wood = 0x5a4632): void {
+  const ctx = p.ctx;
+  const front = half === 'front';
+  const a0 = front ? -Math.PI / 4 : (3 * Math.PI) / 4;
+  const n = Math.max(8, Math.round(r * 30));
+  const at = (a: number, z: number) => p.p(uc + r * Math.cos(a), vc + r * Math.sin(a), z);
+  for (const z of [h * 0.4, h * 0.85]) {
+    ctx.strokeStyle = css(shade(wood, front ? 1.15 : 0.8));
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let k = 0; k <= n; k++) {
+      const [x, y] = at(a0 + (k / n) * Math.PI, z);
+      if (k === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  for (let k = 0; k <= n; k += 2) {
+    const [x, y] = at(a0 + (k / n) * Math.PI, 0);
+    ctx.fillStyle = css(shade(wood, front ? 1 : 0.75));
+    ctx.fillRect(x - 1.2, y - h - 2, 2.4, h + 2);
+    p.normalCylinder(x - 1.2, y - h - 2, 2.4, h + 2);
+  }
+  if (front) for (const a of [0, Math.PI / 2]) p.addVolumePoint(uc + r * Math.cos(a), vc + r * Math.sin(a), h);
 }

@@ -1,14 +1,15 @@
 import { ellipse } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
-import { R } from '../facade';
-import { forgeLight, forgeMouth, goldPile, haystack, logPile, post } from '../parts';
+import { archedOpening, R } from '../facade';
+import { forgeLight, forgeMouth, goldPile, haystack, logPile, plankStack, post } from '../parts';
 import { stripField } from '../medievalWork';
 import type { ArchStyle } from '../style';
 import { roofLift, styledGable, styledHip } from '../styledRoofs';
 import type { AgeArtSet } from '../types';
-import { brickStack, earthButt, hedge, spoilHeap } from './englishParts';
-import { framedGable, halfTimberLattice, leadedWindow } from './halfTimber';
+import { brickStack, earthButt, hangingBanner, hedge, spoilHeap } from './englishParts';
+import { framedGable, halfTimberLattice, jettyStorey, leadedWindow } from './halfTimber';
+import { drumWall } from './roundhouse';
 
 /*
  * Age 2 English workplaces: hedged strip fields with a granary on
@@ -45,6 +46,65 @@ function granary(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number
   styledHip(p, s, u0, v0, u1, v1, 32, 18, c.roof, 0.06);
 }
 
+/**
+ * Engine house: a tall narrow stone house under steep tile with a tall
+ * round stack (stone below, brick above) and the beam (bob) jutting
+ * from its bob wall towards the shaft.
+ */
+function engineHouse(p: IsoPainter, s: ArchStyle, team: number): void {
+  const c = s.palette;
+  drumWall(p, 0.32, 0.3, 0.13, 0, 104, c.stone, 'stone');
+  drumWall(p, 0.32, 0.3, 0.11, 104, 146, c.stack, 'stone');
+  drumWall(p, 0.32, 0.3, 0.13, 146, 151, shade(c.stack, 0.7), 'stone');
+  p.addSmoke(0.32, 0.3, 152);
+  p.box(0.25, 0.45, 0.9, 1.45, 0, 78, { color: c.stone, detail: 'fieldstone' });
+  p.leftFace(0.25, 0.9, 1.45, 0, (w) => {
+    p.window(w / 2 - 5, -66, 10, 22, true);
+    p.door(w / 2 - 7, 14, 24, c.doors.work);
+    hangingBanner(p.ctx, w - 12, -40, 8, 18, team);
+  }, 78);
+  p.rightFace(0.45, 1.45, 0.9, 0, (w) => {
+    archedOpening(p.ctx, w / 2 - 9, 18, 26, shade(c.ashlar, 1.1), 0x1c140e, R);
+    p.window(w / 2 - 4, -40, 8, 14, true);
+  }, 78);
+  styledGable(p, s, 0.25, 0.45, 0.9, 1.45, 78, 30, c.roof, c.stone, 'v', 0.1);
+  // The bob: a heavy beam out of the bob wall.
+  p.box(0.9, 0.85, 1.32, 0.97, 64, 72, { color: c.timber }, shade(c.timber, 1.3));
+}
+
+/** Timber headframe with a spoked winding wheel at (u, v), wheel axle at height h. */
+function windingWheel(p: IsoPainter, s: ArchStyle, u: number, v: number, h: number): void {
+  const ctx = p.ctx;
+  const [sx, sy] = p.p(u, v, 0);
+  ellipse(ctx, sx, sy, 15, 7.5);
+  ctx.fillStyle = '#0d0a08';
+  ctx.fill();
+  post(p, u - 0.2, v + 0.2, 0, h + 4, 2.6, s.palette.timber);
+  const [x, y] = p.p(u, v, h);
+  ctx.strokeStyle = '#2b2420';
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.ellipse(x, y, 13, 14, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 1.2;
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(x - Math.cos(a) * 13, y - Math.sin(a) * 14);
+    ctx.lineTo(x + Math.cos(a) * 13, y + Math.sin(a) * 14);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#c9b08a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + 13, y);
+  ctx.lineTo(sx + 13, sy - 4);
+  ctx.stroke();
+  post(p, u + 0.2, v - 0.2, 0, h + 4, 2.6, s.palette.timber);
+  p.normalCylinder(x - 14, y - 15, 28, 30);
+  p.addVolumePoint(u, v, h + 14);
+}
+
 /** Age 2 English workplaces. */
 export function tudorWorkArt(s: ArchStyle): AgeArtSet {
   const c = s.palette;
@@ -63,79 +123,62 @@ export function tudorWorkArt(s: ArchStyle): AgeArtSet {
     },
     lumber_camp: {
       size: 2,
-      maxHeight: 130,
+      maxHeight: 140,
       paint: (p, team) => {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x837256);
-        p.box(0.22, 0.22, 1.12, 1.5, 0, 6, { color: c.stone }, c.stone);
-        p.box(0.22, 0.22, 1.12, 1.5, 6, 38, { color: c.darkWood, detail: 'planks' });
-        p.leftFace(0.22, 1.12, 1.5, 6, (w) => {
-          ctx.fillStyle = '#18120d';
-          ctx.fillRect(w * 0.3, -30, 24, 30);
-          ctx.fillStyle = css(c.doors.work);
-          ctx.fillRect(w * 0.3 - 9, -30, 9, 30);
-        }, 32);
-        p.material = 'tile';
-        styledGable(p, s, 0.22, 0.22, 1.12, 1.5, 38, 40, c.roof, c.darkWood, 'v', 0.14);
-        logPile(p, 1.2, 1.82, 10, 0x6b4426, 0xe0b880);
-        logPile(p, 1.45, 1.15, 6, 0x6b4426, 0xe0b880);
-        // Trestle with a log half through the two-man saw.
-        const [x, y] = p.p(1.55, 0.45, 0);
-        ctx.fillStyle = '#3a2e25';
-        for (const dx of [-14, 14]) ctx.fillRect(x + dx - 1.5, y - 16, 3, 16);
-        ctx.fillStyle = '#7a5530';
-        ctx.fillRect(x - 24, y - 20, 48, 6);
-        ctx.fillStyle = '#b8bcc0';
-        ctx.fillRect(x + 2, y - 30, 1.2, 22);
-        p.flag(1.84, 1.84, 0, 30, team);
-      },
-    },
-    mining_camp: {
-      size: 2,
-      maxHeight: 130,
-      paint: (p, team) => {
-        const ctx = p.ctx;
-        p.footShadow();
-        p.ground(0.1, 0.1, 1.9, 1.9, 0x857d6e);
-        // Headframe over the shaft, behind the mine house.
-        const [sx, sy] = p.p(1.3, 0.6, 0);
-        ellipse(ctx, sx, sy, 18, 9);
-        ctx.fillStyle = '#56504a';
-        ctx.fill();
-        ellipse(ctx, sx, sy, 13, 6.5);
-        ctx.fillStyle = '#0d0a08';
-        ctx.fill();
-        for (const [u, v] of [[1.05, 0.38], [1.55, 0.38], [1.05, 0.84], [1.55, 0.84]] as const) post(p, u, v, 0, 62, 2.4, c.timber);
-        const a = p.p(1.05, 0.61, 62);
-        const b = p.p(1.55, 0.61, 62);
-        ctx.strokeStyle = '#2b2420';
-        ctx.lineWidth = 6;
+        // Saw shed: open stone-footed bay below, jettied framed loft, steep framed gable.
+        p.box(0.2, 0.25, 1.05, 1.3, 0, 30, { color: c.stone, detail: 'fieldstone' });
+        p.leftFace(0.2, 1.05, 1.3, 0, (w) => {
+          ctx.fillStyle = '#17110c';
+          ctx.fillRect(8, -24, w - 16, 24);
+          ctx.fillStyle = '#c99a62';
+          for (let k = 0; k < 4; k++) ctx.fillRect(12, -4 - k * 4, w - 24, 2.6);
+        }, 30);
+        jettyStorey(p, s, 0.2, 0.25, 1.05, 1.3, 30, 58, 0.1, 'square', (w) => {
+          ctx.fillStyle = '#1e1610';
+          ctx.fillRect(w / 2 - 7, -22, 14, 16);
+        }, (w) => leadedWindow(p, w / 2 - 8, -22, 16, 10, 2, R));
+        styledGable(p, s, 0.2, 0.25, 1.15, 1.4, 58, 34, c.roof, c.plaster, 'v', 0.12, framedGable(ctx, s));
+        // Hoist beam from the loft.
+        const [hx, hy] = p.p(0.68, 1.4, 54);
+        ctx.fillStyle = '#2b2420';
+        ctx.fillRect(hx - 1.5, hy - 2, 3, 10);
+        // Saw pit with a trunk across it and the two-man saw.
+        p.ground(1.3, 0.3, 1.8, 0.7, 0x231a12);
+        const a = p.p(1.22, 0.5, 8);
+        const b = p.p(1.88, 0.5, 8);
+        ctx.strokeStyle = '#6b4a2c';
+        ctx.lineWidth = 8;
         ctx.beginPath();
         ctx.moveTo(a[0], a[1]);
         ctx.lineTo(b[0], b[1]);
         ctx.stroke();
-        ellipse(ctx, sx, sy - 66, 7, 7);
-        ctx.strokeStyle = '#3a2e25';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.strokeStyle = '#c9b08a';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy - 60);
-        ctx.lineTo(sx, sy - 20);
-        ctx.stroke();
-        for (const [u, v] of [[1.05, 0.38], [1.55, 0.84]] as const) p.addVolumePoint(u, v, 62);
-        p.box(0.18, 0.95, 1.05, 1.75, 0, 32, { color: c.stone, detail: 'fieldstone' });
-        p.leftFace(0.18, 1.05, 1.75, 0, (w) => {
-          p.door(w * 0.45, 14, 22, c.doors.work);
-          leadedWindow(p, w * 0.12, -24, 12, 10, 2);
-        }, 32);
-        p.material = 'slate';
-        styledGable(p, s, 0.18, 0.95, 1.05, 1.75, 32, 34, c.roofAlt, c.stone, 'u', 0.12);
-        spoilHeap(p, 1.6, 1.3, 22, 20, 0x7d7a72);
-        goldPile(p, 1.25, 1.75);
-        p.flag(1.88, 0.2, 0, 30, team);
+        ellipse(ctx, b[0], b[1], 4, 4);
+        ctx.fillStyle = '#e0b880';
+        ctx.fill();
+        const [x, y] = p.p(1.55, 0.5, 8);
+        ctx.fillStyle = '#b8bcc0';
+        ctx.fillRect(x - 0.6, y - 18, 1.2, 30);
+        ctx.fillStyle = '#3a2e25';
+        ctx.fillRect(x - 3, y - 20, 6, 2);
+        logPile(p, 1.25, 1.85, 10, 0x6b4426, 0xe0b880);
+        plankStack(p, 1.35, 1.0, 1.75, 1.3, 12);
+        p.flag(1.86, 0.2, 0, 30, team);
+      },
+    },
+    mining_camp: {
+      size: 2,
+      maxHeight: 170,
+      paint: (p, team) => {
+        p.footShadow();
+        p.ground(0.1, 0.1, 1.9, 1.9, 0x857d6e);
+        spoilHeap(p, 1.55, 0.35, 24, 22, 0x7d7a72);
+        engineHouse(p, s, team);
+        windingWheel(p, s, 1.45, 1.05, 56);
+        goldPile(p, 1.5, 1.7);
+        p.flag(1.88, 1.88, 0, 26, team);
       },
     },
     archery_range: {
@@ -145,20 +188,20 @@ export function tudorWorkArt(s: ArchStyle): AgeArtSet {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.05, 0.05, 2.95, 2.95, 0x86985e);
-        p.box(0.25, 0.25, 1.35, 1.15, 0, 6, { color: c.stone }, c.stone);
-        p.box(0.25, 0.25, 1.35, 1.15, 6, 38, { color: c.plaster, detail: 'plaster' });
-        p.leftFace(0.25, 1.35, 1.15, 6, (w, h) => {
+        // Long framed shooting pavilion facing the butts.
+        p.box(0.25, 0.3, 1.1, 2.2, 0, 6, { color: c.stone }, c.stone);
+        p.box(0.25, 0.3, 1.1, 2.2, 6, 38, { color: c.plaster, detail: 'plaster' });
+        p.leftFace(0.25, 1.1, 2.2, 6, (w, h) => {
           if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'square');
-          p.door(w * 0.62, 13, 22, c.doors.work);
-          leadedWindow(p, w * 0.14, -24, 16, 11, 2);
+          p.door(w / 2 - 6, 13, 22, c.doors.work);
         }, 32);
-        p.rightFace(0.25, 1.15, 1.35, 6, (w, h) => {
-          if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'square', R);
-          leadedWindow(p, w / 2 - 8, -24, 16, 11, 2, R);
+        p.rightFace(0.3, 2.2, 1.1, 6, (w, h) => {
+          if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'close', R);
+          for (const x of [0.15, 0.42, 0.7]) leadedWindow(p, w * x, -24, 18, 11, 3, R);
         }, 32);
-        styledHip(p, s, 0.25, 0.25, 1.35, 1.15, 38, 34, c.roof, 0.12);
+        styledGable(p, s, 0.25, 0.3, 1.1, 2.2, 38, 34, c.roof, c.plaster, 'v', 0.14, framedGable(ctx, s));
         // Bow staves leaning on the wall.
-        const [x, y] = p.p(0.9, 1.22, 0);
+        const [x, y] = p.p(1.18, 1.0, 0);
         ctx.strokeStyle = '#7a5530';
         ctx.lineWidth = 1.5;
         for (let k = 0; k < 4; k++) {

@@ -57,7 +57,6 @@ class SmokeProbe extends IsoPainter {
   }
 }
 
-const maxZ = (r: { volume: readonly { z: number }[] }) => Math.max(...r.volume.map((v) => v.z));
 
 describe('English buildings (ages 1-2)', () => {
   beforeAll(() => installRecordingCanvas());
@@ -117,8 +116,15 @@ describe('English buildings (ages 1-2)', () => {
     expect(paint(without(ENGLISH_TUDOR, 'halfTimber'), 'house').hash).not.toBe(paint(ENGLISH_TUDOR, 'house').hash);
   });
 
-  it('roofs are steeper than the Hungarian medieval set', () => {
-    expect(maxZ(paint(ENGLISH_TUDOR, 'house').result)).toBeGreaterThan(maxZ(paint(HUNGARIAN_MEDIEVAL, 'house').result));
+  it('main roofs are steeper than the Hungarian medieval set (ridge height, not chimneys)', () => {
+    const ridge = (st: ArchStyle) => {
+      const art = ARCH_FAMILIES[st.family](st).house;
+      if (!art) throw new Error('house');
+      const p = new SmokeProbe(art.size, art.size, art.maxHeight, 1);
+      art.paint(p, TEAM);
+      return p.ridge;
+    };
+    expect(ridge(ENGLISH_TUDOR)).toBeGreaterThan(ridge(HUNGARIAN_MEDIEVAL));
     expect(ENGLISH_TUDOR.roof.pitch).toBeGreaterThan(1);
     expect(ENGLISH_ROMANO_BRITISH.roof.pitch).toBeGreaterThan(1);
   });

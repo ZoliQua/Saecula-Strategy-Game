@@ -1,13 +1,12 @@
 import { ellipse } from '../../canvas';
-import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { R, shutteredWindow } from '../facade';
-import { palisade, post, torch, wattleFence } from '../parts';
+import { haystack, palisade, post, torch, wattleFence } from '../parts';
 import type { ArchStyle } from '../style';
 import { styledGable, styledHip } from '../styledRoofs';
 import { romanTower } from '../towers';
 import type { AgeArtSet } from '../types';
-import { cruckGable, cruckWall, hangingBanner, vexillum } from './englishParts';
+import { cruckGable, cruckWall, dummy, hangingBanner, roundFence, vexillum } from './englishParts';
 import { romanoBritishWorkArt } from './romanoBritishWork';
 import { roundhouse } from './roundhouse';
 
@@ -20,18 +19,6 @@ import { roundhouse } from './roundhouse';
 /** A point on a roundhouse wall at angle `phi` (for torches and props on the drum). */
 function onDrum(uc: number, vc: number, r: number, phi: number): readonly [number, number] {
   return [uc + r * Math.cos(phi), vc + r * Math.sin(phi)];
-}
-
-/** Training dummy: a straw head on a cross-post. */
-function dummy(p: IsoPainter, u: number, v: number): void {
-  const ctx = p.ctx;
-  const [x, y] = p.p(u, v, 0);
-  ctx.fillStyle = '#4a3624';
-  ctx.fillRect(x - 1.5, y - 26, 3, 26);
-  ctx.fillRect(x - 9, y - 20, 18, 3);
-  ellipse(ctx, x, y - 29, 4.5, 4.5);
-  ctx.fillStyle = '#b9a06a';
-  ctx.fill();
 }
 
 /** Age 1 English set. */
@@ -149,28 +136,34 @@ export function romanoBritishArt(s: ArchStyle): AgeArtSet {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.05, 0.05, 2.95, 2.95, 0x9b8f6c);
-        // Cruck-framed byre: plank walls, steep reed thatch.
-        p.box(0.3, 0.3, 2.65, 1.75, 0, 34, { color: c.darkWood, detail: 'planks' });
-        p.leftFace(0.3, 2.65, 1.75, 0, (w) => {
-          for (let i = 0; i < 4; i++) {
-            const x = 16 + i * ((w - 40) / 3);
-            ctx.fillStyle = '#21170e';
-            ctx.fillRect(x, -26, 22, 26);
-            ctx.fillStyle = css(c.doors.gate);
-            ctx.fillRect(x, -12, 22, 12);
-            ctx.fillStyle = 'rgba(0,0,0,.35)';
-            ctx.fillRect(x, -12, 22, 1.4);
+        // Cruck-framed byre, its crucked gable end to the lit side; plank walls, steep reed thatch.
+        p.box(0.3, 0.3, 1.45, 2.0, 0, 32, { color: c.darkWood, detail: 'planks' });
+        p.leftFace(0.3, 1.45, 2.0, 0, (w, h) => {
+          cruckWall(ctx, w, h, c.timber);
+          ctx.fillStyle = '#21170e';
+          ctx.fillRect(w / 2 - 12, -24, 24, 24);
+          ctx.fillStyle = css(c.doors.gate);
+          ctx.fillRect(w / 2 - 12, -11, 24, 11);
+        }, 32);
+        p.rightFace(0.3, 2.0, 1.45, 0, (w) => {
+          for (let i = 0; i < 3; i++) {
+            const x = 12 + i * ((w - 40) / 2);
+            ctx.fillStyle = '#1a120b';
+            ctx.fillRect(x, -24, 16, 24);
+            ctx.fillStyle = css(shade(c.doors.gate, R));
+            ctx.fillRect(x, -11, 16, 11);
           }
-        }, 34);
-        p.rightFace(0.3, 1.75, 2.65, 0, (w, h) => cruckWall(ctx, w, h, c.timber, R), 34);
+        }, 32);
         p.material = 'thatch';
-        styledGable(p, s, 0.3, 0.3, 2.65, 1.75, 34, 44, c.thatch, c.plasterDeep, 'u', 0.18, (w, rise) => cruckGable(ctx, w, rise, c.timber, R));
-        torch(p, 2.65, 1.2, 24, 2.85, 1.2);
-        // Wattle paddock with hay.
-        wattleFence(p, 0.15, 2.85, 2.85, 2.85, 13);
-        wattleFence(p, 2.85, 1.95, 2.85, 2.85, 13);
-        for (const u of [0.55, 0.92]) p.box(u, 2.15, u + 0.3, 2.45, 0, 12, { color: 0xc7a352 }, 0xd8b764);
-        p.flag(2.85, 2.85, 13, 34, team);
+        styledGable(p, s, 0.3, 0.3, 1.45, 2.0, 32, 52, c.thatch, c.plasterDeep, 'v', 0.18, (w, rise) => cruckGable(ctx, w, rise, c.timber));
+        torch(p, 0.42, 2.0, 24, 0.42, 2.2);
+        // Roundhouse tack store and a round horse paddock.
+        roundhouse(p, s, 2.3, 0.72, { r: 0.4, wall: 24, rise: 36, door: 1.6, detail: 'wattle', color: c.plasterDeep });
+        roundFence(p, 2.12, 2.12, 0.7, 14, 'back');
+        haystack(p, 2.12, 2.0, 12, 24);
+        p.box(1.8, 2.35, 2.2, 2.48, 0, 7, { color: c.darkWood }, 0x5d6f78);
+        roundFence(p, 2.12, 2.12, 0.7, 14, 'front');
+        p.flag(2.82, 2.12, 14, 30, team);
       },
     },
     tower: romanTower(s),

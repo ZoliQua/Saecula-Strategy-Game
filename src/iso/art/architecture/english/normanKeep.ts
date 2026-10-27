@@ -1,6 +1,6 @@
 import type { IsoPainter, WallStyle } from '../../isoPainter';
 import { css, shade } from '../../palette';
-import { archedOpening, R } from '../facade';
+import { R } from '../facade';
 import type { ArchStyle } from '../style';
 import { parapet } from '../towerParts';
 import { hangingBanner } from './englishParts';
@@ -83,17 +83,4 @@ export function normanKeep(p: IsoPainter, s: ArchStyle, u0: number, v0: number, 
   const top = h + TURRET_RISE + 7;
   p.flag(u0 + TURRET / 2 - 0.03, v0 + TURRET / 2 - 0.03, top - 7, 26, team, true);
   return top;
-}
-
-/** Forebuilding: the low stair tower guarding a keep's door, on the keep's +v face. */
-export function forebuilding(p: IsoPainter, s: ArchStyle, u0: number, u1: number, v: number, depth: number, h: number): void {
-  const c = s.palette;
-  p.box(u0, v, u1, v + depth, 0, h, { color: c.ashlar, detail: 'stone' });
-  p.leftFace(u0, u1, v + depth, 0, (w) => {
-    archedOpening(p.ctx, w / 2 - 9, 18, 26, shade(c.ashlar, 1.15));
-    p.door(w / 2 - 7, 14, 23, c.doors.main);
-  }, h);
-  const wall: WallStyle = { color: c.ashlar, detail: 'stone' };
-  const step = (u1 - u0) / 5;
-  for (let i = 0; i < 3; i++) p.box(u0 + i * 2 * step, v + depth - 0.06, u0 + i * 2 * step + step, v + depth, h, h + 8, wall, shade(c.ashlar, 1.08));
 }

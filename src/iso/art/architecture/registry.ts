@@ -17,7 +17,7 @@ import type { AgeArtSet } from './types';
  *    seedSalt, headroom sized for the pitch; register them below.
  * 3. Bespoke buildings: add an ArchFamily id (style.ts) and a factory
  *    here that spreads an existing family and overrides types, e.g.
- *    `tudor: (s) => ({ ...medievalArt(s), town_center: normanKeep(s) })`.
+ *    `gothic: (s) => ({ ...medievalArt(s), town_center: gothicHall(s) })`.
  *    The age-3 family must provide `wonder` (WonderArt with paintStage).
  */
 

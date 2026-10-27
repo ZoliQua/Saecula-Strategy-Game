@@ -97,7 +97,7 @@ export type CrestCharge = 'double_cross' | 'st_george';
  * Painter family: which layout set paints the style (registry.ts
  * ARCH_FAMILIES). A civ with bespoke buildings adds a family id whose
  * factory spreads an existing family and overrides types, e.g.
- * `tudor: (s) => ({ ...medievalArt(s), town_center: normanKeep(s) })`.
+ * `gothic: (s) => ({ ...medievalArt(s), town_center: gothicHall(s) })`.
  */
 export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor';
 
