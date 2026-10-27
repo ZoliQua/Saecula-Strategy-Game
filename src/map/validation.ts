@@ -33,7 +33,8 @@ const RESOURCE_OF: Partial<Record<TerrainId, keyof StartEconomy>> = {
  * will spawn it (town centres and preset walls block their tiles): every
  * start's town centre and villager tiles are free, every start reaches
  * every other one on foot, and each start has the START_ECONOMY minimum
- * of food, wood and gold reachable close by, and its own outer gold.
+ * of food, wood and gold reachable close by, and its own outer gold
+ * lode (at least outerGold.tiles.min own gold tiles outside the start lode).
  */
 export function validateMap(generated: GeneratedMap): MapValidation {
   const { map, playerStarts } = generated;
@@ -81,6 +82,10 @@ export function validateMap(generated: GeneratedMap): MapValidation {
     if (eco.gold < START_ECONOMY.minGold) problems.push(`player ${i}: only ${eco.gold} gold near the start`);
     const own = ownedGold(generated, i, reachedFrom);
     if (own < START_ECONOMY.minTotalGold) problems.push(`player ${i}: only ${own} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`);
+    const outer = outerLodeTiles(generated, i, reachedFrom);
+    if (outer < START_ECONOMY.outerGold.tiles.min) {
+      problems.push(`player ${i}: only ${outer} gold tiles of its own outside its start lode (outer lode)`);
+    }
     if (eco.food < START_ECONOMY.minFood) problems.push(`player ${i}: only ${eco.food} food near the start`);
     if (eco.wood < START_ECONOMY.minWood) problems.push(`player ${i}: only ${eco.wood} wood near the start`);
   });
@@ -93,21 +98,60 @@ export function validateMap(generated: GeneratedMap): MapValidation {
  * than to any other start (`reached` as in startEconomy).
  */
 export function ownedGold(generated: GeneratedMap, index: number, reached?: Uint8Array): number {
+  return ownGoldTiles(generated, index, reached, () => true) * RESOURCE_NODE_AMOUNT.gold;
+}
+
+/**
+ * The outer lode itself: start `index`'s own workable gold tiles (as in
+ * ownedGold) outside its start lode — the 8-connected gold group holding
+ * its nearest own gold tile — so gold heaped on the start lode cannot
+ * stand in for a second lode for the later ages. (Not a fixed distance:
+ * on crowded maps the generator's fallback lode sits inside
+ * START_ECONOMY.radius, see outerGold.crowdedRing; it is always a
+ * separate group, since its apron keeps clear of other resources.)
+ */
+export function outerLodeTiles(generated: GeneratedMap, index: number, reached?: Uint8Array): number {
+  const { map, playerStarts } = generated;
+  const start = playerStarts[index];
+  if (!start) return 0;
+  const own: number[] = [];
+  ownGoldTiles(generated, index, reached, (tx, ty) => {
+    own.push(ty * map.width + tx);
+    return true;
+  });
+  const w = map.width;
+  let nearest = -1;
+  let best = Infinity;
+  for (const k of own) {
+    const d = ((k % w) - start.tx) ** 2 + (Math.floor(k / w) - start.ty) ** 2;
+    if (d < best) {
+      best = d;
+      nearest = k;
+    }
+  }
+  if (nearest < 0) return 0;
+  const isGold = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < w && ty < map.height && map.getTile(tx, ty) === TERRAIN.gold_mine;
+  const startLode = floodFrom([{ tx: nearest % w, ty: Math.floor(nearest / w) }], w, map.height, isGold);
+  return own.filter((k) => startLode[k] !== 1).length;
+}
+
+/** Workable gold tiles within outerGold.radius of start `index`, nearer to it than to any other start, that pass `where` (called once per such tile). */
+function ownGoldTiles(generated: GeneratedMap, index: number, reached: Uint8Array | undefined, where: (tx: number, ty: number) => boolean): number {
   const { map, playerStarts } = generated;
   const start = playerStarts[index];
   if (!start) return 0;
   const canReach = reached ?? floodOpen(generated, start);
   const r = START_ECONOMY.outerGold.radius;
   const d2 = (s: TileCoord, tx: number, ty: number) => (s.tx - tx) ** 2 + (s.ty - ty) ** 2;
-  let gold = 0;
+  let tiles = 0;
   for (let ty = Math.max(0, start.ty - r); ty <= Math.min(map.height - 1, start.ty + r); ty++) {
     for (let tx = Math.max(0, start.tx - r); tx <= Math.min(map.width - 1, start.tx + r); tx++) {
       if (map.getTile(tx, ty) !== TERRAIN.gold_mine || !workableFrom(canReach, map.width, map.height, tx, ty)) continue;
       const mine = d2(start, tx, ty);
-      if (playerStarts.every((s, j) => j === index || d2(s, tx, ty) > mine)) gold += RESOURCE_NODE_AMOUNT.gold;
+      if (playerStarts.every((s, j) => j === index || d2(s, tx, ty) > mine) && where(tx, ty)) tiles++;
     }
   }
-  return gold;
+  return tiles;
 }
 
 /** Tiles walkable from `start` over the bare terrain. */

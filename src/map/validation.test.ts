@@ -4,7 +4,7 @@ import { generateMap, MAP_RETRIES, MapGenerationError, retrySeed, type TemplateO
 import type { GeneratedMap } from './generators/types';
 import { MapData } from './MapData';
 import { TERRAIN } from './TerrainTypes';
-import { ownedGold, startEconomy, validateMap } from './validation';
+import { outerLodeTiles, ownedGold, startEconomy, validateMap } from './validation';
 
 /** Gold in a 5-tile lode. */
 const LODE = 5 * RESOURCE_NODE_AMOUNT.gold;
@@ -65,6 +65,8 @@ describe('validateMap', () => {
     expect(validateMap(g).problems).toEqual([
       'player 0: only 0 gold near the start',
       `player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`,
+      // Its one workable lode is no second lode.
+      'player 0: only 0 gold tiles of its own outside its start lode (outer lode)',
       'player 1: only 0 food near the start',
     ]);
   });
@@ -73,7 +75,10 @@ describe('validateMap', () => {
     const g = twoStarts();
     for (let i = 0; i < 5; i++) g.map.setTile(6 + i, 18, TERRAIN.grass);
     expect(ownedGold(g, 0)).toBe(LODE);
-    expect(validateMap(g).problems).toEqual([`player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`]);
+    expect(validateMap(g).problems).toEqual([
+      `player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`,
+      'player 0: only 0 gold tiles of its own outside its start lode (outer lode)',
+    ]);
     // Gold in player 0's reach but nearer to player 1 is player 1's...
     for (let ty = 1; ty <= 5; ty++) g.map.setTile(21, ty, TERRAIN.gold_mine);
     expect(ownedGold(g, 0)).toBe(LODE);
@@ -81,6 +86,32 @@ describe('validateMap', () => {
     for (let ty = 1; ty <= 5; ty++) g.map.setTile(18, ty, TERRAIN.gold_mine);
     expect(ownedGold(g, 0)).toBe(2 * LODE);
     expect(validateMap(g).ok).toBe(true);
+  });
+});
+
+describe('validateMap outer lode (M3 N1)', () => {
+  it('requires a second lode of its own, not just enough own gold heaped on the start lode', () => {
+    const g = twoStarts();
+    // Move player 0's outer lode (row 18, 10 tiles out) onto its start lode (row 3): the amount stays
+    // 3000 but there is no lode out for the later ages.
+    for (let i = 0; i < 5; i++) {
+      g.map.setTile(6 + i, 18, TERRAIN.grass);
+      g.map.setTile(4 + i, 2, TERRAIN.gold_mine);
+    }
+    expect(ownedGold(g, 0)).toBe(2 * LODE);
+    expect(outerLodeTiles(g, 0)).toBe(0);
+    expect(validateMap(g).problems).toEqual([
+      `player 0: only 0 gold tiles of its own outside its start lode (outer lode)`,
+    ]);
+  });
+
+  it('counts a separate lode of its own as the outer lode', () => {
+    const g = twoStarts();
+    expect(outerLodeTiles(g, 0)).toBe(5);
+    // A lode nearer to the other start is not player 0's.
+    for (let i = 0; i < 5; i++) g.map.setTile(6 + i, 18, TERRAIN.grass);
+    for (let ty = 1; ty <= 5; ty++) g.map.setTile(21, ty, TERRAIN.gold_mine);
+    expect(outerLodeTiles(g, 0)).toBe(0);
   });
 });
 
