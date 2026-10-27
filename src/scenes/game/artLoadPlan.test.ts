@@ -85,6 +85,24 @@ describe('BackgroundArt', () => {
     expect(ran).toEqual([0, 1]);
   });
 
+  it('still runs a job after forceAfterFrames busy frames (slow machines do not starve the queue)', () => {
+    const c = clock();
+    const ran: number[] = [];
+    const bg = new BackgroundArt([0, 1].map((i) => () => ran.push(i)), { startDelayMs: 0, maxFrameWorkMs: 5, everyFrames: 1, forceAfterFrames: 3, now: c.now });
+    const busy = () => {
+      const start = c.now();
+      c.advance(10);
+      bg.update(16, start);
+    };
+    busy();
+    busy();
+    expect(ran).toEqual([]);
+    busy();
+    expect(ran).toEqual([0]);
+    busy();
+    expect(ran).toEqual([0]);
+  });
+
   it('records the slowest job (diagnostics)', () => {
     const c = clock();
     const bg = new BackgroundArt([() => c.advance(7), () => c.advance(3)], { startDelayMs: 0, maxFrameWorkMs: 5, everyFrames: 1, now: c.now });

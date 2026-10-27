@@ -1,6 +1,7 @@
 import { BUILDING_BALANCE } from '../../config/balance';
 import {
   BACKGROUND_ART_EVERY_FRAMES,
+  BACKGROUND_ART_FORCE_AFTER_FRAMES,
   BACKGROUND_ART_MAX_FRAME_WORK_MS,
   BACKGROUND_ART_START_DELAY_MS,
 } from '../../config/constants';
@@ -58,6 +59,8 @@ export interface BackgroundArtOptions {
   readonly maxFrameWorkMs: number;
   /** At most one job every this many frames. */
   readonly everyFrames: number;
+  /** After this many paced frames skipped as busy, the next one runs a job anyway (slow machines). */
+  readonly forceAfterFrames: number;
   readonly now: () => number;
 }
 
@@ -65,19 +68,22 @@ const DEFAULT_OPTIONS: BackgroundArtOptions = {
   startDelayMs: BACKGROUND_ART_START_DELAY_MS,
   maxFrameWorkMs: BACKGROUND_ART_MAX_FRAME_WORK_MS,
   everyFrames: BACKGROUND_ART_EVERY_FRAMES,
+  forceAfterFrames: BACKGROUND_ART_FORCE_AFTER_FRAMES,
   now: () => performance.now(),
 };
 
 /**
  * Runs paint jobs during play without frame hitches: one job (a wall
- * piece, ~5-10 ms) at most every few frames, and only in a frame whose
- * own work so far is light, so job + frame stays inside 16.7 ms.
+ * piece, ~5-15 ms) at most every few frames, and only in a frame whose
+ * own work so far is light, so job + frame stays near 16.7 ms. A machine
+ * too slow for any light frame still gets a job about once a second.
  */
 export class BackgroundArt {
   private readonly queue: Array<() => void>;
   private readonly options: BackgroundArtOptions;
   private elapsedMs = 0;
   private frames = 0;
+  private busySkips = 0;
   /** Jobs run, slowest job and total job time in ms (dev diagnostics). */
   readonly stats = { jobs: 0, maxJobMs: 0, totalMs: 0 };
 
@@ -96,9 +102,10 @@ export class BackgroundArt {
     this.elapsedMs += realDeltaMs;
     if (this.elapsedMs < this.options.startDelayMs) return;
     if (this.frames++ % this.options.everyFrames !== 0) return;
-    const { now, maxFrameWorkMs } = this.options;
+    const { now, maxFrameWorkMs, forceAfterFrames } = this.options;
     const t0 = now();
-    if (t0 - frameStartMs > maxFrameWorkMs) return;
+    if (t0 - frameStartMs > maxFrameWorkMs && ++this.busySkips < forceAfterFrames) return;
+    this.busySkips = 0;
     this.queue.shift()?.();
     const dt = now() - t0;
     this.stats.jobs++;

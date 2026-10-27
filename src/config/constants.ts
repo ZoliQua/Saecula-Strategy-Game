@@ -28,3 +28,5 @@ export const PATHFINDS_MAX_PER_TICK = 2 * PATHFINDS_PER_FRAME;
 export const BACKGROUND_ART_START_DELAY_MS = 1500;
 export const BACKGROUND_ART_EVERY_FRAMES = 2;
 export const BACKGROUND_ART_MAX_FRAME_WORK_MS = 5;
+/** Paced frames skipped as busy before one runs a job anyway (~1 s at 60 Hz with EVERY_FRAMES 2). */
+export const BACKGROUND_ART_FORCE_AFTER_FRAMES = 30;
