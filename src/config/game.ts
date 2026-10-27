@@ -11,7 +11,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from './constants';
 import { MAX_LIGHTS } from './visual';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.WEBGL, // Light2D needs WebGL (no Canvas fallback)
   parent: 'game',
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
