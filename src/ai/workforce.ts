@@ -46,11 +46,11 @@ function workedNodes(view: WorldView): Set<number> {
   return taken;
 }
 
-/** workable() per view: a view is built once per AI tick, so enemy ground is judged once per tick. */
+/** workableNodes() per view: a view is built once per AI tick, so enemy ground is judged once per tick. */
 const workableByView = new WeakMap<WorldView, Partial<Record<ResourceType, Entity[]>>>();
 
 /** Natural nodes the AI may send villagers to: known, and not inside a known enemy base. */
-function workable(view: WorldView, type: ResourceType): Entity[] {
+export function workableNodes(view: WorldView, type: ResourceType): Entity[] {
   let cache = workableByView.get(view);
   if (!cache) {
     cache = {};
@@ -63,7 +63,7 @@ function workable(view: WorldView, type: ResourceType): Entity[] {
 
 /** Best node of `type` for a villager at `from`: a free own farm first for food, else the nearest workable node. */
 function nodeFor(view: WorldView, type: ResourceType, from: TileCoord, taken: Set<number>): Entity | undefined {
-  const nodes = workable(view, type);
+  const nodes = workableNodes(view, type);
   if (type === 'food') {
     const farm = nearest(nodes, from, (n) => n.building !== undefined && n.id !== undefined && !taken.has(n.id));
     if (farm) return farm;
@@ -74,7 +74,7 @@ function nodeFor(view: WorldView, type: ResourceType, from: TileCoord, taken: Se
 
 /** Whether `type` has anything left to gather for this AI. */
 function gatherable(view: WorldView, type: ResourceType, taken: Set<number>): boolean {
-  const nodes = workable(view, type);
+  const nodes = workableNodes(view, type);
   if (type !== 'food') return nodes.length > 0;
   return nodes.some((n) => !n.building || (n.id !== undefined && !taken.has(n.id)));
 }

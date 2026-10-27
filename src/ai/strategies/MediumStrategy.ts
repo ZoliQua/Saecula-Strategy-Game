@@ -23,7 +23,7 @@ import {
   unstaffedSite,
 } from '../economyBuildings';
 import type { WorldView } from '../perception';
-import { assignIdleVillagers, rebalanceGatherers } from '../workforce';
+import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
 /**
@@ -308,7 +308,8 @@ export class MediumStrategy extends BaseStrategy {
     const trainable = (t: UnitType) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0;
     for (let i = 0; i < this.tune.trainPerDecision; i++) {
       // A cannon the army is short of is saved for (while gold can still come in): the other units only spend what lies above its cost.
-      const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits, view.resources.gold.length);
+      // Gold nodes it would mine (not inside a known enemy base): with none, saving for a cannon never ends.
+      const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits, workableNodes(view, 'gold').length);
       const saving = goal ? reserveForGoal(goal, ctx.player.resources, UNIT_SPECS[goal].cost, reserve, AI_COMMON.savesForUnits) : reserve;
       const type = nextUnitToTrain(mix, counts, (t) => trainable(t)
         && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, t === goal ? reserve : saving));
