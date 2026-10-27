@@ -21,6 +21,8 @@ export class ImagePool {
   }
 
   release(img: Phaser.GameObjects.Image): void {
+    // A mask belongs to the last owner (e.g. a collapsing building's ground clip, destroyed with it).
+    if (img.mask) img.clearMask();
     img.setActive(false).setVisible(false);
     this.free.push(img);
   }
