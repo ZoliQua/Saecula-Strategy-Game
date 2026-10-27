@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  wallNeighbourMaskBy,
   WALL_E,
   WALL_N,
   WALL_NE,
@@ -45,6 +46,23 @@ describe('wallPiece', () => {
     expect(along(WALL_N | WALL_S, (i) => [7, i])).toBe(2);
     expect(along(WALL_NE | WALL_SW, (i) => [i, 20 - i])).toBe(2);
     expect(along(WALL_NW | WALL_SE, (i) => [i, i])).toBe(2);
+  });
+
+  it('skips a rhythm post right next to a corner or end post (no double posts)', () => {
+    // A run along tx from 0 to 6 at ty = 5, turning north at tx = 6: the corner (6,5) has a post,
+    // so the rhythm post at tx = 4 stays, but one at the tile beside the corner would not.
+    const walls = new Set(['0,5', '1,5', '2,5', '3,5', '4,5', '5,5', '6,5', '6,4', '6,3']);
+    const isWall = (x: number, y: number) => walls.has(`${x},${y}`);
+    const post = (x: number, y: number) => pieceHasPost(wallPiece(wallNeighbourMaskBy(isWall, { tx: x, ty: y }), x, y, isWall));
+    expect(post(0, 5)).toBe(true); // end
+    expect(post(6, 5)).toBe(true); // corner
+    expect(post(4, 5)).toBe(true); // rhythm
+    // Shift the run so the rhythm tile (tx = 4) sits next to the corner at tx = 5.
+    const walls2 = new Set(['1,5', '2,5', '3,5', '4,5', '5,5', '5,4']);
+    const isWall2 = (x: number, y: number) => walls2.has(`${x},${y}`);
+    expect(pieceHasPost(wallPiece(wallNeighbourMaskBy(isWall2, { tx: 4, ty: 5 }), 4, 5, isWall2))).toBe(false);
+    // Without the neighbour lookup the old rule still applies.
+    expect(pieceHasPost(wallPiece(wallNeighbourMaskBy(isWall2, { tx: 4, ty: 5 }), 4, 5))).toBe(true);
   });
 
   it('pieces are small integers (texture key part)', () => {

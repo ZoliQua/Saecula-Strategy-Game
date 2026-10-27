@@ -17,7 +17,7 @@ const key = (tx: number, ty: number): number => ty * 100_000 + tx;
 /**
  * Render-side index of wall segments (and towers they join) by tile, so a
  * wall's piece (wallPiece: arms + post) is recomputed only when a
- * neighbour appears or goes: adding or removing one marks the 3×3 around
+ * neighbour appears or goes: adding or removing one marks the 5×5 around
  * it stale, everything else keeps its cached piece. Rendering only — game
  * logic uses wallNeighbourMask.
  */
@@ -50,11 +50,11 @@ export class WallJoinIndex<E extends JoinCandidate> {
     const cached = this.pieces.get(e);
     if (cached !== undefined && !this.stale.has(k)) return cached;
     const owner = e.owner?.playerId;
-    const mask = wallNeighbourMaskBy((tx, ty) => {
+    const isWall = (tx: number, ty: number): boolean => {
       const n = this.at.get(key(tx, ty));
       return n !== undefined && n.owner?.playerId === owner;
-    }, tile);
-    const piece = wallPiece(mask, tile.tx, tile.ty);
+    };
+    const piece = wallPiece(wallNeighbourMaskBy(isWall, tile), tile.tx, tile.ty, isWall);
     this.pieces.set(e, piece);
     this.stale.delete(k);
     return piece;
@@ -65,7 +65,8 @@ export class WallJoinIndex<E extends JoinCandidate> {
     return e.position;
   }
 
+  /** A piece reads its neighbours' masks too (post spacing), so a change reaches two tiles out. */
   private touch(tx: number, ty: number): void {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) this.stale.add(key(tx + dx, ty + dy));
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) this.stale.add(key(tx + dx, ty + dy));
   }
 }

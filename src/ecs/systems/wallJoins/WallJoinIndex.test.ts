@@ -11,6 +11,17 @@ const wall = (tx: number, ty: number, playerId = 1, type: BuildingType = 'wall')
 });
 
 describe('WallJoinIndex', () => {
+  it('drops a rhythm post when its neighbour turns into an end, two tiles from the removed wall', () => {
+    const index = new WallJoinIndex<JoinCandidate>();
+    const run = [2, 3, 4, 5, 6].map((x) => wall(x, 5));
+    for (const w of run) index.add(w);
+    const rhythm = run[2]!; // tx 4: a rhythm post on a straight run
+    expect(pieceHasPost(index.pieceOf(rhythm))).toBe(true);
+    // (2,5) is outside (4,5)'s 3×3, but its removal makes (3,5) an end post right beside the rhythm post.
+    index.remove(run[0]!);
+    expect(pieceHasPost(index.pieceOf(rhythm))).toBe(false);
+  });
+
   it('joins same-owner neighbours and updates when one is added', () => {
     const index = new WallJoinIndex<JoinCandidate>();
     const a = wall(5, 5);

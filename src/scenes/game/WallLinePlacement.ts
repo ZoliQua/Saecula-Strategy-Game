@@ -96,7 +96,8 @@ export class WallLinePlacement {
     const age = this.getAge();
     tiles.forEach((tile, i) => {
       const g = this.ghostAt(i);
-      const piece = wallPiece(wallNeighbourMaskBy((tx, ty) => onLine.has(`${tx},${ty}`), tile), tile.tx, tile.ty);
+      const isWall = (tx: number, ty: number): boolean => onLine.has(`${tx},${ty}`);
+      const piece = wallPiece(wallNeighbourMaskBy(isWall, tile), tile.tx, tile.ty, isWall);
       const key = wallTexture(this.scene, piece, age);
       if (g.texture.key !== key) g.setTexture(key);
       const bottom = tileToScreen(tile);
