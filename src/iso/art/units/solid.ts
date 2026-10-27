@@ -175,6 +175,8 @@ function ellipsoid(p: Solid, X: number, Y: number, h: Hit): boolean {
     h.ny = ny;
     h.nz = nz;
     h.u = (l3 + 1) / 2;
+    h.v = a2 + b2 * zeta;
+    h.f = a1 + b1 * zeta;
     h.back = sign < 0;
     return true;
   }

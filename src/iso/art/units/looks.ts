@@ -1,19 +1,24 @@
-import type { UnitType } from '../../../types';
+import { CIV_DEFS, type UnitLookId } from '../../../config/civs';
+import type { CivId, UnitType } from '../../../types';
+import { ENGLISH_LOOKS } from './english/englishLooks';
 import type { HorseLook } from './horse';
 import type { HumanLook } from './humanoid';
-import { M } from './materials';
+import { M, type Material } from './materials';
 import type { ContactShadow } from './raster';
 
 export type UnitLook =
   | { readonly kind: 'foot'; readonly human: HumanLook }
   | { readonly kind: 'rider'; readonly human: HumanLook; readonly horse: HorseLook }
-  | { readonly kind: 'cannon' };
+  /** `barrel` defaults to bronze. */
+  | { readonly kind: 'cannon'; readonly barrel?: Material };
 
 /**
- * What every unit wears and carries. Team colour (M.team) goes where it
- * reads best at a glance: tunics, coats, shields, hoods, caparisons.
+ * What every unit wears and carries: the shared base look (the
+ * Hungarian look), which a civ's override map replaces type by type.
+ * Team colour (M.team) goes where it reads best at a glance: tunics,
+ * coats, shields, hoods, caparisons.
  */
-export const UNIT_LOOKS: Readonly<Record<UnitType, UnitLook>> = {
+export const BASE_UNIT_LOOKS: Readonly<Record<UnitType, UnitLook>> = {
   villager: {
     kind: 'foot',
     human: {
@@ -153,6 +158,17 @@ export const UNIT_LOOKS: Readonly<Record<UnitType, UnitLook>> = {
   },
   cannon: { kind: 'cannon' },
 };
+
+/** Per unit-look id: the types whose look differs from the base. */
+const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitType, UnitLook>>>>> = {
+  hungarian: {},
+  english: ENGLISH_LOOKS,
+};
+
+/** The look a civ's units of a type wear (civ registry unitLook → override, else the base look). */
+export function unitLook(type: UnitType, civ: CivId): UnitLook {
+  return LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type] ?? BASE_UNIT_LOOKS[type];
+}
 
 export function contactShadow(look: UnitLook): ContactShadow {
   return look.kind === 'foot' ? { rx: 12.5, ry: 5.8, alpha: 0.4 } : { rx: 23, ry: 10, alpha: 0.38 };

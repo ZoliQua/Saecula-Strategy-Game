@@ -1,9 +1,10 @@
 import { LIGHTING_ENABLED, SHADOW, UNIT_SHADOW_DOWNSCALE } from '../../../config/visual';
-import type { UnitType } from '../../../types';
+import { CIV_DEFS } from '../../../config/civs';
+import type { CivId, UnitType } from '../../../types';
 import { boxBlur } from '../lighting/deriveNormals';
 import { halveNormals } from '../lighting/halfNormals';
 import { ANIM_FRAMES, frameContent, PAINTED_HEADINGS, paintOrder, sheetLayout, unitAnims, type SheetLayout, type UnitAnim } from './layout';
-import { contactShadow, UNIT_LOOKS } from './looks';
+import { contactShadow, unitLook } from './looks';
 import { FrameRaster, type FramePixels } from './raster';
 import { buildFigure, figureBounds } from './rig';
 
@@ -39,6 +40,7 @@ export interface SheetGeometry {
  */
 export interface UnitSheet extends SheetGeometry {
   readonly type: UnitType;
+  readonly civ: CivId;
   readonly albedo: HTMLCanvasElement;
   readonly mask: HTMLCanvasElement;
   readonly normal: HTMLCanvasElement | null;
@@ -83,17 +85,18 @@ const ctx2d = (c: HTMLCanvasElement): CanvasRenderingContext2D => {
 /** Frame sides are multiples of the shadow downscale (also even, for the half-size normal map). */
 const aligned = (n: number): number => Math.ceil(n / UNIT_SHADOW_DOWNSCALE) * UNIT_SHADOW_DOWNSCALE;
 
-const geometries = new Map<UnitType, SheetGeometry>();
+const geometries = new Map<string, SheetGeometry>();
 
-/** Frame boxes fitted to every pose of each animation (computed once per type). */
-export function sheetGeometry(type: UnitType): SheetGeometry {
-  const hit = geometries.get(type);
+/** Frame boxes fitted to every pose of each animation (computed once per type and unit look). */
+export function sheetGeometry(type: UnitType, civ: CivId): SheetGeometry {
+  const id = `${type}~${CIV_DEFS[civ].unitLook}`;
+  const hit = geometries.get(id);
   if (hit) return hit;
   const layout = sheetLayout(unitAnims(type));
-  const shadow = contactShadow(UNIT_LOOKS[type]);
+  const shadow = contactShadow(unitLook(type, civ));
   const rows = PAINTED_HEADINGS.length;
   const sizes = layout.anims.map((anim) => {
-    const b = figureBounds(type, [anim], ANIM_FRAMES);
+    const b = figureBounds(type, civ, [anim], ANIM_FRAMES);
     const w = aligned(2 * Math.ceil(Math.max(b.halfWidth, shadow.rx) + PAD));
     const feetY = Math.ceil(b.above + PAD);
     const h = aligned(feetY + Math.ceil(Math.max(b.below, shadow.ry) + PAD));
@@ -116,16 +119,17 @@ export function sheetGeometry(type: UnitType): SheetGeometry {
     shelf = Math.max(shelf, s.bh);
   }
   const g: SheetGeometry = { layout, blocks, width, height: y + shelf };
-  geometries.set(type, g);
+  geometries.set(id, g);
   return g;
 }
 
-/** Allocates the blank sheets of a type. */
-export function createSheet(type: UnitType): UnitSheet {
-  const g = sheetGeometry(type);
+/** Allocates the blank sheets of a type in a civ's look. */
+export function createSheet(type: UnitType, civ: CivId): UnitSheet {
+  const g = sheetGeometry(type, civ);
   return {
     ...g,
     type,
+    civ,
     albedo: cpuCanvas(g.width, g.height),
     mask: cpuCanvas(g.width, g.height),
     // Half resolution, like the shadow: a quarter of the memory, same shading (see halveNormals).
@@ -156,11 +160,11 @@ function rasterFor(g: SheetGeometry, anim: UnitAnim, cache?: Map<UnitAnim, Frame
   return r;
 }
 
-/** Rasterizes frame `k` of a type. */
-function rasterize(type: UnitType, g: SheetGeometry, k: number, cache?: Map<UnitAnim, FrameRaster>): FramePixels {
+/** Rasterizes frame `k` of a type in a civ's look. */
+function rasterize(type: UnitType, civ: CivId, g: SheetGeometry, k: number, cache?: Map<UnitAnim, FrameRaster>): FramePixels {
   const { slot, anim, i } = frameContent(g.layout, k);
-  const fig = buildFigure(type, slot, anim, i);
-  return rasterFor(g, anim, cache).paint(fig.prims, fig.mats.list, contactShadow(UNIT_LOOKS[type]));
+  const fig = buildFigure(type, civ, slot, anim, i);
+  return rasterFor(g, anim, cache).paint(fig.prims, fig.mats.list, contactShadow(unitLook(type, civ)));
 }
 
 /**
@@ -173,8 +177,8 @@ export function paintFrame(sheet: UnitSheet, k: number, deadline = Infinity): bo
   const { slot, anim, i } = frameContent(sheet.layout, k);
   const raster = rasterFor(sheet, anim, sheet.rasters);
   if (sheet.active !== k) {
-    const fig = buildFigure(sheet.type, slot, anim, i);
-    raster.begin(fig.prims, fig.mats.list, contactShadow(UNIT_LOOKS[sheet.type]));
+    const fig = buildFigure(sheet.type, sheet.civ, slot, anim, i);
+    raster.begin(fig.prims, fig.mats.list, contactShadow(unitLook(sheet.type, sheet.civ)));
     sheet.active = k;
   }
   const done = raster.step(deadline);
@@ -259,11 +263,11 @@ function shadowBlock(coverage: Float32Array, w: number, h: number): ImageData {
 
 /**
  * A single composited frame (albedo with the team mask tinted in), for
- * HUD portraits. Uses the SE idle frame.
+ * HUD portraits: the SE idle frame of the type in a civ's look.
  */
-export function paintPortrait(type: UnitType, teamColor: number): HTMLCanvasElement {
-  const g = sheetGeometry(type);
-  const px = rasterize(type, g, 0);
+export function paintPortrait(type: UnitType, civ: CivId, teamColor: number): HTMLCanvasElement {
+  const g = sheetGeometry(type, civ);
+  const px = rasterize(type, civ, g, 0);
   const { w, h } = frameRect(g, 0);
   const canvas = cpuCanvas(w, h);
   const ctx = ctx2d(canvas);

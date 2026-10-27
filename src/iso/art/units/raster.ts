@@ -1,6 +1,6 @@
 import { LIGHTING_ENABLED } from '../../../config/visual';
 import { baked } from '../lighting/normalLayer';
-import type { Material } from './materials';
+import type { Charge, Material } from './materials';
 import { newHit, type Prim } from './primitives';
 import { intersectSolid, Solid } from './solid';
 
@@ -39,6 +39,7 @@ class Surface {
   /** −1 = darken instead of recolour. */
   readonly bandColor: number;
   readonly bandWidth: number;
+  readonly charge: Charge | null;
 
   constructor(m: Material) {
     this.color = m.color;
@@ -47,6 +48,7 @@ class Surface {
     this.bandCount = m.bands?.count ?? 0;
     this.bandColor = m.bands?.color ?? -1;
     this.bandWidth = m.bands?.width ?? 0.12;
+    this.charge = m.charge ?? null;
   }
 }
 
@@ -82,6 +84,9 @@ export class FrameRaster {
   private readonly ny: Float32Array;
   private readonly nz: Float32Array;
   private readonly band: Float32Array;
+  /** Ellipsoid local across / front coordinates (heraldic charges). */
+  private readonly across: Float32Array;
+  private readonly front: Float32Array;
   /** 0 = empty, else material index + 1. */
   private readonly mat: Uint16Array;
   private readonly back: Uint8Array;
@@ -103,6 +108,8 @@ export class FrameRaster {
     this.ny = new Float32Array(n);
     this.nz = new Float32Array(n);
     this.band = new Float32Array(n);
+    this.across = new Float32Array(n);
+    this.front = new Float32Array(n);
     this.mat = new Uint16Array(n);
     this.back = new Uint8Array(n);
     this.out = {
@@ -169,6 +176,8 @@ export class FrameRaster {
         this.ny[i] = hit.ny;
         this.nz[i] = hit.nz;
         this.band[i] = hit.u;
+        this.across[i] = hit.v;
+        this.front[i] = hit.f;
         this.back[i] = hit.back ? 1 : 0;
         this.mat[i] = id;
       }
@@ -296,6 +305,12 @@ export class FrameRaster {
           l *= 0.62;
         }
       }
+    }
+    const ch = m.charge;
+    if (ch && (this.front[i] ?? -1) > ch.front && Math.abs(this.across[i] ?? 0) < ch.panel && !this.back[i]) {
+      const onCross = Math.abs(this.across[i] ?? 0) < ch.bar || Math.abs((this.band[i] ?? 0) - ch.armAt) < ch.arm;
+      c = onCross ? ch.cross : ch.field;
+      this.banded = true;
     }
     rgb[0] = Math.min(255, ((c >> 16) & 255) * l + spec * 255);
     rgb[1] = Math.min(255, ((c >> 8) & 255) * l + spec * 255);

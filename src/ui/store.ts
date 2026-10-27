@@ -20,6 +20,8 @@ export interface SelectedUnitInfo {
   id: number;
   ownerId: number;
   unitType: UnitType;
+  /** The owner's civ (which civ's look the portrait shows). */
+  civ: CivId;
   hp: { current: number; max: number };
   tile: { tx: number; ty: number };
   carrying?: { type: 'food' | 'wood' | 'gold'; amount: number };

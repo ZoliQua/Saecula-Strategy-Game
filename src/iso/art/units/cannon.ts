@@ -8,8 +8,8 @@ const AXLE: V3 = [-0.5, 0, WHEEL_R];
 const SPOKES = 8;
 const SMOKE: Material = { color: 0xe4e0d8 };
 
-/** Field gun on a wheeled carriage (forward = muzzle). */
-export function drawCannon(fig: Figure, anim: UnitAnim, i: number): void {
+/** Field gun on a wheeled carriage (forward = muzzle); `barrel` is the gun metal (bronze by default). */
+export function drawCannon(fig: Figure, anim: UnitAnim, i: number, barrel: Material = M.bronze): void {
   const recoil = anim === 'attack' ? ([0, -0.4, -5.2, -3.6, -1.2][i] ?? 0) : 0;
   const lift = anim === 'attack' ? ([0.02, 0.04, 0.1, 0.07, 0.03][i] ?? 0) : anim === 'death' ? -0.12 * i : 0.02;
   const roll = anim === 'walk' ? (i / 6) * ((Math.PI * 2) / SPOKES) : anim === 'attack' ? recoil / WHEEL_R : 0;
@@ -45,15 +45,15 @@ export function drawCannon(fig: Figure, anim: UnitAnim, i: number): void {
     fig.cone(madd(hub, ax, -1.4), madd(hub, ax, 1.6), 1.9, 1.5, M.iron);
   }
 
-  // Bronze barrel on trunnions, elevated a little.
+  // Barrel on trunnions, elevated a little.
   const pivot = at([0, 0, 12.6]);
   const B: Xform = compose(C, rotationAbout([0, 0, 12.6], [0, 1, 0], -lift));
   const bp = (p: V3): V3 => applyPoint(B, p);
-  fig.capsule(madd(pivot, [0, 1, 0], 3.4), madd(pivot, [0, 1, 0], -3.4), 1.0, M.bronze);
-  fig.cone(bp([-6, 0, 12.6]), bp([15.5, 0, 13.4]), 3.2, 2.1, M.bronze);
-  fig.cone(bp([14.8, 0, 13.4]), bp([17.2, 0, 13.45]), 2.55, 2.5, M.bronze);
+  fig.capsule(madd(pivot, [0, 1, 0], 3.4), madd(pivot, [0, 1, 0], -3.4), 1.0, barrel);
+  fig.cone(bp([-6, 0, 12.6]), bp([15.5, 0, 13.4]), 3.2, 2.1, barrel);
+  fig.cone(bp([14.8, 0, 13.4]), bp([17.2, 0, 13.45]), 2.55, 2.5, barrel);
   fig.cone(bp([17.1, 0, 13.45]), bp([17.3, 0, 13.45]), 1.25, 1.25, M.black);
-  fig.sphere(bp([-7.0, 0, 12.6]), 1.7, M.bronze);
+  fig.sphere(bp([-7.0, 0, 12.6]), 1.7, barrel);
 
   if (anim === 'attack' && (i === 2 || i === 3)) {
     // Muzzle smoke puff, billowing out on the recoil frame.

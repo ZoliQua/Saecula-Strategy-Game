@@ -53,7 +53,7 @@ export class SelectionPanel {
     if (!sel) return;
     const src =
       sel.kind === 'unit'
-        ? unitThumbnail(sel.unitType)
+        ? unitThumbnail(sel.unitType, sel.civ)
         : sel.kind === 'building'
           ? this.buildingPicture(sel)
           : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType].key, RESOURCE_PORTRAIT[sel.resourceType].frame);
@@ -140,7 +140,7 @@ export class SelectionPanel {
         'div',
         { class: 'q-item', title: hu.units[entry.unitType] },
         fill,
-        el('img', { src: unitThumbnail(entry.unitType), alt: '' }),
+        el('img', { src: unitThumbnail(entry.unitType, uiStore.getState().civ), alt: '' }),
       );
       item.addEventListener('click', () => dispatchCommand({ type: 'cancel-queue', trainerId, index }));
       row.append(item);

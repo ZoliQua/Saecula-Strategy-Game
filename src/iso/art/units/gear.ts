@@ -1,11 +1,17 @@
 import { axesAlong, type Axes, type Figure } from './figure';
 import type { WeaponPose } from './humanoid';
-import { M } from './materials';
+import { M, type Material } from './materials';
 import { add, cross, dot, madd, norm, rotate, scale, sub, type V3, type Xform } from './rigMath';
+import { LONGBOW, mitre, sallet, stGeorgeShield, tarleton } from './english/englishGear';
 
-export type HatKind = 'straw' | 'hood' | 'galea' | 'kettle' | 'coif' | 'tricorne' | 'cap' | 'greatHelm' | 'shako';
+export type HatKind =
+  | 'straw' | 'hood' | 'galea' | 'kettle' | 'coif' | 'tricorne' | 'cap' | 'greatHelm' | 'shako'
+  | 'sallet' | 'mitre' | 'tarleton';
+/** Weapon kinds (they also pick the pose, see poses.ts). */
 export type WeaponKind = 'tool' | 'gladius' | 'sabre' | 'bow' | 'pike' | 'spear' | 'crossbow' | 'musket' | 'lance';
-export type ShieldKind = 'scutum' | 'heater';
+/** Visual variant of a weapon kind, posed like it: a yew longbow (bow), a longer arming sword (gladius). */
+export type WeaponStyle = 'longbow' | 'arming';
+export type ShieldKind = 'scutum' | 'heater' | 'stGeorge';
 
 /** Helmets, hats and hoods around the head centre `hc` (head axes fwd/left/up). */
 export function drawHat(fig: Figure, kind: HatKind, hc: V3, [f, l, u]: Axes): void {
@@ -69,6 +75,15 @@ export function drawHat(fig: Figure, kind: HatKind, hc: V3, [f, l, u]: Axes): vo
       fig.box(hp([6.45, 0, 6.6]), axes, [0.45, 2.1, 2.5], M.gold);
       fig.capsule(hp([1.0, 0, 11.6]), hp([0.2, 0, 16.6]), 1.65, M.feather);
       break;
+    case 'sallet':
+      sallet(fig, hc, axes);
+      break;
+    case 'mitre':
+      mitre(fig, hc, axes);
+      break;
+    case 'tarleton':
+      tarleton(fig, hc, axes);
+      break;
   }
 }
 
@@ -79,7 +94,7 @@ function bladeSide(dir: V3): V3 {
 }
 
 /** The held weapon; `hands` are where the hands actually are. */
-export function drawWeapon(fig: Figure, kind: WeaponKind, w: WeaponPose, _hands: { handL: V3; handR: V3 }): void {
+export function drawWeapon(fig: Figure, kind: WeaponKind, w: WeaponPose, _hands: { handL: V3; handR: V3 }, style?: WeaponStyle): void {
   const d = norm(w.dir);
   const at = (k: number): V3 => madd(w.at, d, k);
   const side = bladeSide(d);
@@ -91,6 +106,10 @@ export function drawWeapon(fig: Figure, kind: WeaponKind, w: WeaponPose, _hands:
       break;
     }
     case 'gladius':
+      if (style === 'arming') {
+        armingSword(fig, at, side);
+        break;
+      }
       fig.capsule(at(-1.6), at(1.4), 0.85, M.darkWood);
       fig.sphere(at(-2.1), 1.25, M.brass);
       fig.capsule(madd(at(1.9), side, -2.6), madd(at(1.9), side, 2.6), 0.8, M.brass);
@@ -122,7 +141,8 @@ export function drawWeapon(fig: Figure, kind: WeaponKind, w: WeaponPose, _hands:
       fig.box(madd(at(31), side, 2.1), axesAlong(d, side), [2.6, 2.0, 0.18], M.team);
       break;
     case 'bow':
-      drawBow(fig, w, d);
+      if (style === 'longbow') drawBow(fig, w, d, LONGBOW.half, LONGBOW.bend, LONGBOW.thick, LONGBOW.wood);
+      else drawBow(fig, w, d);
       break;
     case 'crossbow':
       drawCrossbow(fig, w, d);
@@ -136,20 +156,29 @@ export function drawWeapon(fig: Figure, kind: WeaponKind, w: WeaponPose, _hands:
   }
 }
 
-function drawBow(fig: Figure, w: WeaponPose, axis: V3): void {
+/** Straight arming sword: wrapped grip, wheel pommel, wide straight cross-guard, long tapering blade. */
+function armingSword(fig: Figure, at: (k: number) => V3, side: V3): void {
+  fig.capsule(at(-2.4), at(1.4), 0.8, M.darkLeather);
+  fig.sphere(at(-3.0), 1.3, M.steel);
+  fig.capsule(madd(at(1.8), side, -3.6), madd(at(1.8), side, 3.6), 0.65, M.steel);
+  fig.cone(at(2.2), at(15.2), 1.15, 0.7, M.steel);
+  fig.cone(at(15.2), at(17.4), 0.7, 0.05, M.steel);
+}
+
+function drawBow(fig: Figure, w: WeaponPose, axis: V3, half = 12.5, bend = 4, thick = 1.4, wood: Material = M.wood): void {
   // The bow's belly faces the target (rig forward, made perpendicular to the bow axis).
   const fwd = norm(sub([1, 0, 0], scale(axis, dot([1, 0, 0], axis))));
-  const point = (t: number): V3 => madd(madd(w.at, axis, 12.5 * t), fwd, -4 * t * t);
+  const point = (t: number): V3 => madd(madd(w.at, axis, half * t), fwd, -bend * t * t);
   const N = 6;
   for (let i = 0; i < N; i++) {
     const t0 = -1 + (2 * i) / N;
     const t1 = -1 + (2 * (i + 1)) / N;
-    const r = 1.4 - 0.5 * Math.abs((t0 + t1) / 2);
-    fig.capsule(point(t0), point(t1), r, M.wood);
+    const r = thick - 0.5 * (thick / 1.4) * Math.abs((t0 + t1) / 2);
+    fig.capsule(point(t0), point(t1), r, wood);
   }
   const top = point(1);
   const bottom = point(-1);
-  const nock = w.draw ?? madd(w.at, fwd, -4);
+  const nock = w.draw ?? madd(w.at, fwd, -bend);
   fig.capsule(top, nock, 0.32, M.string);
   fig.capsule(nock, bottom, 0.32, M.string);
   if (w.loaded) {
@@ -184,6 +213,10 @@ function drawCrossbow(fig: Figure, w: WeaponPose, d: V3): void {
 
 /** Shield on the left forearm, facing forward-left of the torso. */
 export function drawShield(fig: Figure, kind: ShieldKind, hand: V3, T: Xform): void {
+  if (kind === 'stGeorge') {
+    stGeorgeShield(fig, hand, T);
+    return;
+  }
   const face = norm(rotate(T.x, T.z, 0.42));
   const axes = axesAlong(face, T.y);
   const c = madd(madd(hand, face, 2.0), T.z, kind === 'scutum' ? 1.5 : 2.5);

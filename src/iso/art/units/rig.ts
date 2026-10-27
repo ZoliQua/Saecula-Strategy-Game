@@ -1,10 +1,10 @@
-import type { UnitType } from '../../../types';
+import type { CivId, UnitType } from '../../../types';
 import { cannonFall, drawCannon } from './cannon';
 import { Figure } from './figure';
 import { bitPoint, drawHorse, horseFall } from './horse';
 import { drawHuman } from './humanoid';
 import { PAINTED_HEADINGS, type UnitAnim } from './layout';
-import { UNIT_LOOKS } from './looks';
+import { unitLook } from './looks';
 import { M } from './materials';
 import { fallAngle, footPose } from './poses';
 import { primBounds } from './primitives';
@@ -16,14 +16,14 @@ const RIG_SCALE = 1.15;
 /** The field gun is modelled small; painted bigger so it reads as heavy artillery. */
 const CANNON_SCALE = 1.55;
 
-/** Builds the posed 3D figure of `type` for one heading row and animation frame. */
-export function buildFigure(type: UnitType, slot: number, anim: UnitAnim, i: number): Figure {
+/** Builds the posed 3D figure of `type` in a civ's look for one heading row and animation frame. */
+export function buildFigure(type: UnitType, civ: CivId, slot: number, anim: UnitAnim, i: number): Figure {
   const dir = PAINTED_HEADINGS[slot] ?? 'SE';
-  const look = UNIT_LOOKS[type];
+  const look = unitLook(type, civ);
   const fig = new Figure(headingBasis(dir), look.kind === 'cannon' ? CANNON_SCALE : RIG_SCALE);
   if (look.kind === 'cannon') {
     if (anim === 'death') fig.place(cannonFall(i));
-    drawCannon(fig, anim, i);
+    drawCannon(fig, anim, i, look.barrel);
     return fig;
   }
   if (look.kind === 'foot') {
@@ -52,15 +52,15 @@ function footFall(i: number): Xform {
   return compose(translation([0, 0, 4.2 * Math.sin(a)]), rotationAbout([-2.5, 0, 0], [0, 1, 0], -a));
 }
 
-/** View-space bounds (art px, y up) of every frame a type paints. */
-export function figureBounds(type: UnitType, anims: readonly UnitAnim[], frames: Readonly<Record<UnitAnim, number>>) {
+/** View-space bounds (art px, y up) of every frame a type paints in a civ's look. */
+export function figureBounds(type: UnitType, civ: CivId, anims: readonly UnitAnim[], frames: Readonly<Record<UnitAnim, number>>) {
   let x = 0;
   let y0 = 0;
   let y1 = 0;
   for (let slot = 0; slot < PAINTED_HEADINGS.length; slot++) {
     for (const anim of anims) {
       for (let i = 0; i < frames[anim]; i++) {
-        for (const p of buildFigure(type, slot, anim, i).prims) {
+        for (const p of buildFigure(type, civ, slot, anim, i).prims) {
           const b = primBounds(p);
           x = Math.max(x, -b.x0, b.x1);
           y0 = Math.min(y0, b.y0);

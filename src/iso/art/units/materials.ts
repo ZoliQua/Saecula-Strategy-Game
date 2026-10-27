@@ -11,6 +11,29 @@ export interface Material {
   readonly metal?: number;
   /** Stripes along the primitive's main axis (armour bands, barrel rings, quilting). */
   readonly bands?: { readonly count: number; readonly color?: number; readonly width?: number };
+  /** Heraldic charge on the front of an ellipsoid (shield face, surcoat chest); painted in albedo, not the team mask. */
+  readonly charge?: Charge;
+}
+
+/**
+ * A cross on a field, painted on the front of an ellipsoid in its local
+ * coordinates (l1 = front axis, l2 = across, l3 = up; each −1..1 on the
+ * surface). Outside the field the material shows as usual (team colour
+ * for team cloth), so a charge can sit on team cloth as a panel and the
+ * cloth's rim / sides / back stay the owner's colour.
+ */
+export interface Charge {
+  readonly field: number;
+  readonly cross: number;
+  /** The field covers l1 > front (a high value leaves a team rim round the edge). */
+  readonly front: number;
+  /** The field covers |l2| < panel. */
+  readonly panel: number;
+  /** Half width of the upright bar, in l2 units. */
+  readonly bar: number;
+  /** Height of the cross arm, as u = (l3 + 1) / 2, and its half height in u. */
+  readonly armAt: number;
+  readonly arm: number;
 }
 
 /** Collects the materials one figure uses; primitives refer to them by index. */

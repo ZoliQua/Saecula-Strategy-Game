@@ -160,7 +160,7 @@ export class CommandPanel {
       id: unitType,
       name: hu.units[unitType],
       role: hu.unitRoles[unitType],
-      image: unitThumbnail(unitType),
+      image: unitThumbnail(unitType, uiStore.getState().civ),
       cost: spec.cost,
       pop: spec.populationCost,
       requiredAge: unitRequiredAge(unitType),

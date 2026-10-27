@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { With } from 'miniplex';
 import { tileToScreen } from '../../iso/coordinates';
 import { tileDepth } from '../../iso/depth';
-import type { UnitType } from '../../types';
+import { DEFAULT_CIV } from '../../config/civs';
+import type { CivId, UnitType } from '../../types';
 import { uiStore, type SelectedEntityInfo } from '../../ui/store';
 import { techsForBuilding } from '../../game/technologies';
 import { UNIT_SPECS } from '../archetypes/unit';
@@ -33,7 +34,7 @@ function infoKey(info: SelectedEntityInfo | null): string {
   return `r:${info.id}:${info.amount}/${info.maxAmount}`;
 }
 
-function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
+function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: number) => CivId): SelectedEntityInfo | null {
   if (entity.id === undefined) return null;
   const r = (entity as Entity).resourceNode;
   if (r && !entity.unit && !entity.building) {
@@ -53,6 +54,7 @@ function toSelectedInfo(entity: SelectableWithPos): SelectedEntityInfo | null {
       id: entity.id,
       ownerId: entity.owner?.playerId ?? 0,
       unitType: entity.unit.unitType,
+      civ: civOf(entity.owner?.playerId ?? 0),
       hp: { current: entity.health.current, max: entity.health.max },
       tile: { tx: entity.position.tx, ty: entity.position.ty },
       ...(entity.gatherer?.carryingType
@@ -116,6 +118,13 @@ export class SelectionSystem {
 
   setRaisedDepth(fn: (entity: Entity) => number | undefined): void {
     this.raisedDepth = fn;
+  }
+
+  /** Civ of a player (the HUD portrait shows the unit in its owner's look). */
+  private civOf: (playerId: number) => CivId = () => DEFAULT_CIV;
+
+  setCivSource(civOf: (playerId: number) => CivId): void {
+    this.civOf = civOf;
   }
 
   constructor(scene: Phaser.Scene, world: EcsWorld) {
@@ -237,7 +246,7 @@ export class SelectionSystem {
     // the data the HUD cares about actually changed — pushing every
     // frame churns Zustand subscribers and triggers a full HUD render.
     const primary = selected[0] as SelectableWithPos;
-    const info = toSelectedInfo(primary);
+    const info = toSelectedInfo(primary, this.civOf);
     const key = `${infoKey(info)}#${selected.length}`;
     if (key !== this.lastInfoKey) {
       uiStore.getState().setSelectedEntity(info, selected.length);

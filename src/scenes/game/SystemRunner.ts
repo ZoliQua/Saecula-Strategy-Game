@@ -91,6 +91,7 @@ export class SystemRunner {
     this.render.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.keepWalls = commonWallPieceKeys([1, 2, 3], [...new Set(players.all().map((p) => p.civ))]);
     this.selection = new SelectionSystem(scene, world);
+    this.selection.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
     this.movement = new MovementSystem(world, players);
     this.gathering = new GatheringSystem(world, mapData, players, this.paths);

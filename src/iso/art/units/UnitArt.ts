@@ -59,9 +59,8 @@ export function unitTextureKey(type: UnitType, civ: CivId): string {
 }
 
 /**
- * Returns the art of a unit type for a civ, creating its textures on
- * first use. Every civ shows the one unit look for now (its registry
- * unitLook is 'hungarian'). Returns null when this frame already created
+ * Returns the art of a unit type for a civ (in the civ's unit look,
+ * looks.ts unitLook), creating its textures on first use. Returns null when this frame already created
  * a sheet (callers retry next frame) unless `force` (scene set-up, where
  * a hitch is harmless).
  */
@@ -73,7 +72,7 @@ export function unitArt(scene: Phaser.Scene, type: UnitType, civ: CivId, force =
   if (!hit && !force && budget.sheets >= NEW_SHEETS_PER_FRAME) return null;
   budget.sheets++;
   const created = performance.now();
-  const sheet = hit?.sheet ?? createSheet(type);
+  const sheet = hit?.sheet ?? createSheet(type, civ);
   // A new unit is never invisible: finish the first idle frame of every
   // heading now (~5 frames, bounded by one new type per game frame).
   if (!hit) paintSome(sheet, Infinity, PAINTED_HEADINGS.length);

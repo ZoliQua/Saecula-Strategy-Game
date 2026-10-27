@@ -15,6 +15,11 @@ export interface ShowcaseOptions {
   phase?: number;
   /** Whose unit look to show (default Hungarian). */
   civ?: CivId;
+  /** Several civs: one row per type and civ (civs of a type adjacent, same team colour), for side-by-side comparison. */
+  civs?: CivId[];
+  /** Columns are the six team colours (facing `teamsHeading`, default SE) instead of the eight headings. */
+  teams?: boolean;
+  teamsHeading?: Direction;
 }
 
 const TYPES: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon'];
@@ -50,10 +55,15 @@ export class UnitShowcaseScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor('#3d5a2c');
     this.lighting = new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
-    TYPES.forEach((type, row) => {
-      HEADINGS.forEach((dir, col) => {
-        const color = PLAYER_COLORS[row % PLAYER_COLORS.length] ?? 0xffffff;
-        const sprites = createUnitSprites(this, type, this.opts.civ ?? MENU_CIV, color, true);
+    const civs = this.opts.civs ?? [this.opts.civ ?? MENU_CIV];
+    const rows = TYPES.flatMap((type, t) => civs.map((civ) => ({ type, civ, t })));
+    const columns = this.opts.teams
+      ? PLAYER_COLORS.slice(0, 6).map((color) => ({ dir: this.opts.teamsHeading ?? 'SE', color }))
+      : HEADINGS.map((dir) => ({ dir, color: -1 }));
+    rows.forEach(({ type, civ, t }, row) => {
+      columns.forEach(({ dir, color: teamColor }, col) => {
+        const color = teamColor >= 0 ? teamColor : (PLAYER_COLORS[t % PLAYER_COLORS.length] ?? 0xffffff);
+        const sprites = createUnitSprites(this, type, civ, color, true);
         sprites.body.setPosition(col * CELL_W + CELL_W / 2, row * CELL_H + CELL_H * 0.72);
         this.lighting?.attachCaster(sprites.body, sprites.key);
         this.cells.push({ sprites, dir });
@@ -68,7 +78,7 @@ export class UnitShowcaseScene extends Phaser.Scene {
     }
     const cam = this.cameras.main;
     cam.setZoom(this.opts.zoom ?? 1.2);
-    cam.centerOn((HEADINGS.length * CELL_W) / 2, (TYPES.length * CELL_H) / 2);
+    cam.centerOn((columns.length * CELL_W) / 2, (rows.length * CELL_H) / 2);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.lighting?.destroy();
       this.lighting = null;

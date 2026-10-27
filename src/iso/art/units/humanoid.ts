@@ -1,5 +1,5 @@
 import { axesAlong, type Axes, type Figure } from './figure';
-import { drawHat, drawShield, drawWeapon, type HatKind, type ShieldKind, type WeaponKind } from './gear';
+import { drawHat, drawShield, drawWeapon, type HatKind, type ShieldKind, type WeaponKind, type WeaponStyle } from './gear';
 import { M, type Material } from './materials';
 import { add, applyDir, applyPoint, ik2, madd, norm, rotate, sub, type V3, type Xform } from './rigMath';
 
@@ -37,6 +37,8 @@ export interface HumanLook {
   readonly crossBelts?: Material;
   readonly back?: 'quiver' | 'bolts';
   readonly weapon: WeaponKind;
+  /** Visual variant of the weapon (same pose). */
+  readonly weaponStyle?: WeaponStyle;
   readonly shield?: ShieldKind;
   readonly hair?: Material;
 }
@@ -123,7 +125,7 @@ export function drawHuman(fig: Figure, look: HumanLook, pose: HumanPose): void {
   drawHat(fig, look.hat, hc, headAxes);
 
   drawArms(fig, look, pose, T);
-  drawWeapon(fig, look.weapon, pose.weapon, { handL: armReach(T, pose, 1).end, handR: armReach(T, pose, -1).end });
+  drawWeapon(fig, look.weapon, pose.weapon, { handL: armReach(T, pose, 1).end, handR: armReach(T, pose, -1).end }, look.weaponStyle);
   if (look.shield) drawShield(fig, look.shield, armReach(T, pose, 1).end, T);
 }
 

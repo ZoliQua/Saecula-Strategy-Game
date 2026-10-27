@@ -55,12 +55,15 @@ export interface Hit {
   nz: number;
   /** Surface parameter 0..1 along the primitive's main axis (local z for ellipsoids), for bands. */
   u: number;
+  /** Ellipsoids: local across (l2) and front (l1) coordinates, −1..1, for heraldic charges; else 0 / −1. */
+  v: number;
+  f: number;
   /** True when the visible surface is the inside of a clipped shell. */
   back: boolean;
 }
 
 export function newHit(): Hit {
-  return { z: 0, nx: 0, ny: 0, nz: 1, u: 0, back: false };
+  return { z: 0, nx: 0, ny: 0, nz: 1, u: 0, v: 0, f: -1, back: false };
 }
 
 /** Screen-space (view XY) bounds of a primitive. */
