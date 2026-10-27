@@ -26,6 +26,8 @@ uniform vec3 uSunColor;
 uniform vec3 uAmbient;
 uniform vec4 uShadow;
 uniform vec2 uLayers;
+/** 0 when the scene is unlit (lighting toggle off): no plateau shadows, glints or sparkle. */
+uniform float uLit;
 
 varying vec2 fragCoord;
 
@@ -115,7 +117,7 @@ void main() {
   }
   if (cover < 0.004 && !nearRock) discard;
   if (nearRock && showsRock(w)) discard;
-  float shadow = nearRock ? rockShadow(w, hash(floor(w))) * uShadow.z : 0.0;
+  float shadow = nearRock && uLit > 0.5 ? rockShadow(w, hash(floor(w))) * uShadow.z : 0.0;
 
   if (cover < 0.004) {
     if (shadow < 0.004) discard;
@@ -142,7 +144,7 @@ void main() {
   vec3 r = reflect(-uGlintDir, n);
   float spec = pow(max(r.z, 0.0), 48.0);
   float sparkle = pow(max(r.z, 0.0), 70.0) * smoothstep(0.86, 0.95, noise(p * 24.0 + vec2(t * 1.6, -t * 1.1)));
-  col += uSunColor * (spec * 0.22 + sparkle * 2.6);
+  col += uSunColor * (spec * 0.22 + sparkle * 2.6) * uLit;
   // Shore foam: soft lacy bands rolling in towards the shore, and a thin wet line at the edge.
   float shore = 1.0 - smoothstep(0.0, 0.3, depth);
   float lace = noise(p * 7.0 + vec2(t * 0.35, -t * 0.2)) * 0.6 + noise(p * 17.0 - vec2(t * 0.5, 0.0)) * 0.4;

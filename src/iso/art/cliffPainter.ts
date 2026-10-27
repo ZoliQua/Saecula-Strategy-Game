@@ -1,4 +1,5 @@
 import type { ReliefHit } from '../../map/cliffRelief';
+import { alignOut, type Rect } from '../../map/occluderPacking';
 import { ellipse, makeCanvas, type Ctx } from './canvas';
 import { blockBounds, cliffColour, cliffNormal, groundTouch, hitAt, type CliffField } from './cliffArt';
 import { encodeNormal, N_UP } from './lighting/viewSpace';
@@ -8,6 +9,16 @@ import { hash2 } from './palette';
 export const CLIFF_NORMAL_DOWNSCALE = 4;
 
 const NO_OWNER = -1;
+
+/**
+ * World rect of cliff tile (tx, ty)'s occluder cell: its blockBounds
+ * grown onto the normal-texel grid, so each occluder normal texel covers
+ * exactly the world pixels of one terrain-chunk normal texel (chunks
+ * start on that grid too, see TileMap).
+ */
+export function occluderCellBounds(tx: number, ty: number, maxHeight: number): Rect {
+  return alignOut(blockBounds(tx, ty, maxHeight), CLIFF_NORMAL_DOWNSCALE);
+}
 
 function ownerOf(field: CliffField, hit: ReliefHit | null): number {
   return hit ? hit.ty * field.width + hit.tx : NO_OWNER;
@@ -65,7 +76,7 @@ function paintRubble(ctx: Ctx, field: CliffField, x0: number, y0: number, w: num
  * pixel-identical to the chunk.
  */
 export interface OccluderSink {
-  /** Atlas cell top-left (texture px) per tile id (ty · width + tx); its origin is blockBounds() of the tile. */
+  /** Atlas cell top-left (texture px) per tile id (ty · width + tx); its origin is occluderCellBounds() of the tile. */
   readonly cells: ReadonlyMap<number, readonly [number, number]>;
   readonly cellW: number;
   readonly cellH: number;
@@ -294,9 +305,9 @@ export class CliffChunkBake {
   }
 }
 
-/** Top-left (world px) of a tile's occluder cell, see blockBounds. */
+/** Top-left (world px) of a tile's occluder cell, see occluderCellBounds. */
 function cellOrigin(field: CliffField, id: number): [number, number] {
-  const b = blockBounds(id % field.width, Math.floor(id / field.width), field.relief.maxHeight);
+  const b = occluderCellBounds(id % field.width, Math.floor(id / field.width), field.relief.maxHeight);
   return [b.x, b.y];
 }
 

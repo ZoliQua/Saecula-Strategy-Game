@@ -30,7 +30,8 @@ const CLOUD_PAD = 64;
 const CHUNK = 512;
 /** Distinguishes chunk texture keys of map views alive at once (menu diorama + game). */
 let tileMapSeq = 0;
-const CHUNK_OVERLAP = 3;
+/** Multiple of the cliff normal texel (4 px): chunk normal maps then share the occluders' world texel grid. */
+const CHUNK_OVERLAP = 4;
 const DECOR_DEPTH_OFFSET = 0.1;
 const HOVER_COLOR = 0xf5a857;
 
@@ -72,7 +73,7 @@ export class TileMap {
     this.height = mapData.height;
 
     this.cliffs = makeCliffField(mapData);
-    const plan = this.cliffs ? planOccluders(this.cliffs) : null;
+    const plan = this.cliffs ? planOccluders(this.cliffs, lightingActive(scene)) : null;
     this.bakeTerrain(plan);
     this.occluders = this.cliffs && plan ? new CliffOccluders(scene, this.cliffs, plan) : null;
     this.placeDecor();
@@ -100,7 +101,8 @@ export class TileMap {
     const b = this.computeWorldBounds();
     const x0 = b.minX - 64;
     // Raised plateau tops along the far map edges reach a cliff height above the map.
-    const y0 = b.minY - 32 - Math.ceil(this.cliffs?.relief.maxHeight ?? 0);
+    // Every chunk origin (x0/y0 − CHUNK_OVERLAP + k · CHUNK) sits on the 4 px normal texel grid.
+    const y0 = b.minY - 32 - Math.ceil((this.cliffs?.relief.maxHeight ?? 0) / 4) * 4;
     const x1 = b.maxX + 64;
     const y1 = b.maxY + 32;
     let n = 0;

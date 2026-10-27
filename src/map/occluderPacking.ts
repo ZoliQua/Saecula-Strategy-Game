@@ -40,10 +40,16 @@ export function alphaBounds(
 
 /**
  * Shelf packing into a fixed-width atlas: rectangles go left to right in
- * rows as tall as their tallest member (inputs sorted tallest first).
+ * rows as tall as their tallest member (inputs sorted tallest first),
+ * `gutter` px of empty space after every rectangle and row (so linear
+ * filtering, also of a downscaled normal map, never mixes neighbours).
  * Returns each rectangle's position (input order) and the atlas height.
  */
-export function shelfPack(sizes: ReadonlyArray<{ w: number; h: number }>, width: number): { at: Array<[number, number]>; height: number } {
+export function shelfPack(
+  sizes: ReadonlyArray<{ w: number; h: number }>,
+  width: number,
+  gutter = 0,
+): { at: Array<[number, number]>; height: number } {
   const order = sizes.map((_, i) => i).sort((a, b) => (sizes[b]?.h ?? 0) - (sizes[a]?.h ?? 0));
   const at: Array<[number, number]> = new Array<[number, number]>(sizes.length);
   let x = 0;
@@ -54,12 +60,19 @@ export function shelfPack(sizes: ReadonlyArray<{ w: number; h: number }>, width:
     if (!s) continue;
     if (x + s.w > width) {
       x = 0;
-      y += row;
+      y += row + gutter;
       row = 0;
     }
     at[i] = [x, y];
-    x += s.w;
+    x += s.w + gutter;
     row = Math.max(row, s.h);
   }
-  return { at, height: y + row };
+  return { at, height: y + row + gutter };
+}
+
+/** The smallest rectangle on multiples of `align` that contains `r`. */
+export function alignOut(r: Rect, align: number): Rect {
+  const x = Math.floor(r.x / align) * align;
+  const y = Math.floor(r.y / align) * align;
+  return { x, y, w: Math.ceil((r.x + r.w) / align) * align - x, h: Math.ceil((r.y + r.h) / align) * align - y };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alphaBounds, shelfPack } from './occluderPacking';
+import { alignOut, alphaBounds, shelfPack } from './occluderPacking';
 
 describe('occluder packing', () => {
   it('finds the opaque bounds of a cell, aligned outward', () => {
@@ -35,5 +35,33 @@ describe('occluder packing', () => {
     });
     // Rows: [30×30], [50×20], [20×20 + 40×10].
     expect(height).toBe(30 + 20 + 20);
+  });
+
+  it('keeps a gutter between packed rectangles (no filtering bleed across frames)', () => {
+    const sizes = [
+      { w: 8, h: 8 },
+      { w: 8, h: 4 },
+      { w: 12, h: 8 },
+      { w: 4, h: 4 },
+    ];
+    const gutter = 4;
+    const { at, height } = shelfPack(sizes, 32, gutter);
+    const rects = sizes.map((s, i) => ({ x: at[i]?.[0] ?? -1, y: at[i]?.[1] ?? -1, ...s }));
+    rects.forEach((a, i) => {
+      expect(a.x % gutter).toBe(0);
+      expect(a.y % gutter).toBe(0);
+      expect(a.x + a.w).toBeLessThanOrEqual(32);
+      expect(a.y + a.h + gutter).toBeLessThanOrEqual(height);
+      rects.slice(i + 1).forEach((b) => {
+        // Grown by the gutter, no two rectangles may touch.
+        const near = a.x < b.x + b.w + gutter && b.x < a.x + a.w + gutter && a.y < b.y + b.h + gutter && b.y < a.y + a.h + gutter;
+        expect(near).toBe(false);
+      });
+    });
+  });
+
+  it('grows a rectangle outward onto an alignment grid (negative coordinates too)', () => {
+    expect(alignOut({ x: -35, y: -75, w: 64, h: 91 }, 4)).toEqual({ x: -36, y: -76, w: 68, h: 92 });
+    expect(alignOut({ x: 8, y: 4, w: 8, h: 8 }, 4)).toEqual({ x: 8, y: 4, w: 8, h: 8 });
   });
 });

@@ -1,8 +1,7 @@
 import type Phaser from 'phaser';
-import { LIGHTING_ENABLED } from '../config/visual';
 import { makeCanvas } from '../iso/art/canvas';
-import { blockBounds, type CliffField } from '../iso/art/cliffArt';
-import { CLIFF_NORMAL_DOWNSCALE, type OccluderSink } from '../iso/art/cliffPainter';
+import type { CliffField } from '../iso/art/cliffArt';
+import { CLIFF_NORMAL_DOWNSCALE, occluderCellBounds, type OccluderSink } from '../iso/art/cliffPainter';
 import { lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap } from '../iso/art/lighting/litTextures';
 import { encodeNormal, N_UP } from '../iso/art/lighting/viewSpace';
@@ -28,8 +27,12 @@ export interface OccluderPlan extends OccluderSink {
   readonly tiles: ReadonlyArray<readonly [number, number]>;
 }
 
-/** Lays out one atlas cell per cliff tile that needs an occluder (see needsOccluder). */
-export function planOccluders(field: CliffField): OccluderPlan | null {
+/**
+ * Lays out one atlas cell per cliff tile that needs an occluder (see
+ * needsOccluder). `withNormals`: the scene's lighting is active (the
+ * chunks get normals under the same condition, see lightingActive).
+ */
+export function planOccluders(field: CliffField, withNormals: boolean): OccluderPlan | null {
   const tiles: Array<[number, number]> = [];
   const reach = occluderReach(field.relief.maxHeight);
   for (let ty = 0; ty < field.height; ty++) {
@@ -39,16 +42,17 @@ export function planOccluders(field: CliffField): OccluderPlan | null {
   }
   if (tiles.length === 0) return null;
   const s = CLIFF_NORMAL_DOWNSCALE;
-  const box = blockBounds(0, 0, field.relief.maxHeight);
+  // Cells differ by tile only in position (all on the texel grid), so one size fits all.
+  const box = occluderCellBounds(0, 0, field.relief.maxHeight);
   const cellW = box.w;
-  const cellH = Math.ceil(box.h / s) * s;
+  const cellH = box.h;
   const perRow = Math.floor(ATLAS_WIDTH / cellW);
   const aw = perRow * cellW;
   const ah = Math.ceil(tiles.length / perRow) * cellH;
   const cells = new Map<number, readonly [number, number]>();
   tiles.forEach(([tx, ty], i) => cells.set(ty * field.width + tx, [(i % perRow) * cellW, Math.floor(i / perRow) * cellH]));
   let normal: ImageData | null = null;
-  if (LIGHTING_ENABLED) {
+  if (withNormals) {
     normal = new ImageData(aw / s, ah / s);
     const [r, g, b] = encodeNormal(N_UP);
     for (let o = 0; o < normal.data.length; o += 4) {
@@ -88,7 +92,8 @@ export class CliffOccluders {
       const trim = alphaBounds(plan.albedo.data, plan.albedo.width, { x: cell[0], y: cell[1], w: plan.cellW, h: plan.cellH }, S);
       if (trim) items.push({ tx, ty, cell, trim });
     }
-    const { at, height } = shelfPack(items.map((it) => ({ w: it.trim.w, h: it.trim.h })), ATLAS_WIDTH);
+    // One normal texel of gutter around every block: linear filtering never mixes neighbours.
+    const { at, height } = shelfPack(items.map((it) => ({ w: it.trim.w, h: it.trim.h })), ATLAS_WIDTH, S);
     const aw = ATLAS_WIDTH;
     const ah = Math.max(S, Math.ceil(height / S) * S);
     const albedo = new ImageData(aw, ah);
@@ -114,7 +119,7 @@ export class CliffOccluders {
     items.forEach((it, i) => {
       const [px, py] = at[i] ?? [0, 0];
       tex.add(i, 0, px, py, it.trim.w, it.trim.h);
-      const b = blockBounds(it.tx, it.ty, field.relief.maxHeight);
+      const b = occluderCellBounds(it.tx, it.ty, field.relief.maxHeight);
       const img = scene.add.image(b.x + it.trim.x, b.y + it.trim.y, this.key, i).setOrigin(0, 0);
       this.images.push(lit(img.setDepth(it.tx + it.ty + OCCLUDER_DEPTH_OFFSET)));
     });

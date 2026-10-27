@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { TERRAIN_LOOK } from '../config/visual';
 import { LightManager } from '../iso/art/lighting/LightManager';
-import { shadowVector, sunAt, sunDirection } from '../iso/art/lighting/sun';
+import { sunAt } from '../iso/art/lighting/sun';
 import type { Relief } from './cliffRelief';
+import { surfaceLighting } from './surfaceLighting';
 import { packSurfaceMask } from './surfaceMask';
 import { TERRAIN_SURFACE_FRAG } from './terrainSurfaceShader';
 import type { WaterMask } from './waterMask';
@@ -64,6 +65,7 @@ export class TerrainSurface {
       uAmbient: { type: '3f', value: { x: 0.6, y: 0.6, z: 0.62 } },
       uShadow: { type: '4f', value: { x: 0, y: 0, z: 0, w: 0 } },
       uLayers: { type: '2f', value: { x: relief ? 1 : 0, y: water ? 1 : 0 } },
+      uLit: { type: '1f', value: 1 },
     });
     const shader = scene.add.shader(base, x, y, w, h).setOrigin(0, 0).setDepth(SURFACE_DEPTH);
     shader.setSampler2D('iChannel0', this.key, 0, {
@@ -75,20 +77,20 @@ export class TerrainSurface {
     this.shader = shader;
   }
 
-  /** Per frame: clock, sun and shadow direction. */
+  /** Per frame: clock, sun and shadow direction (fixed, shadowless daylight when the scene is unlit). */
   update(timeMs: number): void {
     const s = this.shader;
     if (!s) return;
-    const sun = LightManager.of(this.scene)?.sun ?? sunAt(0.3);
-    const sv = shadowVector(sun);
+    const lights = LightManager.of(this.scene);
+    const u = surfaceLighting(lights?.sun ?? sunAt(0.3), lights?.active ?? false, TERRAIN_LOOK.cliffShadowAlpha);
+    const v3 = (v: readonly number[]) => ({ x: v[0] ?? 0, y: v[1] ?? 0, z: v[2] ?? 0 });
     s.setUniform('uTime.value', timeMs / 1000);
-    s.setUniform('uSunDir.value', { x: sun.dir[0], y: sun.dir[1], z: sun.dir[2] });
-    // Glints mirror the sun behind the scene, pulled towards the view axis so they show at any hour.
-    const g = sunDirection(270 - (sun.azimuthDeg - 90) * 0.35, Math.max(18, sun.elevationDeg));
-    s.setUniform('uGlintDir.value', { x: g[0], y: g[1], z: g[2] });
-    s.setUniform('uSunColor.value', { x: sun.color[0], y: sun.color[1], z: sun.color[2] });
-    s.setUniform('uAmbient.value', { x: sun.ambient[0], y: sun.ambient[1], z: sun.ambient[2] });
-    s.setUniform('uShadow.value', { x: sv.x, y: sv.y, z: TERRAIN_LOOK.cliffShadowAlpha * sv.strength, w: 0 });
+    s.setUniform('uSunDir.value', v3(u.sunDir));
+    s.setUniform('uGlintDir.value', v3(u.glintDir));
+    s.setUniform('uSunColor.value', v3(u.sunColor));
+    s.setUniform('uAmbient.value', v3(u.ambient));
+    s.setUniform('uShadow.value', { x: u.shadow[0], y: u.shadow[1], z: u.shadow[2], w: 0 });
+    s.setUniform('uLit.value', u.lit);
   }
 
   destroy(): void {
