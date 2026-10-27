@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
 import { PLAYER_COLORS } from '../game/Player';
 import { paintPortrait } from '../iso/art/units/sheet';
-import { buildingTexture } from '../iso/textures';
-import type { AgeId, BuildingType, UnitType } from '../types';
+import { buildingTexture } from '../iso/buildingTextures';
+import type { AgeId, BuildingType, CivId, UnitType } from '../types';
 
 const cache = new Map<string, string>();
 
@@ -28,9 +28,9 @@ export function thumbnail(textures: Phaser.Textures.TextureManager, key: string,
   return url;
 }
 
-/** HUD picture of a building in an age style (painted on first need), in the human player's colour. */
-export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type: BuildingType, age: AgeId): string {
-  return thumbnail(textures, buildingTexture({ textures }, type, age, 1));
+/** HUD picture of a building in a civ's age style (painted on first need), in the human player's colour. */
+export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type: BuildingType, age: AgeId, civ: CivId): string {
+  return thumbnail(textures, buildingTexture({ textures }, type, age, 1, civ));
 }
 
 /** HUD portrait of a unit type (front idle pose, in the human player's colour). */

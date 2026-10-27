@@ -1,5 +1,6 @@
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../game/wallNeighbours';
-import type { AgeId } from '../../../types';
+import { CIV_DEFS, type WallStyleId } from '../../../config/civs';
+import type { AgeId, CivId } from '../../../types';
 import { PLINTH } from '../architecture/baroqueParts';
 import { helm } from '../architecture/roofs';
 import { HW, type IsoPainter } from '../isoPainter';
@@ -263,3 +264,11 @@ const BASTION: WallAgeStyle = {
 };
 
 export const WALL_STYLES: Record<AgeId, WallAgeStyle> = { 1: PALISADE, 2: CURTAIN, 3: BASTION };
+
+/** Wall styles by registry id (config/civs.ts wallStyle). */
+export const WALL_STYLE_BY_ID: Record<WallStyleId, WallAgeStyle> = { palisade: PALISADE, curtain: CURTAIN, bastion: BASTION };
+
+/** The wall style a civ builds in an age. */
+export function wallStyleFor(age: AgeId, civ: CivId): WallAgeStyle {
+  return WALL_STYLE_BY_ID[CIV_DEFS[civ].wallStyle[age]];
+}

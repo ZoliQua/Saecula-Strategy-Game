@@ -15,8 +15,8 @@
  *        Variants share ONE TextureSource with the base: removing either
  *        texture as-is destroys the shared normal map for all of them, so
  *        never re-register one mid-game; to free one, detach the variant
- *        first (dataSource = []) and drop the base last (see textures.ts
- *        releaseStaleBuildingArt).
+ *        first (dataSource = []) and drop the base last (see
+ *        buildingTextures.ts releaseStaleBuildingArt).
  * 2. Pipeline. Lit GameObjects call `lit(gameObject)` (sets the
  *    IsoLight2D pipeline when lighting is active; no-op otherwise).
  *    UI, fog, particles, glows and shadows stay unlit.

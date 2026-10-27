@@ -5,7 +5,7 @@ import { wallBannerAnchor } from '../../../iso/art/walls/paintWall';
 import { WALL_BANNER_ORIGIN } from '../../../iso/art/walls/wallBanner';
 import { pieceHasPost } from '../../../iso/art/walls/wallPiece';
 import { FX_KEYS } from '../../../iso/textures';
-import type { AgeId } from '../../../types';
+import type { AgeId, CivId } from '../../../types';
 
 const SCALE = 1 / ART_SCALE;
 
@@ -19,8 +19,8 @@ export class WallBanners {
 
   constructor(private readonly scene: Phaser.Scene) {}
 
-  /** Places (or hides) the banner of a wall showing `piece` in `age`. */
-  sync(owner: object, sprite: Phaser.GameObjects.Sprite, piece: number, age: AgeId, color: number, show: boolean): void {
+  /** Places (or hides) the banner of a wall showing `piece` in `age` and `civ`'s style. */
+  sync(owner: object, sprite: Phaser.GameObjects.Sprite, piece: number, age: AgeId, civ: CivId, color: number, show: boolean): void {
     let banner = this.banners.get(owner);
     if (!pieceHasPost(piece)) {
       banner?.setVisible(false);
@@ -31,7 +31,7 @@ export class WallBanners {
       banner.setTint(color);
       this.banners.set(owner, banner);
     }
-    const [dx, dy] = wallBannerAnchor(age);
+    const [dx, dy] = wallBannerAnchor(age, civ);
     const now = this.scene.time.now;
     // Gentle flutter, out of phase between posts.
     const flutter = 0.86 + 0.14 * Math.sin(now * 0.0045 + sprite.x * 0.07 + sprite.y * 0.03);

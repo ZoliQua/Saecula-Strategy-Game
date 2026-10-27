@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { createRng } from '../map/random';
 import {
+  assignCivs,
+  civsInPlay,
   clampAiCount,
+  matchCivs,
   clampSeed,
   defaultSetupConfig,
   exceedsRecommendedAi,
@@ -20,6 +24,7 @@ describe('GameSetupConfig', () => {
       aiCount: 3,
       difficulty: 'easy',
       civ: 'hungarian',
+      aiCivs: 'mixed',
       seed: 42,
     });
     expect(mapTiles(c)).toBe(96);
@@ -57,6 +62,17 @@ describe('GameSetupConfig', () => {
     expect(c.civ).toBe('hungarian');
   });
 
+  it('keeps an available human civ', () => {
+    expect(withSetup(defaultSetupConfig(1), { civ: 'english' }).civ).toBe('english');
+  });
+
+  it('falls back to a mixed AI line-up for an unavailable AI civ', () => {
+    expect(withSetup(defaultSetupConfig(1), { aiCivs: 'english' }).aiCivs).toBe('english');
+    expect(withSetup(defaultSetupConfig(1), { aiCivs: 'russian' }).aiCivs).toBe('mixed');
+    const bogus = 'martian' as unknown as GameSetupConfig['aiCivs'];
+    expect(withSetup(defaultSetupConfig(1), { aiCivs: bogus }).aiCivs).toBe('mixed');
+  });
+
   it('offers every map template', () => {
     for (const template of ['meadow', 'wilderness', 'islands', 'fortress', 'random'] as const) {
       expect(withSetup(defaultSetupConfig(1), { template }).template).toBe(template);
@@ -79,5 +95,51 @@ describe('GameSetupConfig', () => {
   it('draws seeds from 1..999999', () => {
     expect(randomSeed(() => 0)).toBe(1);
     expect(randomSeed(() => 0.999999999)).toBe(999_999);
+  });
+});
+
+describe('assignCivs', () => {
+  const config = (aiCount: number, aiCivs: GameSetupConfig['aiCivs'], seed = 1): GameSetupConfig =>
+    withSetup(defaultSetupConfig(seed), { aiCount, aiCivs });
+
+  it('gives every AI the chosen civ', () => {
+    expect(assignCivs(config(4, 'english'), createRng(1))).toEqual(['english', 'english', 'english', 'english']);
+    expect(assignCivs(config(2, 'hungarian'), createRng(1))).toEqual(['hungarian', 'hungarian']);
+  });
+
+  it('mixed: one civ per AI, each available civ at least once with two or more AIs', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      for (let ais = 2; ais <= 5; ais++) {
+        const civs = assignCivs(config(ais, 'mixed', seed), createRng(seed));
+        expect(civs).toHaveLength(ais);
+        expect(new Set(civs)).toEqual(new Set(['hungarian', 'english']));
+      }
+    }
+  });
+
+  it('mixed: a lone AI gets an available civ', () => {
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 50; seed++) {
+      const civs = assignCivs(config(1, 'mixed', seed), createRng(seed));
+      expect(civs).toHaveLength(1);
+      seen.add(civs[0]!);
+    }
+    expect(seen).toEqual(new Set(['hungarian', 'english']));
+  });
+
+  it('is deterministic per seed', () => {
+    const c = config(5, 'mixed', 77);
+    expect(assignCivs(c, createRng(9))).toEqual(assignCivs(c, createRng(9)));
+    expect(matchCivs(c)).toEqual(matchCivs(c));
+    const lineups = new Set<string>();
+    for (let seed = 1; seed <= 30; seed++) lineups.add(matchCivs(config(5, 'mixed', seed)).ais.join(','));
+    expect(lineups.size).toBeGreaterThan(1);
+  });
+
+  it('matchCivs pairs the human civ with the AI line-up; civsInPlay lists each civ once', () => {
+    const c = withSetup(defaultSetupConfig(3), { civ: 'english', aiCount: 3, aiCivs: 'english' });
+    expect(matchCivs(c)).toEqual({ human: 'english', ais: ['english', 'english', 'english'] });
+    expect(civsInPlay(c)).toEqual(['english']);
+    expect(civsInPlay(withSetup(c, { aiCivs: 'hungarian' }))).toEqual(['english', 'hungarian']);
   });
 });

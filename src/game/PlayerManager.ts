@@ -39,15 +39,16 @@ export class PlayerManager {
   }
 }
 
-/** Human (id 1) plus `aiCount` AI players (ids 2..aiCount + 1), each with its own colour. */
-export function createPlayers(humanCiv: CivId, aiCount: number): PlayerManager {
+/**
+ * Human (id 1) plus one AI per entry of `aiCivs` (ids 2..), each with its
+ * own colour and the civ given for it (GameSetupConfig matchCivs).
+ */
+export function createPlayers(humanCiv: CivId, aiCivs: readonly CivId[]): PlayerManager {
   const players = [createPlayer({ id: 1, isHuman: true, civ: humanCiv })];
-  for (let i = 0; i < aiCount; i++) {
-    players.push(createPlayer({ id: i + 2, isHuman: false, civ: 'english' }));
-  }
+  aiCivs.forEach((civ, i) => players.push(createPlayer({ id: i + 2, isHuman: false, civ })));
   return new PlayerManager(players);
 }
 
 export function createDefaultPlayers(): PlayerManager {
-  return createPlayers('hungarian', 1);
+  return createPlayers('hungarian', ['hungarian']);
 }

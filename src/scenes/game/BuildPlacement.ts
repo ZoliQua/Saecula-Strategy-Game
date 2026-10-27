@@ -5,10 +5,10 @@ import type { EcsWorld } from '../../ecs/world';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import type { TileCoord } from '../../iso/coordinates';
 import { tileToScreen } from '../../iso/coordinates';
-import { buildingTexture } from '../../iso/textures';
+import { buildingTexture } from '../../iso/buildingTextures';
 import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import type { MapData } from '../../map/MapData';
-import type { AgeId, BuildingType } from '../../types';
+import type { AgeId, BuildingType, CivId } from '../../types';
 import { uiStore } from '../../ui/store';
 import { WallLinePlacement } from './WallLinePlacement';
 
@@ -25,8 +25,9 @@ export class BuildPlacement {
     private readonly getHoverTile: () => TileCoord | null,
     private readonly getAge: () => AgeId = () => 1,
     private readonly playerId = 1,
+    private readonly civ: CivId = 'hungarian',
   ) {
-    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId, getAge);
+    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId, getAge, civ);
   }
 
   /** Walls are laid by dragging a line instead of a single click. */
@@ -117,7 +118,7 @@ export class BuildPlacement {
     }
     const spec = BUILDING_SPECS[placement];
     // The ghost previews the building in the player's current age style.
-    const key = buildingTexture(this.scene, placement, this.getAge(), this.playerId);
+    const key = buildingTexture(this.scene, placement, this.getAge(), this.playerId, this.civ);
     if (!this.ghost) {
       this.ghost = this.scene.add.image(0, 0, key);
       this.ghost.setAlpha(0.6).setScale(1 / ART_SCALE);

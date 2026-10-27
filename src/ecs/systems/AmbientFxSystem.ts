@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { tileToScreen } from '../../iso/coordinates';
 import { liveView } from '../../iso/liveView';
-import { BUILDING_LIGHT, FX_KEYS } from '../../iso/textures';
+import { BUILDING_LIGHT } from '../../iso/buildingTextures';
+import { FX_KEYS } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';

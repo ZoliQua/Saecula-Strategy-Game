@@ -9,15 +9,16 @@ import { wonderStage } from '../../iso/art/architecture/wonder';
 import {
   BUILDING_LIGHT,
   buildingTexture,
-  constructionKey,
+  isWonderStageKey,
   releaseStaleBuildingArt,
   releaseUnusedWallPieces,
   releaseWonderStages,
   wallTexture,
   wonderStageTexture,
-} from '../../iso/textures';
+} from '../../iso/buildingTextures';
+import { constructionKey } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
-import type { AgeId } from '../../types';
+import type { AgeId, CivId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { BUILDING_DEATH_TTL_MS } from '../../config/balance';
@@ -57,6 +58,7 @@ export class RenderSystem {
   /** Buildings whose re-skin waits for their age-up effect (AgeUpFxSystem). */
   private readonly heldReskin = new Set<Entity>();
   private ageOf: (playerId: number) => AgeId = () => 1;
+  private civOf: (playerId: number) => CivId = () => 'hungarian';
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -74,7 +76,7 @@ export class RenderSystem {
       this.unlight.get(entity)?.();
       this.unlight.delete(entity);
       // A Wonder razed mid-build: its scaffolding stages go once nothing shows them.
-      const stage = entity.sprite?.texture.key.startsWith('building_wonder~s') ?? false;
+      const stage = entity.sprite ? isWonderStageKey(entity.sprite.texture.key) : false;
       entity.sprite?.destroy();
       if (stage) releaseWonderStages(this.scene, this.keysInUse());
       delete entity.sprite;
@@ -95,11 +97,19 @@ export class RenderSystem {
     this.ageOf = ageOf;
   }
 
-  /** Frees building textures of age styles no sprite shows any more (texture memory budget). */
-  releaseStaleAgeArt(ageOf: (playerId: number) => AgeId | undefined, minAge: AgeId): number {
+  /** Where sprites read their owner's civ (which civ's art they show). Set before the first update. */
+  setCivSource(civOf: (playerId: number) => CivId): void {
+    this.civOf = civOf;
+  }
+
+  /**
+   * Frees building textures of age styles no sprite shows any more, per
+   * civ (texture memory budget; see releaseStaleBuildingArt).
+   */
+  releaseStaleAgeArt(ageOf: (playerId: number) => AgeId | undefined, minAgeOf: (civ: CivId) => AgeId | undefined): number {
     const inUse = new Set<string>();
     for (const e of this.renderable) if (e.building && e.sprite) inUse.add(e.sprite.texture.key);
-    return releaseStaleBuildingArt(this.scene, ageOf, minAge, inUse);
+    return releaseStaleBuildingArt(this.scene, ageOf, minAgeOf, inUse);
   }
 
   /**
@@ -166,7 +176,8 @@ export class RenderSystem {
         if (entity.building.type === 'wall') {
           const shownAge = ((this.shownLook.get(entity) ?? 1) % 4) as AgeId;
           const show = visible && !entity.underConstruction && !entity.dying;
-          this.banners.sync(entity, sprite, this.joins.pieceOf(entity), shownAge, teamColor(entity.owner?.playerId ?? 1), show);
+          const owner = entity.owner?.playerId ?? 1;
+          this.banners.sync(entity, sprite, this.joins.pieceOf(entity), shownAge, this.civOf(owner), teamColor(owner), show);
         }
       }
       applyDying(sprite, entity);
@@ -203,7 +214,7 @@ export class RenderSystem {
     const playerId = entity.owner?.playerId ?? 1;
     let sprite: Phaser.GameObjects.Sprite;
     if (entity.unit) {
-      const pair = createUnitSprites(this.scene, entity.unit.unitType, entity.renderable.textureKey, teamColor(playerId));
+      const pair = createUnitSprites(this.scene, entity.unit.unitType, this.civOf(playerId), teamColor(playerId));
       this.units.set(entity, pair);
       sprite = pair.body;
     } else {
@@ -248,10 +259,11 @@ export class RenderSystem {
   private buildingKey(entity: Renderable): string {
     const type = entity.building?.type;
     const playerId = entity.owner?.playerId ?? 1;
-    if (type === 'wall') return wallTexture(this.scene, this.joins.pieceOf(entity), this.ownerAge(entity));
+    const civ = this.civOf(playerId);
+    if (type === 'wall') return wallTexture(this.scene, this.joins.pieceOf(entity), this.ownerAge(entity), civ);
     const stage = this.wonderStageOf(entity);
-    if (stage !== null) return wonderStageTexture(this.scene, stage);
-    return type ? buildingTexture(this.scene, type, this.ownerAge(entity), playerId) : entity.renderable.textureKey;
+    if (stage !== null) return wonderStageTexture(this.scene, stage, civ);
+    return type ? buildingTexture(this.scene, type, this.ownerAge(entity), playerId, civ) : entity.renderable.textureKey;
   }
 
   /** Swaps a building sprite to its owner's current age style (texture, origin, lights). */
@@ -259,7 +271,7 @@ export class RenderSystem {
     this.shownLook.set(entity, this.lookOf(entity));
     const key = this.buildingKey(entity);
     if (sprite.texture.key === key) return;
-    const wasStage = sprite.texture.key.startsWith('building_wonder~s');
+    const wasStage = isWonderStageKey(sprite.texture.key);
     const cropped = sprite.isCropped;
     if (cropped) sprite.setCrop();
     sprite.setTexture(key);
@@ -273,13 +285,13 @@ export class RenderSystem {
   private attachLighting(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {
     const lights = LightManager.of(this.scene);
     if (!lights) return;
-    const baseKey = entity.renderable.textureKey;
     const b = entity.building;
     if (!b) {
-      if (this.units.get(entity)?.art) this.unlight.set(entity, lights.attachCaster(sprite, baseKey));
+      const unit = this.units.get(entity);
+      if (unit?.art) this.unlight.set(entity, lights.attachCaster(sprite, unit.key));
       return;
     }
-    const info = BUILDING_LIGHT.get(sprite.texture.key) ?? BUILDING_LIGHT.get(baseKey);
+    const info = BUILDING_LIGHT.get(sprite.texture.key);
     this.unlight.set(
       entity,
       lights.attachBuilding({

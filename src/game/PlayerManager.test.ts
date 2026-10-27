@@ -33,9 +33,14 @@ describe('PlayerManager', () => {
   });
 
   it('createPlayers gives every AI its own id and colour', () => {
-    const mgr = createPlayers('hungarian', 5);
+    const mgr = createPlayers('hungarian', ['english', 'hungarian', 'english', 'english', 'hungarian']);
     expect(mgr.all().map((p) => p.id)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(mgr.ais()).toHaveLength(5);
     expect(new Set(mgr.all().map((p) => p.color)).size).toBe(6);
+  });
+
+  it('createPlayers gives each player its assigned civ', () => {
+    const mgr = createPlayers('english', ['hungarian', 'english']);
+    expect(mgr.all().map((p) => p.civ)).toEqual(['english', 'hungarian', 'english']);
   });
 });

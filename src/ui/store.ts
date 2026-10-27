@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type {
   AgeId,
   BuildingType,
+  CivId,
   Population,
   Resources,
   TechId,
@@ -58,6 +59,8 @@ export interface UiState {
   resources: Resources;
   population: Population;
   currentAge: AgeId;
+  /** The human's civ (which civ's art the HUD pictures show). */
+  civ: CivId;
   /** Technologies the human has finished. */
   researchedTechs: readonly TechId[];
   /** Limited buildings (wonder) the human already owns or is building. */
@@ -76,6 +79,7 @@ export interface UiActions {
   setResources: (r: Partial<Resources>) => void;
   setPopulation: (p: Partial<Population>) => void;
   setAge: (age: AgeId) => void;
+  setCiv: (civ: CivId) => void;
   setResearchedTechs: (techs: readonly TechId[]) => void;
   setUniqueBuilt: (types: readonly BuildingType[]) => void;
   setSelectedEntity: (info: SelectedEntityInfo | null, count?: number) => void;
@@ -90,6 +94,7 @@ const INITIAL: UiState = {
   resources: { food: 200, wood: 200, gold: 100 },
   population: { current: 3, cap: 10 },
   currentAge: 1,
+  civ: 'hungarian',
   researchedTechs: [],
   uniqueBuilt: [],
   selectedEntity: null,
@@ -107,6 +112,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setPopulation: (p) =>
       set((state) => ({ population: { ...state.population, ...p } })),
     setAge: (age) => set({ currentAge: age }),
+    setCiv: (civ) => set({ civ }),
     setResearchedTechs: (techs) => set({ researchedTechs: techs }),
     setUniqueBuilt: (types) => set({ uniqueBuilt: types }),
     setSelectedEntity: (info, count) =>
@@ -122,6 +128,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     resources: { ...INITIAL.resources },
     population: { ...INITIAL.population },
     currentAge: INITIAL.currentAge,
+    civ: INITIAL.civ,
     researchedTechs: [],
     uniqueBuilt: [],
     selectedEntity: null,

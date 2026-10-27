@@ -8,13 +8,13 @@ import {
   WALL_SW,
   WALL_W,
 } from '../../../game/wallNeighbours';
-import type { AgeId } from '../../../types';
+import type { AgeId, CivId } from '../../../types';
 import { ART_SCALE } from '../canvas';
 import { HH, IsoPainter } from '../isoPainter';
 import type { LitArt } from '../lighting/normalLayer';
 import type { UV } from './prism';
 import { pieceArms, pieceHasPost } from './wallPiece';
-import { WALL_STYLES, type Arm } from './wallStyles';
+import { wallStyleFor, type Arm, type WallAgeStyle } from './wallStyles';
 
 /** Far end of each arm (tile edge midpoint or corner, shared with the neighbour). */
 const ARM_ENDS: ReadonlyArray<readonly [number, UV]> = [
@@ -31,23 +31,12 @@ const CENTRE: UV = [0.5, 0.5];
 /** Banner pole above the post top, art px. */
 const POLE = 26;
 
-/** Texture key of one wall piece in an age style. */
-export function wallPieceKey(piece: number, age: AgeId): string {
-  return `building_wall~j${piece}~a${age}`;
-}
-
-/** Age of a wall piece key, or undefined for other keys. */
-export function wallPieceKeyAge(key: string): AgeId | undefined {
-  const m = /^building_wall~j\d+~a([123])$/.exec(key);
-  return m ? (Number(m[1]) as AgeId) : undefined;
-}
-
 /**
  * Where the team banner hangs on a post (top of its pole), world px from
  * the sprite anchor (the tile's front corner).
  */
-export function wallBannerAnchor(age: AgeId): readonly [number, number] {
-  return [0, -(HH + WALL_STYLES[age].postTop + POLE) / ART_SCALE];
+export function wallBannerAnchor(age: AgeId, civ: CivId): readonly [number, number] {
+  return [0, -(HH + wallStyleFor(age, civ).postTop + POLE) / ART_SCALE];
 }
 
 /**
@@ -57,22 +46,22 @@ export function wallBannerAnchor(age: AgeId): readonly [number, number] {
  * shared tile edge / corner, so neighbouring pieces meet seamlessly in
  * straight and 45° runs. Parts are painted back to front. No team
  * colour: banners are a tinted overlay (RenderSystem), so one texture
- * per (piece, age) serves every player.
+ * per (piece, age, civ) serves every player.
  */
-export function paintWallPiece(piece: number, age: AgeId): LitArt {
-  const p = new IsoPainter(1, 1, wallMaxHeight(age), 4211 + piece * 7 + age * 131);
-  paintWallPieceInto(p, piece, age);
+export function paintWallPiece(piece: number, age: AgeId, civ: CivId): LitArt {
+  const style = wallStyleFor(age, civ);
+  const p = new IsoPainter(1, 1, wallMaxHeight(style), 4211 + piece * 7 + age * 131);
+  paintWallPieceInto(p, piece, style);
   return p.result();
 }
 
-/** Tallest painted point of a wall piece (canvas sizing). */
-export function wallMaxHeight(age: AgeId): number {
-  return WALL_STYLES[age].postTop + POLE + 12;
+/** Tallest painted point of a wall piece in a style (canvas sizing). */
+export function wallMaxHeight(style: WallAgeStyle): number {
+  return style.postTop + POLE + 12;
 }
 
-/** Paints a wall piece into a 1×1 painter (see paintWallPiece). */
-export function paintWallPieceInto(p: IsoPainter, piece: number, age: AgeId): void {
-  const style = WALL_STYLES[age];
+/** Paints a wall piece in a style into a 1×1 painter (see paintWallPiece). */
+export function paintWallPieceInto(p: IsoPainter, piece: number, style: WallAgeStyle): void {
   const post = pieceHasPost(piece);
   const arms: Arm[] = [];
   for (const [bit, end] of ARM_ENDS) {

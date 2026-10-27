@@ -17,7 +17,7 @@ import {
 } from '../../game/GameSetupConfig';
 import { MAP_TEMPLATES } from '../../map/generator';
 import { hu } from '../../i18n/hu';
-import type { CivId } from '../../types';
+import { CIV_IDS } from '../../config/civs';
 import { el, uiRoot } from '../dom';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
@@ -28,7 +28,6 @@ const ARROW = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" strok
 const BACK = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4 3 8l4 4"/></svg>`;
 const DICE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>`;
 
-const CIV_IDS: readonly CivId[] = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish'];
 
 export interface GameSetupHandlers {
   onStart: (config: GameSetupConfig) => void;

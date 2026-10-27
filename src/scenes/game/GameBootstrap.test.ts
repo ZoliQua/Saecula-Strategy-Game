@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEcsWorld } from '../../ecs/world';
-import { defaultSetupConfig, mapTiles, withSetup } from '../../game/GameSetupConfig';
+import { defaultSetupConfig, mapTiles, matchCivs, withSetup } from '../../game/GameSetupConfig';
 import { createPlayers } from '../../game/PlayerManager';
 import { generateGameMap, spawnPresetWalls, spawnStartingEntities } from './GameBootstrap';
 
@@ -11,7 +11,7 @@ describe('game bootstrap from setup config', () => {
     expect(mapData.width).toBe(mapTiles(config));
     expect(starts).toHaveLength(4);
     const world = createEcsWorld();
-    spawnStartingEntities(world, createPlayers(config.civ, config.aiCount), mapData, starts);
+    spawnStartingEntities(world, createPlayers(config.civ, matchCivs(config).ais), mapData, starts);
     for (const id of [1, 2, 3, 4]) {
       const mine = world.entities.filter((e) => e.owner?.playerId === id);
       expect(mine.filter((e) => e.building?.type === 'town_center')).toHaveLength(1);
@@ -26,7 +26,7 @@ describe('game bootstrap from setup config', () => {
       expect(starts).toHaveLength(6);
       const world = createEcsWorld();
       const { mapData } = generateGameMap(config);
-      expect(() => spawnStartingEntities(world, createPlayers(config.civ, 5), mapData, starts)).not.toThrow();
+      expect(() => spawnStartingEntities(world, createPlayers(config.civ, matchCivs(config).ais), mapData, starts)).not.toThrow();
     }
   });
 
@@ -34,7 +34,7 @@ describe('game bootstrap from setup config', () => {
     const config = withSetup(defaultSetupConfig(5), { template: 'fortress', mapSize: 'small', aiCount: 2 });
     const { mapData, starts, walls } = generateGameMap(config);
     const world = createEcsWorld();
-    const players = createPlayers(config.civ, config.aiCount);
+    const players = createPlayers(config.civ, matchCivs(config).ais);
     spawnStartingEntities(world, players, mapData, starts);
     spawnPresetWalls(world, players, mapData, walls);
     const spawned = world.entities.filter((e) => e.building?.type === 'wall');

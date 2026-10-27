@@ -37,6 +37,7 @@ import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/consta
 import { commonWallPieceKeys } from '../../iso/art/walls/WallArtPrewarm';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
+import type { AgeId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 
 /** Owns every per-frame system and ticks them in a fixed, deterministic order. */
@@ -69,8 +70,8 @@ export class SystemRunner {
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
   private readonly evictTimer: Phaser.Time.TimerEvent;
-  /** Common wall pieces (all ages, painted while loading): eviction keeps them. */
-  private readonly keepWalls = commonWallPieceKeys([1, 2, 3]);
+  /** Common wall pieces (all ages of each civ in play, painted while loading): eviction keeps them. */
+  private readonly keepWalls: Set<string>;
   /** A* searches shared by every system, refilled each frame. */
   private readonly paths = new PathBudget(PATHFINDS_PER_FRAME, PATHFINDS_MAX_PER_TICK);
 
@@ -86,6 +87,8 @@ export class SystemRunner {
     this.humanId = players.human()?.id;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
+    this.render.setCivSource((id) => players.get(id)?.civ ?? 'hungarian');
+    this.keepWalls = commonWallPieceKeys([1, 2, 3], [...new Set(players.all().map((p) => p.civ))]);
     this.selection = new SelectionSystem(scene, world);
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
     this.movement = new MovementSystem(world, players);
@@ -128,13 +131,15 @@ export class SystemRunner {
       loop: true,
       callback: () => this.render.releaseUnusedArt(this.keepWalls),
     });
-    // Once the age-up wave has played out, drop age styles nobody shows any more.
+    // Once the age-up wave has played out, drop age styles nobody shows any more (per civ).
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
       scene.time.delayedCall(AGE_UP_FX.maxSpreadMs + AGE_UP_FX.swapMs + 1500, () => {
         const active = players.all().filter((p) => !p.defeated);
         if (active.length === 0) return;
-        const minAge = active.reduce((m, p) => (p.age < m ? p.age : m), active[0]!.age);
-        this.render.releaseStaleAgeArt((id) => active.find((p) => p.id === id)?.age, minAge);
+        this.render.releaseStaleAgeArt(
+          (id) => active.find((p) => p.id === id)?.age,
+          (civ) => minAge(active.filter((p) => p.civ === civ).map((p) => p.age)),
+        );
       });
     });
   }
@@ -197,4 +202,9 @@ export class SystemRunner {
     this.combatFx.destroy();
     this.projectileRender.destroy();
   }
+}
+
+/** Lowest of `ages`, or undefined when empty. */
+function minAge(ages: readonly AgeId[]): AgeId | undefined {
+  return ages.length === 0 ? undefined : (Math.min(...ages) as AgeId);
 }

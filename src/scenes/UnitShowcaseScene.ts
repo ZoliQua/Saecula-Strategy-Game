@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
-import { UNIT_SPECS } from '../ecs/archetypes/unit';
 import { PLAYER_COLORS } from '../game/Player';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { ANIM_FRAMES, frameIndex, headingSlot, unitSheetLayout, type UnitAnim } from '../iso/art/units/layout';
 import { paintAllUnitArt, type UnitArt } from '../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../iso/art/units/unitSprite';
-import type { Direction, UnitType } from '../types';
+import type { CivId, Direction, UnitType } from '../types';
 
 export interface ShowcaseOptions {
   anim?: UnitAnim;
@@ -13,6 +12,8 @@ export interface ShowcaseOptions {
   frame?: number;
   zoom?: number;
   phase?: number;
+  /** Whose unit look to show (default Hungarian). */
+  civ?: CivId;
 }
 
 const TYPES: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon'];
@@ -51,10 +52,9 @@ export class UnitShowcaseScene extends Phaser.Scene {
     TYPES.forEach((type, row) => {
       HEADINGS.forEach((dir, col) => {
         const color = PLAYER_COLORS[row % PLAYER_COLORS.length] ?? 0xffffff;
-        const key = UNIT_SPECS[type].textureKey;
-        const sprites = createUnitSprites(this, type, key, color, true);
+        const sprites = createUnitSprites(this, type, this.opts.civ ?? 'hungarian', color, true);
         sprites.body.setPosition(col * CELL_W + CELL_W / 2, row * CELL_H + CELL_H * 0.72);
-        this.lighting?.attachCaster(sprites.body, key);
+        this.lighting?.attachCaster(sprites.body, sprites.key);
         this.cells.push({ sprites, dir });
       });
     });

@@ -1,14 +1,9 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { PLAYER_COLORS } from '../game/Player';
-import type { AgeId, BuildingType } from '../types';
-import { ageArtKey, AGE_STYLED_BUILDINGS, artAgeFor, teamArtKey } from './art/architecture/ageStyle';
-import { paintBuilding, paintConstructionSite, paintWonderStage } from './art/buildings';
+import { buildingTexture, registerLitArt } from './buildingTextures';
+import { paintConstructionSite } from './art/buildings';
 import { paintWallBanner } from './art/walls/wallBanner';
-import { WONDER_STAGES } from './art/architecture/wonder';
-import { paintWallPiece, wallPieceKey, wallPieceKeyAge } from './art/walls/paintWall';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
-import { cropCanvas, trimLitArt, type TrimRect } from './art/trimArt';
 import {
   paintArrow,
   paintBolt,
@@ -33,16 +28,8 @@ import {
   type DecorArt,
 } from './art/decor';
 import { paintTreeAtlas } from './art/trees';
-import { attachNormalMap, halfNormalCanvas, registerShadowSilhouette, shareNormalMap } from './art/lighting/litTextures';
-import {
-  FOLIAGE_DERIVE,
-  normalMapFor,
-  ROCK_DERIVE,
-  type GlowPoint,
-  type LitArt,
-} from './art/lighting/normalLayer';
-import type { AnchoredLight } from './art/lighting/buildingLights';
-import type { VolumePoint } from './art/lighting/shadowGeometry';
+import { attachNormalMap, registerShadowSilhouette } from './art/lighting/litTextures';
+import { FOLIAGE_DERIVE, normalMapFor, ROCK_DERIVE } from './art/lighting/normalLayer';
 import { hash2 } from './art/palette';
 
 /** Decor texture keys + per-key origin Y, filled by generateArt. */
@@ -81,25 +68,6 @@ export function constructionKey(size: number): string {
   return `construction_${size}`;
 }
 
-/** Lighting data of one building texture (shared by its team variants). */
-export interface BuildingLightInfo {
-  /** Shadow volume + window glows, texture px. */
-  readonly volume: readonly VolumePoint[];
-  readonly glows: readonly GlowPoint[];
-  /** Painter-recorded torches / forges / lanterns and chimney tops (front-corner relative, world px). */
-  readonly lights: readonly AnchoredLight[];
-  readonly smoke: ReadonlyArray<readonly [number, number]>;
-}
-
-/** Per building texture key (age style and team variants included). */
-export const BUILDING_LIGHT = new Map<string, BuildingLightInfo>();
-
-type TextureHost = Pick<Phaser.Scene, 'textures'>;
-
-function teamColor(playerId: number): number {
-  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
-}
-
 /**
  * Generates every texture the game draws. All art is painted
  * procedurally onto canvases (see src/iso/art) so the repo carries
@@ -110,7 +78,8 @@ function teamColor(playerId: number): number {
  */
 export function generateArt(scene: Phaser.Scene): void {
   // Age-1 art for every building up front; later age styles paint on first need.
-  for (const spec of Object.values(BUILDING_SPECS)) buildingTexture(scene, spec.type, 1, 1);
+  // Hungarian is the menu's civ; GameScene pre-paints the civs in play while loading.
+  for (const spec of Object.values(BUILDING_SPECS)) buildingTexture(scene, spec.type, 1, 1, 'hungarian');
   for (const size of [1, 2, 3, 4]) {
     if (!scene.textures.exists(constructionKey(size))) {
       registerLitArt(scene, constructionKey(size), paintConstructionSite(size));
@@ -136,139 +105,6 @@ export function generateArt(scene: Phaser.Scene): void {
   for (let i = 0; i < BUSH_VARIANTS; i++) decor(decorKeys.bush(i), paintBerryBush(i), true, false);
   decor(decorKeys.stump, paintStump(), false, false);
   generateFx(scene);
-}
-
-/**
- * Texture key of a building in an age style and a player's colour,
- * painting it on first need: the (type, age) base once with its normal
- * map, each other team as an albedo-only variant sharing that map.
- * Textures stay cached until releaseStaleBuildingArt frees age styles
- * nobody shows; it detaches a variant's shared normal source before
- * removing it, and removes a base only after all its variants.
- */
-export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeId, playerId: number): string {
-  const ageKey = ageArtKey(BUILDING_SPECS[type].textureKey, type, age);
-  const artAge = artAgeFor(type, age);
-  if (!host.textures.exists(ageKey)) registerLitArt(host, ageKey, paintBuilding(type, teamColor(1), artAge));
-  const key = teamArtKey(ageKey, playerId);
-  if (key === ageKey || host.textures.exists(key)) return key;
-  // Same crop as the base, so the variant lines up with the normal map it shares.
-  const variant = paintBuilding(type, teamColor(playerId), artAge, false).canvas;
-  const rect = TRIMS.get(ageKey);
-  registerCanvas(host, key, rect ? cropCanvas(variant, rect) : variant);
-  shareNormalMap(host, ageKey, key);
-  const info = BUILDING_LIGHT.get(ageKey);
-  if (info) BUILDING_LIGHT.set(key, info);
-  return key;
-}
-
-/**
- * Texture key of a wall piece (wallPiece) in an age style, painting it
- * on first need. Walls carry no team colour in the texture (banners are
- * a tinted overlay), so one texture per (piece, age) serves everyone.
- */
-export function wallTexture(host: TextureHost, piece: number, age: AgeId): string {
-  const key = wallPieceKey(piece, age);
-  if (!host.textures.exists(key)) registerLitArt(host, key, paintWallPiece(piece, age));
-  return key;
-}
-
-const wonderStageKey = (stage: number): string => `building_wonder~s${stage}`;
-
-/** Texture key of the Wonder at a scaffolding stage (wonderStage), painted on first need. */
-export function wonderStageTexture(host: TextureHost, stage: number): string {
-  const key = wonderStageKey(stage);
-  if (!host.textures.exists(key)) registerLitArt(host, key, paintWonderStage(stage));
-  return key;
-}
-
-/** Frees the Wonder's scaffolding stages once no sprite shows one (they are large). */
-export function releaseWonderStages(host: TextureHost, inUse: ReadonlySet<string>): void {
-  for (let stage = 1; stage <= WONDER_STAGES; stage++) {
-    const key = wonderStageKey(stage);
-    if (inUse.has(key)) return;
-  }
-  for (let stage = 1; stage <= WONDER_STAGES; stage++) {
-    const key = wonderStageKey(stage);
-    if (!host.textures.exists(key)) continue;
-    host.textures.remove(key);
-    BUILDING_LIGHT.delete(key);
-  }
-}
-
-/**
- * Frees age styles nobody needs any more (texture memory budget): a
- * team variant once its player has moved past that age, the (type, age)
- * base — which owns the shared normal map — once every player has and
- * its variants are gone. Nothing listed in `inUse` (keys on live
- * sprites) is touched. `ageOf` returns undefined for players no longer
- * in the game. Returns the number of textures removed.
- */
-export function releaseStaleBuildingArt(
-  host: TextureHost,
-  ageOf: (playerId: number) => AgeId | undefined,
-  minAge: AgeId,
-  inUse: ReadonlySet<string>,
-): number {
-  let removed = 0;
-  const drop = (key: string, shared: boolean): void => {
-    // Variants borrow the base's normal source: detach it so removing them leaves it intact.
-    if (shared) host.textures.get(key).dataSource = [];
-    host.textures.remove(key);
-    BUILDING_LIGHT.delete(key);
-    removed++;
-  };
-  for (const type of AGE_STYLED_BUILDINGS) {
-    for (const age of [1, 2] as const) {
-      const ageKey = ageArtKey(BUILDING_SPECS[type].textureKey, type, age);
-      if (!host.textures.exists(ageKey)) continue;
-      const prefix = `${ageKey}@p`;
-      let variantsLeft = false;
-      for (const key of host.textures.getTextureKeys()) {
-        if (!key.startsWith(prefix)) continue;
-        const current = ageOf(Number(key.slice(prefix.length)));
-        if ((current === undefined || current > age) && !inUse.has(key)) drop(key, true);
-        else variantsLeft = true;
-      }
-      if (minAge > age && !variantsLeft && !inUse.has(ageKey)) drop(ageKey, false);
-    }
-  }
-  // Wall pieces own their normal maps (no team variants): drop past ages not on screen.
-  for (const key of host.textures.getTextureKeys()) {
-    const age = wallPieceKeyAge(key);
-    if (age !== undefined && minAge > age && !inUse.has(key)) drop(key, false);
-  }
-  return removed;
-}
-
-/**
- * Frees wall pieces (any age) that no game object shows: joins change as
- * walls are built and razed, so a long game would otherwise keep every
- * shape it ever saw. `inUse` must hold the texture key of every game
- * object, visible or not (placement ghosts too). Returns the number removed.
- */
-export function releaseUnusedWallPieces(host: TextureHost, inUse: ReadonlySet<string>): number {
-  let removed = 0;
-  for (const key of host.textures.getTextureKeys()) {
-    if (wallPieceKeyAge(key) === undefined || inUse.has(key)) continue;
-    host.textures.remove(key);
-    BUILDING_LIGHT.delete(key);
-    removed++;
-  }
-  return removed;
-}
-
-/** Crop applied to each registered lit art (team variants reuse their base's). */
-const TRIMS = new Map<string, TrimRect>();
-
-/** Registers painted art (trimmed to its content) with its normal map and remembers its lighting data. */
-function registerLitArt(host: TextureHost, key: string, painted: LitArt): void {
-  const { art, rect } = trimLitArt(painted);
-  TRIMS.set(key, rect);
-  registerCanvas(host, key, art.canvas);
-  // Buildings, wall pieces and Wonder stages keep a half-size normal map (memory budget).
-  attachNormalMap(host, key, art.normal && halfNormalCanvas(art.normal, art.canvas));
-  BUILDING_LIGHT.set(key, { volume: art.volume, glows: art.glows, lights: art.lights, smoke: art.smoke });
 }
 
 function generateFx(scene: Phaser.Scene): void {

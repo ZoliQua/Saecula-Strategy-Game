@@ -1,4 +1,5 @@
-import type { AgeId, BuildingType } from '../../types';
+import { CIV_DEFS, type ArchStyleId } from '../../config/civs';
+import type { AgeId, BuildingType, CivId } from '../../types';
 import { BAROQUE_ART } from './architecture/baroque';
 import { MEDIEVAL_ART } from './architecture/medieval';
 import { ROMAN_ART } from './architecture/roman';
@@ -10,6 +11,7 @@ import { ellipse } from './canvas';
 import { IsoPainter } from './isoPainter';
 import type { LitArt } from './lighting/normalLayer';
 import { paintWallPieceInto, wallMaxHeight } from './walls/paintWall';
+import { wallStyleFor } from './walls/wallStyles';
 import { wallPiece } from './walls/wallPiece';
 import { WALL_E, WALL_W } from '../../game/wallNeighbours';
 import { css, shade } from './palette';
@@ -17,15 +19,20 @@ import { css, shade } from './palette';
 /** The piece shown for walls outside the world (build menu, placement): a run with a post. */
 const WALL_ICON_PIECE = wallPiece(WALL_E | WALL_W, 0, 0);
 
-const AGE_ART: Record<AgeId, AgeArtSet> = { 1: ROMAN_ART, 2: MEDIEVAL_ART, 3: BAROQUE_ART };
+/** Building painter sets by registry id (config/civs.ts architecture). */
+const ARCH_ART: Record<ArchStyleId, AgeArtSet> = { roman: ROMAN_ART, medieval: MEDIEVAL_ART, baroque: BAROQUE_ART };
 
-/** The art for a type in an age style, falling back to age 1. */
-function artFor(type: BuildingType, age: AgeId): BuildingArt {
+/** The art for a type in a civ's age style, falling back to that civ's age-1 set. */
+function artFor(type: BuildingType, age: AgeId, civ: CivId): BuildingArt {
   if (type === 'foundry') return FOUNDRY_ART;
-  if (type === 'wall') return { size: 1, maxHeight: wallMaxHeight(age), paint: (p) => paintWallPieceInto(p, WALL_ICON_PIECE, age) };
+  if (type === 'wall') {
+    const style = wallStyleFor(age, civ);
+    return { size: 1, maxHeight: wallMaxHeight(style), paint: (p) => paintWallPieceInto(p, WALL_ICON_PIECE, style) };
+  }
   if (type === 'tower') return TOWER_ART[age];
   if (type === 'wonder') return WONDER_ART;
-  const art = AGE_ART[age][type] ?? ROMAN_ART[type];
+  const arch = CIV_DEFS[civ].architecture;
+  const art = ARCH_ART[arch[age]][type] ?? ARCH_ART[arch[1]][type];
   if (!art) throw new Error(`no art for ${type}`);
   return art;
 }
@@ -36,24 +43,24 @@ const ALL_TYPES: readonly BuildingType[] = [
 ];
 
 export const BUILDING_ART_SIZES: Record<BuildingType, number> = Object.fromEntries(
-  ALL_TYPES.map((t) => [t, artFor(t, 1).size]),
+  ALL_TYPES.map((t) => [t, artFor(t, 1, 'hungarian').size]),
 ) as Record<BuildingType, number>;
 
 /**
- * Paints a building in an age style for a team colour (albedo, normals,
- * shadow volume, glows, light / smoke anchors). Team variants pass
- * withNormals=false and share the base map, so a (type, age) paints the
- * same geometry for every team.
+ * Paints a building in a civ's age style for a team colour (albedo,
+ * normals, shadow volume, glows, light / smoke anchors). Team variants
+ * pass withNormals=false and share the base map, so a (type, age, civ)
+ * paints the same geometry for every team.
  */
-export function paintBuilding(type: BuildingType, team: number, age: AgeId = 1, withNormals = true): LitArt {
-  const art = artFor(type, age);
+export function paintBuilding(type: BuildingType, team: number, age: AgeId, civ: CivId, withNormals = true): LitArt {
+  const art = artFor(type, age, civ);
   const p = new IsoPainter(art.size, art.size, art.maxHeight, type.length * 977 + (age - 1) * 131);
   art.paint(p, team);
   return p.result(withNormals);
 }
 
-/** The Wonder at a scaffolding stage (no team colour shows yet). */
-export function paintWonderStage(stage: number): LitArt {
+/** The Wonder at a scaffolding stage (no team colour shows yet); one Wonder design for now. */
+export function paintWonderStage(stage: number, _civ: CivId): LitArt {
   const p = new IsoPainter(WONDER_ART.size, WONDER_ART.size, WONDER_ART.maxHeight, 5077 + stage * 13);
   paintWonder(p, 0xffffff, stage);
   return p.result();

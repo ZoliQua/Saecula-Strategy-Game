@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { UNIT_SHADOW_DOWNSCALE } from '../../../config/visual';
-import type { UnitType } from '../../../types';
+import { UNIT_SPECS } from '../../../ecs/archetypes/unit';
+import type { CivId, UnitType } from '../../../types';
+import { unitArtKey } from '../artKeys';
 import { shadowKey, shareNormalMap } from '../lighting/litTextures';
 import { PAINTED_HEADINGS } from './layout';
 import { spendPaintBudget } from './paintBudget';
@@ -13,7 +15,8 @@ import { createSheet, frameRect, paintSome, type DirtyFrame, type UnitSheet } fr
  * per-frame budget and uploads only the changed frames.
  * Frames that are not painted yet fall back to the heading's idle frame.
  *
- * Textures (per type, shared by every player):
+ * Textures (per type and civ — artKeys unitArtKey — shared by every
+ * player of that civ):
  *  - `key`          albedo, team parts in neutral grey, normal map attached;
  *  - `maskKey(key)` team mask (same frames, shares the normal map), drawn
  *                   on top and tinted with the player colour;
@@ -21,6 +24,7 @@ import { createSheet, frameRect, paintSome, type DirtyFrame, type UnitSheet } fr
  */
 export interface UnitArt {
   readonly type: UnitType;
+  readonly civ: CivId;
   readonly key: string;
   readonly maskKey: string;
   readonly sheet: UnitSheet;
@@ -49,12 +53,20 @@ export function teamMaskKey(key: string): string {
   return `${key}#team`;
 }
 
+/** Texture key of a unit type's sheet for a civ. */
+export function unitTextureKey(type: UnitType, civ: CivId): string {
+  return unitArtKey(UNIT_SPECS[type].textureKey, civ);
+}
+
 /**
- * Returns the art of a unit type, creating its textures on first use.
- * Returns null when this frame already created a sheet (callers retry
- * next frame) unless `force` (scene set-up, where a hitch is harmless).
+ * Returns the art of a unit type for a civ, creating its textures on
+ * first use. Every civ shows the one unit look for now (its registry
+ * unitLook is 'hungarian'). Returns null when this frame already created
+ * a sheet (callers retry next frame) unless `force` (scene set-up, where
+ * a hitch is harmless).
  */
-export function unitArt(scene: Phaser.Scene, type: UnitType, key: string, force = false): UnitArt | null {
+export function unitArt(scene: Phaser.Scene, type: UnitType, civ: CivId, force = false): UnitArt | null {
+  const key = unitTextureKey(type, civ);
   const hit = arts.get(key);
   if (hit && scene.textures.exists(key)) return hit;
   const budget = frameBudget(scene);
@@ -70,7 +82,7 @@ export function unitArt(scene: Phaser.Scene, type: UnitType, key: string, force 
     const r = frameRect(sheet, k);
     originY[k] = r.feetY / r.h;
   }
-  const art: UnitArt = { type, key, maskKey: teamMaskKey(key), sheet, originY };
+  const art: UnitArt = { type, civ, key, maskKey: teamMaskKey(key), sheet, originY };
   register(scene, art);
   arts.set(key, art);
   timing.createMax = Math.max(timing.createMax, performance.now() - created);

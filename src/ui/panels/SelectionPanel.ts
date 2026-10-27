@@ -1,5 +1,4 @@
 import type Phaser from 'phaser';
-import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { effectiveUnitStats } from '../../game/modifiers';
 import { hu } from '../../i18n/hu';
@@ -7,9 +6,9 @@ import { decorKeys } from '../../iso/textures';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons, type IconName } from '../icons';
-import type { SelectedEntityInfo, UiStore } from '../store';
+import { uiStore, type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
 import type { TechId } from '../../types';
-import { thumbnail, unitThumbnail } from '../thumbnails';
+import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
 
 const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', { key: string; frame?: number }> = {
   food: { key: decorKeys.bush(0) },
@@ -56,7 +55,7 @@ export class SelectionPanel {
       sel.kind === 'unit'
         ? unitThumbnail(sel.unitType)
         : sel.kind === 'building'
-          ? thumbnail(this.textures, sel.textureKey ?? BUILDING_SPECS[sel.buildingType].textureKey)
+          ? this.buildingPicture(sel)
           : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType].key, RESOURCE_PORTRAIT[sel.resourceType].frame);
     if (src) this.portrait.append(el('img', { src, alt: '' }));
   }
@@ -122,7 +121,7 @@ export class SelectionPanel {
       'div',
       { class: 'q-item', title: name },
       el('span', { class: 'q-fill', style: `height:${Math.round(research.progress * 100)}%` }),
-      el('img', { src: thumbnail(this.textures, sel.textureKey ?? BUILDING_SPECS[sel.buildingType].textureKey), alt: '' }),
+      el('img', { src: this.buildingPicture(sel), alt: '' }),
     );
     item.addEventListener('click', () => dispatchCommand({ type: 'cancel-research', buildingId: sel.id }));
     return el(
@@ -152,7 +151,15 @@ export class SelectionPanel {
   destroy(): void {
     this.root.remove();
   }
+
+  /** The building as drawn (age style, civ, team colour); its age-1 base art in the human's civ before it has a sprite. */
+  private buildingPicture(sel: SelectedBuildingInfo): string {
+    return sel.textureKey
+      ? thumbnail(this.textures, sel.textureKey)
+      : buildingThumbnail(this.textures, sel.buildingType, 1, uiStore.getState().civ);
+  }
 }
+
 
 function head(name: string, role: string, enemy = false, more?: string): Node {
   return el(

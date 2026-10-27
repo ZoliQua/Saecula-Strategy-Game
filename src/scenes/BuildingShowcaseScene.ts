@@ -3,14 +3,15 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { AGE_STYLED_BUILDINGS } from '../iso/art/architecture/ageStyle';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { LightManager, lit } from '../iso/art/lighting/LightManager';
-import { BUILDING_LIGHT, buildingTexture, FX_KEYS, wallTexture, wonderStageTexture } from '../iso/textures';
+import { BUILDING_LIGHT, buildingTexture, wallTexture, wonderStageTexture } from '../iso/buildingTextures';
+import { FX_KEYS } from '../iso/textures';
 import { PLAYER_COLORS } from '../game/Player';
 import { wallNeighbourMaskBy } from '../game/wallNeighbours';
 import { tileToScreen } from '../iso/coordinates';
 import { wallBannerAnchor } from '../iso/art/walls/paintWall';
 import { WALL_BANNER_ORIGIN } from '../iso/art/walls/wallBanner';
 import { pieceHasPost, wallPiece } from '../iso/art/walls/wallPiece';
-import type { AgeId, BuildingType } from '../types';
+import type { AgeId, BuildingType, CivId } from '../types';
 
 export interface BuildingShowcaseOptions {
   types?: BuildingType[];
@@ -19,6 +20,8 @@ export interface BuildingShowcaseOptions {
   /** Day-cycle phase (0.4 noon, 0.7 dusk, 0.85 night). */
   phase?: number;
   playerId?: number;
+  /** Whose architecture to show (default Hungarian). */
+  civ?: CivId;
   /** Lay out wall rings, diagonal runs and gaps (one block per age) instead of the grid. */
   walls?: boolean;
   /** Show the Wonder's construction stages and the finished basilica side by side. */
@@ -38,6 +41,10 @@ export class BuildingShowcaseScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'BuildingShowcaseScene' });
+  }
+
+  private get civ(): CivId {
+    return this.opts.civ ?? 'hungarian';
   }
 
   init(opts: BuildingShowcaseOptions): void {
@@ -75,7 +82,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
           new Phaser.Geom.Point(x, y + 8 - n * 32),
           new Phaser.Geom.Point(x - n * 32, y + 8 - n * 16),
         ], true);
-        const key = buildingTexture(this, type, age, this.opts.playerId ?? 1);
+        const key = buildingTexture(this, type, age, this.opts.playerId ?? 1, this.civ);
         const img = this.add.image(x, y, key).setScale(1 / ART_SCALE);
         img.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height).setDepth(row * 10 + col * 0.01);
         lit(img);
@@ -101,8 +108,8 @@ export class BuildingShowcaseScene extends Phaser.Scene {
   }
 
   private layWonder(): void {
-    const keys = [1, 2, 3].map((s) => wonderStageTexture(this, s));
-    keys.push(buildingTexture(this, 'wonder', 3, this.opts.playerId ?? 1));
+    const keys = [1, 2, 3].map((s) => wonderStageTexture(this, s, this.civ));
+    keys.push(buildingTexture(this, 'wonder', 3, this.opts.playerId ?? 1, this.civ));
     keys.forEach((key, i) => {
       const x = i * 330 + 165;
       const y = 300;
@@ -142,7 +149,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
       const c = (tx: number, ty: number) => tileToScreen({ tx: tx + ox, ty: ty + oy });
       const g = [c(-1.5, -1.5), c(13.5, -1.5), c(13.5, 11.5), c(-1.5, 11.5)];
       ground.fillPoints(g.map((p) => new Phaser.Geom.Point(p.sx, p.sy)), true);
-      const tower = buildingTexture(this, 'tower', age, this.opts.playerId ?? 1);
+      const tower = buildingTexture(this, 'tower', age, this.opts.playerId ?? 1, this.civ);
       const place = (key: string, tx: number, ty: number): Phaser.GameObjects.Image => {
         const p = c(tx, ty);
         const img = lit(this.add.image(p.sx, p.sy + 16, key).setScale(1 / ART_SCALE));
@@ -158,9 +165,9 @@ export class BuildingShowcaseScene extends Phaser.Scene {
       for (const [u, v] of layout) {
         const mask = wallNeighbourMaskBy((x, y) => tiles.has(`${x},${y}`) || (x === 5 && y === 0), { tx: u, ty: v });
         const piece = wallPiece(mask, u + ox, v + oy);
-        const img = place(wallTexture(this, piece, age), u, v);
+        const img = place(wallTexture(this, piece, age, this.civ), u, v);
         if (!pieceHasPost(piece)) continue;
-        const [dx, dy] = wallBannerAnchor(age);
+        const [dx, dy] = wallBannerAnchor(age, this.civ);
         this.add.image(img.x + dx, img.y + dy, FX_KEYS.wallBanner).setScale(1 / ART_SCALE)
           .setOrigin(WALL_BANNER_ORIGIN.x, WALL_BANNER_ORIGIN.y).setTint(color).setDepth(img.depth + 0.001);
       }

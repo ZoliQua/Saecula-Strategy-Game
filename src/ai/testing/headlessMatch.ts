@@ -18,7 +18,8 @@ import type { MapData } from '../../map/MapData';
 import { PathBudget } from '../../map/pathBudget';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
-import type { Difficulty } from '../../game/GameSetupConfig';
+import { defaultSetupConfig, matchCivs, type Difficulty } from '../../game/GameSetupConfig';
+import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
 
@@ -38,6 +39,8 @@ export interface HeadlessMatchOptions {
   readonly humanStrategy?: AIStrategy;
   /** Whom the AI-driven human attacks (default player 2; read every step, so it may change). */
   readonly humanEnemy?: () => number;
+  /** Civs of the human and the AIs (default: Hungarian human, seeded mixed AIs as in a real game). */
+  readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
 }
 
 export interface HeadlessMatch {
@@ -67,7 +70,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   });
   const map = generated.map;
   const world = createEcsWorld();
-  const players = createPlayers('hungarian', options.aiCount);
+  const civs = options.civs ?? matchCivs({ ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
+  const players = createPlayers(civs.human, civs.ais);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
   spawnPresetWalls(world, players, map, generated.walls);

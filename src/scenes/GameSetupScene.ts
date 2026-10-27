@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { defaultSetupConfig, type GameSetupConfig } from '../game/GameSetupConfig';
+import { civsInPlay, defaultSetupConfig, type GameSetupConfig } from '../game/GameSetupConfig';
 import { UnitArtPrewarm } from '../iso/art/units/UnitArtPrewarm';
 import { GameSetup } from '../ui/screens/GameSetup';
 import type { MainMenuScene } from './MainMenuScene';
@@ -18,8 +18,8 @@ export const prewarmReport = { totalMs: 0, maxStepMs: 0, frames: 0 };
 
 /**
  * Runs on top of MainMenuScene (whose live diorama stays behind the
- * card). Owns the DOM setup card, then pre-warms unit art while the
- * card fades out and hands the config to GameScene.
+ * card). Owns the DOM setup card, then pre-warms unit art (civs in play)
+ * while the card fades out and hands the config to GameScene.
  */
 export class GameSetupScene extends Phaser.Scene {
   private setup: GameSetup | null = null;
@@ -67,7 +67,8 @@ export class GameSetupScene extends Phaser.Scene {
   private beginLoading(config: GameSetupConfig): void {
     this.config = config;
     this.setup?.setBusy();
-    this.prewarm = new UnitArtPrewarm(this);
+    // Only the civs in this match get unit sheets (texture memory budget).
+    this.prewarm = new UnitArtPrewarm(this, civsInPlay(config));
   }
 
   override update(_time: number, delta: number): void {

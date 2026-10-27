@@ -1,5 +1,9 @@
+import { AVAILABLE_CIVS } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
+import { createRng } from '../map/random';
 import type { CivId } from '../types';
+
+export { AVAILABLE_CIVS };
 
 export type MapSizeId = 'small' | 'medium' | 'large';
 export type Difficulty = 'easy' | 'medium' | 'hard';
@@ -21,7 +25,6 @@ export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 /** Options that work today; the setup screen shows the rest as "coming soon". */
 export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
-export const AVAILABLE_CIVS: readonly CivId[] = ['hungarian'];
 
 export const MIN_AI = 1;
 export const MAX_AI = 5;
@@ -32,9 +35,14 @@ export interface GameSetupConfig {
   readonly mapSize: MapSizeId;
   readonly aiCount: number;
   readonly difficulty: Difficulty;
+  /** The human's civ. */
   readonly civ: CivId;
+  /** The AIs' civ: one for all, or 'mixed' (seeded mix of the available civs, see assignCivs). */
+  readonly aiCivs: AiCivChoice;
   readonly seed: number;
 }
+
+export type AiCivChoice = 'mixed' | CivId;
 
 /** A fresh random seed (injectable rng for tests). */
 export function randomSeed(rng: () => number = Math.random): number {
@@ -48,6 +56,7 @@ export function defaultSetupConfig(seed: number = randomSeed()): GameSetupConfig
     aiCount: 3,
     difficulty: 'easy',
     civ: 'hungarian',
+    aiCivs: 'mixed',
     seed: clampSeed(seed),
   };
 }
@@ -75,6 +84,7 @@ export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig
     aiCount: clampAiCount(next.aiCount),
     difficulty: AVAILABLE_DIFFICULTIES.includes(next.difficulty) ? next.difficulty : 'easy',
     civ: AVAILABLE_CIVS.includes(next.civ) ? next.civ : 'hungarian',
+    aiCivs: next.aiCivs !== 'mixed' && AVAILABLE_CIVS.includes(next.aiCivs) ? next.aiCivs : 'mixed',
     seed: clampSeed(next.seed),
   };
 }
@@ -91,4 +101,41 @@ export function playerCount(config: GameSetupConfig): number {
 /** True when the AI count is above what the map size is recommended for. */
 export function exceedsRecommendedAi(config: GameSetupConfig): boolean {
   return config.aiCount > MAP_SIZES[config.mapSize].recommendedAi;
+}
+
+/**
+ * The civ of each AI (players 2..aiCount + 1, in order). 'mixed' deals
+ * the available civs so each appears at least once when there are enough
+ * AIs, fills the rest at random and shuffles; `rng` makes it repeatable.
+ */
+export function assignCivs(config: GameSetupConfig, rng: () => number): CivId[] {
+  const n = config.aiCount;
+  if (config.aiCivs !== 'mixed') return Array.from({ length: n }, () => config.aiCivs as CivId);
+  const pool = AVAILABLE_CIVS;
+  const pick = (): CivId => pool[Math.floor(rng() * pool.length)] ?? 'hungarian';
+  const civs: CivId[] = shuffle([...pool], rng).slice(0, n);
+  while (civs.length < n) civs.push(pick());
+  return shuffle(civs, rng);
+}
+
+/** Salt so the civ draw does not follow the map generator's sequence. */
+const CIV_RNG_SALT = 0x5bd1e995;
+
+/** The civs of a match from its config: the same seed always gives the same line-up. */
+export function matchCivs(config: GameSetupConfig): { human: CivId; ais: CivId[] } {
+  return { human: config.civ, ais: assignCivs(config, createRng(config.seed ^ CIV_RNG_SALT)) };
+}
+
+/** Each civ present in the match once (human's first): only these get art painted and kept. */
+export function civsInPlay(config: GameSetupConfig): CivId[] {
+  const { human, ais } = matchCivs(config);
+  return [...new Set([human, ...ais])];
+}
+
+function shuffle<T>(items: T[], rng: () => number): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [items[i], items[j]] = [items[j] as T, items[i] as T];
+  }
+  return items;
 }

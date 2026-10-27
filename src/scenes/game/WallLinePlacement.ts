@@ -11,8 +11,8 @@ import type { MapData } from '../../map/MapData';
 import { uiStore } from '../../ui/store';
 import { wallNeighbourMaskBy } from '../../game/wallNeighbours';
 import { wallPiece } from '../../iso/art/walls/wallPiece';
-import { wallTexture } from '../../iso/textures';
-import type { AgeId } from '../../types';
+import { wallTexture } from '../../iso/buildingTextures';
+import type { AgeId, CivId } from '../../types';
 
 /**
  * Click-drag wall laying: press on the first tile, drag, release to place a
@@ -32,6 +32,7 @@ export class WallLinePlacement {
     private readonly selection: SelectionSystem,
     private readonly playerId: number,
     private readonly getAge: () => AgeId = () => 1,
+    private readonly civ: CivId = 'hungarian',
   ) {}
 
   isDragging(): boolean {
@@ -98,7 +99,7 @@ export class WallLinePlacement {
       const g = this.ghostAt(i);
       const isWall = (tx: number, ty: number): boolean => onLine.has(`${tx},${ty}`);
       const piece = wallPiece(wallNeighbourMaskBy(isWall, tile), tile.tx, tile.ty, isWall);
-      const key = wallTexture(this.scene, piece, age);
+      const key = wallTexture(this.scene, piece, age, this.civ);
       if (g.texture.key !== key) g.setTexture(key);
       const bottom = tileToScreen(tile);
       g.setPosition(bottom.sx, bottom.sy + 16);
@@ -128,7 +129,7 @@ export class WallLinePlacement {
   private ghostAt(i: number): Phaser.GameObjects.Image {
     let g = this.ghosts[i];
     if (!g) {
-      g = this.scene.add.image(0, 0, wallTexture(this.scene, wallPiece(0, 0, 0), this.getAge()));
+      g = this.scene.add.image(0, 0, wallTexture(this.scene, wallPiece(0, 0, 0), this.getAge(), this.civ));
       g.setAlpha(0.6).setScale(1 / ART_SCALE);
       this.ghosts[i] = g;
     }

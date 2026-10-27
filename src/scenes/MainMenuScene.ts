@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { UNIT_SPECS } from '../ecs/archetypes/unit';
 import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { LightManager, lit } from '../iso/art/lighting/LightManager';
@@ -10,12 +9,12 @@ import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } fro
 import { PLAYER_COLORS } from '../game/Player';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
-import { BUILDING_LIGHT, buildingTexture } from '../iso/textures';
+import { BUILDING_LIGHT, buildingTexture } from '../iso/buildingTextures';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { generateMap } from '../map/generator';
 import { TERRAIN } from '../map/TerrainTypes';
 import { TileMap } from '../map/TileMap';
-import { directionFromDelta, type BuildingType, type Direction, type UnitType } from '../types';
+import { directionFromDelta, type BuildingType, type CivId, type Direction, type UnitType } from '../types';
 import { MainMenu } from '../ui/screens/MainMenu';
 import type { SetupReturn } from './GameSetupScene';
 
@@ -23,6 +22,8 @@ const MENU_MAP_SIZE = 48;
 const MENU_SEED = 7;
 /** The diorama shows off the grand Enlightenment-era town the player builds towards. */
 const MENU_AGE = 3;
+/** The diorama's town and walkers are Hungarian (generateArt pre-paints that civ). */
+const MENU_CIV: CivId = 'hungarian';
 /** Pond (a few overlapping discs for an irregular shore) and rock outcrop, relative to the settlement (tiles). */
 const MENU_POND: ReadonlyArray<{ tx: number; ty: number; r: number }> = [
   { tx: 7, ty: 7, r: 2.6 },
@@ -88,7 +89,7 @@ export class MainMenuScene extends Phaser.Scene {
     const place = (type: BuildingType, tx: number, ty: number) => {
       const spec = BUILDING_SPECS[type];
       const front = tileToScreen({ tx: tx + spec.width - 1, ty: ty + spec.height - 1 });
-      const key = buildingTexture(this, type, MENU_AGE, 1);
+      const key = buildingTexture(this, type, MENU_AGE, 1, MENU_CIV);
       const img = this.add.image(front.sx, front.sy + 16, key);
       img.setScale(1 / ART_SCALE).setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
       img.setDepth(tx + spec.width - 1 + ty + spec.height - 1 + 0.2);
@@ -161,10 +162,9 @@ export class MainMenuScene extends Phaser.Scene {
   private walk(type: UnitType, a: TileCoord, b: TileCoord, delay: number): void {
     const pa = tileToScreen(a);
     const pb = tileToScreen(b);
-    const key = UNIT_SPECS[type].textureKey;
-    const sprites = createUnitSprites(this, type, key, PLAYER_COLORS[0] ?? 0xffffff, true);
+    const sprites = createUnitSprites(this, type, MENU_CIV, PLAYER_COLORS[0] ?? 0xffffff, true);
     const sprite = sprites.body.setPosition(pa.sx, pa.sy).setDepth(tileDepth(a) + 0.3);
-    this.lighting?.attachCaster(sprite, key);
+    this.lighting?.attachCaster(sprite, sprites.key);
     const tiles = Math.hypot(b.tx - a.tx, b.ty - a.ty);
     const walker: Walker = {
       sprites,
