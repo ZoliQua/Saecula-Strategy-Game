@@ -5,7 +5,7 @@ import { baked, NormalLayer, type GlowPoint, type LitArt } from './lighting/norm
 import type { VolumePoint } from './lighting/shadowGeometry';
 import { N_LEFT, N_RIGHT, N_UP, slopeNormal, SCREEN_PER_WORLD_HEIGHT, type Vec3 } from './lighting/viewSpace';
 import { css, rng, shade } from './palette';
-import { lerp, paintDoor, paintFlag, paintRidge, paintWindow } from './isoProps';
+import { lerp, paintDoor, paintFlag, paintRidge, paintWindow, WARM_WINDOW, type WindowLook } from './isoProps';
 import { paintRoofCover, type RoofMaterial } from './roofCover';
 import { paintWallDetail } from './wallDetail';
 
@@ -48,6 +48,8 @@ export class IsoPainter {
   private readonly smoke: Array<readonly [number, number]> = [];
   /** Cover painted on the following roof slopes (tiles, shingles, thatch, slate, copper). */
   material: RoofMaterial = 'tile';
+  /** Frame and glazing of the following windows. */
+  windowLook: WindowLook = WARM_WINDOW;
 
   constructor(
     readonly w: number,
@@ -255,7 +257,7 @@ export class IsoPainter {
   window(x: number, y: number, w: number, h: number, arched = false): void {
     const c = this.ctx.getTransform().transformPoint(new DOMPoint(x + w / 2, y + h / 2));
     this.glows.push({ x: c.x, y: c.y, r: Math.max(w, h) });
-    paintWindow(this.ctx, x, y, w, h, arched);
+    paintWindow(this.ctx, x, y, w, h, arched, this.windowLook);
   }
 
   door(x: number, w: number, h: number, color = 0x5a3518): void {

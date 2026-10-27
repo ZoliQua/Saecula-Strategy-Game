@@ -2,9 +2,11 @@ import { ellipse } from '../canvas';
 import type { IsoPainter } from '../isoPainter';
 import { css } from '../palette';
 import { archedOpening, baroqueWindow } from './facade';
-import { baroqueBlock, OCHRE_DEEP, railFence, SLATE, TILE_RED, VERDIGRIS, WHITE_TRIM } from './baroqueParts';
+import { baroqueBlock, railFence } from './baroqueParts';
 import { chimney, forgeLight, forgeMouth, goldPile, lantern, logPile, plankStack, post, target } from './parts';
 import { finial, helm } from './roofs';
+import type { ArchStyle } from './style';
+import { styledGable, styledHip } from './styledRoofs';
 import type { AgeArtSet } from './types';
 
 /** Sweep well (gémeskút): curb, forked post, long sweep with a counterweight, hanging pole and bucket. */
@@ -76,177 +78,180 @@ function orderedField(p: IsoPainter): void {
   }
 }
 
-/** Age 3 workplaces. */
-export const BAROQUE_WORK_ART: AgeArtSet = {
-  farm: {
-    size: 2,
-    maxHeight: 118,
-    paint: (p, team) => {
-      orderedField(p);
-      sweepWell(p, 0.42, 0.36);
-      railFence(p, 0.05, 1.96, 1.96, 1.96, 12);
-      railFence(p, 1.96, 0.05, 1.96, 1.96, 12);
-      p.flag(1.96, 1.96, 0, 24, team);
+/** Age 3 family workplaces. */
+export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
+  const c = s.palette;
+  const tall = (h: number) => h + s.headroom;
+  return {
+    farm: {
+      size: 2,
+      maxHeight: tall(118),
+      paint: (p, team) => {
+        orderedField(p);
+        sweepWell(p, 0.42, 0.36);
+        railFence(p, 0.05, 1.96, 1.96, 1.96, 12);
+        railFence(p, 1.96, 0.05, 1.96, 1.96, 12);
+        p.flag(1.96, 1.96, 0, 24, team);
+      },
     },
-  },
-  lumber_camp: {
-    size: 2,
-    maxHeight: 120,
-    paint: (p, team) => {
-      const ctx = p.ctx;
-      p.footShadow();
-      p.ground(0.1, 0.1, 1.9, 1.9, 0x8a7a5a);
-      p.box(0.22, 0.22, 1.0, 1.3, 0, 8, { color: 0xb7ab94 }, 0xb7ab94);
-      p.box(0.22, 0.22, 1.0, 1.3, 8, 44, { color: 0x8c3d26, detail: 'planks' });
-      p.leftFace(0.22, 1.0, 1.3, 8, (w) => {
-        p.door(w * 0.55, 14, 24, 0x3e2614);
-        p.window(w * 0.16, -26, 9, 11);
-      }, 36);
-      p.material = 'tile';
-      p.gableRoof(0.22, 0.22, 1.0, 1.3, 44, 42, TILE_RED, 0x8c3d26, 'v', 0.12);
-      lantern(p, 0.94, 1.3, 32, 0.94, 1.5);
-      // Open saw shed with a frame saw.
-      for (const [u, v] of [[1.1, 0.3], [1.72, 0.3], [1.1, 0.92], [1.72, 0.92]] as const) post(p, u, v, 0, 40, 2.4, 0x5a3b20);
-      const [fx, fy] = p.p(1.41, 0.61, 0);
-      ctx.strokeStyle = '#3a2a1a';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(fx - 8, fy - 36, 16, 30);
-      ctx.strokeStyle = '#c8ccd2';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(fx, fy - 36);
-      ctx.lineTo(fx, fy - 6);
-      ctx.stroke();
-      ctx.fillStyle = '#9a6a3a';
-      ctx.fillRect(fx - 24, fy - 12, 48, 6);
-      p.material = 'tile';
-      p.hipRoof(1.05, 0.25, 1.77, 0.97, 40, 20, TILE_RED, 0.06);
-      plankStack(p, 1.2, 1.2, 1.78, 1.5, 14);
-      plankStack(p, 1.2, 1.55, 1.78, 1.82, 9);
-      logPile(p, 0.25, 1.82, 6, 0x6b4426, 0xe0b880);
-      p.flag(1.86, 0.15, 0, 30, team);
+    lumber_camp: {
+      size: 2,
+      maxHeight: tall(120),
+      paint: (p, team) => {
+        const ctx = p.ctx;
+        p.footShadow();
+        p.ground(0.1, 0.1, 1.9, 1.9, 0x8a7a5a);
+        p.box(0.22, 0.22, 1.0, 1.3, 0, 8, { color: c.stone }, c.stone);
+        p.box(0.22, 0.22, 1.0, 1.3, 8, 44, { color: c.board, detail: 'planks' });
+        p.leftFace(0.22, 1.0, 1.3, 8, (w) => {
+          p.door(w * 0.55, 14, 24, 0x3e2614);
+          p.window(w * 0.16, -26, 9, 11);
+        }, 36);
+        p.material = 'tile';
+        styledGable(p, s, 0.22, 0.22, 1.0, 1.3, 44, 42, c.roof, c.board, 'v', 0.12);
+        lantern(p, 0.94, 1.3, 32, 0.94, 1.5);
+        // Open saw shed with a frame saw.
+        for (const [u, v] of [[1.1, 0.3], [1.72, 0.3], [1.1, 0.92], [1.72, 0.92]] as const) post(p, u, v, 0, 40, 2.4, c.timber);
+        const [fx, fy] = p.p(1.41, 0.61, 0);
+        ctx.strokeStyle = '#3a2a1a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(fx - 8, fy - 36, 16, 30);
+        ctx.strokeStyle = '#c8ccd2';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(fx, fy - 36);
+        ctx.lineTo(fx, fy - 6);
+        ctx.stroke();
+        ctx.fillStyle = '#9a6a3a';
+        ctx.fillRect(fx - 24, fy - 12, 48, 6);
+        p.material = 'tile';
+        styledHip(p, s, 1.05, 0.25, 1.77, 0.97, 40, 20, c.roof, 0.06, c.timber);
+        plankStack(p, 1.2, 1.2, 1.78, 1.5, 14);
+        plankStack(p, 1.2, 1.55, 1.78, 1.82, 9);
+        logPile(p, 0.25, 1.82, 6, 0x6b4426, 0xe0b880);
+        p.flag(1.86, 0.15, 0, 30, team);
+      },
     },
-  },
-  mining_camp: {
-    size: 2,
-    maxHeight: 150,
-    paint: (p, team) => {
-      const ctx = p.ctx;
-      p.footShadow();
-      p.ground(0.1, 0.1, 1.9, 1.9, 0x8b8070);
-      // Shaft house (enclosed headframe) with a sheave wheel.
-      p.box(1.15, 0.22, 1.75, 0.82, 0, 76, { color: 0x6e4528, detail: 'planks' });
-      p.leftFace(1.15, 1.75, 0.82, 0, (w) => {
-        ctx.fillStyle = '#140d08';
-        ctx.fillRect(w * 0.3, -30, w * 0.4, 30);
-        ctx.strokeStyle = '#2a2420';
+    mining_camp: {
+      size: 2,
+      maxHeight: tall(150),
+      paint: (p, team) => {
+        const ctx = p.ctx;
+        p.footShadow();
+        p.ground(0.1, 0.1, 1.9, 1.9, 0x8b8070);
+        // Shaft house (enclosed headframe) with a sheave wheel.
+        p.box(1.15, 0.22, 1.75, 0.82, 0, 76, { color: c.darkWood, detail: 'planks' });
+        p.leftFace(1.15, 1.75, 0.82, 0, (w) => {
+          ctx.fillStyle = '#140d08';
+          ctx.fillRect(w * 0.3, -30, w * 0.4, 30);
+          ctx.strokeStyle = '#2a2420';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(w / 2, -58, 9, 0, Math.PI * 2);
+          ctx.moveTo(w / 2 - 9, -58);
+          ctx.lineTo(w / 2 + 9, -58);
+          ctx.moveTo(w / 2, -67);
+          ctx.lineTo(w / 2, -49);
+          ctx.stroke();
+        }, 76);
+        p.material = 'slate';
+        styledHip(p, s, 1.12, 0.19, 1.78, 0.85, 76, 36, c.roofAlt, 0.06, c.darkWood);
+        // Mine office with a bell turret.
+        baroqueBlock(p, s, 0.2, 0.85, 1.05, 1.75, 0, 44, {
+          left: (w, h, l) => {
+            archedOpening(ctx, w * 0.55, 15, 24, c.trim, 0x2a1c12, l);
+            p.door(w * 0.55 + 1, 13, 22, 0x3e2614);
+            baroqueWindow(p, s, w * 0.15, -h + 12, 10, 16, l);
+          },
+          right: (w, h, l) => baroqueWindow(p, s, w * 0.4, -h + 12, 10, 16, l),
+        });
+        p.material = 'tile';
+        styledHip(p, s, 0.2, 0.85, 1.05, 1.75, 44, 34, c.roof, 0.08);
+        p.box(0.54, 1.22, 0.7, 1.38, 70, 86, { color: c.trim }, c.trim);
+        helm(p, 0.62, 1.3, 86, [[0, 0.11], [6, 0.1], [11, 0.05], [16, 0.01]], c.metal);
+        lantern(p, 0.42, 1.75, 30, 0.42, 1.92);
+        // Rails and an ore cart.
+        for (const du of [-0.08, 0.08]) {
+          const a = p.p(1.45 + du, 0.85, 0);
+          const b = p.p(1.45 + du, 1.92, 0);
+          ctx.strokeStyle = '#4a4440';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(a[0], a[1]);
+          ctx.lineTo(b[0], b[1]);
+          ctx.stroke();
+        }
+        p.box(1.3, 1.3, 1.6, 1.62, 5, 19, { color: 0x4a4440, detail: 'planks' });
+        goldPile(p, 1.45, 1.47);
+        p.flag(1.88, 1.0, 0, 30, team);
+      },
+    },
+    archery_range: {
+      size: 3,
+      maxHeight: tall(150),
+      paint: (p, team) => {
+        const ctx = p.ctx;
+        p.footShadow();
+        p.ground(0.05, 0.05, 2.95, 2.95, 0x93a46a);
+        p.ground(1.75, 0.25, 2.85, 2.6, 0x9fae78);
+        baroqueBlock(p, s, 0.25, 0.25, 1.55, 1.25, 0, 50, {
+          bays: 3,
+          left: (w, h, l) => {
+            for (let i = 0; i < 3; i++) archedOpening(ctx, (w / 3) * (i + 0.5) - 10, 20, h - 14, c.trim, 0x2e2014, l);
+          },
+          right: (w, h, l) => baroqueWindow(p, s, w / 2 - 6, -h + 12, 12, 20, l),
+        });
+        p.material = 'tile';
+        styledHip(p, s, 0.25, 0.25, 1.55, 1.25, 50, 38, c.roof, 0.1);
+        finial(p, 0.9, 0.75, 50 + 38 * s.roof.pitch, 14, false);
+        lantern(p, 1.55, 1.0, 34, 1.72, 1.0);
+        for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);
+        p.flag(0.4, 2.6, 0, 40, team, true);
+      },
+    },
+    blacksmith: {
+      size: 2,
+      maxHeight: tall(140),
+      paint: (p, team) => {
+        const ctx = p.ctx;
+        p.footShadow();
+        p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
+        chimney(p, 1.08, 0.28, 1.4, 0.6, 0, 118, { color: 0x9a4a32, detail: 'brick' });
+        baroqueBlock(p, s, 0.3, 0.3, 1.5, 1.5, 0, 46, {
+          color: c.plasterDeep,
+          left: (w, h, l) => {
+            archedOpening(ctx, w * 0.6, 16, 26, c.trim, 0x2a1c12, l);
+            p.door(w * 0.6 + 1, 14, 24, 0x3e2614);
+            baroqueWindow(p, s, w * 0.18, -h + 12, 11, 18, l);
+          },
+          right: (w) => forgeMouth(p, w * 0.32, 24, 28),
+        });
+        p.material = 'tile';
+        styledHip(p, s, 0.3, 0.3, 1.5, 1.5, 46, 36, c.roof, 0.1, c.plasterDeep);
+        forgeLight(p, 1.7, 0.95);
+        lantern(p, 0.5, 1.5, 32, 0.5, 1.7);
+        const [x, y] = p.p(1.75, 1.3, 0);
+        ctx.fillStyle = '#5a3b20';
+        ctx.fillRect(x - 5, y - 8, 10, 8);
+        ctx.fillStyle = '#34343a';
+        ctx.fillRect(x - 9, y - 12, 18, 4.5);
+        ctx.fillRect(x - 3, y - 9, 6, 2);
+        // Cart wheel leaning on the wall.
+        const [wx, wy] = p.p(1.1, 1.55, 14);
+        ctx.strokeStyle = css(0x4a3220);
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(w / 2, -58, 9, 0, Math.PI * 2);
-        ctx.moveTo(w / 2 - 9, -58);
-        ctx.lineTo(w / 2 + 9, -58);
-        ctx.moveTo(w / 2, -67);
-        ctx.lineTo(w / 2, -49);
+        ctx.ellipse(wx, wy, 9, 12, 0.4, 0, Math.PI * 2);
         ctx.stroke();
-      }, 76);
-      p.material = 'slate';
-      p.hipRoof(1.12, 0.19, 1.78, 0.85, 76, 36, SLATE, 0.06);
-      // Mine office with a bell turret.
-      baroqueBlock(p, 0.2, 0.85, 1.05, 1.75, 0, 44, {
-        left: (w, h, l) => {
-          archedOpening(ctx, w * 0.55, 15, 24, WHITE_TRIM, 0x2a1c12, l);
-          p.door(w * 0.55 + 1, 13, 22, 0x3e2614);
-          baroqueWindow(p, w * 0.15, -h + 12, 10, 16, l);
-        },
-        right: (w, h, l) => baroqueWindow(p, w * 0.4, -h + 12, 10, 16, l),
-      });
-      p.material = 'tile';
-      p.hipRoof(0.2, 0.85, 1.05, 1.75, 44, 34, TILE_RED, 0.08);
-      p.box(0.54, 1.22, 0.7, 1.38, 70, 86, { color: WHITE_TRIM }, WHITE_TRIM);
-      helm(p, 0.62, 1.3, 86, [[0, 0.11], [6, 0.1], [11, 0.05], [16, 0.01]], VERDIGRIS);
-      lantern(p, 0.42, 1.75, 30, 0.42, 1.92);
-      // Rails and an ore cart.
-      for (const du of [-0.08, 0.08]) {
-        const a = p.p(1.45 + du, 0.85, 0);
-        const b = p.p(1.45 + du, 1.92, 0);
-        ctx.strokeStyle = '#4a4440';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(a[0], a[1]);
-        ctx.lineTo(b[0], b[1]);
-        ctx.stroke();
-      }
-      p.box(1.3, 1.3, 1.6, 1.62, 5, 19, { color: 0x4a4440, detail: 'planks' });
-      goldPile(p, 1.45, 1.47);
-      p.flag(1.88, 1.0, 0, 30, team);
+        for (let k = 0; k < 4; k++) {
+          const a = (k / 4) * Math.PI;
+          ctx.beginPath();
+          ctx.moveTo(wx - Math.cos(a) * 8, wy - Math.sin(a) * 11);
+          ctx.lineTo(wx + Math.cos(a) * 8, wy + Math.sin(a) * 11);
+          ctx.stroke();
+        }
+        p.flag(1.88, 1.88, 0, 26, team);
+      },
     },
-  },
-  archery_range: {
-    size: 3,
-    maxHeight: 150,
-    paint: (p, team) => {
-      const ctx = p.ctx;
-      p.footShadow();
-      p.ground(0.05, 0.05, 2.95, 2.95, 0x93a46a);
-      p.ground(1.75, 0.25, 2.85, 2.6, 0x9fae78);
-      baroqueBlock(p, 0.25, 0.25, 1.55, 1.25, 0, 50, {
-        bays: 3,
-        left: (w, h, l) => {
-          for (let i = 0; i < 3; i++) archedOpening(ctx, (w / 3) * (i + 0.5) - 10, 20, h - 14, WHITE_TRIM, 0x2e2014, l);
-        },
-        right: (w, h, l) => baroqueWindow(p, w / 2 - 6, -h + 12, 12, 20, l),
-      });
-      p.material = 'tile';
-      p.hipRoof(0.25, 0.25, 1.55, 1.25, 50, 38, TILE_RED, 0.1);
-      finial(p, 0.9, 0.75, 88, 14, false);
-      lantern(p, 1.55, 1.0, 34, 1.72, 1.0);
-      for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);
-      p.flag(0.4, 2.6, 0, 40, team, true);
-    },
-  },
-  blacksmith: {
-    size: 2,
-    maxHeight: 140,
-    paint: (p, team) => {
-      const ctx = p.ctx;
-      p.footShadow();
-      p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
-      chimney(p, 1.08, 0.28, 1.4, 0.6, 0, 118, { color: 0x9a4a32, detail: 'brick' });
-      baroqueBlock(p, 0.3, 0.3, 1.5, 1.5, 0, 46, {
-        color: OCHRE_DEEP,
-        left: (w, h, l) => {
-          archedOpening(ctx, w * 0.6, 16, 26, WHITE_TRIM, 0x2a1c12, l);
-          p.door(w * 0.6 + 1, 14, 24, 0x3e2614);
-          baroqueWindow(p, w * 0.18, -h + 12, 11, 18, l);
-        },
-        right: (w) => forgeMouth(p, w * 0.32, 24, 28),
-      });
-      p.material = 'tile';
-      p.hipRoof(0.3, 0.3, 1.5, 1.5, 46, 36, TILE_RED, 0.1);
-      forgeLight(p, 1.7, 0.95);
-      lantern(p, 0.5, 1.5, 32, 0.5, 1.7);
-      const [x, y] = p.p(1.75, 1.3, 0);
-      ctx.fillStyle = '#5a3b20';
-      ctx.fillRect(x - 5, y - 8, 10, 8);
-      ctx.fillStyle = '#34343a';
-      ctx.fillRect(x - 9, y - 12, 18, 4.5);
-      ctx.fillRect(x - 3, y - 9, 6, 2);
-      // Cart wheel leaning on the wall.
-      const [wx, wy] = p.p(1.1, 1.55, 14);
-      ctx.strokeStyle = css(0x4a3220);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(wx, wy, 9, 12, 0.4, 0, Math.PI * 2);
-      ctx.stroke();
-      for (let k = 0; k < 4; k++) {
-        const a = (k / 4) * Math.PI;
-        ctx.beginPath();
-        ctx.moveTo(wx - Math.cos(a) * 8, wy - Math.sin(a) * 11);
-        ctx.lineTo(wx + Math.cos(a) * 8, wy + Math.sin(a) * 11);
-        ctx.stroke();
-      }
-      p.flag(1.88, 1.88, 0, 26, team);
-    },
-  },
-};
-
+  };
+}

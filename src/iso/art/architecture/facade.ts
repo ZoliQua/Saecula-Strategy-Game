@@ -1,6 +1,8 @@
 import type { Ctx } from '../canvas';
 import type { IsoPainter } from '../isoPainter';
+import { baked } from '../lighting/normalLayer';
 import { css, shade } from '../palette';
+import type { ArchStyle, CrestCharge } from './style';
 
 /*
  * Face-local facade details: call these inside IsoPainter.leftFace /
@@ -8,6 +10,8 @@ import { css, shade } from '../palette';
  */
 
 export const WHITE_TRIM = 0xf3ecdc;
+/** Baked shade for details painted on right (+u) faces. */
+export const R = baked(0.72);
 
 /** Half-timbering: sill + top plates, posts, braces and rails. */
 export function timberFrame(
@@ -73,12 +77,12 @@ export function quoins(ctx: Ctx, w: number, h: number, color: number, light = 1)
 }
 
 /**
- * Tall glazed baroque window: white surround with a segmental head,
- * keystone and sill, small-paned glazing. Records the glow.
+ * Tall glazed baroque window: surround in the style's trim with a
+ * segmental head, keystone and sill, small-paned glazing. Records the glow.
  */
-export function baroqueWindow(p: IsoPainter, x: number, y: number, w: number, h: number, light = 1): void {
+export function baroqueWindow(p: IsoPainter, s: ArchStyle, x: number, y: number, w: number, h: number, light = 1): void {
   const ctx = p.ctx;
-  const trim = css(shade(WHITE_TRIM, light));
+  const trim = css(shade(s.palette.trim, light));
   ctx.fillStyle = trim;
   ctx.beginPath();
   ctx.moveTo(x - 3, y + h + 1);
@@ -93,7 +97,7 @@ export function baroqueWindow(p: IsoPainter, x: number, y: number, w: number, h:
   ctx.fillStyle = trim;
   ctx.fillRect(x + w / 2 - 2, y - 5, 4, 5);
   ctx.fillRect(x - 4.5, y + h, w + 9, 2.6);
-  ctx.fillStyle = css(shade(WHITE_TRIM, light * 0.7));
+  ctx.fillStyle = css(shade(s.palette.trim, light * 0.7));
   ctx.fillRect(x - 4.5, y + h + 2.6, w + 9, 1);
 }
 
@@ -110,8 +114,19 @@ export function shutteredWindow(p: IsoPainter, x: number, y: number, w: number, 
   }
 }
 
-/** Team-coloured heraldic shield with a gold rim. */
-export function crest(ctx: Ctx, x: number, y: number, s: number, team: number): void {
+/** Heraldic charges painted on a crest of size s centred at (x, y). */
+const CHARGES: Record<CrestCharge, (ctx: Ctx, x: number, y: number, s: number) => void> = {
+  // Double cross (kettőskereszt) in white.
+  double_cross: (ctx, x, y, s) => {
+    ctx.fillStyle = 'rgba(250,244,230,.92)';
+    ctx.fillRect(x - s * 0.1, y - s * 0.8, s * 0.2, s * 1.5);
+    ctx.fillRect(x - s * 0.42, y - s * 0.5, s * 0.84, s * 0.16);
+    ctx.fillRect(x - s * 0.3, y - s * 0.15, s * 0.6, s * 0.16);
+  },
+};
+
+/** Team-coloured heraldic shield with a gold rim, bearing the style's charge. */
+export function crest(ctx: Ctx, style: ArchStyle, x: number, y: number, s: number, team: number): void {
   ctx.fillStyle = '#d9b14a';
   shield(ctx, x, y, s + 1.5);
   ctx.fill();
@@ -121,11 +136,7 @@ export function crest(ctx: Ctx, x: number, y: number, s: number, team: number): 
   ctx.fillStyle = g;
   shield(ctx, x, y, s);
   ctx.fill();
-  // Double cross (kettőskereszt) in white.
-  ctx.fillStyle = 'rgba(250,244,230,.92)';
-  ctx.fillRect(x - s * 0.1, y - s * 0.8, s * 0.2, s * 1.5);
-  ctx.fillRect(x - s * 0.42, y - s * 0.5, s * 0.84, s * 0.16);
-  ctx.fillRect(x - s * 0.3, y - s * 0.15, s * 0.6, s * 0.16);
+  CHARGES[style.charge](ctx, x, y, s);
 }
 
 function shield(ctx: Ctx, x: number, y: number, s: number): void {

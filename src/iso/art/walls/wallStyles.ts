@@ -1,11 +1,14 @@
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../game/wallNeighbours';
 import { CIV_DEFS, type WallStyleId } from '../../../config/civs';
 import type { AgeId, CivId } from '../../../types';
-import { PLINTH } from '../architecture/baroqueParts';
+import { HUNGARIAN_BAROQUE } from '../architecture/hungarianStyles';
 import { helm } from '../architecture/roofs';
 import { HW, type IsoPainter } from '../isoPainter';
 import { css, shade } from '../palette';
 import { prism, type UV } from './prism';
+
+/** Rusticated plinth stone of the baroque bastion. */
+const PLINTH = HUNGARIAN_BAROQUE.palette.stone;
 
 /** One arm of a wall piece: from `a` (post face or tile centre) to the shared edge / corner `b`. */
 export interface Arm {

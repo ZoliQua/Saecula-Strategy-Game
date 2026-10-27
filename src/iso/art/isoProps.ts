@@ -9,18 +9,30 @@ type Pt = readonly [number, number];
  * painter methods that call these.
  */
 
+/** Window frame and lit glazing colours (0xRRGGBB). */
+export interface WindowLook {
+  readonly frame: number;
+  readonly glassTop: number;
+  readonly glassBottom: number;
+  /** Glazing bars (drawn at 90 % opacity). */
+  readonly bars: number;
+}
+
+/** Dark wooden frame, warm lamplit glass. */
+export const WARM_WINDOW: WindowLook = { frame: 0x2b1d12, glassTop: 0xffd27a, glassBottom: 0xc9762e, bars: 0x2b1d12 };
+
 /** Window with frame and warm glow, in face-local coords. */
-export function paintWindow(ctx: Ctx, x: number, y: number, w: number, h: number, arched: boolean): void {
-  ctx.fillStyle = '#2b1d12';
+export function paintWindow(ctx: Ctx, x: number, y: number, w: number, h: number, arched: boolean, look: WindowLook = WARM_WINDOW): void {
+  ctx.fillStyle = css(look.frame);
   roundedOrArch(ctx, x - 1.5, y - 1.5, w + 3, h + 3, arched);
   ctx.fill();
   const g = ctx.createLinearGradient(0, y, 0, y + h);
-  g.addColorStop(0, '#ffd27a');
-  g.addColorStop(1, '#c9762e');
+  g.addColorStop(0, css(look.glassTop));
+  g.addColorStop(1, css(look.glassBottom));
   ctx.fillStyle = g;
   roundedOrArch(ctx, x, y, w, h, arched);
   ctx.fill();
-  ctx.fillStyle = 'rgba(43,29,18,.9)';
+  ctx.fillStyle = css(look.bars, 0.9);
   ctx.fillRect(x + w / 2 - 0.6, y, 1.2, h);
   ctx.fillRect(x, y + h * 0.55, w, 1.2);
 }

@@ -1,10 +1,10 @@
 import { HW, type IsoPainter } from '../isoPainter';
 import { css, shade } from '../palette';
-import { OCHRE, VERDIGRIS, WHITE_TRIM } from './baroqueParts';
 import { finial, helm, type HelmProfile } from './roofs';
+import type { ArchStyle } from './style';
 
 /*
- * Pieces of the Wonder (a Hungarian baroque basilica): the domed
+ * Pieces of the baroque Wonder (the Hungarian basilica): the domed
  * crossing, onion-helmed façade towers, statues, and the timber
  * scaffolding / crane shown while it is being built.
  */
@@ -24,8 +24,9 @@ const DOME: HelmProfile = [
 const LANTERN: HelmProfile = [[0, 0.12], [15, 0.12], [17, 0.15], [19, 0.08], [25, 0.05], [30, 0.01]];
 
 /** Windows and pilasters painted across the visible half of a cylinder (drum, lantern). */
-function cylinderBays(p: IsoPainter, u: number, v: number, z: number, r: number, h: number, n: number, glazed: boolean): void {
+function cylinderBays(p: IsoPainter, style: ArchStyle, u: number, v: number, z: number, r: number, h: number, n: number, glazed: boolean): void {
   const ctx = p.ctx;
+  const trim = style.palette.trim;
   const [x, y] = p.p(u, v, z);
   const rx = r * Math.SQRT2 * HW;
   for (let i = 0; i < n; i++) {
@@ -35,24 +36,25 @@ function cylinderBays(p: IsoPainter, u: number, v: number, z: number, r: number,
     const wx = x - c * rx;
     const wy = y + s * rx * 0.5;
     const w = Math.max(1, 6.5 * s);
-    ctx.fillStyle = css(shade(WHITE_TRIM, 0.75 + 0.3 * (1 - (c + 1) / 2)));
+    ctx.fillStyle = css(shade(trim, 0.75 + 0.3 * (1 - (c + 1) / 2)));
     ctx.fillRect(wx - w / 2 - 2, wy - h + 4, w + 4, h - 6);
     if (glazed) p.window(wx - w / 2, wy - h + 8, w, h - 14, true);
   }
 }
 
 /** Domed crossing: drum with windows, cornice ring, ribbed copper dome, lantern and cross. */
-export function dome(p: IsoPainter, u: number, v: number, z: number, done: boolean): void {
-  helm(p, u, v, z, [[0, 0.64], [8, 0.64]], WHITE_TRIM, false);
-  helm(p, u, v, z + 8, [[0, 0.58], [40, 0.58]], OCHRE, false);
-  cylinderBays(p, u, v, z + 8, 0.58, 40, 7, true);
-  helm(p, u, v, z + 48, [[0, 0.63], [6, 0.63]], WHITE_TRIM, false);
+export function dome(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number, done: boolean): void {
+  const c = s.palette;
+  helm(p, u, v, z, [[0, 0.64], [8, 0.64]], c.trim, false);
+  helm(p, u, v, z + 8, [[0, 0.58], [40, 0.58]], c.plaster, false);
+  cylinderBays(p, s, u, v, z + 8, 0.58, 40, 7, true);
+  helm(p, u, v, z + 48, [[0, 0.63], [6, 0.63]], c.trim, false);
   if (!done) {
     domeCentring(p, u, v, z + 54);
     return;
   }
-  helm(p, u, v, z + 54, DOME, VERDIGRIS);
-  helm(p, u, v, z + 108, LANTERN, VERDIGRIS);
+  helm(p, u, v, z + 54, DOME, c.metal);
+  helm(p, u, v, z + 108, LANTERN, c.metal);
   const [lx, ly] = p.p(u, v, z + 116);
   p.ctx.fillStyle = '#16120e';
   for (const dx of [-5.5, -1, 3.5]) p.ctx.fillRect(lx + dx, ly - 6, 2.5, 8);
@@ -82,8 +84,8 @@ function domeCentring(p: IsoPainter, u: number, v: number, z: number): void {
 }
 
 /** Onion helm, lantern openings and gilded double cross on a façade tower. */
-export function towerHelm(p: IsoPainter, u: number, v: number, z: number): void {
-  helm(p, u, v, z, BASILICA_HELM, VERDIGRIS);
+export function towerHelm(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number): void {
+  helm(p, u, v, z, BASILICA_HELM, s.palette.metal);
   const [hx, hy] = p.p(u, v, z + 38);
   p.ctx.fillStyle = '#16120e';
   for (const dx of [-5, 1.5]) p.ctx.fillRect(hx + dx, hy - 5, 3.5, 9);

@@ -1,9 +1,11 @@
 import type { IsoPainter } from '../isoPainter';
 import { css, shade } from '../palette';
-import { baroqueBlock, OCHRE, PLINTH, SLATE, volutedGable, WHITE_TRIM } from './baroqueParts';
+import { baroqueBlock, volutedGable } from './baroqueParts';
 import { archedOpening, baroqueWindow, clockFace, cornice } from './facade';
 import { lantern } from './parts';
-import type { BuildingArt } from './types';
+import type { ArchStyle } from './style';
+import { styledGable } from './styledRoofs';
+import type { WonderArt } from './types';
 import { balustrade, crane, dome, fountain, parterre, scaffold, statue, towerHelm } from './wonderParts';
 
 /** Construction stages shown while the Wonder is built; WONDER_STAGES + 1 is the finished basilica. */
@@ -28,10 +30,10 @@ const FRONT: Block = [1.55, 2.7, 2.45, 3.25];
 const RIGHT_TOWER: Block = [2.45, 2.55, 3.05, 3.15];
 
 /** Unplastered brick walls with dark window holes (early stages). */
-function rawBlock(p: IsoPainter, [u0, v0, u1, v1]: Block, z1: number): void {
+function rawBlock(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, z1: number): void {
   p.box(u0, v0, u1, v1, 12, z1, { color: RAW_BRICK, detail: 'brick' }, shade(RAW_BRICK, 0.9));
   const holes = (w: number, h: number) => {
-    for (let x = 10; x < w - 14; x += 24) if (h > 40) archedOpening(p.ctx, x, 9, Math.min(26, h - 20), 0xb7ab94, 0x1d140d);
+    for (let x = 10; x < w - 14; x += 24) if (h > 40) archedOpening(p.ctx, x, 9, Math.min(26, h - 20), s.palette.stone, 0x1d140d);
   };
   p.leftFace(u0, u1, v1, 12, holes, z1 - 12);
   p.rightFace(v0, v1, u1, 12, holes, z1 - 12);
@@ -73,38 +75,38 @@ function trusses(p: IsoPainter): void {
 }
 
 /** Plastered façade tower: portal storey, clock stage, open belfry; helm when finished. */
-function facadeTower(p: IsoPainter, [u0, v0, u1, v1]: Block, done: boolean): void {
-  baroqueBlock(p, u0, v0, u1, v1, 12, 104, {
+function facadeTower(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, done: boolean): void {
+  baroqueBlock(p, s, u0, v0, u1, v1, 12, 104, {
     left: (w, h, l) => {
-      baroqueWindow(p, w / 2 - 6, -h + 18, 12, 24, l);
+      baroqueWindow(p, s, w / 2 - 6, -h + 18, 12, 24, l);
       p.window(w / 2 - 4, -40, 8, 16, true);
     },
-    right: (w, h, l) => baroqueWindow(p, w / 2 - 6, -h + 18, 12, 24, l),
+    right: (w, h, l) => baroqueWindow(p, s, w / 2 - 6, -h + 18, 12, 24, l),
   });
-  baroqueBlock(p, u0 + 0.04, v0 + 0.04, u1 - 0.04, v1 - 0.04, 104, 148, {
+  baroqueBlock(p, s, u0 + 0.04, v0 + 0.04, u1 - 0.04, v1 - 0.04, 104, 148, {
     plinth: 0,
     left: (w) => clockFace(p.ctx, w / 2, -24, 9),
     right: (w) => clockFace(p.ctx, w / 2, -24, 8),
   });
-  baroqueBlock(p, u0 + 0.08, v0 + 0.08, u1 - 0.08, v1 - 0.08, 148, TOWER_TOP, {
+  baroqueBlock(p, s, u0 + 0.08, v0 + 0.08, u1 - 0.08, v1 - 0.08, 148, TOWER_TOP, {
     plinth: 0,
-    left: (w, h) => archedOpening(p.ctx, w / 2 - 6, 12, h - 8, WHITE_TRIM, 0x18120d),
-    right: (w, h) => archedOpening(p.ctx, w / 2 - 6, 12, h - 8, WHITE_TRIM, 0x18120d, 0.75),
+    left: (w, h) => archedOpening(p.ctx, w / 2 - 6, 12, h - 8, s.palette.trim, 0x18120d),
+    right: (w, h) => archedOpening(p.ctx, w / 2 - 6, 12, h - 8, s.palette.trim, 0x18120d, 0.75),
   });
-  if (done) towerHelm(p, (u0 + u1) / 2, (v0 + v1) / 2, TOWER_TOP);
+  if (done) towerHelm(p, s, (u0 + u1) / 2, (v0 + v1) / 2, TOWER_TOP);
 }
 
 /** Central frontispiece: portal, great window, team banners and the voluted gable with the crest. */
-function frontispiece(p: IsoPainter, team: number, done: boolean): void {
+function frontispiece(p: IsoPainter, s: ArchStyle, team: number, done: boolean): void {
   const [u0, v0, u1, v1] = FRONT;
   const ctx = p.ctx;
-  baroqueBlock(p, u0, v0, u1, v1, 12, FRONT_TOP, {
+  baroqueBlock(p, s, u0, v0, u1, v1, 12, FRONT_TOP, {
     bays: 2,
     left: (w, h, l) => {
-      archedOpening(ctx, w / 2 - 13, 26, 40, WHITE_TRIM, 0x2a1c12, l);
+      archedOpening(ctx, w / 2 - 13, 26, 40, s.palette.trim, 0x2a1c12, l);
       p.door(w / 2 - 10, 20, 34, 0x4a2a14);
-      cornice(ctx, w, 52, WHITE_TRIM, l, 4);
-      baroqueWindow(p, w / 2 - 9, -h + 16, 18, 34, l);
+      cornice(ctx, w, 52, s.palette.trim, l, 4);
+      baroqueWindow(p, s, w / 2 - 9, -h + 16, 18, 34, l);
       if (!done) return;
       for (const x of [8, w - 16]) {
         ctx.fillStyle = css(shade(team, 1.05));
@@ -118,9 +120,9 @@ function frontispiece(p: IsoPainter, team: number, done: boolean): void {
         ctx.fill();
       }
     },
-    right: (w, h, l) => baroqueWindow(p, w / 2 - 6, -h + 18, 12, 26, l),
+    right: (w, h, l) => baroqueWindow(p, s, w / 2 - 6, -h + 18, 12, 26, l),
   });
-  volutedGable(p, u0 + 0.05, u1 - 0.05, v1, FRONT_TOP, 46, OCHRE, team);
+  volutedGable(p, s, u0 + 0.05, u1 - 0.05, v1, FRONT_TOP, 46, s.palette.plaster, team);
   if (!done) return;
   for (const u of [u0 + 0.06, u1 - 0.06]) statue(p, u, v1, FRONT_TOP);
   statue(p, (u0 + u1) / 2, v1, FRONT_TOP + 46);
@@ -128,14 +130,14 @@ function frontispiece(p: IsoPainter, team: number, done: boolean): void {
   lantern(p, u1 - 0.12, v1 + 0.02, 34, u1 - 0.12, v1 + 0.35);
 }
 
-function transeptArm(p: IsoPainter, [u0, v0, u1, v1]: Block, right: boolean): void {
-  baroqueBlock(p, u0, v0, u1, v1, 12, 86, {
-    left: (w, h, l) => baroqueWindow(p, w / 2 - 7, -h + 20, 14, 30, l),
-    right: (w, h, l) => baroqueWindow(p, w / 2 - 8, -h + 20, 16, 34, l),
+function transeptArm(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, right: boolean): void {
+  baroqueBlock(p, s, u0, v0, u1, v1, 12, 86, {
+    left: (w, h, l) => baroqueWindow(p, s, w / 2 - 7, -h + 20, 14, 30, l),
+    right: (w, h, l) => baroqueWindow(p, s, w / 2 - 8, -h + 20, 16, 34, l),
   });
   p.material = 'slate';
-  p.gableRoof(u0, v0, u1, v1, 86, 32, SLATE, OCHRE, 'u', 0.08, right ? (w, rise) => {
-    p.ctx.fillStyle = css(WHITE_TRIM);
+  styledGable(p, s, u0, v0, u1, v1, 86, 32, s.palette.roofAlt, s.palette.plaster, 'u', 0.08, right ? (w, rise) => {
+    p.ctx.fillStyle = css(s.palette.trim);
     p.ctx.beginPath();
     p.ctx.ellipse(w / 2, -rise * 0.42, 6, 7.5, 0, 0, Math.PI * 2);
     p.ctx.fill();
@@ -145,29 +147,30 @@ function transeptArm(p: IsoPainter, [u0, v0, u1, v1]: Block, right: boolean): vo
 
 /**
  * The Wonder at a construction stage (1…WONDER_STAGES) or finished
- * (WONDER_STAGES + 1): a Hungarian baroque basilica on a stone podium —
+ * (WONDER_STAGES + 1): a baroque basilica on a stone podium —
  * twin onion-helmed façade towers, a voluted frontispiece with the
  * owner's crest and banners, transept, and a copper dome on a windowed
  * drum. Stages: raw brick walls with a crane, then full-height walls
  * under bare trusses, then plastered and roofed with the dome's timber
  * centring and scaffolded towers.
  */
-export function paintWonder(p: IsoPainter, team: number, stage: number): void {
+function paintWonder(p: IsoPainter, s: ArchStyle, team: number, stage: number): void {
+  const c = s.palette;
   const done = stage > WONDER_STAGES;
   p.footShadow();
-  p.box(0.05, 0.05, 3.95, 3.95, 0, 6, { color: shade(PLINTH, 0.92), detail: 'stone' }, PLINTH);
-  p.box(0.2, 0.2, 3.8, 3.8, 6, 12, { color: PLINTH, detail: 'stone' }, 0xd2c8b2);
+  p.box(0.05, 0.05, 3.95, 3.95, 0, 6, { color: shade(c.stone, 0.92), detail: 'stone' }, c.stone);
+  p.box(0.2, 0.2, 3.8, 3.8, 6, 12, { color: c.stone, detail: 'stone' }, 0xd2c8b2);
   paving(p);
   if (stage <= 2) {
     const h = stage === 1 ? 50 : NAVE_TOP;
     const towers = stage === 1 ? 50 : 140;
-    rawBlock(p, LEFT_ARM, stage === 1 ? 50 : 86);
-    rawBlock(p, NAVE, h);
+    rawBlock(p, s, LEFT_ARM, stage === 1 ? 50 : 86);
+    rawBlock(p, s, NAVE, h);
     if (stage === 2) trusses(p);
-    rawBlock(p, RIGHT_ARM, stage === 1 ? 50 : 86);
-    rawBlock(p, LEFT_TOWER, towers);
-    rawBlock(p, FRONT, stage === 1 ? 50 : FRONT_TOP);
-    rawBlock(p, RIGHT_TOWER, towers);
+    rawBlock(p, s, RIGHT_ARM, stage === 1 ? 50 : 86);
+    rawBlock(p, s, LEFT_TOWER, towers);
+    rawBlock(p, s, FRONT, stage === 1 ? 50 : FRONT_TOP);
+    rawBlock(p, s, RIGHT_TOWER, towers);
     scaffold(p, ...LEFT_TOWER, 12, towers);
     scaffold(p, ...RIGHT_TOWER, 12, towers);
     scaffold(p, FRONT[0], FRONT[1], FRONT[2], FRONT[3], 12, stage === 1 ? 50 : FRONT_TOP);
@@ -176,21 +179,21 @@ export function paintWonder(p: IsoPainter, team: number, stage: number): void {
     return;
   }
   if (done) parterre(p, 0.3, 2.05, 0.88, 3.65, 12);
-  transeptArm(p, LEFT_ARM, false);
-  baroqueBlock(p, ...NAVE, 12, NAVE_TOP, {
+  transeptArm(p, s, LEFT_ARM, false);
+  baroqueBlock(p, s, ...NAVE, 12, NAVE_TOP, {
     bays: 5,
-    left: (w, h, l) => baroqueWindow(p, w / 2 - 7, -h + 20, 14, 32, l),
+    left: (w, h, l) => baroqueWindow(p, s, w / 2 - 7, -h + 20, 14, 32, l),
     right: (w, h, l) => {
-      for (let i = 0; i < 5; i++) baroqueWindow(p, (w / 5) * (i + 0.5) - 7, -h + 20, 14, 32, l);
+      for (let i = 0; i < 5; i++) baroqueWindow(p, s, (w / 5) * (i + 0.5) - 7, -h + 20, 14, 32, l);
     },
   });
   p.material = 'slate';
-  p.gableRoof(...NAVE, NAVE_TOP, 40, SLATE, OCHRE, 'v', 0.08);
-  transeptArm(p, RIGHT_ARM, true);
-  dome(p, 2.0, 1.5, 118, done);
-  facadeTower(p, LEFT_TOWER, done);
-  frontispiece(p, team, done);
-  facadeTower(p, RIGHT_TOWER, done);
+  styledGable(p, s, ...NAVE, NAVE_TOP, 40, c.roofAlt, c.plaster, 'v', 0.08);
+  transeptArm(p, s, RIGHT_ARM, true);
+  dome(p, s, 2.0, 1.5, 118, done);
+  facadeTower(p, s, LEFT_TOWER, done);
+  frontispiece(p, s, team, done);
+  facadeTower(p, s, RIGHT_TOWER, done);
   if (done) {
     parterre(p, 3.1, 2.15, 3.7, 3.7, 12);
     fountain(p, 2.0, 3.55, 12);
@@ -226,9 +229,13 @@ function stoneBlocks(p: IsoPainter): void {
   }
 }
 
-/** The finished Wonder (the age-3 only building). */
-export const WONDER_ART: BuildingArt = {
-  size: 4,
-  maxHeight: 310,
-  paint: (p, team) => paintWonder(p, team, WONDER_STAGES + 1),
-};
+/** The baroque Wonder (the age-3 only building): finished in the team colour, or a scaffolding stage. */
+export function wonderArt(s: ArchStyle): WonderArt {
+  return {
+    size: 4,
+    maxHeight: 310 + s.headroom,
+    paint: (p, team) => paintWonder(p, s, team, WONDER_STAGES + 1),
+    // No team colour shows while it is being built.
+    paintStage: (p, stage) => paintWonder(p, s, 0xffffff, stage),
+  };
+}

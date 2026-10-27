@@ -14,7 +14,7 @@ type Pt = readonly [number, number];
 
 /**
  * Mansard: a steep lower frustum (eave → eave+lowerRise, inset by
- * `inset` tiles) under a shallow hip. Returns the upper hip's apex.
+ * `inset` tiles) under a shallow hip, `trim` on the curb. Returns the upper hip's apex.
  */
 export function mansardRoof(
   p: IsoPainter,
@@ -29,6 +29,7 @@ export function mansardRoof(
   color: number,
   upperColor = color,
   overhang = 0.08,
+  trim = 0xf3ecdc,
 ): Pt {
   const o = overhang;
   const zt = eave + lowerRise;
@@ -48,7 +49,7 @@ export function mansardRoof(
   p.roofSlope([D, C, c, d], color, baked(1.05), p.slope(0, 1, run, lowerRise), (t) => [lerp(d, D, t), lerp(c, C, t)]);
   p.roofSlope([C, B, b, c], color, baked(0.76), p.slope(1, 0, run, lowerRise), (t) => [lerp(c, C, t), lerp(b, B, t)]);
   // Curb moulding where the slopes break.
-  p.strokePoly([d, c, b], css(shade(0xf3ecdc, 0.95)), 2.2);
+  p.strokePoly([d, c, b], css(shade(trim, 0.95)), 2.2);
   p.recordRoof(u0 - o, v0 - o, u1 + o, v1 + o, eave, [], zt);
   return p.hipRoof(u0 + inset, v0 + inset, u1 - inset, v1 - inset, zt, upperRise, upperColor, 0.02);
 }
