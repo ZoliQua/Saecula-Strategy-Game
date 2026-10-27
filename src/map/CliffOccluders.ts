@@ -23,9 +23,10 @@ const OCCLUDER_DEPTH_OFFSET = 0.05;
 const ATLAS_WIDTH = 2048;
 /**
  * A building beside raised rock sorts this far below the rock: its site
- * plate (+0.01), age-up scaffold (+0.02) and glow (+0.03) stay under it too.
+ * plate (+0.01), age-up scaffold (+0.02) and glow (+0.03) and its window
+ * glows (+0.05, WindowGlows) stay under it too.
  */
-const BELOW_ROCK = 0.04;
+const BELOW_ROCK = 0.06;
 
 let seq = 0;
 

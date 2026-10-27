@@ -185,7 +185,8 @@ const NORMAN_CURTAIN: WallAgeStyle = {
  */
 const BRICK = 0x733832;
 const DRESSING = shade(NORMAN_RAGSTONE, 0.94);
-const COPING = shade(NORMAN_RAGSTONE, 0.86);
+/** Darker than the dressings, so the wall-walk does not read as a pale paved strip from afar. */
+const COPING = shade(NORMAN_RAGSTONE, 0.68);
 /** The sloped turf glacis in front of the scarp (the Hungarian runs carry their green on top). */
 const GLACIS = 0x5a7a33;
 const GLACIS_TOP = 0x6f9440;
