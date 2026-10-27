@@ -3,6 +3,7 @@ import { CIV_DEFS } from '../../../config/civs';
 import type { CivId, UnitType } from '../../../types';
 import { boxBlur } from '../lighting/deriveNormals';
 import { halveNormals } from '../lighting/halfNormals';
+import { halveMask } from './halfMask';
 import { ANIM_FRAMES, frameContent, PAINTED_HEADINGS, paintOrder, sheetLayout, unitAnims, type SheetLayout, type UnitAnim } from './layout';
 import { contactShadow, unitLook } from './looks';
 import { FrameRaster, type FramePixels } from './raster';
@@ -32,9 +33,9 @@ export interface SheetGeometry {
 }
 
 /**
- * A unit type's painted sheets: albedo, team mask (same layout), a
- * half-resolution normal map (shared by the mask) and a cast-shadow
- * silhouette at 1 / UNIT_SHADOW_DOWNSCALE resolution.
+ * A unit type's painted sheets: albedo, team mask and normal map (shared
+ * by the mask) at half resolution (same layout at x / 2, y / 2) and a
+ * cast-shadow silhouette at 1 / UNIT_SHADOW_DOWNSCALE resolution.
  * Frames are painted lazily in paintOrder(); `painted[k]` says which
  * are ready.
  */
@@ -61,6 +62,7 @@ export interface DirtyFrame {
   readonly x: number;
   readonly y: number;
   readonly albedo: ImageData;
+  /** Half resolution (at x / 2, y / 2), like the normal map. */
   readonly mask: ImageData;
   /** Half resolution (at x / 2, y / 2). */
   readonly normal: ImageData | null;
@@ -131,7 +133,8 @@ export function createSheet(type: UnitType, civ: CivId): UnitSheet {
     type,
     civ,
     albedo: cpuCanvas(g.width, g.height),
-    mask: cpuCanvas(g.width, g.height),
+    // Half resolution (one texel per world pixel, as sprites show at 1 / ART_SCALE): a quarter of the memory (see halveMask).
+    mask: cpuCanvas(g.width / 2, g.height / 2),
     // Half resolution, like the shadow: a quarter of the memory, same shading (see halveNormals).
     normal: LIGHTING_ENABLED ? cpuCanvas(g.width / 2, g.height / 2) : null,
     shadow: LIGHTING_ENABLED ? cpuCanvas(g.width / UNIT_SHADOW_DOWNSCALE, g.height / UNIT_SHADOW_DOWNSCALE) : null,
@@ -195,11 +198,12 @@ function storeFrame(sheet: UnitSheet, k: number, px: FramePixels): void {
   const { x, y, w, h } = frameRect(sheet, k);
   // Copies: the raster's buffers are reused for the next frame.
   const albedo = new ImageData(px.albedo.slice(), w, h);
-  const mask = new ImageData(px.mask.slice(), w, h);
+  const half = halveMask(px.mask, w, h);
+  const mask = new ImageData(half.data, half.width, half.height);
   const normal = sheet.normal ? halfNormalBlock(px, w, h) : null;
   const shadow = sheet.shadow ? shadowBlock(px.coverage, w, h) : null;
   ctx2d(sheet.albedo).putImageData(albedo, x, y);
-  ctx2d(sheet.mask).putImageData(mask, x, y);
+  ctx2d(sheet.mask).putImageData(mask, x / 2, y / 2);
   if (sheet.normal && normal) ctx2d(sheet.normal).putImageData(normal, x / 2, y / 2);
   if (sheet.shadow && shadow) ctx2d(sheet.shadow).putImageData(shadow, x / UNIT_SHADOW_DOWNSCALE, y / UNIT_SHADOW_DOWNSCALE);
   sheet.dirty.push({ x, y, albedo, mask, normal, shadow });
