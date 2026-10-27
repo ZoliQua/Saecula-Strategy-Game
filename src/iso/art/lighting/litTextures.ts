@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { LIGHTING_ENABLED, SHADOW } from '../../../config/visual';
 import { boxBlur } from './deriveNormals';
+import { halveNormals } from './halfNormals';
 import { encodeNormal, N_UP } from './viewSpace';
 
 /** Texture key of a caster's blurred shadow silhouette (same frames). */
@@ -26,6 +27,26 @@ export function shareNormalMap(scene: Pick<Phaser.Scene, 'textures'>, fromKey: s
   const from = scene.textures.get(fromKey);
   if (from.dataSource.length === 0) return;
   scene.textures.get(toKey).dataSource = from.dataSource;
+}
+
+/**
+ * Half-size copy of a painted sprite's normal map (texture memory budget:
+ * a quarter of the bytes). Coverage comes from the albedo's alpha, so the
+ * silhouette edge keeps the sprite's own normals.
+ */
+export function halfNormalCanvas(normal: HTMLCanvasElement, albedo: HTMLCanvasElement): HTMLCanvasElement {
+  const w = normal.width;
+  const h = normal.height;
+  const nctx = normal.getContext('2d');
+  const actx = albedo.width === w && albedo.height === h ? albedo.getContext('2d') : null;
+  if (!nctx || w < 2 || h < 2) return normal;
+  const alpha = actx ? actx.getImageData(0, 0, w, h).data : null;
+  const half = halveNormals(nctx.getImageData(0, 0, w, h).data, w, h, alpha ? (i) => (alpha[i * 4 + 3] ?? 0) / 255 : null);
+  const out = document.createElement('canvas');
+  out.width = half.width;
+  out.height = half.height;
+  out.getContext('2d')?.putImageData(new ImageData(half.data, half.width, half.height), 0, 0);
+  return out;
 }
 
 let flatNormal: HTMLCanvasElement | null = null;

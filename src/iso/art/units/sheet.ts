@@ -1,6 +1,7 @@
-import { LIGHTING_ENABLED, SHADOW } from '../../../config/visual';
+import { LIGHTING_ENABLED, SHADOW, UNIT_SHADOW_DOWNSCALE } from '../../../config/visual';
 import type { UnitType } from '../../../types';
 import { boxBlur } from '../lighting/deriveNormals';
+import { halveNormals } from '../lighting/halfNormals';
 import { ANIM_FRAMES, frameContent, PAINTED_HEADINGS, paintOrder, sheetLayout, unitAnims, type SheetLayout, type UnitAnim } from './layout';
 import { contactShadow, UNIT_LOOKS } from './looks';
 import { FrameRaster, type FramePixels } from './raster';
@@ -31,7 +32,8 @@ export interface SheetGeometry {
 
 /**
  * A unit type's painted sheets: albedo, team mask (same layout), a
- * shared normal map and a half-resolution cast-shadow silhouette.
+ * half-resolution normal map (shared by the mask) and a cast-shadow
+ * silhouette at 1 / UNIT_SHADOW_DOWNSCALE resolution.
  * Frames are painted lazily in paintOrder(); `painted[k]` says which
  * are ready.
  */
@@ -58,6 +60,7 @@ export interface DirtyFrame {
   readonly y: number;
   readonly albedo: ImageData;
   readonly mask: ImageData;
+  /** Half resolution (at x / 2, y / 2). */
   readonly normal: ImageData | null;
   readonly shadow: ImageData | null;
 }
@@ -77,7 +80,8 @@ const ctx2d = (c: HTMLCanvasElement): CanvasRenderingContext2D => {
   return ctx;
 };
 
-const even = (n: number): number => Math.ceil(n / 2) * 2;
+/** Frame sides are multiples of the shadow downscale (also even, for the half-size normal map). */
+const aligned = (n: number): number => Math.ceil(n / UNIT_SHADOW_DOWNSCALE) * UNIT_SHADOW_DOWNSCALE;
 
 const geometries = new Map<UnitType, SheetGeometry>();
 
@@ -90,9 +94,9 @@ export function sheetGeometry(type: UnitType): SheetGeometry {
   const rows = PAINTED_HEADINGS.length;
   const sizes = layout.anims.map((anim) => {
     const b = figureBounds(type, [anim], ANIM_FRAMES);
-    const w = even(2 * Math.ceil(Math.max(b.halfWidth, shadow.rx) + PAD));
+    const w = aligned(2 * Math.ceil(Math.max(b.halfWidth, shadow.rx) + PAD));
     const feetY = Math.ceil(b.above + PAD);
-    const h = even(feetY + Math.ceil(Math.max(b.below, shadow.ry) + PAD));
+    const h = aligned(feetY + Math.ceil(Math.max(b.below, shadow.ry) + PAD));
     return { anim, w, h, feetY, bw: w * ANIM_FRAMES[anim], bh: h * rows };
   });
   // Shelf packing, tallest blocks first.
@@ -124,8 +128,9 @@ export function createSheet(type: UnitType): UnitSheet {
     type,
     albedo: cpuCanvas(g.width, g.height),
     mask: cpuCanvas(g.width, g.height),
-    normal: LIGHTING_ENABLED ? cpuCanvas(g.width, g.height) : null,
-    shadow: LIGHTING_ENABLED ? cpuCanvas(g.width / 2, g.height / 2) : null,
+    // Half resolution, like the shadow: a quarter of the memory, same shading (see halveNormals).
+    normal: LIGHTING_ENABLED ? cpuCanvas(g.width / 2, g.height / 2) : null,
+    shadow: LIGHTING_ENABLED ? cpuCanvas(g.width / UNIT_SHADOW_DOWNSCALE, g.height / UNIT_SHADOW_DOWNSCALE) : null,
     painted: new Uint8Array(g.layout.frameCount),
     stats: { frames: 0, totalMs: 0, maxMs: 0 },
     queue: paintOrder(g.layout),
@@ -187,12 +192,12 @@ function storeFrame(sheet: UnitSheet, k: number, px: FramePixels): void {
   // Copies: the raster's buffers are reused for the next frame.
   const albedo = new ImageData(px.albedo.slice(), w, h);
   const mask = new ImageData(px.mask.slice(), w, h);
-  const normal = sheet.normal ? new ImageData(px.normal.slice(), w, h) : null;
+  const normal = sheet.normal ? halfNormalBlock(px, w, h) : null;
   const shadow = sheet.shadow ? shadowBlock(px.coverage, w, h) : null;
   ctx2d(sheet.albedo).putImageData(albedo, x, y);
   ctx2d(sheet.mask).putImageData(mask, x, y);
-  if (sheet.normal && normal) ctx2d(sheet.normal).putImageData(normal, x, y);
-  if (sheet.shadow && shadow) ctx2d(sheet.shadow).putImageData(shadow, x / 2, y / 2);
+  if (sheet.normal && normal) ctx2d(sheet.normal).putImageData(normal, x / 2, y / 2);
+  if (sheet.shadow && shadow) ctx2d(sheet.shadow).putImageData(shadow, x / UNIT_SHADOW_DOWNSCALE, y / UNIT_SHADOW_DOWNSCALE);
   sheet.dirty.push({ x, y, albedo, mask, normal, shadow });
   sheet.painted[k] = 1;
   sheet.stats.totalMs += performance.now() - t0;
@@ -220,19 +225,27 @@ export function paintSome(sheet: UnitSheet, budgetMs: number, maxFrames = Infini
   return n;
 }
 
-/** Half-resolution blurred silhouette (cast shadow) of a frame. */
+/** Half-resolution normal map of a frame (covered pixels only at the silhouette). */
+function halfNormalBlock(px: FramePixels, w: number, h: number): ImageData {
+  const half = halveNormals(px.normal, w, h, (i) => px.coverage[i] ?? 0);
+  return new ImageData(half.data, half.width, half.height);
+}
+
+/** Blurred silhouette (cast shadow) of a frame at 1 / UNIT_SHADOW_DOWNSCALE resolution. */
 function shadowBlock(coverage: Float32Array, w: number, h: number): ImageData {
-  const hw = w / 2;
-  const hh = h / 2;
+  const s = UNIT_SHADOW_DOWNSCALE;
+  const hw = w / s;
+  const hh = h / s;
   const small = new Float32Array(hw * hh);
   for (let y = 0; y < hh; y++) {
     for (let x = 0; x < hw; x++) {
-      const i = y * 2 * w + x * 2;
-      const c = ((coverage[i] ?? 0) + (coverage[i + 1] ?? 0) + (coverage[i + w] ?? 0) + (coverage[i + w + 1] ?? 0)) / 4;
+      let sum = 0;
+      for (let dy = 0; dy < s; dy++) for (let dx = 0; dx < s; dx++) sum += coverage[(y * s + dy) * w + x * s + dx] ?? 0;
+      const c = sum / (s * s);
       small[y * hw + x] = c >= 0.5 ? 1 : c * 2 * 0.6;
     }
   }
-  const r = Math.max(1, Math.round(SHADOW.blur / 2));
+  const r = Math.max(1, Math.round(SHADOW.blur / s));
   const soft = boxBlur(boxBlur(small, hw, hh, r), hw, hh, r);
   const img = new ImageData(hw, hh);
   for (let i = 0; i < soft.length; i++) {

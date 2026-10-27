@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { UNIT_SHADOW_DOWNSCALE } from '../../../config/visual';
 import type { UnitType } from '../../../types';
 import { shadowKey, shareNormalMap } from '../lighting/litTextures';
 import { PAINTED_HEADINGS } from './layout';
@@ -16,7 +17,7 @@ import { createSheet, frameRect, paintSome, type DirtyFrame, type UnitSheet } fr
  *  - `key`          albedo, team parts in neutral grey, normal map attached;
  *  - `maskKey(key)` team mask (same frames, shares the normal map), drawn
  *                   on top and tinted with the player colour;
- *  - `shadowKey(key)` half-resolution cast-shadow silhouette.
+ *  - `shadowKey(key)` cast-shadow silhouette at 1 / UNIT_SHADOW_DOWNSCALE resolution.
  */
 export interface UnitArt {
   readonly type: UnitType;
@@ -138,6 +139,7 @@ function register(scene: Phaser.Scene, art: UnitArt): void {
   const albedo = create(art.key, sheet.albedo);
   if (!albedo) return;
   frames(albedo, 1);
+  // The normal map is half size; Light2D samples it with the albedo's UVs.
   if (sheet.normal) albedo.setDataSource(sheet.normal);
   const mask = create(art.maskKey, sheet.mask);
   if (mask) {
@@ -146,7 +148,7 @@ function register(scene: Phaser.Scene, art: UnitArt): void {
   }
   if (sheet.shadow) {
     const shadow = create(shadowKey(art.key), sheet.shadow);
-    if (shadow) frames(shadow, 2);
+    if (shadow) frames(shadow, UNIT_SHADOW_DOWNSCALE);
   }
   // Creating the textures uploaded everything painted so far.
   sheet.dirty = [];
@@ -168,9 +170,9 @@ function refresh(scene: Phaser.Scene, art: UnitArt): void {
   const albedo = tm.get(art.key);
   const targets: Array<[Phaser.Textures.TextureSource | undefined, (d: DirtyFrame) => ImageData | null, number]> = [
     [albedo.source[0], (d) => d.albedo, 1],
-    [albedo.dataSource[0], (d) => d.normal, 1],
+    [albedo.dataSource[0], (d) => d.normal, 2],
     [tm.exists(art.maskKey) ? tm.get(art.maskKey).source[0] : undefined, (d) => d.mask, 1],
-    [tm.exists(shadowKey(art.key)) ? tm.get(shadowKey(art.key)).source[0] : undefined, (d) => d.shadow, 2],
+    [tm.exists(shadowKey(art.key)) ? tm.get(shadowKey(art.key)).source[0] : undefined, (d) => d.shadow, UNIT_SHADOW_DOWNSCALE],
   ];
   gl.activeTexture(gl.TEXTURE0);
   const previous = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;

@@ -72,6 +72,13 @@ export const SHADOW = {
 } as const;
 
 /**
+ * Unit cast-shadow sheets are stored at 1 / this of the art resolution
+ * (the silhouette is blurred anyway; texture memory budget). Unit frame
+ * boxes are sized to multiples of it so frames stay texel-aligned.
+ */
+export const UNIT_SHADOW_DOWNSCALE = 4;
+
+/**
  * Painted (baked) face shading kept when lighting is on: 1 = full
  * baked contrast, 0 = flat albedo. Lighting supplies the rest.
  */
@@ -127,6 +134,9 @@ export const COMBAT_FX = {
   /** When the falling body hits the ground in the death animation. */
   deathDustDelayMs: 380,
 } as const;
+
+/** How often unused generated art (old wall joins, Wonder stages) is freed, real ms (texture memory budget). */
+export const ART_EVICT_INTERVAL_MS = 20_000;
 
 /** Age-up transformation of a player's buildings (AgeUpFxSystem). Times in ms, sizes in world px. */
 export const AGE_UP_FX = {
