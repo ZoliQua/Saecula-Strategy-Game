@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { XRAY } from '../../../config/visual';
 import { PLAYER_COLORS } from '../../../game/Player';
-import { hiddenRect, type Box, type CoverSource, type PlacedCover } from '../../../iso/coverage';
+import { hiddenRects, type Box, type CoverSource, type HiddenRect, type PlacedCover } from '../../../iso/coverage';
 import { frameCover } from '../../../iso/frameCover';
 import type { Entity } from '../../components';
 import type { EcsWorld } from '../../world';
@@ -26,7 +26,7 @@ function spriteBox(s: Phaser.GameObjects.Sprite): Box {
  * AoE2-style X-ray: the part of a unit hidden behind raised rock, a
  * building or trees drawn in front of it is overdrawn by a translucent
  * team-coloured silhouette (a pooled copy of the unit's frame, cropped to
- * the hidden rect) drawn over the world. Render state only. Cost per frame is O(units) with
+ * each hidden run) drawn over the world. Render state only. Cost per frame is O(units) with
  * small spatial queries; hidden (fogged) enemy units get none.
  */
 export class UnitXRay {
@@ -73,9 +73,13 @@ export class UnitXRay {
         this.covers.push(c);
       }
       if (this.covers.length === 0) continue;
-      const hidden = hiddenRect(box, this.covers, XRAY.sampleStep, XRAY.minHiddenPx);
-      if (!hidden) continue;
-      this.show(e, body, box, hidden);
+      // One silhouette per covered run, so the visible gap between two occluders stays untinted.
+      let depth = -Infinity;
+      for (const hidden of hiddenRects(box, this.covers, XRAY.sampleStep, XRAY.minHiddenPx)) {
+        this.show(e, body, box, hidden);
+        depth = Math.max(depth, hidden.depth);
+      }
+      if (depth > -Infinity) this.raised.set(e, depth + ABOVE_OCCLUDER);
     }
     for (let i = this.used; i < this.pool.length; i++) this.pool[i]?.setVisible(false);
   }
@@ -92,14 +96,13 @@ export class UnitXRay {
     }
   }
 
-  private show(e: Entity, body: Phaser.GameObjects.Sprite, box: Box, hidden: Box & { depth: number }): void {
+  private show(e: Entity, body: Phaser.GameObjects.Sprite, box: Box, hidden: HiddenRect): void {
     let img = this.pool[this.used];
     if (!img) {
       img = this.scene.add.image(0, 0, body.texture.key, body.frame.name);
       this.pool.push(img);
     }
     this.used++;
-    this.raised.set(e, hidden.depth + ABOVE_OCCLUDER);
     if (img.texture !== body.texture || img.frame.name !== body.frame.name) img.setTexture(body.texture.key, body.frame.name);
     const k = body.scaleX;
     img

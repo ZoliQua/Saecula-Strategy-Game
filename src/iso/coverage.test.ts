@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { columnCover, hiddenRect, type PlacedCover } from './coverage';
+import { columnCover, hiddenRects, type PlacedCover } from './coverage';
+
+/** The single hidden rect (or null), for cases with one covered run. */
+function hiddenRect(...args: Parameters<typeof hiddenRects>) {
+  const runs = hiddenRects(...args);
+  expect(runs.length).toBeLessThanOrEqual(1);
+  return runs[0] ?? null;
+}
 
 /** A w×h alpha mask from rows of '#' (opaque) and '.' (clear). */
 function mask(rows: string[]): { alpha: (x: number, y: number) => number; w: number; h: number } {
@@ -15,7 +22,7 @@ describe('columnCover', () => {
   });
 });
 
-describe('hiddenRect', () => {
+describe('hiddenRects', () => {
   // A 10 px wide block covering y 50..100 (scale 1), like a rock in front of a unit's legs.
   const rock = columnCover(mask(Array.from({ length: 50 }, () => '##########')).alpha, 10, 50);
   const at = (left: number, top: number, depth: number, flipX = false): PlacedCover => ({ cover: rock, left, top, scale: 1, flipX, depth });
@@ -45,5 +52,23 @@ describe('hiddenRect', () => {
     // Flipped, the tall column (x 0..1 in art) is drawn on the right half.
     expect(hiddenRect({ left: 10, top: 0, right: 20, bottom: 30 }, [placed], 2, 4)).toEqual({ left: 10, top: 0, right: 20, bottom: 30, depth: 3 });
     expect(hiddenRect({ left: 0, top: 0, right: 10, bottom: 30 }, [placed], 2, 4)).toEqual({ left: 0, top: 10, right: 10, bottom: 30, depth: 3 });
+  });
+
+  it('splits into one rect per covered run, so the visible gap between two occluders stays untinted', () => {
+    // Two 10 px blocks (houses / trunks) at x 0..10 and 20..30, the unit spans 0..30.
+    const wide = { left: 0, top: 40, right: 30, bottom: 80 };
+    const runs = hiddenRects(wide, [at(0, 50, 7), at(20, 60, 9)], 2, 4);
+    expect(runs).toEqual([
+      { left: 0, top: 50, right: 10, bottom: 80, depth: 7 },
+      { left: 20, top: 60, right: 30, bottom: 80, depth: 9 },
+    ]);
+    // Nothing between the two occluders is tinted.
+    for (const r of runs) expect(r.right <= 10 || r.left >= 20).toBe(true);
+  });
+
+  it('drops a run narrower than minPx but keeps the others', () => {
+    const wide = { left: 0, top: 40, right: 30, bottom: 80 };
+    const sliver: PlacedCover = { cover: columnCover(mask(Array.from({ length: 50 }, () => '##')).alpha, 2, 50), left: 26, top: 50, scale: 1, flipX: false, depth: 4 };
+    expect(hiddenRects(wide, [at(0, 50, 7), sliver], 2, 4)).toEqual([{ left: 0, top: 50, right: 10, bottom: 80, depth: 7 }]);
   });
 });

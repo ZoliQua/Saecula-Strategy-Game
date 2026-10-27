@@ -44,20 +44,28 @@ export interface Box {
   readonly bottom: number;
 }
 
+/** A hidden part of a unit (world px) and the depth of its frontmost occluder. */
+export type HiddenRect = Box & { depth: number };
+
 /**
- * The part of `unit` (a world rect) hidden behind `covers` (all drawn in
- * front of it), sampled every `step` px across: the covered columns'
- * x span, from the lowest covered top to the highest covered bottom (so
- * the result never reaches over visible parts of the unit), with the
- * depth of the frontmost contributing cover. Null when less than
- * `minPx` tall or wide.
+ * The parts of `unit` (a world rect) hidden behind `covers` (all drawn in
+ * front of it), sampled every `step` px across. Each contiguous run of
+ * covered columns gives one rect: the run's x span, from its lowest
+ * covered top to its highest covered bottom (so a rect never reaches over
+ * visible parts of the unit, including the gap between two occluders),
+ * with the depth of the run's frontmost cover. Runs less than `minPx`
+ * tall or wide are dropped. Left to right.
  */
-export function hiddenRect(unit: Box, covers: readonly PlacedCover[], step: number, minPx: number): (Box & { depth: number }) | null {
-  let x0 = Infinity;
-  let x1 = -Infinity;
-  let y0 = -Infinity;
-  let y1 = Infinity;
-  let depth = -Infinity;
+export function hiddenRects(unit: Box, covers: readonly PlacedCover[], step: number, minPx: number): HiddenRect[] {
+  const out: HiddenRect[] = [];
+  let run: { x0: number; x1: number; y0: number; y1: number; depth: number } | null = null;
+  const close = (): void => {
+    if (!run) return;
+    const left = Math.max(unit.left, run.x0);
+    const right = Math.min(unit.right, run.x1);
+    if (run.y1 - run.y0 >= minPx && right - left >= minPx) out.push({ left, top: run.y0, right, bottom: run.y1, depth: run.depth });
+    run = null;
+  };
   for (let x = unit.left + step / 2; x < unit.right; x += step) {
     let top = Infinity;
     let bottom = -Infinity;
@@ -75,18 +83,20 @@ export function hiddenRect(unit: Box, covers: readonly PlacedCover[], step: numb
     }
     const it = Math.max(top, unit.top);
     const ib = Math.min(bottom, unit.bottom);
-    if (ib - it < minPx) continue;
-    x0 = Math.min(x0, x - step / 2);
-    x1 = Math.max(x1, x + step / 2);
-    y0 = Math.max(y0, it);
-    y1 = Math.min(y1, ib);
-    depth = Math.max(depth, d);
+    if (ib - it < minPx) {
+      close();
+      continue;
+    }
+    if (!run) run = { x0: x - step / 2, x1: x + step / 2, y0: it, y1: ib, depth: d };
+    else {
+      run.x1 = x + step / 2;
+      run.y0 = Math.max(run.y0, it);
+      run.y1 = Math.min(run.y1, ib);
+      run.depth = Math.max(run.depth, d);
+    }
   }
-  if (x0 === Infinity || y1 - y0 < minPx) return null;
-  const left = Math.max(unit.left, x0);
-  const right = Math.min(unit.right, x1);
-  if (right - left < minPx) return null;
-  return { left, top: y0, right, bottom: y1, depth };
+  close();
+  return out;
 }
 
 /** Something that draws occluders: adds those overlapping `box` and drawn deeper than `minDepth` to `out`. */
