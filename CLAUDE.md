@@ -711,8 +711,11 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
      a `looks.ts`-ben és a `gearRegistry.ts`-ben.
   5. `src/i18n/hu.ts`: a nép neve és egysoros leírása.
   6. Rögzítő tesztek (draw-log hash) a nép mappáiban épületre, falra és
-     egységre; a magyar, az angol és a korábbi népek rögzítései
-     változatlanok maradnak.
+     egységre (`pinBuildings` / `pinWalls` / `pinUnits`,
+     `src/iso/art/testing/pinnedArt.testkit.ts`); a magyar, az angol és a
+     korábbi népek rögzítései változatlanok maradnak. A
+     `src/config/civSurface.test.ts` őrzi, hogy népazonosító csak a fenti
+     fájlokban szerepel.
 - Ágak: a belépő feladatok a `feat/M5-eight-civs` ágon; népenként külön ág
   (`feat/M5-<nép>`), mindig az előző nép ágának végéről (egymásra épülő
   ágak); a zárófeladat a `feat/M5-eight-civs` ágon fut, a finn ágra

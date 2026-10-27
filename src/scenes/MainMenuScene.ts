@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { AVAILABLE_CIVS, MENU_CIV } from '../config/civs';
+import { menuDioramaCivs } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
@@ -41,10 +41,12 @@ interface Quarter {
   readonly walkers: readonly UnitType[];
 }
 
-/** The two playable civs side by side: a Hungarian town in front, an English one up the slope behind it. */
-const QUARTERS: readonly Quarter[] = [
+/** Front and back quarters of the diorama (civs: menuDioramaCivs). */
+type QuarterLayout = Omit<Quarter, 'civ'>;
+
+/** Two playable civs side by side: the menu civ's town in front, another civ's up the slope behind it. */
+const LAYOUTS: readonly [QuarterLayout, QuarterLayout] = [
   {
-    civ: MENU_CIV,
     playerId: 1,
     at: { tx: 0, ty: 0 },
     buildings: [
@@ -57,7 +59,6 @@ const QUARTERS: readonly Quarter[] = [
     walkers: ['villager', 'villager', 'swordsman', 'villager'],
   },
   {
-    civ: AVAILABLE_CIVS.find((c) => c !== MENU_CIV) ?? MENU_CIV,
     playerId: 2,
     at: { tx: -4, ty: -9 },
     buildings: [
@@ -70,6 +71,9 @@ const QUARTERS: readonly Quarter[] = [
     walkers: ['villager', 'archer', 'villager'],
   },
 ];
+/** Times the menu has been shown: each visit pairs the menu civ with the next civ (menuDioramaCivs). */
+let menuVisits = 0;
+
 /** Civ previews for the setup card are painted once the menu's entrance has played (plus a frame or three of slack). */
 const PREVIEW_DELAY_MS = MENU_ENTRANCE_MS + 50;
 
@@ -87,7 +91,8 @@ const WALK_MS = 4200;
 
 /**
  * Main menu: a live diorama of the world (swaying trees, drifting
- * clouds, a Hungarian and an English quarter with walking villagers)
+ * clouds, two civs' quarters with walking villagers — the menu civ and,
+ * visit by visit, each other playable civ in turn)
  * under a slow camera drift, with the DOM hero overlay on top. Once the
  * hero has entered it also paints the setup card's civ previews.
  */
@@ -108,6 +113,8 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(data?: Partial<SetupReturn>): void {
     this.cameras.main.setBackgroundColor('#090c12');
+    const civs = menuDioramaCivs(menuVisits++);
+    const QUARTERS: readonly Quarter[] = LAYOUTS.map((layout, i) => ({ ...layout, civ: civs[i] ?? civs[0] }));
     this.menuMs = 0;
     this.previewsDone = false;
     this.away = false;

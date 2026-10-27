@@ -15,12 +15,14 @@ import {
   withSetup,
   type GameSetupConfig,
 } from '../../game/GameSetupConfig';
+import { CIV_DEFS } from '../../config/civs';
 import { MAP_TEMPLATES } from '../../map/generator';
 import { hu } from '../../i18n/hu';
 import type { CivId } from '../../types';
 import { civPreview, type CivPreview } from '../civPreview';
 import { el, uiRoot } from '../dom';
-import { CivPicker } from './CivPicker';
+import { ChipGroup, type ChipItem } from './ChipGroup';
+import { CivPicker, hex } from './CivPicker';
 import { E_UP_S } from './MainMenu';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
@@ -52,7 +54,7 @@ export class GameSetup {
   private readonly aiSeg: Segmented<string>;
   private readonly sizeSeg: Segmented<string>;
   private readonly diffSeg: Segmented<string>;
-  private readonly aiCivSeg: Segmented<string>;
+  private readonly aiCivChips: ChipGroup<GameSetupConfig['aiCivs']>;
   private readonly civPicker: CivPicker;
   private readonly seedInput: HTMLInputElement;
   private readonly aiHint: HTMLElement;
@@ -114,12 +116,7 @@ export class GameSetup {
     this.aiHint = el('div', { class: 'setup-hint', 'aria-live': 'polite' });
 
     this.civPicker = new CivPicker(this.config.civ, civPreview, (civ) => this.change({ civ }));
-    const aiCivItems: SegmentItem<string>[] = AI_CIV_CHOICES.map((id) =>
-      id === 'mixed' ? { value: id, label: t.aiCivMixed, sub: t.aiCivMixedSub } : { value: id, label: hu.civs[id] },
-    );
-    this.aiCivSeg = new Segmented('ai-civs', t.aiCivs, aiCivItems, this.config.aiCivs, (v) =>
-      this.change({ aiCivs: v as GameSetupConfig['aiCivs'] }),
-    );
+    this.aiCivChips = new ChipGroup('ai-civs', t.aiCivs, aiCivItems(), this.config.aiCivs, (v) => this.change({ aiCivs: v }));
 
     this.seedInput = el('input', {
       class: 'seed-input',
@@ -153,8 +150,13 @@ export class GameSetup {
     this.startBtn = el('button', { class: 'btn btn-primary btn-start', type: 'button' }, el('span', { class: 'label' }, t.start), el('span', { class: 'arrow', html: ARROW }));
     this.startBtn.addEventListener('click', () => this.start());
 
-    const field = (label: string, control: Node, extra?: Node) =>
-      el('div', { class: 'setup-row e-up', style: delay() }, el('div', { class: 'setup-label' }, label), el('div', { class: 'setup-control' }, control, extra));
+    const field = (label: string, control: Node, extra?: Node, aside?: Node) =>
+      el(
+        'div',
+        { class: 'setup-row e-up', style: delay() },
+        el('div', { class: 'setup-label' }, label, aside),
+        el('div', { class: 'setup-control' }, control, extra),
+      );
 
     this.card = el(
       'section',
@@ -173,8 +175,8 @@ export class GameSetup {
         field(t.size, this.sizeSeg.root),
         field(t.opponents, this.aiSeg.root, this.aiHint),
         field(t.difficulty, this.diffSeg.root),
-        field(t.civ, this.civPicker.root),
-        field(t.aiCivs, this.aiCivSeg.root),
+        field(t.civ, this.civPicker.root, undefined, this.civPicker.caption),
+        field(t.aiCivs, this.aiCivChips.root),
         field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
       ),
       notice ? el('div', { class: 'setup-notice', role: 'alert' }, notice) : null,
@@ -246,7 +248,7 @@ export class GameSetup {
     this.aiSeg.set(String(c.aiCount));
     this.diffSeg.set(c.difficulty);
     for (const chip of this.templateChips) chip.setAttribute('aria-checked', String(chip.dataset['tpl'] === c.template));
-    this.aiCivSeg.set(c.aiCivs);
+    this.aiCivChips.set(c.aiCivs);
     this.civPicker.set(c.civ);
     if (document.activeElement !== this.seedInput) this.seedInput.value = String(c.seed);
     const crowded = exceedsRecommendedAi(c);
@@ -254,4 +256,22 @@ export class GameSetup {
     this.aiHint.classList.toggle('warn', crowded);
     this.summary.textContent = hu.setup.summary(playerCount(c), mapTiles(c));
   }
+}
+
+/** "Vegyes" (a swatch blending the playable civs' colours) plus each playable civ in its heraldic colours. */
+function aiCivItems(): ChipItem<GameSetupConfig['aiCivs']>[] {
+  const t = hu.setup;
+  const civs = AI_CIV_CHOICES.filter((id): id is CivId => id !== 'mixed');
+  const stops = civs.map((id, i) => `${hex(CIV_DEFS[id].heraldry.primary)} ${(i * 360) / civs.length}deg ${((i + 1) * 360) / civs.length}deg`);
+  return AI_CIV_CHOICES.map((id) =>
+    id === 'mixed'
+      ? { value: id, label: t.aiCivMixed, description: t.aiCivMixedSub, swatch: `conic-gradient(${stops.join(', ')})` }
+      : { value: id, label: hu.civs[id], swatch: heraldrySwatch(id) },
+  );
+}
+
+/** The civ's three heraldic colours as horizontal bands. */
+function heraldrySwatch(civ: CivId): string {
+  const { primary, secondary, accent } = CIV_DEFS[civ].heraldry;
+  return `linear-gradient(180deg, ${hex(primary)} 0 34%, ${hex(secondary)} 34% 67%, ${hex(accent)} 67%)`;
 }

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS, DEV_ALL_CIVS } from './civs';
+import type { CivId } from '../types';
+import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS, DEV_ALL_CIVS, MENU_CIV, menuDioramaCivs } from './civs';
 
 describe('civ registry', () => {
   it('lists all eight civs', () => {
@@ -55,5 +56,29 @@ describe('dev all-civs stub (?civs=all)', () => {
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(false);
     expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english']);
+  });
+});
+
+describe('menuDioramaCivs', () => {
+  it('pairs the menu civ with the other playable civ today', () => {
+    for (const visit of [0, 1, 2, 7]) expect(menuDioramaCivs(visit)).toEqual([MENU_CIV, 'english']);
+  });
+
+  it('cycles through every other civ of the pool, visit by visit, and never shows the menu civ twice', () => {
+    const pool: readonly CivId[] = CIV_IDS;
+    const seconds = Array.from({ length: 14 }, (_, v) => menuDioramaCivs(v, pool));
+    for (const [front, back] of seconds) {
+      expect(front).toBe(MENU_CIV);
+      expect(back).not.toBe(MENU_CIV);
+    }
+    const others = CIV_IDS.filter((c) => c !== MENU_CIV);
+    expect(seconds.slice(0, 7).map(([, b]) => b)).toEqual(others);
+    expect(seconds.slice(7).map(([, b]) => b)).toEqual(others);
+  });
+
+  it('still shows two different civs when the menu civ is the only one in the pool', () => {
+    const [front, back] = menuDioramaCivs(3, [MENU_CIV]);
+    expect(front).toBe(MENU_CIV);
+    expect(back).not.toBe(MENU_CIV);
   });
 });

@@ -1,3 +1,4 @@
+import { AVAILABLE_CIVS, CIV_IDS } from '../../config/civs';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
 import { icons } from '../icons';
@@ -50,7 +51,7 @@ export class MainMenu {
         el(
           'div',
           { class: 'menu-feats' },
-          ...hu.menu.features.map((f, i) => el('span', { class: 'menu-feat e-down', style: `animation-delay:${0.14 + i * 0.06}s` }, f)),
+          ...hu.menu.features(AVAILABLE_CIVS.length, CIV_IDS.length - AVAILABLE_CIVS.length).map((f, i) => el('span', { class: 'menu-feat e-down', style: `animation-delay:${0.14 + i * 0.06}s` }, f)),
         ),
       ),
       el(

@@ -2,13 +2,17 @@ import type Phaser from 'phaser';
 import { AVAILABLE_CIVS } from '../config/civs';
 import { MENU_PHASE } from '../config/visual';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { ageArtKey } from '../iso/art/artKeys';
+import { ageArtKey, teamArtKey } from '../iso/art/artKeys';
 import { shadePixels } from '../iso/art/lighting/shadeCanvas';
 import { sunAt } from '../iso/art/lighting/sun';
-import { BUILDING_LIGHT, buildingTexture } from '../iso/buildingTextures';
+import { BUILDING_LIGHT, buildingTexture, releaseBuildingTexture } from '../iso/buildingTextures';
 import type { CivId } from '../types';
 
-/** A civ's setup-card picture: its age-1 town centre, lit, plus a separate window-glow layer that the card flickers. */
+/**
+ * A civ's setup-card picture: its age-1 town centre, lit, plus a separate
+ * window-glow layer that the card flickers (PNG data URLs). Empty strings
+ * mean the paint failed (the card shows a static placeholder).
+ */
 export interface CivPreview {
   readonly art: string;
   readonly glow: string;
@@ -32,19 +36,35 @@ export function civPreview(civ: CivId): CivPreview | undefined {
  * Paints the next missing preview of a playable civ and returns that
  * civ, or null once all are ready. One per call: callers spread the
  * work over frames so the menu and setup animations keep running.
+ * Only the data URLs are kept (M4 review M6): the town-centre texture
+ * painted for the picture is freed again, unless it existed before the
+ * call (the menu diorama or a match shows it).
  */
 export function paintNextCivPreview(textures: Phaser.Textures.TextureManager): CivId | null {
   const civ = AVAILABLE_CIVS.find((c) => !previews.has(c));
   if (!civ) return null;
-  const preview = paintPreview(textures, civ);
+  const ageKey = ageArtKey(BUILDING_SPECS.town_center.textureKey, 'town_center', 1, civ);
+  // Player 1's variant of the base, should player 1 not be this civ's base owner (in a match).
+  const variantKey = teamArtKey(ageKey, 1, 0);
+  const had = { base: textures.exists(ageKey), variant: textures.exists(variantKey) };
+  const key = buildingTexture({ textures }, 'town_center', 1, 1, civ);
+  let preview: CivPreview | null = null;
+  try {
+    preview = paintPreview(textures, ageKey);
+  } catch (err) {
+    // A broken paint must not throw every frame: the card shows its placeholder instead.
+    console.warn(`civ preview failed (${civ})`, err);
+  } finally {
+    // A team variant (player 1 is not this civ's base owner) goes before its base.
+    if (key !== ageKey && !had.variant) releaseBuildingTexture({ textures }, key);
+    if (!had.base) releaseBuildingTexture({ textures }, ageKey);
+  }
   // A failed paint (no canvas) still counts as done, so it is not retried every frame.
   previews.set(civ, preview ?? { art: '', glow: '' });
   return civ;
 }
 
-function paintPreview(textures: Phaser.Textures.TextureManager, civ: CivId): CivPreview | null {
-  buildingTexture({ textures }, 'town_center', 1, 1, civ);
-  const key = ageArtKey(BUILDING_SPECS.town_center.textureKey, 'town_center', 1, civ);
+function paintPreview(textures: Phaser.Textures.TextureManager, key: string): CivPreview | null {
   if (!textures.exists(key)) return null;
   const tex = textures.get(key);
   const src = tex.getSourceImage() as HTMLCanvasElement;

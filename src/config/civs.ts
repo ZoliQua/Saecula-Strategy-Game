@@ -43,7 +43,7 @@ export const CIV_IDS: readonly CivId[] = [
 
 /** Fallback civ: setup default and any missing civ lookup. */
 export const DEFAULT_CIV: CivId = 'hungarian';
-/** Civ of the main-menu diorama's front quarter (the other playable civ gets the back one) and of the art painted at boot (generateArt, PreloadScene). */
+/** Civ of the main-menu diorama's front quarter (menuDioramaCivs picks the back one) and of the art painted at boot (generateArt, PreloadScene). */
 export const MENU_CIV: CivId = 'hungarian';
 
 const HUNGARIAN_ARCH: Record<AgeId, ArchStyleId> = { 1: 'roman', 2: 'medieval', 3: 'baroque' };
@@ -90,3 +90,17 @@ export const DEV_ALL_CIVS: boolean =
 
 /** Civs a player can pick today (registry order). */
 export const AVAILABLE_CIVS: readonly CivId[] = DEV_ALL_CIVS ? CIV_IDS : CIV_IDS.filter((id) => CIV_DEFS[id].available);
+
+/**
+ * Civs of the main-menu diorama on its `visit`-th showing: MENU_CIV in
+ * front, and behind it the visit-th civ of `pool` other than MENU_CIV,
+ * cycling (each return to the menu shows the next civ). With no other
+ * civ in the pool the back quarter takes the next civ in registry order,
+ * so the two quarters always differ.
+ */
+export function menuDioramaCivs(visit: number, pool: readonly CivId[] = AVAILABLE_CIVS): [CivId, CivId] {
+  const others = pool.filter((c) => c !== MENU_CIV);
+  const from = others.length > 0 ? others : CIV_IDS.filter((c) => c !== MENU_CIV);
+  const i = ((Math.floor(visit) % from.length) + from.length) % from.length;
+  return [MENU_CIV, from[i] ?? DEFAULT_CIV];
+}

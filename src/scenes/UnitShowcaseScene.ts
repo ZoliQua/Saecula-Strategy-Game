@@ -6,6 +6,7 @@ import { ANIM_FRAMES, frameIndex, headingSlot, unitSheetLayout, type UnitAnim } 
 import { paintAllUnitArt, type UnitArt } from '../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../iso/art/units/unitSprite';
 import type { CivId, Direction, UnitType } from '../types';
+import { silhouetteRequested, silhouetteScene } from './showcaseSilhouette';
 
 export interface ShowcaseOptions {
   anim?: UnitAnim;
@@ -20,6 +21,8 @@ export interface ShowcaseOptions {
   /** Columns are the six team colours (facing `teamsHeading`, default SE) instead of the eight headings. */
   teams?: boolean;
   teamsHeading?: Direction;
+  /** Flat black silhouettes on a pale ground, unlit (also `?silhouette=1`): the civ must read by outline alone. */
+  silhouette?: boolean;
 }
 
 const TYPES: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon'];
@@ -54,7 +57,9 @@ export class UnitShowcaseScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#3d5a2c');
-    this.lighting = new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
+    const silhouette = silhouetteRequested(this.opts.silhouette);
+    // Silhouettes are unlit: no lights or cast shadows.
+    this.lighting = silhouette ? null : new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
     const civs = this.opts.civs ?? [this.opts.civ ?? MENU_CIV];
     const rows = TYPES.flatMap((type, t) => civs.map((civ) => ({ type, civ, t })));
     const columns = this.opts.teams
@@ -76,6 +81,7 @@ export class UnitShowcaseScene extends Phaser.Scene {
       painted.add(art);
       paintAllUnitArt(this, art);
     }
+    if (silhouette) silhouetteScene(this);
     const cam = this.cameras.main;
     cam.setZoom(this.opts.zoom ?? 1.2);
     cam.centerOn((columns.length * CELL_W) / 2, (rows.length * CELL_H) / 2);

@@ -27,4 +27,14 @@ describe('nextEnabled', () => {
   it('returns -1 when nothing is enabled', () => {
     expect(nextEnabled([false, false], 0, 1)).toBe(-1);
   });
+
+  it('visits all 9 options in order and wraps ("Vegyes" plus eight civs, Review Focus 5)', () => {
+    const nine = Array.from({ length: 9 }, () => true);
+    const forward: number[] = [];
+    for (let i = 0, at = 0; i < 9; i++) forward.push((at = nextEnabled(nine, at, 1)));
+    expect(forward).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 0]);
+    const back: number[] = [];
+    for (let i = 0, at = 0; i < 9; i++) back.push((at = nextEnabled(nine, at, -1)));
+    expect(back).toEqual([8, 7, 6, 5, 4, 3, 2, 1, 0]);
+  });
 });

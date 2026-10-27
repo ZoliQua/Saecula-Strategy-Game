@@ -12,6 +12,7 @@ import { tileToScreen } from '../iso/coordinates';
 import { wallBannerAnchor } from '../iso/art/walls/paintWall';
 import { WALL_BANNER_ORIGIN } from '../iso/art/walls/wallBanner';
 import { pieceHasPost, wallPiece } from '../iso/art/walls/wallPiece';
+import { silhouetteRequested, silhouetteScene } from './showcaseSilhouette';
 import type { AgeId, BuildingType, CivId } from '../types';
 
 export interface BuildingShowcaseOptions {
@@ -29,6 +30,8 @@ export interface BuildingShowcaseOptions {
   walls?: boolean;
   /** Show the Wonder's construction stages and the finished Wonder side by side (one row per civ with `civs`). */
   wonder?: boolean;
+  /** Flat black silhouettes on a pale ground, unlit (also `?silhouette=1`): the civ must read by outline alone. */
+  silhouette?: boolean;
 }
 
 const CELL_W = 250;
@@ -56,21 +59,23 @@ export class BuildingShowcaseScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#2c3a22');
-    this.lighting = new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
+    const silhouette = silhouetteRequested(this.opts.silhouette);
+    // Silhouettes are unlit: no lights, shadows or window glows.
+    this.lighting = silhouette ? null : new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.lighting?.destroy();
       this.lighting = null;
     });
-    const types = this.opts.types ?? [...AGE_STYLED_BUILDINGS];
     const ages = this.opts.ages ?? [1, 2, 3];
-    if (this.opts.wonder) {
-      this.layWonder();
-      return;
-    }
-    if (this.opts.walls) {
-      this.layWalls(ages);
-      return;
-    }
+    if (this.opts.wonder) this.layWonder();
+    else if (this.opts.walls) this.layWalls(ages);
+    else this.layGrid(ages);
+    if (silhouette) silhouetteScene(this);
+  }
+
+  /** Building types × (age, civ) rows on grass plots. */
+  private layGrid(ages: AgeId[]): void {
+    const types = this.opts.types ?? [...AGE_STYLED_BUILDINGS];
     const ground = this.add.graphics().setDepth(-1);
     const rows = ages.flatMap((age) => (this.opts.civs ?? [this.civ]).map((civ) => ({ age, civ })));
     rows.forEach(({ age, civ }, row) => {

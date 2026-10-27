@@ -12,7 +12,9 @@ export const hu = {
       'Gyűjts nyersanyagot, emelj városokat, képezz sereget — és győzd le a szomszédos népeket valós idejű csatákban.',
     comingSoon: 'Hamarosan',
     footer: 'Böngészőben fut · telepítés nélkül',
-    features: ['3 történelmi kor', '2 nép · 6 hamarosan', 'AI ellenfelek'],
+    /** How many civs can be played, and how many are still to come. */
+    civCount: (available: number, upcoming: number): string => (upcoming === 0 ? `${available} nép` : `${available} nép · ${upcoming} hamarosan`),
+    features: (available: number, upcoming: number): string[] => ['3 történelmi kor', hu.menu.civCount(available, upcoming), 'AI ellenfelek'],
   },
   civs: {
     hungarian: 'Magyar',
