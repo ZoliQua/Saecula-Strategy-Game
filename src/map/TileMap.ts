@@ -171,9 +171,9 @@ export class TileMap {
     return this.occluders ? [this.occluders, this.forest] : [this.forest];
   }
 
-  /** See CliffOccluders.sortAboveFootprint; returns the release function (no-op without cliffs). */
-  sortCliffsAboveBuilding(fx: number, fy: number, w: number, h: number, depth: number): () => void {
-    return this.occluders?.sortAboveFootprint(fx, fy, w, h, depth) ?? (() => undefined);
+  /** See CliffOccluders.buildingDepth (`depth` unchanged without cliffs). */
+  buildingDepthBesideCliffs(fx: number, fy: number, w: number, h: number, depth: number): number {
+    return this.occluders?.buildingDepth(fx, fy, w, h, depth) ?? depth;
   }
 
   /** Re-reads terrain for one tile (e.g. a depleted resource). */

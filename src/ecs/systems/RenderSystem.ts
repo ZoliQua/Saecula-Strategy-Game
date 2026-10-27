@@ -61,6 +61,7 @@ export class RenderSystem {
   private readonly heldReskin = new Set<Entity>();
   private ageOf: (playerId: number) => AgeId = () => 1;
   private civOf: (playerId: number) => CivId = () => DEFAULT_CIV;
+  private buildingDepth: (entity: Entity, depth: number) => number = (_e, depth) => depth;
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -102,6 +103,11 @@ export class RenderSystem {
   /** Where sprites read their owner's civ (which civ's art they show). Set before the first update. */
   setCivSource(civOf: (playerId: number) => CivId): void {
     this.civOf = civOf;
+  }
+
+  /** Adjusts building draw depths (raised rock beside a building, CliffBuildingSort). */
+  setBuildingDepth(depthOf: (entity: Entity, depth: number) => number): void {
+    this.buildingDepth = depthOf;
   }
 
   /**
@@ -175,7 +181,7 @@ export class RenderSystem {
       const sprite = entity.sprite ?? this.ensureSprite(entity);
       const { sx, sy } = renderScreenPos(entity);
       sprite.setPosition(sx, sy);
-      sprite.setDepth(renderDepth(entity));
+      sprite.setDepth(entity.building ? this.buildingDepth(entity, renderDepth(entity)) : renderDepth(entity));
       const visible = isVisibleToViewer(entity, this.fog, this.viewerPlayerId);
       if (entity.building) {
         // Hidden buildings keep their old style until seen, and re-skins (which may paint

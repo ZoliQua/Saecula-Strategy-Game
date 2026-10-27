@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cliffFootDistance, needsOccluder, occluderReach, tilesInFrontOfFootprint, type CliffTest } from './cliffGeometry';
+import { cliffFootDistance, depthBelowFrontRock, needsOccluder, occluderReach, tilesInFrontOfFootprint, type CliffTest } from './cliffGeometry';
 
 const REACH = occluderReach(58.6);
 
@@ -85,5 +85,32 @@ describe('tilesInFrontOfFootprint', () => {
 
   it('skips the footprint, the tiles behind it and tiles off to the side', () => {
     for (const t of [[11, 21], [9, 21], [11, 19], [13, 19], [9, 23], [16, 20]] as const) expect(tiles.has(key(t))).toBe(false);
+  });
+});
+
+describe('depthBelowFrontRock', () => {
+  // A 4×4 Wonder at (10, 20): drawn at its front tile depth 36 + 0.2.
+  const wonderDepth = 36.2;
+  const rockAt = (...tiles: Array<readonly [number, number]>): CliffTest => (tx, ty) => tiles.some(([x, y]) => x === tx && y === ty);
+  const ROCK = 0.05;
+  const GAP = 0.04;
+
+  it('keeps the depth when no raised rock stands beside the front walls', () => {
+    expect(depthBelowFrontRock(10, 20, 4, 4, wonderDepth, rockAt(), ROCK, GAP)).toBe(wonderDepth);
+    expect(depthBelowFrontRock(10, 20, 4, 4, wonderDepth, rockAt([9, 20], [12, 19]), ROCK, GAP)).toBe(wonderDepth);
+  });
+
+  it('sinks a Wonder below rock beside its +u wall without sinking the rock under a unit in front of it', () => {
+    const d = depthBelowFrontRock(10, 20, 4, 4, wonderDepth, rockAt([14, 20]), ROCK, GAP);
+    const rock = 14 + 20 + ROCK;
+    const unitInFront = 15 + 20 + 0.3; // ground tile in front of the rock
+    const unitBehind = 13 + 19 + 0.3; // the frontmost tile behind the Wonder
+    expect(d).toBeLessThan(rock - 0.03); // site plate, scaffold and glow stay under the rock too
+    expect(rock).toBeLessThan(unitInFront);
+    expect(d).toBeGreaterThan(unitBehind);
+  });
+
+  it('follows the lowest of several front rocks', () => {
+    expect(depthBelowFrontRock(10, 20, 4, 4, wonderDepth, rockAt([15, 21], [11, 24]), ROCK, GAP)).toBeCloseTo(11 + 24 + ROCK - GAP);
   });
 });

@@ -125,6 +125,7 @@ export class SystemRunner {
     this.ageUpFx = new AgeUpFxSystem(scene, world, this.render);
     this.buildingFx = new BuildingFxSystem(scene, world);
     this.cliffSort = new CliffBuildingSort(world, tileMap);
+    this.render.setBuildingDepth((e, depth) => this.cliffSort.depthOf(e, depth));
     this.xray = new UnitXRay(scene, world, tileMap.coverSources());
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);

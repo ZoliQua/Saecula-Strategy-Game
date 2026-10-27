@@ -104,3 +104,21 @@ export function tilesInFrontOfFootprint(fx: number, fy: number, w: number, h: nu
   }
   return out;
 }
+
+/**
+ * Draw depth for a w×h building at (fx, fy) normally drawn at `depth`
+ * (its front tile) beside raised rock: below the lowest occluder in front
+ * of its +u / +v walls (`rockOffset` above its tile depth) by `gap`, so
+ * that rock covers the building. Raising the rock instead would also lift
+ * it over units standing in front of it (a 4×4 Wonder's front tile is two
+ * rows ahead of the rock beside its wall). Every tile at that depth or
+ * more, other than the footprint, is in front of the building, so units,
+ * trees and rock there still sort correctly against it.
+ */
+export function depthBelowFrontRock(fx: number, fy: number, w: number, h: number, depth: number, isOccluder: CliffTest, rockOffset: number, gap: number): number {
+  let d = depth;
+  for (const [tx, ty] of tilesInFrontOfFootprint(fx, fy, w, h)) {
+    if (isOccluder(tx, ty)) d = Math.min(d, tx + ty + rockOffset - gap);
+  }
+  return d;
+}

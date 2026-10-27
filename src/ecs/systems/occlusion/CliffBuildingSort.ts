@@ -3,18 +3,20 @@ import type { Entity } from '../../components';
 import type { EcsWorld } from '../../world';
 import { BUILDING_DEPTH_OFFSET } from '../renderPlacement';
 
-/** What CliffBuildingSort needs of the map view (TileMap.sortCliffsAboveBuilding). */
+/** What CliffBuildingSort needs of the map view (TileMap.buildingDepthBesideCliffs). */
 export interface CliffSorter {
-  sortCliffsAboveBuilding(fx: number, fy: number, w: number, h: number, depth: number): () => void;
+  buildingDepthBesideCliffs(fx: number, fy: number, w: number, h: number, depth: number): number;
 }
 
 /**
  * Keeps raised rock beside a building's front walls drawn over the
- * building (render state only): while a building exists, the cliff
- * occluders in front of its +u / +v walls sort just above its sprite.
+ * building (render state only): a building with cliff occluders in front
+ * of its +u / +v walls draws just below them (RenderSystem asks
+ * `depthOf`). Terrain never changes, so each building's depth is computed
+ * once when it appears.
  */
 export class CliffBuildingSort {
-  private readonly release = new Map<Entity, () => void>();
+  private readonly depths = new Map<Entity, number>();
   private readonly unsubscribe: Array<() => void> = [];
 
   constructor(world: EcsWorld, map: CliffSorter) {
@@ -22,24 +24,25 @@ export class CliffBuildingSort {
     const add = (e: Entity): void => {
       const b = e.building;
       const p = e.position;
-      if (!b || !p || this.release.has(e)) return;
+      if (!b || !p || this.depths.has(e)) return;
       const { width: w, height: h } = b.footprint;
-      this.release.set(e, map.sortCliffsAboveBuilding(p.tx, p.ty, w, h, footprintDepth(p, w, h) + BUILDING_DEPTH_OFFSET));
+      const depth = footprintDepth(p, w, h) + BUILDING_DEPTH_OFFSET;
+      const sorted = map.buildingDepthBesideCliffs(p.tx, p.ty, w, h, depth);
+      if (sorted < depth) this.depths.set(e, sorted);
     };
     for (const e of buildings) add(e);
     this.unsubscribe.push(buildings.onEntityAdded.subscribe(add));
-    this.unsubscribe.push(
-      buildings.onEntityRemoved.subscribe((e) => {
-        this.release.get(e)?.();
-        this.release.delete(e);
-      }),
-    );
+    this.unsubscribe.push(buildings.onEntityRemoved.subscribe((e) => this.depths.delete(e)));
+  }
+
+  /** The draw depth of building `e` normally drawn at `depth`. */
+  depthOf(e: Entity, depth: number): number {
+    return this.depths.get(e) ?? depth;
   }
 
   destroy(): void {
     for (const off of this.unsubscribe) off();
     this.unsubscribe.length = 0;
-    for (const r of this.release.values()) r();
-    this.release.clear();
+    this.depths.clear();
   }
 }
