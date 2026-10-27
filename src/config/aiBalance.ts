@@ -44,6 +44,10 @@ export const AI_COMMON = {
   clusterRadius: 3,
   /** Builders sent to a new construction site. */
   buildersPerSite: 2,
+  /** An abandoned site gets new builders only within this many tiles of the base centre (not far forward)... */
+  restaffRadius: 14,
+  /** ...and with no armed enemy seen this close (tiles) to it. */
+  restaffThreatRadius: 6,
   /** Villagers / farms wait for a short pressure squad at most this long past the first-attack time (ms). */
   pressureHoldCapMs: 90_000,
   /** Resources this close (tiles) to a known enemy building are its base: the AI never sends villagers there. */

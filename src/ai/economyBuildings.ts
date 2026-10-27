@@ -80,14 +80,30 @@ export function buildCampIfNeeded(view: WorldView, type: 'wood' | 'gold', build:
 }
 
 /**
- * An own construction site nobody is building any more (its builders were
- * killed, or taken for other work), so the AI can send new ones; wall
- * segments are left out (a wall line's builders walk it segment by segment).
+ * A construction site no villager is building (its builders were killed
+ * or taken), so it is not left half-built for good. Wall segments are
+ * walked line by line elsewhere. Sites far out from the base centre, or
+ * with an armed enemy in sight close by, are left: fresh builders would
+ * walk into the fight that emptied them.
  */
 export function unstaffedSite(view: WorldView): Entity | undefined {
   const staffed = new Set<number>();
   for (const v of view.villagers) if (v.buildCommand) staffed.add(v.buildCommand.targetId);
-  return view.buildings.find(
-    (b) => b.underConstruction && b.building?.type !== 'wall' && b.id !== undefined && !staffed.has(b.id),
-  );
+  const home = baseAnchor(view);
+  const armed = view.visibleEnemyUnits.filter((u) => u.attacker !== undefined && u.unit?.unitType !== 'villager' && u.unit?.unitType !== 'scout');
+  return view.buildings.find((b) => {
+    if (!b.underConstruction || b.building?.type === 'wall' || b.id === undefined || staffed.has(b.id) || !b.position) return false;
+    if (home && distanceToFootprint(home, b) > AI_COMMON.restaffRadius) return false;
+    return !armed.some((u) => u.position && distanceToFootprint(u.position, b) <= AI_COMMON.restaffThreatRadius);
+  });
+}
+
+/** Chebyshev tiles from `p` to the nearest tile of building `b`'s footprint. */
+function distanceToFootprint(p: TileCoord, b: Entity): number {
+  const o = b.position ?? p;
+  const w = b.building?.footprint.width ?? 1;
+  const h = b.building?.footprint.height ?? 1;
+  const dx = Math.max(o.tx - p.tx, 0, p.tx - (o.tx + w - 1));
+  const dy = Math.max(o.ty - p.ty, 0, p.ty - (o.ty + h - 1));
+  return Math.max(dx, dy);
 }
