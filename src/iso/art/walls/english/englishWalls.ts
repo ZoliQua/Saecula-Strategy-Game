@@ -25,6 +25,16 @@ const GE = ENGLISH_GEORGIAN.palette;
 
 const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW | WALL_SE];
 
+/**
+ * English posts recede above their footprint (mounds, battered plinths,
+ * sloping scarps), so arms reach to the post's body: behind arms start
+ * at the centre (the post, painted after them, covers the overlap) and
+ * front arms at the body's face (its corner on diagonals).
+ */
+function reachBody(body: number): (diagonal: boolean, behind: boolean) => number {
+  return (diagonal, behind) => (behind ? 0 : body * (diagonal ? Math.SQRT2 : 1));
+}
+
 /** Offset of a station across an arm's line (tiles, + = the arm's left). */
 function across(arm: Arm, c: UV, off: number): UV {
   const len = Math.hypot(arm.b[0] - arm.a[0], arm.b[1] - arm.a[1]) || 1;
@@ -51,6 +61,8 @@ function turfFace(ctx: Ctx, w: number, h: number, light: number): void {
 /** Age 1 (Római kor): split-oak palisade on a turfed earth bank; thatched timber watch-posts on mounds. */
 const BANK_PALISADE: WallAgeStyle = {
   readback: true,
+  postBody: 0.22,
+  armStart: reachBody(0.22),
   postHalf: 0.3,
   postTop: 100,
   shadow: (p, arm) => armShadow(p, arm, 0.3 * arm.girth),
@@ -110,6 +122,8 @@ function curtainFace(ctx: Ctx, w: number, h: number, light: number): void {
 /** Age 2 (Középkor): grey ashlar curtain, battered plinth, string course, square merlons; square Norman towers. */
 const NORMAN_CURTAIN: WallAgeStyle = {
   readback: true,
+  postBody: 0.33,
+  armStart: reachBody(0.33),
   postHalf: 0.34,
   postTop: 108,
   shadow: (p, arm) => armShadow(p, arm, 0.22 * arm.girth),
@@ -216,20 +230,22 @@ function gun(p: IsoPainter, z: number): void {
 /** Age 3 (Felvilágosodás): low brick star-fort trace with stone cordon and turf parapet; quoined bastions with a gun. */
 const STAR_FORT: WallAgeStyle = {
   readback: true,
+  postBody: 0.22,
+  armStart: reachBody(0.22),
   postHalf: 0.37,
   postTop: 46,
   shadow: (p, arm) => armShadow(p, arm, 0.3 * arm.girth),
   arm: (p, arm) => {
     const g = arm.girth;
-    prism(p, arm.a, arm.b, 0.31 * g, 0, 5, { color: PORTLAND, detail: 'stone', top: BERM });
-    prism(p, arm.a, arm.b, 0.3 * g, 5, 28, { color: BRICK, detail: 'brick', batter: 0.07 });
+    prism(p, arm.a, arm.b, 0.31 * g, 0, 9, { color: PORTLAND, detail: 'stone', top: BERM });
+    prism(p, arm.a, arm.b, 0.3 * g, 9, 28, { color: BRICK, detail: 'brick', batter: 0.07 });
     prism(p, arm.a, arm.b, 0.245 * g, 28, 31.5, { color: PORTLAND, top: CORDON_TOP, face: (w, h) => cordonFace(p.ctx, w, h) });
     prism(p, arm.a, arm.b, 0.235 * g, 31.5, 40, { color: PARAPET, top: PARAPET_TOP, batter: 0.09, face: (w, h, l) => turfFace(p.ctx, w, h, l) });
   },
   post: (p, arms) => {
     padShadow(p, 0.4);
-    frustum(p, 0.12, 0.12, 0.88, 0.88, 0, 5, 0, { color: PORTLAND, detail: 'stone', top: BERM });
-    frustum(p, 0.13, 0.13, 0.87, 0.87, 5, 32, 0.075, { color: BRICK, detail: 'brick', face: (w, h, l) => quoins(p.ctx, w, h, l) });
+    frustum(p, 0.12, 0.12, 0.88, 0.88, 0, 9, 0, { color: PORTLAND, detail: 'stone', top: BERM });
+    frustum(p, 0.13, 0.13, 0.87, 0.87, 9, 32, 0.075, { color: BRICK, detail: 'brick', face: (w, h, l) => quoins(p.ctx, w, h, l) });
     frustum(p, 0.19, 0.19, 0.81, 0.81, 32, 35.5, 0, { color: PORTLAND, top: CORDON_TOP, face: (w, h) => cordonFace(p.ctx, w, h) });
     frustum(p, 0.2, 0.2, 0.8, 0.8, 35.5, 44, 0.08, { color: PARAPET, top: shade(PARAPET_TOP, 0.92), face: (w, h, l) => turfFace(p.ctx, w, h, l) });
     // Corner and end bastions mount a gun; rhythm piers of a straight run carry only the flag.

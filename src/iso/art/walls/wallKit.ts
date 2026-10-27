@@ -30,6 +30,18 @@ export interface WallAgeStyle {
   post(p: IsoPainter, arms: number): void;
   /** Paint on CPU-backed canvases (cheaper normal derive and trim read-backs). */
   readonly readback?: boolean;
+  /**
+   * Half-width (tiles) of the post's body above its plinth, where an
+   * arm must reach so no ground shows between them (default postHalf).
+   */
+  readonly postBody?: number;
+  /**
+   * Where an arm starts next to a post, tiles from the tile centre along
+   * the arm. `behind` arms (painted before the post) may start inside it;
+   * the post covers them. Default: the post's footprint face (its
+   * corner on diagonals), right for posts that are upright boxes.
+   */
+  armStart?(diagonal: boolean, behind: boolean): number;
 }
 
 /**

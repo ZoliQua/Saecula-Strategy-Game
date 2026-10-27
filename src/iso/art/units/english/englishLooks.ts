@@ -9,7 +9,7 @@ const E = ENGLISH_M;
  * English unit looks (M4 design decision 5), overriding the base look
  * type by type. Same rigs, poses and stats; English liveries: undyed
  * wool and madder-red hose, St George's cross on surcoats and heater
- * shields, sallets and kettle hats, the hooded archer's yew longbow, a
+ * shields, sallets and kettle hats, the capped archer's yew longbow, a
  * grenadier mitre, a Tarleton helmet and a cast-iron gun. Team colour
  * stays on the tunics, coats, skirts, hoods, shield rims, caps and
  * caparisons, so ownership still reads first.
@@ -48,7 +48,7 @@ export const ENGLISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   archer: {
     kind: 'foot',
     human: {
-      hat: 'hood',
+      hat: 'cap',
       body: M.teamQuilted,
       skirt: { mat: M.teamQuilted, length: 5 },
       sleeves: E.wool,
@@ -120,7 +120,7 @@ export const ENGLISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   knight: {
     kind: 'rider',
     human: {
-      hat: 'greatHelm',
+      hat: 'sallet',
       body: E.surcoat,
       pauldrons: M.steel,
       skirt: { mat: M.team, length: 5.5 },

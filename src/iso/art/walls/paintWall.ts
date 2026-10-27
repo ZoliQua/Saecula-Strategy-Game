@@ -70,8 +70,7 @@ export function paintWallPieceInto(p: IsoPainter, piece: number, style: WallAgeS
     const du = end[0] - CENTRE[0];
     const dv = end[1] - CENTRE[1];
     const full = Math.hypot(du, dv);
-    // Arms start at the post's face (its corner on diagonals) so they never paint over it.
-    const start = post ? style.postHalf * (diagonal ? Math.SQRT2 : 1) : 0;
+    const start = post ? armStartOf(style, diagonal, end[0] + end[1] <= 1) : 0;
     const k = start / full;
     arms.push({ a: [CENTRE[0] + du * k, CENTRE[1] + dv * k], b: end, full, diagonal, girth: diagonal ? 1.25 : 1 });
   }
@@ -85,6 +84,16 @@ export function paintWallPieceInto(p: IsoPainter, piece: number, style: WallAgeS
     banner(p, style.postTop);
   }
   for (const arm of before) style.arm(p, arm);
+}
+
+/**
+ * Where an arm next to a post starts (tiles from the centre): the
+ * style's own rule, else the post's face (its corner on diagonals) so
+ * the arm never paints over the post. `behind`: the arm ends at the back
+ * half of the tile (painted before the post).
+ */
+export function armStartOf(style: WallAgeStyle, diagonal: boolean, behind: boolean): number {
+  return style.armStart?.(diagonal, behind) ?? style.postHalf * (diagonal ? Math.SQRT2 : 1);
 }
 
 /** Pole for the team banner overlay on top of a post. */

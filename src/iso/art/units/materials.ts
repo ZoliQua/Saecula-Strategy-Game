@@ -11,7 +11,12 @@ export interface Material {
   readonly metal?: number;
   /** Stripes along the primitive's main axis (armour bands, barrel rings, quilting). */
   readonly bands?: { readonly count: number; readonly color?: number; readonly width?: number };
-  /** Heraldic charge on the front of an ellipsoid (shield face, surcoat chest); painted in albedo, not the team mask. */
+  /**
+   * Heraldic charge on the front of an ellipsoid (shield face, surcoat
+   * chest); painted in albedo, not the team mask. Honoured on ellipsoids
+   * only: other primitives carry no local across / front coordinates, so
+   * a charge on them paints nothing.
+   */
   readonly charge?: Charge;
 }
 
