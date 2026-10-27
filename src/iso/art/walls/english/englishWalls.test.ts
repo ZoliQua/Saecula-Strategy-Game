@@ -3,7 +3,7 @@ import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SW, WALL_W } from '../..
 import type { AgeId } from '../../../../types';
 import type { LitArt } from '../../lighting/normalLayer';
 import { hashPainting, installRecordingCanvas } from '../../testing/recordingCanvas';
-import { COMMON_WALL_PIECES } from '../WallArtPrewarm';
+import { COMMON_WALL_PIECES } from '../commonWallPieces';
 
 const POST = 256;
 const AGES: readonly AgeId[] = [1, 2, 3];

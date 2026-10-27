@@ -7,8 +7,6 @@ import { queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
-import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import type { BuildingType } from '../types';
 import { UNIQUE_BUILDINGS } from '../config/balance';
 import { countPlayerBuildings } from '../game/buildRules';
 import { DAY_START_PHASE } from '../config/visual';
@@ -17,11 +15,11 @@ import { tileToScreen } from '../iso/coordinates';
 import type { MapData } from '../map/MapData';
 import { TerrainBake } from '../map/TerrainBake';
 import { TileMap } from '../map/TileMap';
-import { WallArtPrewarm } from '../iso/art/walls/WallArtPrewarm';
 import { buildingTexture, wallTexture } from '../iso/buildingTextures';
 import { Loading } from '../ui/screens/Loading';
 import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
+import { BackgroundArt, planArtLoad } from './game/artLoadPlan';
 import { BuildPlacement } from './game/BuildPlacement';
 import {
   type GeneratedGame,
@@ -39,7 +37,7 @@ import { CameraController } from './systems/CameraController';
 
 /** Main-thread time per frame spent baking terrain while the loading card shows. */
 const BAKE_SLICE_MS = 24;
-/** Share of the loading bar taken by the terrain bake (the rest: wall pieces). */
+/** Share of the loading bar taken by the terrain bake (the rest: civ art, artLoadPlan). */
 const LOAD_SHARE_TERRAIN = 0.9;
 
 /** Scene lifecycle and wiring; logic lives in the helpers under ./game. */
@@ -57,6 +55,8 @@ export class GameScene extends Phaser.Scene {
   private timeScale = 1;
   private gameOverTriggered = false;
   private commandUnsubscribe: (() => void) | null = null;
+  /** Civ art left for play (age-2/3 wall pieces), painted in spare frame time. */
+  private backgroundArt: BackgroundArt | null = null;
   /** Terrain bake in progress (null once the game runs). */
   private bake: {
     terrain: TerrainBake;
@@ -105,27 +105,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Loading work in slices, with progress 0..1: the terrain bake, then for
-   * each civ in play its age-1 buildings and the common wall pieces of
-   * every age (so no game frame pays for a first paint). Civs not in the
-   * match are never painted here.
+   * Loading work in slices, with progress 0..1: the terrain bake, then the
+   * civ art the first game frames can show (artLoadPlan; the rest is
+   * painted during play). Civs not in the match are never painted here.
    */
   private *loadSteps(terrain: TerrainBake): Generator<number, void> {
     for (const p of terrain.steps()) yield p * LOAD_SHARE_TERRAIN;
     const civs = [...new Set(this.players.all().map((p) => p.civ))];
-    const types = Object.keys(BUILDING_SPECS) as BuildingType[];
-    const walls = new WallArtPrewarm((piece, age, civ) => wallTexture(this, piece, age, civ));
-    for (const civ of civs) for (const age of [1, 2, 3] as const) walls.request(age, civ);
-    const total = civs.length * types.length + walls.remaining;
+    const plan = planArtLoad(this.players.human()?.civ ?? DEFAULT_CIV, civs, {
+      building: (type, civ) => buildingTexture(this, type, 1, 1, civ),
+      wall: (piece, age, civ) => wallTexture(this, piece, age, civ),
+    });
+    this.backgroundArt = new BackgroundArt(plan.background);
     let done = 0;
-    const progress = () => LOAD_SHARE_TERRAIN + (1 - LOAD_SHARE_TERRAIN) * (++done / total);
-    for (const civ of civs) {
-      for (const type of types) {
-        buildingTexture(this, type, 1, 1, civ);
-        yield progress();
-      }
+    for (const job of plan.critical) {
+      job();
+      yield LOAD_SHARE_TERRAIN + (1 - LOAD_SHARE_TERRAIN) * (++done / plan.critical.length);
     }
-    while (walls.step()) yield progress();
   }
 
   /** Runs loading slices for up to BAKE_SLICE_MS per frame, then starts the game. */
@@ -200,6 +196,7 @@ export class GameScene extends Phaser.Scene {
       // Scene events outlive a restart: drop the frame hook, or the next game would run a stale one.
       this.events.off(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
       disposeDev();
+      this.backgroundArt = null;
       this.commandUnsubscribe?.();
       this.commandUnsubscribe = null;
       this.runner.destroy();
@@ -324,6 +321,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onUpdate(time: number, realDelta: number): void {
+    const frameStart = performance.now();
     const delta = realDelta * this.timeScale;
     this.runner.update(time, delta);
     this.lighting.update(delta);
@@ -336,6 +334,7 @@ export class GameScene extends Phaser.Scene {
       this.syncUniqueBuildings();
     }
     this.checkVictory();
+    this.backgroundArt?.update(realDelta, frameStart);
   }
 
   /** Publishes which limited buildings (wonder) the human already has, for the build menu. */

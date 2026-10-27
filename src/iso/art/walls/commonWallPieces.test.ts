@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WALL_E, WALL_N, WALL_NE, WALL_S, WALL_SW, WALL_W } from '../../../game/wallNeighbours';
 import { wallPiece } from './wallPiece';
 import { wallPieceKey } from '../artKeys';
-import { COMMON_WALL_PIECES, commonWallPieceKeys, WallArtPrewarm } from './WallArtPrewarm';
+import { COMMON_WALL_PIECES, commonWallPieceKeys } from './commonWallPieces';
 
 describe('COMMON_WALL_PIECES', () => {
   it('covers straight runs (with and without a rhythm post), ends, corners and a lone post', () => {
@@ -21,31 +21,7 @@ describe('COMMON_WALL_PIECES', () => {
   });
 });
 
-describe('WallArtPrewarm', () => {
-  it('paints one piece per step for each requested (age, civ), once', () => {
-    const painted: string[] = [];
-    const warm = new WallArtPrewarm((piece, age, civ) => painted.push(`${piece}/${age}/${civ}`));
-    warm.request(2, 'hungarian');
-    warm.request(2, 'hungarian');
-    warm.request(2, 'english');
-    let steps = 0;
-    while (warm.step()) steps++;
-    expect(painted).toHaveLength(COMMON_WALL_PIECES.length * 2);
-    expect(steps).toBe(COMMON_WALL_PIECES.length * 2);
-    expect(painted.filter((p) => p.endsWith('/2/english'))).toHaveLength(COMMON_WALL_PIECES.length);
-    expect(painted.filter((p) => p.endsWith('/2/hungarian'))).toHaveLength(COMMON_WALL_PIECES.length);
-  });
-
-  it('lists the keys it keeps warm (eviction leaves them) for the ages and civs requested so far', () => {
-    const warm = new WallArtPrewarm(() => undefined, (piece, age, civ) => `k${piece}a${age}${civ}`);
-    warm.request(1, 'hungarian');
-    warm.request(3, 'english');
-    const keep = warm.keys();
-    expect(keep.size).toBe(COMMON_WALL_PIECES.length * 2);
-    expect(keep.has(`k${COMMON_WALL_PIECES[0]}a3english`)).toBe(true);
-    expect(keep.has(`k${COMMON_WALL_PIECES[0]}a3hungarian`)).toBe(false);
-  });
-
+describe('commonWallPieceKeys', () => {
   it('commonWallPieceKeys covers every age of every civ in play with civ-qualified keys', () => {
     const keys = commonWallPieceKeys([1, 2, 3], ['hungarian', 'english']);
     expect(keys.size).toBe(COMMON_WALL_PIECES.length * 6);

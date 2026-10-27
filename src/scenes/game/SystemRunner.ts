@@ -35,7 +35,7 @@ import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { PathBudget } from '../../map/pathBudget';
 import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/constants';
-import { commonWallPieceKeys } from '../../iso/art/walls/WallArtPrewarm';
+import { commonWallPieceKeys } from '../../iso/art/walls/commonWallPieces';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';

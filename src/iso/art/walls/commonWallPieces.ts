@@ -12,7 +12,11 @@ const CORNERS = [WALL_N | WALL_E, WALL_E | WALL_S, WALL_S | WALL_W, WALL_W | WAL
 /**
  * Wall pieces (wallPiece values) nearly every wall line uses: straight
  * runs with and without their rhythm post, the eight ends, the four
- * square corners and a lone post.
+ * square corners and a lone post. They are painted ahead of need (a
+ * first paint costs 5-17 ms; a new wall line used to paint several in
+ * one frame): age 1 behind the loading card, ages 2-3 in spare frame
+ * time during play (scenes/game/artLoadPlan.ts). The periodic eviction
+ * keeps them (commonWallPieceKeys).
  */
 export const COMMON_WALL_PIECES: readonly number[] = [
   ...RUNS,
@@ -21,54 +25,6 @@ export const COMMON_WALL_PIECES: readonly number[] = [
   ...CORNERS.map((c) => c | POST),
   POST,
 ];
-
-/**
- * Paints the common wall pieces of the requested (age, civ) styles ahead
- * of need, one per step (a first paint costs 7-17 ms; a new wall line
- * used to paint several in one frame). GameScene runs the steps behind
- * the loading card, for all three ages of each civ in play, so no game
- * frame pays for them; keys() / commonWallPieceKeys tell the periodic
- * eviction which pieces to keep.
- */
-export class WallArtPrewarm {
-  private readonly queue: Array<[number, AgeId, CivId]> = [];
-  private readonly requested = new Set<string>();
-  private readonly styles: Array<[AgeId, CivId]> = [];
-
-  constructor(
-    private readonly paint: (piece: number, age: AgeId, civ: CivId) => void,
-    private readonly keyOf: PieceKeyOf = wallPieceKey,
-  ) {}
-
-  /** Queues the common pieces of a civ's age style (once each). */
-  request(age: AgeId, civ: CivId): void {
-    const id = `${age}/${civ}`;
-    if (this.requested.has(id)) return;
-    this.requested.add(id);
-    this.styles.push([age, civ]);
-    for (const piece of COMMON_WALL_PIECES) this.queue.push([piece, age, civ]);
-  }
-
-  /** Paints the next queued piece; false when nothing was left. */
-  step(): boolean {
-    const next = this.queue.shift();
-    if (!next) return false;
-    this.paint(next[0], next[1], next[2]);
-    return true;
-  }
-
-  /** Texture keys of the common pieces of every requested style. */
-  keys(): Set<string> {
-    const out = new Set<string>();
-    for (const [age, civ] of this.styles) for (const key of commonWallPieceKeys([age], [civ], this.keyOf)) out.add(key);
-    return out;
-  }
-
-  /** Pieces still to paint. */
-  get remaining(): number {
-    return this.queue.length;
-  }
-}
 
 /** Texture keys of the common wall pieces of `ages` for each of `civs`. */
 export function commonWallPieceKeys(
