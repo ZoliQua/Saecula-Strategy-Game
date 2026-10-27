@@ -85,6 +85,12 @@ describe('modifiers', () => {
     expect(gatherMultiplier(p, 'wood')).toBeCloseTo(1.1);
   });
 
+  it('hands out frozen shared bonuses, so no caller can corrupt every unit of a player', () => {
+    const b = unitBonuses(having('armor_1'), 'swordsman');
+    expect(Object.isFrozen(b)).toBe(true);
+    expect(Object.isFrozen(unitBonuses(having(), 'swordsman'))).toBe(true);
+  });
+
   it('keeps separate caches for players with different researched sets', () => {
     const a = having('armor_1');
     const b = having();

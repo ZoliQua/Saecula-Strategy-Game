@@ -40,14 +40,14 @@ export interface EffectiveUnitStats extends UnitBonuses {
   readonly speed: number;
 }
 
-const NO_BONUS: UnitBonuses = {
+const NO_BONUS: UnitBonuses = Object.freeze({
   meleeAtk: 0,
   pierceAtk: 0,
   meleeDef: 0,
   pierceDef: 0,
   speedMultiplier: 1,
   hpMultiplier: 1,
-};
+});
 
 /**
  * Per-player cache of derived bonuses, keyed by the researched set itself.
@@ -92,7 +92,8 @@ export function unitBonuses(player: Researched, unitType: UnitType): UnitBonuses
   const cache = cacheOf(player);
   let cached = cache.units.get(unitType);
   if (!cached) {
-    cached = computeUnitBonuses(cache.effects, unitType);
+    // Shared by every unit of the type: frozen so no caller can change them for all.
+    cached = Object.freeze(computeUnitBonuses(cache.effects, unitType));
     cache.units.set(unitType, cached);
   }
   return cached;
