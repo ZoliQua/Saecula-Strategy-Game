@@ -97,8 +97,8 @@ export class FrameRaster {
   constructor(
     readonly w: number,
     readonly h: number,
-    private readonly originX: number,
-    private readonly feetY: number,
+    private originX: number,
+    private feetY: number,
   ) {
     this.sw = w * SS;
     this.sh = h * SS;
@@ -118,6 +118,15 @@ export class FrameRaster {
       normal: new Uint8ClampedArray(w * h * 4),
       coverage: new Float32Array(w * h),
     };
+  }
+
+  /**
+   * Moves the feet point inside the frame (between paints): one raster of
+   * a size serves every packed frame of that size (unit sheets).
+   */
+  setOrigin(originX: number, feetY: number): void {
+    this.originX = originX;
+    this.feetY = feetY;
   }
 
   /** Rasterizes the primitives and resolves the frame (buffers are reused). */

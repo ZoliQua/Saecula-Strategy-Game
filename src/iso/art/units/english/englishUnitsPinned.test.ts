@@ -10,6 +10,7 @@ import { UNIT_TYPES, unitGeometryHash, unitPixelsHash } from '../../testing/unit
  *    frame's logical box. Must never change.
  *  - GEOMETRY: sheet size and frame placement; may be re-recorded when the
  *    sheet packing changes, with the reason in the commit.
+ * GEOMETRY re-recorded in M5 Task 1 (frames packed per frame); PIXELS unchanged.
  * The combined pin (recorded at 39e00c4) was green at a0333bc, where both
  * split hashes were recorded.
  */
@@ -28,16 +29,16 @@ const PIXELS: Record<string, string> = {
 };
 
 const GEOMETRY: Record<string, string> = {
-  villager: 'c31d36cf942b156e',
-  swordsman: '50846f7867cdda6d',
-  archer: 'c1221b62e4dc87b1',
-  pikeman: 'd9236b76925f9c09',
-  crossbowman: '9331463212e28553',
-  musketeer: '95daee1b42e69447',
-  scout: '4d15b3bf7cefd817',
-  knight: 'f5511b517ee29d21',
-  cavalry: '59cb4b8b772fd839',
-  cannon: 'c45260b327386e57',
+  villager: 'cc277539c06caaab',
+  swordsman: '2bd925661da296a5',
+  archer: '6c22c2783b6928bd',
+  pikeman: 'e5625e5b98713d35',
+  crossbowman: '30c18ee7f67000ab',
+  musketeer: 'b01da7133e7e5939',
+  scout: '4740cc400937c5a5',
+  knight: 'e6b5202492f12aec',
+  cavalry: 'c53ff3fcbde77806',
+  cannon: '10be5a8ab9cb6fec',
 };
 
 describe('English unit art stays pixel-identical', () => {

@@ -54,19 +54,28 @@ class SilhouetteShadow extends Phaser.GameObjects.Image {
     const sx = Math.abs(c.scaleX);
     const sy = Math.abs(c.scaleY);
     // Geometry follows the caster's frame, so shadow textures may be lower resolution.
-    const w = c.frame.cutWidth * sx;
-    const h = c.frame.cutHeight * sy;
-    const left = -c.originX * w;
-    const top = -c.originY * h;
+    // A trimmed frame (packed unit sheets) is placed inside its logical box (realWidth x realHeight) at (frame.x, frame.y).
+    const cf = c.frame;
+    const dox = c.originX * cf.realWidth;
+    const doy = c.originY * cf.realHeight;
+    let x0 = cf.x - dox;
+    let x1 = x0 + cf.cutWidth;
+    // Phaser mirrors a flipped frame inside its logical box.
+    if (c.flipX) [x0, x1] = [cf.realWidth - 2 * dox - x1, cf.realWidth - 2 * dox - x0];
+    const w = (x1 - x0) * sx;
+    const left = x0 * sx;
+    const top = (cf.y - doy) * sy;
+    // Only the part above the feet line casts (the rest is the ground contact shadow).
+    const above = Math.min(1, Math.max(0, (doy - cf.y) / cf.cutHeight));
     const view = camera.worldView;
-    const reach = (h + w) * (1 + SHADOW.maxLength);
+    const reach = (cf.cutHeight * sy + w) * (1 + SHADOW.maxLength);
     if (c.x + reach < view.x || c.x - reach > view.right || c.y + reach < view.y || c.y - reach > view.bottom) return;
     const q = shearQuad(left, top, left + w, 0, sv);
     let u0 = f.u0;
     let u1 = f.u1;
     if (c.flipX) [u0, u1] = [u1, u0];
     const v0 = f.v0;
-    const v1 = f.v0 + (f.v1 - f.v0) * c.originY;
+    const v1 = f.v0 + (f.v1 - f.v0) * above;
     // BaseCamera.matrix exists at runtime but is not in Phaser's typings.
     const m = (camera as unknown as { matrix: Phaser.GameObjects.Components.TransformMatrix }).matrix;
     const ox = c.x - camera.scrollX;

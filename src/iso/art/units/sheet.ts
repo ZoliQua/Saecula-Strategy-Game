@@ -4,19 +4,35 @@ import type { CivId, UnitType } from '../../../types';
 import { boxBlur } from '../lighting/deriveNormals';
 import { halveNormals } from '../lighting/halfNormals';
 import { halveMask } from './halfMask';
-import { ANIM_FRAMES, frameContent, PAINTED_HEADINGS, paintOrder, sheetLayout, unitAnims, type SheetLayout, type UnitAnim } from './layout';
+import { ANIM_FRAMES, frameContent, paintOrder, sheetLayout, unitAnims, type SheetLayout, type UnitAnim } from './layout';
 import { contactShadow, unitLook } from './looks';
-import { FrameRaster, type FramePixels } from './raster';
-import { buildFigure, figureBounds } from './rig';
+import { FrameRaster, type ContactShadow, type FramePixels } from './raster';
+import { buildFigure, figureBounds, frameBounds } from './rig';
 
-/** Transparent margin around the figure (outline + anti-aliasing), art px. */
+/** Transparent margin around the figure (outline + anti-aliasing) in an animation's logical box, art px. */
 const PAD = 4;
+/**
+ * Margin around the figure in a packed frame rectangle, art px: the
+ * outline ring reaches 2 px past the pixels the figure covers, and those
+ * lie inside its bounds (samples sit at pixel centres ± 0.25), so
+ * ceil(bound + 2) contains every painted pixel (sheetPacking.test.ts
+ * checks each frame of each look).
+ */
+const RECT_PAD = 2;
 
-/** Frame box of one animation (all its frames and headings share it). */
+/**
+ * Half extents (art px from the feet point) of the contact shadow's
+ * visible pixels: its alpha, alpha · (1 − d)² with d the squared ellipse
+ * distance, rounds to 0 in 8 bits beyond d = 1 − √(0.5 / (255 · alpha));
+ * + 0.5 for pixel centres.
+ */
+function shadowReach(shadow: ContactShadow): { x: number; y: number } {
+  const r = Math.sqrt(Math.max(0, 1 - Math.sqrt(0.5 / (255 * shadow.alpha))));
+  return { x: shadow.rx * r + 0.5, y: shadow.ry * r + 0.5 };
+}
+
+/** Logical frame box of one animation (all its frames and headings share it): what a sprite's origin and size refer to. */
 export interface AnimBlock {
-  /** Top-left of the block in the sheet. */
-  readonly x: number;
-  readonly y: number;
   /** Frame size; frames are centred on the feet horizontally. */
   readonly w: number;
   readonly h: number;
@@ -24,10 +40,26 @@ export interface AnimBlock {
   readonly feetY: number;
 }
 
-/** Sheet geometry of a type: one block per animation, shelf-packed. */
+/**
+ * Where one frame is stored: its packed rectangle in the sheet (x, y, w,
+ * h) and that rectangle's offset inside the frame's logical box (ox, oy).
+ * Every edge is a multiple of UNIT_SHADOW_DOWNSCALE (even too, for the
+ * half-size mask and normal map).
+ */
+export interface FrameRect {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+  readonly ox: number;
+  readonly oy: number;
+}
+
+/** Sheet geometry of a type: each animation's logical box, each frame's packed rectangle (indexed by frame number). */
 export interface SheetGeometry {
   readonly layout: SheetLayout;
   readonly blocks: Readonly<Partial<Record<UnitAnim, AnimBlock>>>;
+  readonly frames: readonly FrameRect[];
   readonly width: number;
   readonly height: number;
 }
@@ -50,7 +82,8 @@ export interface UnitSheet extends SheetGeometry {
   /** frames finished; totalMs of painting; maxMs = longest single paint step. */
   readonly stats: { frames: number; totalMs: number; maxMs: number };
   queue: number[];
-  rasters: Map<UnitAnim, FrameRaster>;
+  /** Rasters by packed frame size (`<w>x<h>`), reused between frames. */
+  rasters: Map<string, FrameRaster>;
   /** Frame whose resumable rasterization is in progress (−1 = none). */
   active: number;
   /** Frames painted since the last GPU upload. */
@@ -84,45 +117,84 @@ const ctx2d = (c: HTMLCanvasElement): CanvasRenderingContext2D => {
   return ctx;
 };
 
-/** Frame sides are multiples of the shadow downscale (also even, for the half-size normal map). */
-const aligned = (n: number): number => Math.ceil(n / UNIT_SHADOW_DOWNSCALE) * UNIT_SHADOW_DOWNSCALE;
+/** Frame edges are multiples of the shadow downscale (also even, for the half-size normal map and mask). */
+const S = UNIT_SHADOW_DOWNSCALE;
+const aligned = (n: number): number => Math.ceil(n / S) * S;
+const alignedDown = (n: number): number => Math.floor(n / S) * S;
 
 const geometries = new Map<string, SheetGeometry>();
 
-/** Frame boxes fitted to every pose of each animation (computed once per type and unit look). */
+const FALLBACK_BLOCK: AnimBlock = { w: S, h: S, feetY: S / 2 };
+
+/**
+ * Frame boxes fitted to every pose of each animation, and each frame's
+ * own content rectangle (figure with its outline, and the visible part
+ * of the contact shadow)
+ * shelf-packed into the sheet, tallest first (computed once per type and
+ * unit look). Only the rectangles are stored; sprites keep the logical
+ * box (Frame.setTrim), so origin and feet line do not move.
+ */
 export function sheetGeometry(type: UnitType, civ: CivId): SheetGeometry {
   const id = `${type}~${CIV_DEFS[civ].unitLook}`;
   const hit = geometries.get(id);
   if (hit) return hit;
   const layout = sheetLayout(unitAnims(type));
   const shadow = contactShadow(unitLook(type, civ));
-  const rows = PAINTED_HEADINGS.length;
-  const sizes = layout.anims.map((anim) => {
+  const blocks: Partial<Record<UnitAnim, AnimBlock>> = {};
+  for (const anim of layout.anims) {
     const b = figureBounds(type, civ, [anim], ANIM_FRAMES);
     const w = aligned(2 * Math.ceil(Math.max(b.halfWidth, shadow.rx) + PAD));
     const feetY = Math.ceil(b.above + PAD);
     const h = aligned(feetY + Math.ceil(Math.max(b.below, shadow.ry) + PAD));
-    return { anim, w, h, feetY, bw: w * ANIM_FRAMES[anim], bh: h * rows };
-  });
-  // Shelf packing, tallest blocks first.
-  const width = Math.max(...sizes.map((s) => s.bw));
-  const blocks: Partial<Record<UnitAnim, AnimBlock>> = {};
-  let x = 0;
-  let y = 0;
-  let shelf = 0;
-  for (const s of [...sizes].sort((a, b) => b.bh - a.bh)) {
-    if (x + s.bw > width) {
-      x = 0;
-      y += shelf;
-      shelf = 0;
-    }
-    blocks[s.anim] = { x, y, w: s.w, h: s.h, feetY: s.feetY };
-    x += s.bw;
-    shelf = Math.max(shelf, s.bh);
+    blocks[anim] = { w, h, feetY };
   }
-  const g: SheetGeometry = { layout, blocks, width, height: y + shelf };
+  const reach = shadowReach(shadow);
+  const boxes: Array<{ k: number; w: number; h: number; ox: number; oy: number }> = [];
+  for (let k = 0; k < layout.frameCount; k++) {
+    const { slot, anim, i } = frameContent(layout, k);
+    const b = blocks[anim] ?? FALLBACK_BLOCK;
+    const e = frameBounds(type, civ, slot, anim, i);
+    const cx = b.w / 2;
+    const x0 = Math.max(0, alignedDown(cx - Math.ceil(Math.max(e.left + RECT_PAD, reach.x))));
+    const x1 = Math.min(b.w, aligned(cx + Math.ceil(Math.max(e.right + RECT_PAD, reach.x))));
+    const y0 = Math.max(0, alignedDown(b.feetY - Math.ceil(Math.max(e.above + RECT_PAD, reach.y))));
+    const y1 = Math.min(b.h, aligned(b.feetY + Math.ceil(Math.max(e.below + RECT_PAD, reach.y))));
+    boxes.push({ k, w: x1 - x0, h: y1 - y0, ox: x0, oy: y0 });
+  }
+  const g: SheetGeometry = { layout, blocks, ...shelfPack(boxes) };
   geometries.set(id, g);
   return g;
+}
+
+/** Shelf packing, tallest first, at the sheet width (tried around the square) that gives the smallest sheet. */
+function shelfPack(boxes: ReadonlyArray<{ k: number; w: number; h: number; ox: number; oy: number }>): { frames: FrameRect[]; width: number; height: number } {
+  const order = [...boxes].sort((a, b) => b.h - a.h || b.w - a.w || a.k - b.k);
+  const area = boxes.reduce((sum, b) => sum + b.w * b.h, 0);
+  const widest = Math.max(S, ...boxes.map((b) => b.w));
+  // First fit decreasing height: a frame goes on the first shelf with room left (every shelf is at least as tall), else opens one.
+  const place = (width: number) => {
+    const frames: FrameRect[] = [];
+    const shelves: Array<{ y: number; h: number; x: number }> = [];
+    let height = 0;
+    for (const b of order) {
+      let shelf = shelves.find((s) => s.x + b.w <= width);
+      if (!shelf) {
+        shelf = { y: height, h: b.h, x: 0 };
+        shelves.push(shelf);
+        height += b.h;
+      }
+      frames[b.k] = { x: shelf.x, y: shelf.y, w: b.w, h: b.h, ox: b.ox, oy: b.oy };
+      shelf.x += b.w;
+    }
+    return { frames, width, height };
+  };
+  let best = place(widest);
+  const side = Math.sqrt(area);
+  for (let width = Math.max(widest, aligned(side * 0.7)); width <= aligned(side * 1.6); width += S) {
+    const p = place(width);
+    if (p.width * p.height < best.width * best.height) best = p;
+  }
+  return best;
 }
 
 /** Allocates the blank sheets of a type in a civ's look. */
@@ -147,27 +219,35 @@ export function createSheet(type: UnitType, civ: CivId): UnitSheet {
   };
 }
 
-/** Rectangle and feet line of frame `k` in the sheet. */
-export function frameRect(g: SheetGeometry, k: number): { x: number; y: number; w: number; h: number; feetY: number } {
-  const { slot, anim, i } = frameContent(g.layout, k);
-  const b = g.blocks[anim] ?? { x: 0, y: 0, w: 2, h: 2, feetY: 1 };
-  return { x: b.x + i * b.w, y: b.y + slot * b.h, w: b.w, h: b.h, feetY: b.feetY };
+/** Logical box (size and feet line) of frame `k`: what the sprite's size and origin refer to. */
+export function frameBox(g: SheetGeometry, k: number): AnimBlock {
+  return g.blocks[frameContent(g.layout, k).anim] ?? FALLBACK_BLOCK;
 }
 
-function rasterFor(g: SheetGeometry, anim: UnitAnim, cache?: Map<UnitAnim, FrameRaster>): FrameRaster {
-  const hit = cache?.get(anim);
-  if (hit) return hit;
-  const b = g.blocks[anim] ?? { x: 0, y: 0, w: 2, h: 2, feetY: 1 };
-  const r = new FrameRaster(b.w, b.h, b.w / 2, b.feetY);
-  cache?.set(anim, r);
-  return r;
+const NO_RECT: FrameRect = { x: 0, y: 0, w: S, h: S, ox: 0, oy: 0 };
+
+/** Packed rectangle of frame `k` in the sheet (and its offset in the logical box). */
+export function frameRect(g: SheetGeometry, k: number): FrameRect {
+  return g.frames[k] ?? NO_RECT;
 }
 
-/** Rasterizes frame `k` of a type in a civ's look. */
-function rasterize(type: UnitType, civ: CivId, g: SheetGeometry, k: number, cache?: Map<UnitAnim, FrameRaster>): FramePixels {
+/** A raster of frame `k`'s packed size with the feet point where the frame's logical box puts it (one raster per size, reused). */
+function rasterFor(g: SheetGeometry, k: number, cache?: Map<string, FrameRaster>): FrameRaster {
+  const r = frameRect(g, k);
+  const b = frameBox(g, k);
+  const id = `${r.w}x${r.h}`;
+  const raster = cache?.get(id) ?? new FrameRaster(r.w, r.h, 0, 0);
+  cache?.set(id, raster);
+  raster.setOrigin(b.w / 2 - r.ox, b.feetY - r.oy);
+  return raster;
+}
+
+/** Rasterizes frame `k` of a type in a civ's look into its packed rectangle (frameRect). */
+export function rasterizeFrame(type: UnitType, civ: CivId, k: number): FramePixels {
+  const g = sheetGeometry(type, civ);
   const { slot, anim, i } = frameContent(g.layout, k);
   const fig = buildFigure(type, civ, slot, anim, i);
-  return rasterFor(g, anim, cache).paint(fig.prims, fig.mats.list, contactShadow(unitLook(type, civ)));
+  return rasterFor(g, k).paint(fig.prims, fig.mats.list, contactShadow(unitLook(type, civ)));
 }
 
 /**
@@ -178,7 +258,7 @@ export function paintFrame(sheet: UnitSheet, k: number, deadline = Infinity): bo
   if (sheet.painted[k]) return true;
   const t0 = performance.now();
   const { slot, anim, i } = frameContent(sheet.layout, k);
-  const raster = rasterFor(sheet, anim, sheet.rasters);
+  const raster = rasterFor(sheet, k, sheet.rasters);
   if (sheet.active !== k) {
     const fig = buildFigure(sheet.type, sheet.civ, slot, anim, i);
     raster.begin(fig.prims, fig.mats.list, contactShadow(unitLook(sheet.type, sheet.civ)));
@@ -271,8 +351,10 @@ function shadowBlock(coverage: Float32Array, w: number, h: number): ImageData {
  */
 export function paintPortrait(type: UnitType, civ: CivId, teamColor: number): HTMLCanvasElement {
   const g = sheetGeometry(type, civ);
-  const px = rasterize(type, civ, g, 0);
-  const { w, h } = frameRect(g, 0);
+  // The whole logical box (not the packed rectangle), as the sprite shows it.
+  const { w, h, feetY } = frameBox(g, 0);
+  const fig = buildFigure(type, civ, 0, 'idle', 0);
+  const px = new FrameRaster(w, h, w / 2, feetY).paint(fig.prims, fig.mats.list, contactShadow(unitLook(type, civ)));
   const canvas = cpuCanvas(w, h);
   const ctx = ctx2d(canvas);
   const img = new ImageData(w, h);

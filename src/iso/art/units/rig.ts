@@ -52,22 +52,44 @@ function footFall(i: number): Xform {
   return compose(translation([0, 0, 4.2 * Math.sin(a)]), rotationAbout([-2.5, 0, 0], [0, 1, 0], -a));
 }
 
+/** Extent (art px) of one frame's figure around its feet point: left / right of it, below / above it (view space, y up). */
+export interface FrameExtent {
+  readonly left: number;
+  readonly right: number;
+  readonly below: number;
+  readonly above: number;
+}
+
+/** View-space extent of one frame (heading row `slot`, animation frame `i`) of a type in a civ's look; the feet point is always inside. */
+export function frameBounds(type: UnitType, civ: CivId, slot: number, anim: UnitAnim, i: number): FrameExtent {
+  let x0 = 0;
+  let x1 = 0;
+  let y0 = 0;
+  let y1 = 0;
+  for (const p of buildFigure(type, civ, slot, anim, i).prims) {
+    const b = primBounds(p);
+    x0 = Math.min(x0, b.x0);
+    x1 = Math.max(x1, b.x1);
+    y0 = Math.min(y0, b.y0);
+    y1 = Math.max(y1, b.y1);
+  }
+  return { left: -x0, right: x1, below: -y0, above: y1 };
+}
+
 /** View-space bounds (art px, y up) of every frame a type paints in a civ's look. */
 export function figureBounds(type: UnitType, civ: CivId, anims: readonly UnitAnim[], frames: Readonly<Record<UnitAnim, number>>) {
   let x = 0;
-  let y0 = 0;
-  let y1 = 0;
+  let below = 0;
+  let above = 0;
   for (let slot = 0; slot < PAINTED_HEADINGS.length; slot++) {
     for (const anim of anims) {
       for (let i = 0; i < frames[anim]; i++) {
-        for (const p of buildFigure(type, civ, slot, anim, i).prims) {
-          const b = primBounds(p);
-          x = Math.max(x, -b.x0, b.x1);
-          y0 = Math.min(y0, b.y0);
-          y1 = Math.max(y1, b.y1);
-        }
+        const b = frameBounds(type, civ, slot, anim, i);
+        x = Math.max(x, b.left, b.right);
+        below = Math.max(below, b.below);
+        above = Math.max(above, b.above);
       }
     }
   }
-  return { halfWidth: x, below: -y0, above: y1 };
+  return { halfWidth: x, below, above };
 }

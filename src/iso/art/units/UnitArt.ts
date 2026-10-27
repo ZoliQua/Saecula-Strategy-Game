@@ -6,7 +6,7 @@ import { civArtGroupsInUse, unitArtKey } from '../artKeys';
 import { shadowKey, shareNormalMap } from '../lighting/litTextures';
 import { PAINTED_HEADINGS } from './layout';
 import { spendPaintBudget } from './paintBudget';
-import { createSheet, frameRect, paintSome, type DirtyFrame, type UnitSheet } from './sheet';
+import { createSheet, frameBox, frameRect, paintSome, type DirtyFrame, type UnitSheet } from './sheet';
 
 /**
  * Lazy unit textures. The first time a unit type is needed its sheets
@@ -28,7 +28,7 @@ export interface UnitArt {
   readonly key: string;
   readonly maskKey: string;
   readonly sheet: UnitSheet;
-  /** Sprite origin Y (feet) per frame; frame boxes differ per animation. */
+  /** Sprite origin Y (feet) per frame, in its logical box; boxes differ per animation. */
   readonly originY: Float32Array;
 }
 
@@ -78,8 +78,8 @@ export function unitArt(scene: Phaser.Scene, type: UnitType, civ: CivId, force =
   if (!hit) paintSome(sheet, Infinity, PAINTED_HEADINGS.length);
   const originY = new Float32Array(sheet.layout.frameCount);
   for (let k = 0; k < originY.length; k++) {
-    const r = frameRect(sheet, k);
-    originY[k] = r.feetY / r.h;
+    const b = frameBox(sheet, k);
+    originY[k] = b.feetY / b.h;
   }
   const art: UnitArt = { type, civ, key, maskKey: teamMaskKey(key), sheet, originY };
   register(scene, art);
@@ -152,10 +152,12 @@ export function unitArtStats(): Array<{ type: UnitType; frames: number; totalMs:
 function register(scene: Phaser.Scene, art: UnitArt): void {
   const { sheet } = art;
   const tm = scene.textures;
+  // Each frame is its packed rectangle, trimmed back into its logical box, so origin and feet line stay put.
   const frames = (tex: Phaser.Textures.Texture, div: number) => {
     for (let k = 0; k < sheet.layout.frameCount; k++) {
-      const { x, y, w, h } = frameRect(sheet, k);
-      tex.add(k, 0, x / div, y / div, w / div, h / div);
+      const { x, y, w, h, ox, oy } = frameRect(sheet, k);
+      const b = frameBox(sheet, k);
+      tex.add(k, 0, x / div, y / div, w / div, h / div)?.setTrim(b.w / div, b.h / div, ox / div, oy / div, w / div, h / div);
     }
   };
   // `width` / `height`: the size UVs are computed against (a half-size mask keeps the albedo's UVs).

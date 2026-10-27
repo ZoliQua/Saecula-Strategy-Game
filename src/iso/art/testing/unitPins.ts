@@ -1,10 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { CivId, UnitType } from '../../../types';
 import { frameContent } from '../units/layout';
-import { contactShadow, unitLook } from '../units/looks';
-import { FrameRaster, type FramePixels } from '../units/raster';
+import type { FramePixels } from '../units/raster';
 import { buildFigure } from '../units/rig';
-import { sheetGeometry } from '../units/sheet';
+import { frameRect, rasterizeFrame, sheetGeometry } from '../units/sheet';
 
 /*
  * Unit art pins (test-only), split in two:
@@ -19,14 +18,37 @@ export const UNIT_TYPES: readonly UnitType[] = [
   'villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon',
 ];
 
-/** Frame `k` rasterized in its logical box (frames are centred on the feet horizontally). */
+/** Normal of a pixel no figure covers (FrameRaster: ground facing up). */
+const GROUND_NORMAL = [128, 238, 191, 255] as const;
+
+/**
+ * Frame `k` in its logical box, rebuilt from what the sheet stores: the
+ * packed rectangle rasterized as production does (rasterizeFrame), placed
+ * at its offset; the rest of the box is empty (ground normal).
+ */
 function logicalFrame(type: UnitType, civ: CivId, k: number): FramePixels | null {
   const g = sheetGeometry(type, civ);
-  const { slot, anim, i } = frameContent(g.layout, k);
+  const { anim } = frameContent(g.layout, k);
   const b = g.blocks[anim];
   if (!b) return null;
-  const fig = buildFigure(type, civ, slot, anim, i);
-  return new FrameRaster(b.w, b.h, b.w / 2, b.feetY).paint(fig.prims, fig.mats.list, contactShadow(unitLook(type, civ)));
+  const r = frameRect(g, k);
+  const px = rasterizeFrame(type, civ, k);
+  const out: FramePixels = {
+    albedo: new Uint8ClampedArray(b.w * b.h * 4),
+    mask: new Uint8ClampedArray(b.w * b.h * 4),
+    normal: new Uint8ClampedArray(b.w * b.h * 4),
+    coverage: new Float32Array(b.w * b.h),
+  };
+  for (let i = 0; i < b.w * b.h; i++) out.normal.set(GROUND_NORMAL, i * 4);
+  for (let y = 0; y < r.h; y++) {
+    const from = y * r.w;
+    const to = (r.oy + y) * b.w + r.ox;
+    out.albedo.set(px.albedo.subarray(from * 4, (from + r.w) * 4), to * 4);
+    out.mask.set(px.mask.subarray(from * 4, (from + r.w) * 4), to * 4);
+    out.normal.set(px.normal.subarray(from * 4, (from + r.w) * 4), to * 4);
+    out.coverage.set(px.coverage.subarray(from, from + r.w), to);
+  }
+  return out;
 }
 
 export function unitPixelsHash(type: UnitType, civ: CivId): string {
@@ -50,7 +72,7 @@ export function unitPixelsHash(type: UnitType, civ: CivId): string {
 export function unitGeometryHash(type: UnitType, civ: CivId): string {
   const g = sheetGeometry(type, civ);
   return createHash('sha256')
-    .update(JSON.stringify({ w: g.width, h: g.height, blocks: g.blocks, layout: g.layout }))
+    .update(JSON.stringify({ w: g.width, h: g.height, blocks: g.blocks, frames: g.frames, layout: g.layout }))
     .digest('hex')
     .slice(0, 16);
 }
