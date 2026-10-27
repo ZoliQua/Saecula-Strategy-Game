@@ -79,5 +79,14 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
   finnish: upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
 };
 
+/**
+ * Dev builds with `?civs=all` in the URL: every civ is playable, the
+ * upcoming ones as stubs painted with Hungarian art under their own
+ * `~c<civ>` keys (N-civ memory / load measurements and UI shots before
+ * their art exists). Always false in production and in tests (no `location`).
+ */
+export const DEV_ALL_CIVS: boolean =
+  import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('civs') === 'all';
+
 /** Civs a player can pick today (registry order). */
-export const AVAILABLE_CIVS: readonly CivId[] = CIV_IDS.filter((id) => CIV_DEFS[id].available);
+export const AVAILABLE_CIVS: readonly CivId[] = DEV_ALL_CIVS ? CIV_IDS : CIV_IDS.filter((id) => CIV_DEFS[id].available);
