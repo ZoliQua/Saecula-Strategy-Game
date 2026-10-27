@@ -23,6 +23,8 @@ export interface BuildingShowcaseOptions {
   playerId?: number;
   /** Whose architecture to show (default Hungarian). */
   civ?: CivId;
+  /** Several civs: one row per age and civ (civs of an age adjacent), for side-by-side comparison. */
+  civs?: CivId[];
   /** Lay out wall rings, diagonal runs and gaps (one block per age) instead of the grid. */
   walls?: boolean;
   /** Show the Wonder's construction stages and the finished basilica side by side. */
@@ -70,7 +72,8 @@ export class BuildingShowcaseScene extends Phaser.Scene {
       return;
     }
     const ground = this.add.graphics().setDepth(-1);
-    ages.forEach((age, row) => {
+    const rows = ages.flatMap((age) => (this.opts.civs ?? [this.civ]).map((civ) => ({ age, civ })));
+    rows.forEach(({ age, civ }, row) => {
       types.forEach((type, col) => {
         const spec = BUILDING_SPECS[type];
         const x = col * CELL_W + CELL_W / 2;
@@ -83,7 +86,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
           new Phaser.Geom.Point(x, y + 8 - n * 32),
           new Phaser.Geom.Point(x - n * 32, y + 8 - n * 16),
         ], true);
-        const key = buildingTexture(this, type, age, this.opts.playerId ?? 1, this.civ);
+        const key = buildingTexture(this, type, age, this.opts.playerId ?? 1, civ);
         const img = this.add.image(x, y, key).setScale(1 / ART_SCALE);
         img.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height).setDepth(row * 10 + col * 0.01);
         lit(img);
@@ -105,7 +108,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
     });
     const cam = this.cameras.main;
     cam.setZoom(this.opts.zoom ?? 0.6);
-    cam.centerOn((types.length * CELL_W) / 2, (ages.length * CELL_H) / 2);
+    cam.centerOn((types.length * CELL_W) / 2, (rows.length * CELL_H) / 2);
   }
 
   private layWonder(): void {
