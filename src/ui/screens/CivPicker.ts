@@ -45,28 +45,31 @@ export class CivPicker {
     }
   }
 
-  /** Shows a preview painted after the card opened (fades in). */
+  /** Shows a preview painted after the card opened (fades in); a failed paint just stops the placeholder shimmer. */
   setPreview(civ: CivId, preview: CivPreview): void {
     const stage = this.stages.get(civ);
-    if (!stage || !preview.art || stage.classList.contains('ready')) return;
-    stage.prepend(...previewImages(preview));
+    if (!stage || stage.classList.contains('ready')) return;
+    if (preview.art) stage.prepend(...previewImages(preview));
     // Next frame, so the fade-in transition runs from the empty state.
     requestAnimationFrame(() => stage.classList.add('ready'));
   }
 
   private card(id: CivId, preview: CivPreview | undefined): HTMLButtonElement {
-    const stage = el('span', { class: `civ-stage${preview?.art ? ' ready' : ''}`, 'aria-hidden': 'true' }, el('i', { class: 'civ-pool' }));
+    const stage = el('span', { class: `civ-stage${preview ? ' ready' : ''}`, 'aria-hidden': 'true' }, el('i', { class: 'civ-pool' }));
     if (preview?.art) stage.prepend(...previewImages(preview));
     this.stages.set(id, stage);
+    // Named by the civ, described by its one-liner (not read as one run-on name).
+    const nameId = `civ-name-${id}`;
+    const descId = `civ-desc-${id}`;
     return el(
       'button',
-      { class: 'civ-card', type: 'button', role: 'radio' },
+      { class: 'civ-card', type: 'button', role: 'radio', 'aria-labelledby': nameId, 'aria-describedby': descId },
       stage,
       el(
         'span',
         { class: 'civ-text' },
-        el('span', { class: 'civ-name' }, hu.civs[id]),
-        el('span', { class: 'civ-desc' }, hu.setup.civDesc[id]),
+        el('span', { class: 'civ-name', id: nameId }, hu.civs[id]),
+        el('span', { class: 'civ-desc', id: descId }, hu.setup.civDesc[id]),
       ),
       el('i', { class: 'civ-check', html: CHECK, 'aria-hidden': 'true' }),
     );

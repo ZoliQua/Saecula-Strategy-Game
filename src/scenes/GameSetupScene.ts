@@ -8,8 +8,8 @@ import type { MainMenuScene } from './MainMenuScene';
 
 /** Shortest "Betöltés…" state, so the card transition never flashes by. */
 const MIN_LOADING_MS = 450;
-/** Civ previews the menu has not painted yet wait until the card's entrance has played (setup.css, staggered rows). */
-const PREVIEW_DELAY_MS = 1500;
+/** Civ previews the menu has not painted yet wait this long past the card's entrance (GameSetup.entranceMs). */
+const PREVIEW_SLACK_MS = 80;
 
 /** Reopening the setup card after a failed start: the previous choices and why it failed. */
 export interface SetupReturn {
@@ -93,7 +93,7 @@ export class GameSetupScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     this.openMs += delta;
-    if (!this.config && !this.leaving && this.openMs >= PREVIEW_DELAY_MS) this.paintPreview();
+    if (!this.config && !this.leaving && this.openMs >= (this.setup?.entranceMs ?? 0) + PREVIEW_SLACK_MS) this.paintPreview();
     if (!this.config || this.leaving) return;
     this.loadingMs += delta;
     // One unit type per frame: the card animation keeps running between steps.

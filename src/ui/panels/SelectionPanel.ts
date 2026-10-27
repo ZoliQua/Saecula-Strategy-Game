@@ -7,10 +7,9 @@ import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons, type IconName } from '../icons';
 import { type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
-import type { TechId } from '../../types';
 import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
 import { formatStat, playerColor, playerColorCss } from '../format';
-import type { CivId } from '../../types';
+import type { CivId, TechId } from '../../types';
 
 const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', { key: string; frame?: number }> = {
   food: { key: decorKeys.bush(0) },

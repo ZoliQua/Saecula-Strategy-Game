@@ -21,6 +21,7 @@ import type { CivId } from '../../types';
 import { civPreview, type CivPreview } from '../civPreview';
 import { el, uiRoot } from '../dom';
 import { CivPicker } from './CivPicker';
+import { E_UP_S } from './MainMenu';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
 import '../screens.css';
@@ -29,6 +30,10 @@ import '../setup.css';
 const ARROW = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>`;
 const BACK = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4 3 8l4 4"/></svg>`;
 const DICE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>`;
+
+/** Staggered row entrance: first row delay and step between rows (s). */
+const ROW_DELAY_S = 0.18;
+const ROW_STEP_S = 0.07;
 
 export interface GameSetupHandlers {
   onStart: (config: GameSetupConfig) => void;
@@ -55,6 +60,8 @@ export class GameSetup {
   private readonly startBtn: HTMLButtonElement;
   private readonly backBtn: HTMLButtonElement;
   private readonly templateChips: HTMLButtonElement[] = [];
+  /** When the card's staggered entrance has fully played (its rows and footer have landed). */
+  readonly entranceMs: number;
   private busy = false;
   private teardown = 0;
   private readonly onKey = (e: KeyboardEvent) => {
@@ -70,7 +77,7 @@ export class GameSetup {
     this.config = initial;
     const t = hu.setup;
     let row = 0;
-    const delay = () => `animation-delay:${(0.18 + row++ * 0.07).toFixed(2)}s`;
+    const delay = () => `animation-delay:${(ROW_DELAY_S + row++ * ROW_STEP_S).toFixed(2)}s`;
 
     const templateGrid = el('div', { class: 'tpl-grid', role: 'radiogroup', 'aria-label': t.template });
     for (const id of MAP_TEMPLATES) {
@@ -178,6 +185,8 @@ export class GameSetup {
         el('div', { class: 'setup-actions' }, this.backBtn, this.startBtn),
       ),
     );
+    // The footer took the last stagger slot.
+    this.entranceMs = Math.round((ROW_DELAY_S + (row - 1) * ROW_STEP_S + E_UP_S) * 1000);
     this.root = el('div', { class: 'screen setup enter' }, this.card);
     uiRoot().append(this.root);
     window.addEventListener('keydown', this.onKey);

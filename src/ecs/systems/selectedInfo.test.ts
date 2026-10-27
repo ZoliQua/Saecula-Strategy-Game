@@ -5,6 +5,11 @@ import { toSelectedInfo } from './selectedInfo';
 
 const civOf = (playerId: number): CivId => (playerId === 2 ? 'english' : 'hungarian');
 
+/** Snapshot of a hand-built selected entity (only the components the snapshot reads). */
+function snapshot(entity: Partial<Entity>) {
+  return toSelectedInfo(entity as Parameters<typeof toSelectedInfo>[0], civOf);
+}
+
 function barracks(playerId: number): Entity {
   return {
     id: 7,
@@ -19,7 +24,7 @@ function barracks(playerId: number): Entity {
 
 describe('toSelectedInfo', () => {
   it("gives a building its owner's civ (queue thumbnails of an enemy building show the enemy's look)", () => {
-    const info = toSelectedInfo(barracks(2) as Parameters<typeof toSelectedInfo>[0], civOf);
+    const info = snapshot(barracks(2));
     expect(info?.kind).toBe('building');
     expect(info && info.kind === 'building' ? info.civ : null).toBe('english');
     expect(info && info.kind === 'building' ? info.queue : null).toEqual([{ unitType: 'swordsman', progress: 0.5 }]);
@@ -33,8 +38,8 @@ describe('toSelectedInfo', () => {
       health: { current: 30, max: 30 },
       selectable: { selected: true },
       owner: { playerId: 1 },
-    } as Entity;
-    const info = toSelectedInfo(unit as Parameters<typeof toSelectedInfo>[0], civOf);
+    } as Partial<Entity>;
+    const info = snapshot(unit);
     expect(info && info.kind === 'unit' ? info.civ : null).toBe('hungarian');
   });
 
@@ -47,8 +52,8 @@ describe('toSelectedInfo', () => {
       selectable: { selected: true },
       owner: { playerId: 2 },
       gatherer: { carryingType: 'food', carrying: 0.2857740000128747 },
-    } as unknown as Entity;
-    const info = toSelectedInfo(unit as Parameters<typeof toSelectedInfo>[0], civOf);
+    } as Partial<Entity>;
+    const info = snapshot(unit);
     expect(info && info.kind === 'unit' ? info.carrying : null).toEqual({ type: 'food', amount: 0 });
   });
 });

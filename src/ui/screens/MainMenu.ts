@@ -5,6 +5,13 @@ import '../hud.css';
 import '../screens.css';
 import '../setup.css';
 
+/** `.e-up` entrance length (screens.css `.enter .e-up`), shared with GameSetup. */
+export const E_UP_S = 0.7;
+/** The footer enters last. */
+const FOOT_DELAY_S = 1.05;
+/** When the menu's entrance has fully played (the footer is the last to land). */
+export const MENU_ENTRANCE_MS = Math.round((FOOT_DELAY_S + E_UP_S) * 1000);
+
 const ARROW = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>`;
 
 /**
@@ -61,7 +68,7 @@ export class MainMenu {
       ),
       el(
         'footer',
-        { class: 'menu-foot e-up', style: 'animation-delay:1.05s' },
+        { class: 'menu-foot e-up', style: `animation-delay:${FOOT_DELAY_S}s` },
         el('span', {}, hu.subtitle),
         el('span', {}, hu.menu.footer),
       ),

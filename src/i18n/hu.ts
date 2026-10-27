@@ -6,13 +6,13 @@ export const hu = {
     loadGame: 'Betöltés',
     settings: 'Beállítások',
     credits: 'Készítők',
-    eyebrow: 'Római kor · Skirmish',
+    eyebrow: 'Skirmish · Rómától a felvilágosodásig',
     headline: 'Építs birodalmat.\nVédd meg a földed.',
     tagline:
       'Gyűjts nyersanyagot, emelj városokat, képezz sereget — és győzd le a szomszédos népeket valós idejű csatákban.',
     comingSoon: 'Hamarosan',
     footer: 'Böngészőben fut · telepítés nélkül',
-    features: ['3 történelmi kor', '8 nép', 'AI ellenfelek'],
+    features: ['3 történelmi kor', '2 nép · 6 hamarosan', 'AI ellenfelek'],
   },
   civs: {
     hungarian: 'Magyar',
@@ -48,7 +48,7 @@ export const hu = {
     /** One line per civ under its name on the setup card (architecture, CLAUDE.md §4.2). */
     civDesc: {
       hungarian: 'Kő és fa, félköríves boltívek',
-      english: 'Szürke kő, favázak, meredek tetők',
+      english: 'Szürke terméskő, meredek nádtetők',
       german: 'Fachwerk, vörös tégla, csúcsos tornyok',
       french: 'Gótikus, világos kő, karcsú tornyok',
       spanish: 'Fehér vakolat, cseréptetők',

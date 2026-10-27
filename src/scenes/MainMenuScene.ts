@@ -17,7 +17,7 @@ import { TERRAIN } from '../map/TerrainTypes';
 import { TileMap } from '../map/TileMap';
 import { directionFromDelta, type BuildingType, type CivId, type Direction, type UnitType } from '../types';
 import { paintNextCivPreview } from '../ui/civPreview';
-import { MainMenu } from '../ui/screens/MainMenu';
+import { MainMenu, MENU_ENTRANCE_MS } from '../ui/screens/MainMenu';
 import type { SetupReturn } from './GameSetupScene';
 
 const MENU_MAP_SIZE = 48;
@@ -70,8 +70,8 @@ const QUARTERS: readonly Quarter[] = [
     walkers: ['villager', 'archer', 'villager'],
   },
 ];
-/** Civ previews for the setup card are painted once the menu's entrance has played. */
-const PREVIEW_DELAY_MS = 1800;
+/** Civ previews for the setup card are painted once the menu's entrance has played (plus a frame or three of slack). */
+const PREVIEW_DELAY_MS = MENU_ENTRANCE_MS + 50;
 
 interface Walker {
   sprites: UnitSprites;
