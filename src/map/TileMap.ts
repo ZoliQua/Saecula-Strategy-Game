@@ -185,7 +185,7 @@ export class TileMap {
   update(time: number, delta: number): void {
     const cam = this.scene.cameras.main;
     const view = liveView(cam);
-    this.cullToView(view);
+    // Decor, tree rows and occluders are culled once per frame, in PRE_RENDER (cullBeforeRender).
     this.forest.update(time);
     this.surface.update(time);
     this.chunks.update(view, cam.zoom);
@@ -197,9 +197,9 @@ export class TileMap {
    * Off-screen culling of decor, tree rows and cliff occluders (and terrain
    * chunks) against the live view: Phaser batches every visible object, and
    * the lit pipeline breaks batches per texture, so hidden objects save draw
-   * calls. Runs again right before render, so a camera jump after update()
-   * (minimap click) never draws a frame with the destination's trees or
-   * rock faces missing.
+   * calls. Runs once per frame, right before render (PRE_RENDER), so a
+   * camera jump after update() (minimap click) never draws a frame with the
+   * destination's trees or rock faces missing.
    */
   private cullToView(view: ViewRect): void {
     const margin = DECOR_CULL_MARGIN;
@@ -281,7 +281,7 @@ export class TileMap {
     return g;
   }
 
-  /** PRE_RENDER: chunks, decor, trees and occluders re-culled against the camera as it will render. */
+  /** PRE_RENDER: chunks, decor, trees and occluders culled against the camera as it will render. */
   private cullBeforeRender(): void {
     const view = liveView(this.scene.cameras.main);
     this.chunks.cull(view);

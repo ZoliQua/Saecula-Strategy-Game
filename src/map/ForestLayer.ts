@@ -191,7 +191,7 @@ export class ForestLayer implements CoverSource {
     this.sway = this.scene.cameras.main.zoom >= TERRAIN_LOOK.swayMinZoom;
   }
 
-  /** Row culling against `view` (TileMap passes the live camera view, again right before render). */
+  /** Row culling against `view` (TileMap passes the live camera view right before render). */
   cull(view: { readonly y: number; readonly bottom: number }): void {
     const { first, last } = visibleRows(view.y, view.bottom, this.map.width + this.map.height - 1, REACH_UP, REACH_DOWN);
     for (const r of this.rows) r.obj.setVisible(r.obj.index >= first && r.obj.index <= last);
