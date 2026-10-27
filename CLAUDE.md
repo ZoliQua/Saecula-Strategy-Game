@@ -464,6 +464,10 @@ IsoRTS/
     │   ├── art/                 ← procedurális grafika (terep, épület, egység, dekor)
     │   │   ├── architecture/    ← épület-festők koronként (ArchStyle, stíluscsaládok)
     │   │   │   └── english/     ← angol építészet (romano-brit, Tudor/normann, georgiánus, gótikus katedrális)
+    │   │   ├── units/           ← egység-rig és -festés; népenkénti megjelenés (alap + felülírás)
+    │   │   │   └── english/     ← angol egységviselet (Szent György-kereszt, sallet, hosszúíj)
+    │   │   ├── walls/           ← falstílusok koronként
+    │   │   │   └── english/     ← angol falak (cölöpsánc, normann kőfal, tégla csillagerőd)
     │   │   └── lighting/        ← világítási szerződés (normal map-ek, fény, árnyék)
     │   ├── coordinates.ts       ← tile ↔ screen konverzió
     │   ├── depth.ts             ← rajzolási sorrend
