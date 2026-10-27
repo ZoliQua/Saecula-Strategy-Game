@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { tileToScreen } from '../../iso/coordinates';
+import { liveView } from '../../iso/liveView';
 import { BUILDING_LIGHT, FX_KEYS } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { Entity } from '../components';
@@ -70,7 +71,7 @@ export class AmbientFxSystem {
       }
     }
 
-    const view = this.scene.cameras.main.worldView;
+    const view = liveView(this.scene.cameras.main);
     const zone = this.motes.emitZones[0] as unknown as { source: Phaser.Geom.Rectangle } | undefined;
     zone?.source.setTo(view.x - 100, view.y, view.width + 100, view.height);
   }

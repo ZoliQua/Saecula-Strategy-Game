@@ -20,7 +20,10 @@ import { TERRAIN } from './TerrainTypes';
 import { FogLayer } from './FogLayer';
 import { ForestLayer } from './ForestLayer';
 import type { FogOfWarData } from './FogOfWarData';
+import { liveView, type ViewRect } from '../iso/liveView';
 
+/** Decor sprites this far (world px) outside the view stay drawn (their art overhangs the tile). */
+const DECOR_CULL_MARGIN = 80;
 const HIGHLIGHT_DEPTH_OFFSET = 0.5;
 const CLOUD_DEPTH = 9_000;
 /** Cloud pattern repeat scale in world px per texture px. */
@@ -108,7 +111,7 @@ export class TileMap {
         }
       : null;
     this.fog = new FogLayer(scene, mapData.width, mapData.height, rockAt);
-    scene.events.on(Phaser.Scenes.Events.PRE_RENDER, this.cullChunks, this);
+    scene.events.on(Phaser.Scenes.Events.PRE_RENDER, this.cullBeforeRender, this);
   }
 
   private placeDecor(): void {
@@ -180,33 +183,45 @@ export class TileMap {
 
   /** Per-frame ambient animation. */
   update(time: number, delta: number): void {
-    const view = this.scene.cameras.main.worldView;
-    // Off-screen culling: Phaser batches every visible object, and the lit
-    // pipeline breaks batches per texture, so hidden decor saves draw calls.
-    const margin = 80;
+    const cam = this.scene.cameras.main;
+    const view = liveView(cam);
+    this.cullToView(view);
+    this.forest.update(time);
+    this.surface.update(time);
+    this.chunks.update(view, cam.zoom);
+    this.updateClouds(view, delta);
+    this.fog.update(delta);
+  }
+
+  /**
+   * Off-screen culling of decor, tree rows and cliff occluders (and terrain
+   * chunks) against the live view: Phaser batches every visible object, and
+   * the lit pipeline breaks batches per texture, so hidden objects save draw
+   * calls. Runs again right before render, so a camera jump after update()
+   * (minimap click) never draws a frame with the destination's trees or
+   * rock faces missing.
+   */
+  private cullToView(view: ViewRect): void {
+    const margin = DECOR_CULL_MARGIN;
     for (const d of this.decor.values()) {
       const s = d.sprite;
       const inView = !(s.x < view.x - margin || s.x > view.right + margin || s.y < view.y - margin || s.y > view.bottom + margin * 2);
       s.setVisible(inView);
     }
-    this.forest.update(time);
+    this.forest.cull(view);
     this.occluders?.update(view);
-    this.surface.update(time);
-    this.chunks.update(liveView(this.scene.cameras.main), this.scene.cameras.main.zoom);
-    this.updateClouds(delta);
-    this.fog.update(delta);
   }
 
   /** Keeps the screen-sized cloud layer over the camera, pattern locked to the world. */
-  private updateClouds(delta: number): void {
+  private updateClouds(view: ViewRect, delta: number): void {
     const cam = this.scene.cameras.main;
     const w = cloudLayerSize(this.scene.scale.width);
     const h = cloudLayerSize(this.scene.scale.height);
     if (this.clouds.width !== w || this.clouds.height !== h) this.clouds.setSize(w, h);
     const k = 1 / cam.zoom;
     const r = CLOUD_LAYER_RES;
-    const x = cam.worldView.x - CLOUD_PAD * k;
-    const y = cam.worldView.y - CLOUD_PAD * k;
+    const x = view.x - CLOUD_PAD * k;
+    const y = view.y - CLOUD_PAD * k;
     this.cloudDrift.x += delta * 0.006;
     this.cloudDrift.y += delta * 0.0025;
     this.clouds.setScale(k / r).setPosition(x, y).setTileScale(CLOUD_SCALE_X * cam.zoom * r, CLOUD_SCALE_Y * cam.zoom * r);
@@ -266,12 +281,15 @@ export class TileMap {
     return g;
   }
 
-  private cullChunks(): void {
-    this.chunks.cull(liveView(this.scene.cameras.main));
+  /** PRE_RENDER: chunks, decor, trees and occluders re-culled against the camera as it will render. */
+  private cullBeforeRender(): void {
+    const view = liveView(this.scene.cameras.main);
+    this.chunks.cull(view);
+    this.cullToView(view);
   }
 
   destroy(): void {
-    this.scene.events.off(Phaser.Scenes.Events.PRE_RENDER, this.cullChunks, this);
+    this.scene.events.off(Phaser.Scenes.Events.PRE_RENDER, this.cullBeforeRender, this);
     this.chunks.destroy();
     this.occluders?.destroy();
     this.surface.destroy();
@@ -288,15 +306,4 @@ export class TileMap {
 /** Cloud layer side (layer px) covering a screen side plus the pad. */
 function cloudLayerSize(screen: number): number {
   return Math.ceil((screen + CLOUD_PAD * 2) * CLOUD_LAYER_RES);
-}
-
-/**
- * The camera's world view from its current scroll and zoom. `worldView`
- * itself is only refreshed while the camera renders, so right after a jump
- * (minimap click) it still holds the previous frame's view.
- */
-function liveView(cam: Phaser.Cameras.Scene2D.Camera): { x: number; y: number; width: number; height: number } {
-  const w = cam.width / cam.zoom;
-  const h = cam.height / cam.zoom;
-  return { x: cam.scrollX + (cam.width - w) / 2, y: cam.scrollY + (cam.height - h) / 2, width: w, height: h };
 }

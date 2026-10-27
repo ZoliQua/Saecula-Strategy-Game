@@ -8,6 +8,7 @@ import { encodeNormal, N_UP } from '../iso/art/lighting/viewSpace';
 import { columnCover, forEachCoverCell, type Box, type ColumnCover, type CoverSource, type PlacedCover } from '../iso/coverage';
 import { needsOccluder, occluderReach, tilesInFrontOfFootprint } from './cliffGeometry';
 import { alphaBounds, shelfPack, type Rect } from './occluderPacking';
+import type { ViewRect } from '../iso/liveView';
 
 /** Copies a w×h block of RGBA pixels between ImageData buffers. */
 function copyRect(src: ImageData, sx: number, sy: number, dst: ImageData, dx: number, dy: number, w: number, h: number): void {
@@ -197,7 +198,7 @@ export class CliffOccluders implements CoverSource {
   }
 
   /** Hides occluders outside the camera view (fewer objects for the renderer to walk). */
-  update(view: Phaser.Geom.Rectangle): void {
+  update(view: ViewRect): void {
     for (const img of this.images) {
       img.setVisible(img.x < view.right && img.x + img.width > view.x && img.y < view.bottom && img.y + img.height > view.y);
     }
