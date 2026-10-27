@@ -7,7 +7,7 @@ import { createVillager } from '../../ecs/archetypes/villager';
 import { createWall } from '../../ecs/archetypes/wall';
 import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
-import { generateMap, type PresetWall } from '../../map/generator';
+import { generateMap, MapGenerationError, type PresetWall } from '../../map/generator';
 import type { MapData } from '../../map/MapData';
 import { townCenterOrigin, villagerSpawnTiles } from '../../map/startLayout';
 import { mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
@@ -32,6 +32,23 @@ export function generateGameMap(config: GameSetupConfig): GeneratedGame {
     playerCount: playerCount(config),
   });
   return { mapData: generated.map, starts: generated.playerStarts, walls: generated.walls };
+}
+
+/**
+ * generateGameMap, or null when the template finds no valid map for the
+ * seed (MapGenerationError after its retries); any other error is a bug and
+ * propagates.
+ */
+export function tryGenerateGameMap(config: GameSetupConfig): GeneratedGame | null {
+  try {
+    return generateGameMap(config);
+  } catch (e) {
+    if (e instanceof MapGenerationError) {
+      console.warn(e.message);
+      return null;
+    }
+    throw e;
+  }
 }
 
 /** Creates one resource-node entity per resource terrain tile. */

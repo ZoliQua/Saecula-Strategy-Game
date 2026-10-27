@@ -17,6 +17,7 @@ import { TERRAIN } from '../map/TerrainTypes';
 import { TileMap } from '../map/TileMap';
 import { directionFromDelta, type BuildingType, type Direction, type UnitType } from '../types';
 import { MainMenu } from '../ui/screens/MainMenu';
+import type { SetupReturn } from './GameSetupScene';
 
 const MENU_MAP_SIZE = 48;
 const MENU_SEED = 7;
@@ -58,7 +59,7 @@ export class MainMenuScene extends Phaser.Scene {
     super({ key: 'MainMenuScene' });
   }
 
-  create(): void {
+  create(data?: Partial<SetupReturn>): void {
     this.cameras.main.setBackgroundColor('#090c12');
     const { map } = generateMap({
       template: 'meadow',
@@ -129,6 +130,11 @@ export class MainMenuScene extends Phaser.Scene {
       this.menu?.setAway(true);
       this.scene.launch('GameSetupScene');
     });
+    // A start that failed (no valid map) comes straight back to the setup card.
+    if (data?.config && data.notice) {
+      this.menu.setAway(true);
+      this.scene.launch('GameSetupScene', { config: data.config, notice: data.notice });
+    }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.menu?.destroy();
       this.menu = null;

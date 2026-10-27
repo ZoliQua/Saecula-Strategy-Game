@@ -60,7 +60,12 @@ export class GameSetup {
     if (e.key === 'Escape' && !this.busy) this.handlers.onBack();
   };
 
-  constructor(initial: GameSetupConfig, private readonly handlers: GameSetupHandlers) {
+  constructor(
+    initial: GameSetupConfig,
+    private readonly handlers: GameSetupHandlers,
+    /** Shown above the actions, e.g. why the last start failed. */
+    notice?: string,
+  ) {
     this.config = initial;
     const t = hu.setup;
     let row = 0;
@@ -170,6 +175,7 @@ export class GameSetup {
         field(t.civ, civGrid),
         field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
       ),
+      notice ? el('div', { class: 'setup-notice', role: 'alert' }, notice) : null,
       el(
         'footer',
         { class: 'setup-foot e-up', style: delay() },

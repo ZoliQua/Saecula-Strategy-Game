@@ -52,6 +52,7 @@ export const hu = {
     start: 'Játék indítása',
     loading: 'Betöltés…',
     summary: (players: number, tiles: number) => `${players} játékos · ${tiles}×${tiles} mező`,
+    mapFailed: 'Ezzel a térkép-maggal nem sikerült játszható térképet készíteni. Válassz másik magot vagy térképtípust.',
   },
   game: {
     sceneActive: 'GameScene aktív',

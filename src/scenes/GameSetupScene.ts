@@ -7,6 +7,12 @@ import type { MainMenuScene } from './MainMenuScene';
 /** Shortest "Betöltés…" state, so the card transition never flashes by. */
 const MIN_LOADING_MS = 450;
 
+/** Reopening the setup card after a failed start: the previous choices and why it failed. */
+export interface SetupReturn {
+  readonly config: GameSetupConfig;
+  readonly notice: string;
+}
+
 /** Dev diagnostics: the last pre-warm cost, readable from the console. */
 export const prewarmReport = { totalMs: 0, maxStepMs: 0, frames: 0 };
 
@@ -26,16 +32,20 @@ export class GameSetupScene extends Phaser.Scene {
     super({ key: 'GameSetupScene' });
   }
 
-  create(): void {
+  create(data?: Partial<SetupReturn>): void {
     this.prewarm = null;
     this.config = null;
     this.loadingMs = 0;
     this.leaving = false;
     prewarmReport.frames = 0;
-    this.setup = new GameSetup(defaultSetupConfig(), {
-      onStart: (config) => this.beginLoading(config),
-      onBack: () => this.close(),
-    });
+    this.setup = new GameSetup(
+      data?.config ?? defaultSetupConfig(),
+      {
+        onStart: (config) => this.beginLoading(config),
+        onBack: () => this.close(),
+      },
+      data?.notice,
+    );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.setup?.destroy();
       this.setup = null;

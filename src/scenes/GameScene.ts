@@ -19,12 +19,14 @@ import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
 import { BuildPlacement } from './game/BuildPlacement';
 import {
-  generateGameMap,
   type GeneratedGame,
   spawnPresetWalls,
   spawnResourceNodes,
   spawnStartingEntities,
+  tryGenerateGameMap,
 } from './game/GameBootstrap';
+import { hu } from '../i18n/hu';
+import type { SetupReturn } from './GameSetupScene';
 import { OrderIssuer } from './game/OrderIssuer';
 import { PointerInput } from './game/PointerInput';
 import { SystemRunner } from './game/SystemRunner';
@@ -68,7 +70,13 @@ export class GameScene extends Phaser.Scene {
 
     const config = withSetup(defaultSetupConfig(), data ?? {});
     this.players = createPlayers(config.civ, config.aiCount);
-    const generated = generateGameMap(config);
+    const generated = tryGenerateGameMap(config);
+    if (!generated) {
+      // No valid map for this seed: back to the setup card, with the choices kept and a message.
+      const back: SetupReturn = { config, notice: hu.setup.mapFailed };
+      this.scene.start('MainMenuScene', back);
+      return;
+    }
     this.mapData = generated.mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
