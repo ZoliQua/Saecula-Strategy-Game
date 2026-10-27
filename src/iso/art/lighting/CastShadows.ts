@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SHADOW } from '../../../config/visual';
+import { RockFootprintIndex, type RockFootprint } from '../../../map/rockFootprints';
 import { shadowKey } from './litTextures';
 import { inflate, projectVolumeShadow, shearQuad, type Pt2, type VolumePoint } from './shadowGeometry';
 import type { ShadowVector } from './sun';
@@ -93,10 +94,27 @@ export class CastShadows {
   private readonly silhouettes = new Set<SilhouetteShadow>();
   private readonly volumes = new Set<VolumeEntry>();
   private readonly hulls: Phaser.GameObjects.Graphics;
+  /** Raised rock near building shadows, cut out of them (stencil mask, inverted). */
+  private readonly rockMask: Phaser.GameObjects.Graphics;
+  private readonly rockCut: Phaser.Display.Masks.GeometryMask;
+  private rock = new RockFootprintIndex([]);
   private sinceRedraw = HULL_REDRAW_MS;
 
   constructor(private readonly scene: Phaser.Scene) {
     this.hulls = scene.add.graphics().setDepth(SHADOW_DEPTH);
+    this.rockMask = scene.make.graphics({}, false);
+    this.rockCut = new Phaser.Display.Masks.GeometryMask(scene, this.rockMask).setInvertAlpha(true);
+  }
+
+  /**
+   * Raised rock (TileMap.rockFootprints): building shadows and AO are
+   * projected onto the ground plane, so they are kept off the plateaus
+   * (nothing stands on them) — which also matches the unshadowed cliff
+   * occluder copies drawn above the shadow layer.
+   */
+  setRock(rock: readonly RockFootprint[]): void {
+    this.rock = new RockFootprintIndex(rock);
+    this.sinceRedraw = HULL_REDRAW_MS;
   }
 
   addSilhouette(caster: Caster, baseKey: string): () => void {
@@ -141,6 +159,7 @@ export class CastShadows {
   private redrawHulls(): void {
     const g = this.hulls;
     g.clear();
+    const drawn: Phaser.Math.Vector2[][] = [];
     const alpha = SHADOW.alpha * this.vector.strength;
     for (const e of this.volumes) {
       const s = e.sprite;
@@ -156,13 +175,42 @@ export class CastShadows {
       ];
       g.fillStyle(0x0a0e08, AO_ALPHA);
       for (const f of AO_SCALES) {
-        g.fillPoints(inflate(diamond, f).map(([x, y]) => new Phaser.Math.Vector2(x, y)), true);
+        const ring = inflate(diamond, f).map(([x, y]) => new Phaser.Math.Vector2(x, y));
+        g.fillPoints(ring, true);
+        if (f === AO_SCALES[0]) drawn.push(ring);
       }
       if (alpha < 0.01 || e.volume.length === 0) continue;
       const hull = projectVolumeShadow(e.volume, this.vector, e.heightScale());
       g.fillStyle(0x060a10, (alpha / 0.8) * RING_ALPHA);
-      for (const scale of RING_SCALES) g.fillPoints(inflate(hull, scale).map(toWorld), true);
+      for (const scale of RING_SCALES) {
+        const ring = inflate(hull, scale).map(toWorld);
+        g.fillPoints(ring, true);
+        if (scale === RING_SCALES[0]) drawn.push(ring);
+      }
     }
+    this.cutRock(drawn);
+  }
+
+  /** Masks the rock footprints the drawn shadow outlines overlap (no mask, no stencil pass, when none). */
+  private cutRock(drawn: readonly Phaser.Math.Vector2[][]): void {
+    const m = this.rockMask;
+    m.clear();
+    const near = new Set<RockFootprint>();
+    if (!this.rock.empty) {
+      for (const ring of drawn) {
+        const xs = ring.map((p) => p.x);
+        const ys = ring.map((p) => p.y);
+        const box = { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
+        for (const p of this.rock.near(box)) near.add(p);
+      }
+    }
+    if (near.size === 0) {
+      this.hulls.clearMask();
+      return;
+    }
+    m.fillStyle(0xffffff, 1);
+    for (const p of near) m.fillPoints(p.points.map(([x, y]) => new Phaser.Math.Vector2(x, y)), true);
+    this.hulls.setMask(this.rockCut);
   }
 
   destroy(): void {
@@ -170,5 +218,7 @@ export class CastShadows {
     this.silhouettes.clear();
     this.volumes.clear();
     this.hulls.destroy();
+    this.rockCut.destroy();
+    this.rockMask.destroy();
   }
 }

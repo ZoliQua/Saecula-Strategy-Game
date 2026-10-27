@@ -6,6 +6,7 @@ import { TERRAIN_LOOK } from '../config/visual';
 import { TerrainSurface } from './TerrainSurface';
 import { buildWaterMask, hasWater } from './waterMask';
 import { marchRelief } from './cliffRelief';
+import { rockFootprints, type RockFootprint } from './rockFootprints';
 import { CliffOccluders } from './CliffOccluders';
 import type { CliffField } from '../iso/art/cliffArt';
 import { lit } from '../iso/art/lighting/LightManager';
@@ -169,6 +170,11 @@ export class TileMap {
   /** What draws over units standing behind it (raised rock, trees), for X-ray silhouettes. */
   coverSources(): CoverSource[] {
     return this.occluders ? [this.occluders, this.forest] : [this.forest];
+  }
+
+  /** Screen outlines of the raised rock, per cliff tile (none without cliffs); ground shadows stay off them. */
+  rockFootprints(): RockFootprint[] {
+    return this.cliffs ? rockFootprints(this.cliffs.relief) : [];
   }
 
   /** See CliffOccluders.buildingDepth (`depth` unchanged without cliffs). */

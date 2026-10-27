@@ -149,6 +149,7 @@ export class GameScene extends Phaser.Scene {
     const { mapData, starts, walls } = generated;
     const playerStart = starts[0] ?? { tx: 10, ty: 10 };
     this.tileMap = new TileMap(this, mapData, terrain);
+    this.lighting.shadows?.setRock(this.tileMap.rockFootprints());
 
     const bounds = this.tileMap.getWorldBounds();
     const padding = 200;
