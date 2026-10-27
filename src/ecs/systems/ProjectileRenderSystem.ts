@@ -51,6 +51,8 @@ export class ProjectileRenderSystem {
   private readonly shadows: ImagePool;
   private fog: FogOfWarData | null = null;
 
+  private readonly unsubscribe: () => void;
+
   constructor(
     private readonly scene: Phaser.Scene,
     world: EcsWorld,
@@ -63,7 +65,7 @@ export class ProjectileRenderSystem {
     }
     this.trails = new ImagePool(() => scene.add.image(0, 0, FX_KEYS.trail).setOrigin(1, 0.5));
     this.shadows = new ImagePool(() => scene.add.image(0, 0, FX_KEYS.shotShadow).setDepth(SHOT_SHADOW_DEPTH));
-    this.shots.onEntityRemoved.subscribe((e: Entity) => this.release(e));
+    this.unsubscribe = this.shots.onEntityRemoved.subscribe((e: Entity) => this.release(e));
   }
 
   setFogContext(fog: FogOfWarData): void {
@@ -139,6 +141,7 @@ export class ProjectileRenderSystem {
   }
 
   destroy(): void {
+    this.unsubscribe();
     for (const pool of this.bodies.values()) pool.destroy();
     this.trails.destroy();
     this.shadows.destroy();

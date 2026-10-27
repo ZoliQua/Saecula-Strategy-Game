@@ -209,6 +209,8 @@ export class GameScene extends Phaser.Scene {
       orders,
     );
     pointer.register();
+    const input = pointer;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => input.unregister());
 
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
   }

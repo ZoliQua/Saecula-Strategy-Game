@@ -41,10 +41,21 @@ export class PointerInput {
     input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
     input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
-    input.keyboard?.on('keydown-ESC', () => {
-      this.placement.cancelWallLine();
-      uiStore.getState().setPlacementBuilding(null);
-    });
+    input.keyboard?.on('keydown-ESC', this.onEscape, this);
+  }
+
+  /** Removes the listeners register() added (also dropped by Phaser on scene shutdown). */
+  unregister(): void {
+    const input = this.scene.input;
+    input.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+    input.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+    input.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+    input.keyboard?.off('keydown-ESC', this.onEscape, this);
+  }
+
+  private onEscape(): void {
+    this.placement.cancelWallLine();
+    uiStore.getState().setPlacementBuilding(null);
   }
 
   private pick(pointer: Phaser.Input.Pointer): TileCoord | null {
