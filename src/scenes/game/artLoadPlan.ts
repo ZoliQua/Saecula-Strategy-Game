@@ -34,7 +34,8 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
  *    first needed in their own age style and are painted when built, like
  *    every age-2/3 style. The age-3 single-style buildings (foundry, Wonder)
  *    go to the background queue instead, so the first one placed in age 3
- *    is a cache hit rather than a 50-80 ms frame.
+ *    reuses the painted base (normal map, trim) rather than a 50-80 ms
+ *    frame; only the owner's team-colour variant is still painted then.
  *  - Every civ: the age-1 common wall pieces; ages 2 and 3 go to the
  *    background queue (age 2 first), done seconds into the game — long
  *    before anyone can leave the Roman age.
