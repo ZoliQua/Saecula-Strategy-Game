@@ -1,59 +1,44 @@
-import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import type { UnitType } from '../../../types';
-import { ANIM_FRAMES, frameContent, PAINTED_HEADINGS } from './layout';
-import { contactShadow, unitLook } from './looks';
-import { FrameRaster } from './raster';
-import { buildFigure } from './rig';
-import { sheetGeometry } from './sheet';
+import { ANIM_FRAMES, PAINTED_HEADINGS } from './layout';
+import { UNIT_TYPES, unitGeometryHash, unitPixelsHash } from './../testing/unitPins';
 
 /*
- * Pixel-identity guard for the Hungarian unit art (M4 Task 5): every
- * Hungarian unit type's sheet geometry, the posed figure (primitives and
- * materials) of every frame, and the rasterized pixels (albedo, team
- * mask, normals, coverage) of every frame are hashed and compared to
- * hashes recorded at 8c43c49, before unit looks became civ-keyed. The rasterizer is pure JS, so the
- * pixels themselves are hashed (no canvas shim needed).
+ * Pixel-identity guard for the Hungarian unit art (M4 Task 5). Split pins
+ * (M5 Task 1), see testing/unitPins.ts:
+ *  - PIXELS: every frame's posed figure (primitives, materials) and its
+ *    rasterized pixels (albedo, team mask, normals, coverage) in the
+ *    frame's logical box. Must never change.
+ *  - GEOMETRY: sheet size and frame placement; may be re-recorded when the
+ *    sheet packing changes, with the reason in the commit.
+ * The combined pin (recorded at 8c43c49) was green at a0333bc, where both
+ * split hashes were recorded.
  */
 
-const TYPES: readonly UnitType[] = [
-  'villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon',
-];
-
-/** Recorded at 8c43c49 (before the civ-keyed looks). */
-const EXPECTED: Record<string, string> = {
-  villager: '8da77eb412bd6f07',
-  swordsman: 'e251c38dbf256dd5',
-  archer: '2110473f84c7ef84',
-  pikeman: '537b33808277d9cc',
-  crossbowman: 'ec15507f7c9749ec',
-  musketeer: '6db9f9c0c3e13f20',
-  scout: '706bc54f1e9befcd',
-  knight: '9f1c46103efbc4ec',
-  cavalry: '25666eed9e926459',
-  cannon: '7771c179a0a68df6',
+const PIXELS: Record<string, string> = {
+  villager: '4f36bdaa383f0198',
+  swordsman: '1cc071e1b1aad295',
+  archer: 'c97fd185c0bc5e6e',
+  pikeman: 'aaede629f15913cb',
+  crossbowman: '18993cc3a0d1901a',
+  musketeer: 'c658a85a0587237b',
+  scout: '7fa68216f003b13c',
+  knight: 'f08ed4eab029c498',
+  cavalry: 'aa14e6b22c88ec3e',
+  cannon: '633a6bd99642dc6c',
 };
 
-function hashUnit(type: UnitType): string {
-  const h = createHash('sha256');
-  const g = sheetGeometry(type, 'hungarian');
-  h.update(JSON.stringify({ w: g.width, h: g.height, blocks: g.blocks, layout: g.layout }));
-  const shadow = contactShadow(unitLook(type, 'hungarian'));
-  for (let k = 0; k < g.layout.frameCount; k++) {
-    const { slot, anim, i } = frameContent(g.layout, k);
-    const fig = buildFigure(type, 'hungarian', slot, anim, i);
-    h.update(JSON.stringify(fig.prims));
-    h.update(JSON.stringify(fig.mats.list));
-    const b = g.blocks[anim];
-    if (!b) continue;
-    const px = new FrameRaster(b.w, b.h, b.w / 2, b.feetY).paint(fig.prims, fig.mats.list, shadow);
-    h.update(px.albedo);
-    h.update(px.mask);
-    h.update(px.normal);
-    h.update(new Uint8Array(px.coverage.buffer));
-  }
-  return h.digest('hex').slice(0, 16);
-}
+const GEOMETRY: Record<string, string> = {
+  villager: '77164c3b906fa27e',
+  swordsman: 'c062a4ed690dbf1b',
+  archer: '9303a8713019fd07',
+  pikeman: 'dfa11fe17e9ad6b0',
+  crossbowman: 'b78bb51429a72bdb',
+  musketeer: 'd83d5a5d8c9afb3a',
+  scout: 'f56907e93d14b30b',
+  knight: 'f5511b517ee29d21',
+  cavalry: '254d9dc94b9181ce',
+  cannon: 'c45260b327386e57',
+};
 
 describe('Hungarian unit art stays pixel-identical', () => {
   it('paints five headings', () => {
@@ -61,9 +46,15 @@ describe('Hungarian unit art stays pixel-identical', () => {
     expect(ANIM_FRAMES.walk).toBe(6);
   });
 
-  it.each(TYPES)('%s', (type) => {
-    const hash = hashUnit(type);
+  it.each(UNIT_TYPES)('%s pixels', (type) => {
+    const hash = unitPixelsHash(type, 'hungarian');
     if (process.env.PRINT_ART_HASHES) console.log(`  ${type}: '${hash}',`);
-    expect(hash).toBe(EXPECTED[type]);
+    expect(hash).toBe(PIXELS[type]);
+  });
+
+  it.each(UNIT_TYPES)('%s sheet geometry', (type) => {
+    const hash = unitGeometryHash(type, 'hungarian');
+    if (process.env.PRINT_ART_HASHES) console.log(`  ${type}: '${hash}',`);
+    expect(hash).toBe(GEOMETRY[type]);
   });
 });
