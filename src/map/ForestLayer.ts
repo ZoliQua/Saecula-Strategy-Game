@@ -6,6 +6,8 @@ import { shadowKey } from '../iso/art/lighting/litTextures';
 import { shearQuad, type Pt2 } from '../iso/art/lighting/shadowGeometry';
 import { SHADOW_DEPTH } from '../iso/art/lighting/CastShadows';
 import { TREE_VARIANTS } from '../iso/art/trees';
+import type { Box, CoverSource, PlacedCover } from '../iso/coverage';
+import { frameCover } from '../iso/frameCover';
 import { DECOR_ORIGIN_Y, decorKeys } from '../iso/textures';
 import { depthRow, lowerBound, treePlacement, visibleRows, type ForestSource } from './forestLayout';
 import { FOG_UNEXPLORED, type FogOfWarData } from './FogOfWarData';
@@ -80,7 +82,7 @@ class TreeShadows extends Phaser.GameObjects.Image {
  * camera sees, trees sway in the vertex positions, and one object draws
  * all tree shadows. Removing a tree (chopped) just marks it dead.
  */
-export class ForestLayer {
+export class ForestLayer implements CoverSource {
   private readonly x: Float32Array;
   private readonly y: Float32Array;
   private readonly scale: Float32Array;
@@ -158,6 +160,29 @@ export class ForestLayer {
   /** The tree on this tile is gone (chopped down). */
   remove(tx: number, ty: number): void {
     this.alive[ty * this.map.width + tx] = 0;
+  }
+
+  /** Standing, seen trees drawn in front of `minDepth` whose sprite overlaps `box` (sway ignored). */
+  collectCovers(box: Box, minDepth: number, out: PlacedCover[]): void {
+    const texture = this.scene.textures.get(decorKeys.trees);
+    const first = Math.max(0, Math.floor(minDepth - TREE_DEPTH_OFFSET) + 1);
+    // A tree's sprite reaches REACH_UP above its row's ground line (16 px per row).
+    const last = Math.min(this.rowAt.length - 1, first + Math.ceil((box.bottom - box.top + REACH_UP) / 16) + 1);
+    for (let r = first; r <= last; r++) {
+      const row = this.rowAt[r];
+      if (!row) continue;
+      for (let k = lowerBound(row.xs, box.left - REACH_X); k < row.ids.length && (row.xs[k] ?? Infinity) <= box.right + REACH_X; k++) {
+        const id = row.ids[k] ?? 0;
+        if (this.alive[id] !== 1 || this.hidden(id)) continue;
+        const f = texture.get(this.frame[id] ?? 0);
+        const s = this.scale[id] ?? 1;
+        const left = (this.x[id] ?? 0) - 0.5 * f.cutWidth * s;
+        const top = (this.y[id] ?? 0) - this.originY * f.cutHeight * s;
+        if (left >= box.right || left + f.cutWidth * s <= box.left || top >= box.bottom || top + f.cutHeight * s <= box.top) continue;
+        const cover = frameCover(f);
+        if (cover) out.push({ cover, left, top, scale: s, flipX: false, depth: r + TREE_DEPTH_OFFSET });
+      }
+    }
   }
 
   /** Per frame: sway clock and row culling. */

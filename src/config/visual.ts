@@ -199,3 +199,13 @@ export const TERRAIN_LOOK = {
   /** Zoom below which trees stop swaying (saves vertex work when the whole map is in view). */
   swayMinZoom: 0.7,
 } as const;
+
+/** Unit X-ray silhouettes behind cliffs, buildings and trees (UnitXRay). Sizes in world px. */
+export const XRAY = {
+  /** Opacity of the team-colour silhouette. */
+  alpha: 0.55,
+  /** Hidden parts smaller than this (either side) get no silhouette. */
+  minHiddenPx: 5,
+  /** Column sampling step across a unit when measuring what hides it. */
+  sampleStep: 3,
+} as const;

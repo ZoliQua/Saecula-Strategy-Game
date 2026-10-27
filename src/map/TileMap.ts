@@ -12,6 +12,7 @@ import { buildWaterMask, hasWater } from './waterMask';
 import { CliffOccluders, planOccluders, type OccluderPlan } from './CliffOccluders';
 import { screenToTile, tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
+import type { CoverSource } from '../iso/coverage';
 import { DECOR_ORIGIN_Y, decorKeys, FX_KEYS } from '../iso/textures';
 import type { MapData } from './MapData';
 import { TERRAIN } from './TerrainTypes';
@@ -173,6 +174,11 @@ export class TileMap {
       .setDepth(tileDepth({ tx, ty }) + DECOR_DEPTH_OFFSET);
     lit(sprite);
     this.decor.set(id, { sprite, kind });
+  }
+
+  /** What draws over units standing behind it (raised rock, trees), for X-ray silhouettes. */
+  coverSources(): CoverSource[] {
+    return this.occluders ? [this.occluders, this.forest] : [this.forest];
   }
 
   /** See CliffOccluders.sortAboveFootprint; returns the release function (no-op without cliffs). */

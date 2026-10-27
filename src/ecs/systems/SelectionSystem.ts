@@ -111,6 +111,12 @@ export class SelectionSystem {
   private readonly world: EcsWorld;
   private indicators: Phaser.GameObjects.Graphics[] = [];
   private lastInfoKey: string | null = null;
+  /** Depth an occluded unit's ring is raised to, so it shows over what hides the unit (see UnitXRay). */
+  private raisedDepth: (entity: Entity) => number | undefined = () => undefined;
+
+  setRaisedDepth(fn: (entity: Entity) => number | undefined): void {
+    this.raisedDepth = fn;
+  }
 
   constructor(scene: Phaser.Scene, world: EcsWorld) {
     this.scene = scene;
@@ -299,7 +305,7 @@ export class SelectionSystem {
       g.fillEllipse(pos.sx, pos.sy, 30, 15);
       g.lineStyle(1.6, color, 1);
       g.strokeEllipse(pos.sx, pos.sy, 30, 15);
-      g.setDepth(tileDepth(selected.position) + 0.05);
+      g.setDepth(Math.max(tileDepth(selected.position) + 0.05, this.raisedDepth(e) ?? -Infinity));
     }
     g.setVisible(true);
   }

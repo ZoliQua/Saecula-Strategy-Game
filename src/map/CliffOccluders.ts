@@ -5,6 +5,7 @@ import { CLIFF_NORMAL_DOWNSCALE, occluderCellBounds, type OccluderSink } from '.
 import { lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap } from '../iso/art/lighting/litTextures';
 import { encodeNormal, N_UP } from '../iso/art/lighting/viewSpace';
+import { columnCover, forEachCoverCell, type Box, type ColumnCover, type CoverSource, type PlacedCover } from '../iso/coverage';
 import { needsOccluder, occluderReach, tilesInFrontOfFootprint } from './cliffGeometry';
 import { alphaBounds, shelfPack, type Rect } from './occluderPacking';
 
@@ -74,12 +75,16 @@ export function planOccluders(field: CliffField, withNormals: boolean): Occluder
  * only hides units, trees, buildings, shadows and water that are behind
  * the raised rock.
  */
-export class CliffOccluders {
+export class CliffOccluders implements CoverSource {
   private readonly images: Phaser.GameObjects.Image[] = [];
   /** Occluder image per tile id (ty · width + tx). */
   private readonly byTile = new Map<number, Phaser.GameObjects.Image>();
   /** Depths raised by buildings behind an occluder (see sortAboveFootprint), per image. */
   private readonly raised = new Map<Phaser.GameObjects.Image, number[]>();
+  /** Column coverage per image (same index), for unit X-ray silhouettes. */
+  private readonly covers: ColumnCover[] = [];
+  /** Image indices per spatial hash cell (see forEachCoverCell). */
+  private readonly grid = new Map<number, number[]>();
   private readonly key = `cliff_occluders_${seq++}`;
   /** Texture bytes held (albedo + normal), for the memory report. */
   readonly bytes: number;
@@ -129,6 +134,13 @@ export class CliffOccluders {
       const img = scene.add.image(b.x + it.trim.x, b.y + it.trim.y, this.key, i).setOrigin(0, 0);
       this.images.push(lit(img.setDepth(it.tx + it.ty + OCCLUDER_DEPTH_OFFSET)));
       this.byTile.set(it.ty * field.width + it.tx, img);
+      const stride = albedo.width;
+      this.covers.push(columnCover((x, y) => albedo.data[((py + y) * stride + px + x) * 4 + 3] ?? 0, it.trim.w, it.trim.h));
+      forEachCoverCell({ left: img.x, top: img.y, right: img.x + it.trim.w, bottom: img.y + it.trim.h }, (k) => {
+        const list = this.grid.get(k);
+        if (list) list.push(i);
+        else this.grid.set(k, [i]);
+      });
     });
   }
 
@@ -162,6 +174,21 @@ export class CliffOccluders {
         this.applyDepth(img, tileDepth);
       }
     };
+  }
+
+  collectCovers(box: Box, minDepth: number, out: PlacedCover[]): void {
+    const seen = new Set<number>();
+    forEachCoverCell(box, (k) => {
+      for (const i of this.grid.get(k) ?? []) {
+        if (seen.has(i)) continue;
+        seen.add(i);
+        const img = this.images[i];
+        const cover = this.covers[i];
+        if (!img || !cover || img.depth <= minDepth) continue;
+        if (img.x >= box.right || img.x + img.width <= box.left || img.y >= box.bottom || img.y + img.height <= box.top) continue;
+        out.push({ cover, left: img.x, top: img.y, scale: 1, flipX: false, depth: img.depth });
+      }
+    });
   }
 
   private applyDepth(img: Phaser.GameObjects.Image, tileDepth: number): void {

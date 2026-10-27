@@ -1,4 +1,5 @@
 import { CliffBuildingSort } from '../../ecs/systems/occlusion/CliffBuildingSort';
+import { UnitXRay } from '../../ecs/systems/occlusion/UnitXRay';
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
 import { applyDifficulty, createStrategy } from '../../ai/createStrategy';
@@ -60,6 +61,7 @@ export class SystemRunner {
   private readonly ageUpFx: AgeUpFxSystem;
   private readonly buildingFx: BuildingFxSystem;
   private readonly cliffSort: CliffBuildingSort;
+  private readonly xray: UnitXRay;
   private aiPlayers: AIPlayer[] = [];
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
@@ -110,6 +112,8 @@ export class SystemRunner {
     this.ageUpFx = new AgeUpFxSystem(scene, world, this.render);
     this.buildingFx = new BuildingFxSystem(scene, world);
     this.cliffSort = new CliffBuildingSort(world, tileMap);
+    this.xray = new UnitXRay(scene, world, tileMap.coverSources());
+    this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
     // Once the age-up wave has played out, drop age styles nobody shows any more.
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
@@ -159,6 +163,7 @@ export class SystemRunner {
     this.tileMap.applyFog(this.fogData);
     this.selection.update();
     this.render.update();
+    this.xray.update();
     this.buildingFx.update(delta);
     this.projectileRender.update();
     this.healthBars.update();
@@ -169,6 +174,7 @@ export class SystemRunner {
   destroy(): void {
     this.unsubscribeAge();
     this.cliffSort.destroy();
+    this.xray.destroy();
     this.ageUpFx.destroy();
     this.buildingFx.destroy();
     this.ambientFx.destroy();
