@@ -47,7 +47,7 @@ float edgeOf(vec4 m) { return m.r * EDGE_SPAN + EDGE_MIN; }
 
 /** True when the pixel at world w shows rock (marches the view diagonal from the plateau height down). */
 bool showsRock(vec2 w) {
-  for (int k = 0; k < 26; k++) {
+  for (int k = 0; k < 34; k++) {
     float h = uMaxH - float(k) * 2.0;
     if (h < 0.0) break;
     vec4 m = maskAt(groundOf(w + vec2(0.0, h)));

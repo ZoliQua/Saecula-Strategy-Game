@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { cliffFootDistance, needsOccluder, type CliffTest } from './cliffGeometry';
+import { cliffFootDistance, needsOccluder, occluderReach, type CliffTest } from './cliffGeometry';
+
+const REACH = occluderReach(58.6);
 
 const only =
   (...tiles: Array<[number, number]>): CliffTest =>
@@ -9,8 +11,8 @@ const only =
 describe('needsOccluder', () => {
   it('is false for non-cliff tiles and for cliffs with only cliff behind them', () => {
     const all: CliffTest = () => true;
-    expect(needsOccluder(() => false, 10, 10, 5, 5)).toBe(false);
-    expect(needsOccluder(all, 10, 10, 5, 5)).toBe(false);
+    expect(needsOccluder(() => false, 10, 10, 5, 5, REACH)).toBe(false);
+    expect(needsOccluder(all, 10, 10, 5, 5, REACH)).toBe(false);
   });
 
   it('is true when open ground lies within reach behind the block', () => {
@@ -21,9 +23,11 @@ describe('needsOccluder', () => {
       [-2, -1],
       [-1, -2],
       [-2, -2],
+      [-3, -2],
+      [-2, -3],
     ] as const) {
       const isCliff: CliffTest = (x, y) => !(x === 5 + dx && y === 5 + dy);
-      expect(needsOccluder(isCliff, 10, 10, 5, 5)).toBe(true);
+      expect(needsOccluder(isCliff, 10, 10, 5, 5, REACH)).toBe(true);
     }
   });
 
@@ -34,14 +38,27 @@ describe('needsOccluder', () => {
       [-3, 0],
       [-3, -3],
       [-3, -1],
+      [-4, -2],
     ] as const) {
       const isCliff: CliffTest = (x, y) => !(x === 5 + dx && y === 5 + dy);
-      expect(needsOccluder(isCliff, 10, 10, 5, 5)).toBe(false);
+      expect(needsOccluder(isCliff, 10, 10, 5, 5, REACH)).toBe(false);
     }
   });
 
   it('treats the void beyond the map as nothing to hide', () => {
-    expect(needsOccluder((x, y) => x >= 0 && y >= 0, 10, 10, 0, 0)).toBe(false);
+    expect(needsOccluder((x, y) => x >= 0 && y >= 0, 10, 10, 0, 0, REACH)).toBe(false);
+  });
+});
+
+describe('occluderReach', () => {
+  const sorted = (r: ReadonlyArray<readonly [number, number]>) => r.map(([a, b]) => `${a},${b}`).sort();
+
+  it('reproduces the hand-derived reach for blocks up to 47 px', () => {
+    expect(sorted(occluderReach(47))).toEqual(sorted([[-1, 0], [0, -1], [-1, -1], [-2, -1], [-1, -2], [-2, -2]]));
+  });
+
+  it('reaches one diagonal further for the 48 px cliff (≈ 59 px plateau tops)', () => {
+    expect(sorted(occluderReach(58.6))).toEqual(sorted([[-1, 0], [0, -1], [-1, -1], [-2, -1], [-1, -2], [-2, -2], [-3, -2], [-2, -3]]));
   });
 });
 

@@ -14,8 +14,9 @@ import { baked } from './lighting/normalLayer';
 import { dot, normalize, tileToView, type Vec3 } from './lighting/viewSpace';
 import { fbm, hash2, mix, shade, valueNoise } from './palette';
 
-const ROCK_TOP = 0x7d766a;
-const ROCK_TOP_LIGHT = 0xa49a87;
+/** Plateau tops: cool pale limestone, clearly apart from dirt (#8a7352) and dry grass (#93a849). */
+const ROCK_TOP = 0x8e8d88;
+const ROCK_TOP_LIGHT = 0xbdb9ae;
 const HIGHLAND_GRASS = 0x5f7535;
 const HIGHLAND_GRASS_DRY = 0x87884a;
 const FACE_WARM = 0xa38a68;
@@ -135,7 +136,7 @@ export function cliffColour(field: CliffField, hit: ReliefHit, wx: number, wy: n
     else k = 1;
     // Grass keeps back from the rim; the rim itself is a bright worn lip.
     const rim = Math.max(0, Math.min(1, (sampleRelief(r, r.edge, u, v) - 0.5) / 0.35));
-    const grass = Math.max(0, Math.min(1, (sampleRelief(r, field.grass, u, v) - 0.42) / 0.16)) * rim;
+    const grass = Math.max(0, Math.min(1, (sampleRelief(r, field.grass, u, v) - 0.5) / 0.16)) * rim;
     R *= k;
     G *= k;
     B *= k;
@@ -222,7 +223,8 @@ export function groundTouch(field: CliffField, wx: number, wy: number, ground: n
     if (hash2(Math.floor(wx), Math.floor(wy), 77) < 0.28 * Math.exp(-d / 0.2)) {
       c = shade(c, hash2(Math.floor(wx), Math.floor(wy), 78) > 0.5 ? 1.35 : 0.68);
     }
-    c = shade(c, 1 - 0.55 * Math.exp(-d / 0.13));
+    // Sharp contact shadow plus a wide ambient-occlusion skirt (reads as height when the wall itself is edge-on).
+    c = shade(c, (1 - 0.55 * Math.exp(-d / 0.13)) * (1 - 0.4 * Math.exp(-d / 0.5)));
   }
   return c;
 }

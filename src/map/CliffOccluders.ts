@@ -6,7 +6,7 @@ import { CLIFF_NORMAL_DOWNSCALE, type OccluderSink } from '../iso/art/cliffPaint
 import { lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap } from '../iso/art/lighting/litTextures';
 import { encodeNormal, N_UP } from '../iso/art/lighting/viewSpace';
-import { needsOccluder } from './cliffGeometry';
+import { needsOccluder, occluderReach } from './cliffGeometry';
 import { alphaBounds, shelfPack, type Rect } from './occluderPacking';
 
 /** Copies a w×h block of RGBA pixels between ImageData buffers. */
@@ -31,9 +31,10 @@ export interface OccluderPlan extends OccluderSink {
 /** Lays out one atlas cell per cliff tile that needs an occluder (see needsOccluder). */
 export function planOccluders(field: CliffField): OccluderPlan | null {
   const tiles: Array<[number, number]> = [];
+  const reach = occluderReach(field.relief.maxHeight);
   for (let ty = 0; ty < field.height; ty++) {
     for (let tx = 0; tx < field.width; tx++) {
-      if (needsOccluder(field.isCliff, field.width, field.height, tx, ty)) tiles.push([tx, ty]);
+      if (needsOccluder(field.isCliff, field.width, field.height, tx, ty, reach)) tiles.push([tx, ty]);
     }
   }
   if (tiles.length === 0) return null;

@@ -74,6 +74,9 @@ export interface OccluderSink {
 }
 
 const UNSET = -2;
+/** Outline beside raised rock: ground samples darkened by distance (in samples) to the nearest rock sample on the same row. */
+const OUTLINE_REACH = 3;
+const OUTLINE_SHADE = [0.52, 0.68, 0.84];
 
 /** Full-resolution rock grain over the upscaled plateau tops (the low-res pass is soft). */
 function grainTop(data: Uint8ClampedArray, o: number, wx: number, wy: number): void {
@@ -148,6 +151,34 @@ export class CliffChunkBake {
       this.normals[q + 2] = b;
       this.normals[q + 3] = 255;
       if (hit) this.copyNormal(ownerOf(this.field, hit), wx, wy, r, g, b);
+    }
+  }
+
+  /**
+   * After pass 1: darkens open ground right beside raised rock on screen
+   * (a soft dark line along every outline). Edge-on ridges, whose side
+   * walls are invisible in the iso view, read as height through it.
+   */
+  outline(data: Uint8ClampedArray): void {
+    const { sw, sh } = this;
+    for (let j = 0; j < sh; j++) {
+      for (let i = 0; i < sw; i++) {
+        const k = j * sw + i;
+        if ((this.codes[k] ?? NO_OWNER) >= 0) continue;
+        let d = 0;
+        for (let s = 1; s <= OUTLINE_REACH && d === 0; s++) {
+          if (i - s >= 0 && (this.codes[k - s] ?? NO_OWNER) >= 0) d = s;
+          else if (i + s < sw && (this.codes[k + s] ?? NO_OWNER) >= 0) d = s;
+        }
+        if (d === 0) continue;
+        const f = OUTLINE_SHADE[d - 1] ?? 1;
+        const o = k * 4;
+        data[o] = (data[o] ?? 0) * f;
+        data[o + 1] = (data[o + 1] ?? 0) * f;
+        data[o + 2] = (data[o + 2] ?? 0) * f;
+        const g = this.ground[k] ?? 0;
+        this.ground[k] = (Math.round(((g >> 16) & 0xff) * f) << 16) | (Math.round(((g >> 8) & 0xff) * f) << 8) | Math.round((g & 0xff) * f);
+      }
     }
   }
 

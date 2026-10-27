@@ -114,6 +114,7 @@ export function paintTerrainChunk(
       bake?.sample(data, i, j);
     }
   }
+  bake?.outline(data);
   low.ctx.putImageData(img, 0, 0);
 
   const out = makeCanvas(w, h);

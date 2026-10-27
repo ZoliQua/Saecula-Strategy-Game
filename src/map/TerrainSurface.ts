@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SHADOW, TERRAIN_LOOK } from '../config/visual';
+import { TERRAIN_LOOK } from '../config/visual';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { shadowVector, sunAt, sunDirection } from '../iso/art/lighting/sun';
 import type { Relief } from './cliffRelief';
@@ -88,7 +88,7 @@ export class TerrainSurface {
     s.setUniform('uGlintDir.value', { x: g[0], y: g[1], z: g[2] });
     s.setUniform('uSunColor.value', { x: sun.color[0], y: sun.color[1], z: sun.color[2] });
     s.setUniform('uAmbient.value', { x: sun.ambient[0], y: sun.ambient[1], z: sun.ambient[2] });
-    s.setUniform('uShadow.value', { x: sv.x, y: sv.y, z: SHADOW.alpha * sv.strength, w: 0 });
+    s.setUniform('uShadow.value', { x: sv.x, y: sv.y, z: TERRAIN_LOOK.cliffShadowAlpha * sv.strength, w: 0 });
   }
 
   destroy(): void {

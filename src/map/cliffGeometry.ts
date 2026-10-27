@@ -14,21 +14,32 @@ function cell(x: number): number {
   return Math.floor(x + 0.5);
 }
 
+const TILE_HALF_HEIGHT = 16;
+/** Half-width (px) of the widest thing that can stand behind a block: units/trees ≤ 58 px, building columns ≤ 64 px. */
+const OCCUPANT_HALF_WIDTH = 32;
+/** How far below its ground point an occupant's sprite reaches (tree roots, unit feet). */
+const OCCUPANT_REACH_DOWN = 16;
+
 /**
  * Tiles behind a cliff block (offsets in tile space) whose occupants'
  * sprites can overlap the block on screen: anything standing there is
  * drawn before the block, so the block must be a depth-sorted occluder.
- * Derived for blocks up to 47 px tall, units/trees ≤ 58 px wide and
- * building columns ≤ 64 px wide (see the Task 18 report).
+ * The block covers x ∈ [−32, 32], y ∈ [−16 − h, 16] around its tile
+ * centre; an occupant at offset (−a, −b) stands at x = (b − a)·32,
+ * y = −16(a + b), with its sprite OCCUPANT_HALF_WIDTH to each side and
+ * OCCUPANT_REACH_DOWN below its ground point.
  */
-export const OCCLUDER_REACH: ReadonlyArray<readonly [number, number]> = [
-  [-1, 0],
-  [0, -1],
-  [-1, -1],
-  [-2, -1],
-  [-1, -2],
-  [-2, -2],
-];
+export function occluderReach(maxHeight: number): Array<readonly [number, number]> {
+  const h = Math.ceil(maxHeight);
+  const out: Array<readonly [number, number]> = [];
+  for (let s = 1; 16 * s - OCCUPANT_REACH_DOWN < TILE_HALF_HEIGHT + h; s++) {
+    for (let a = 0; a <= s; a++) {
+      const b = s - a;
+      if (Math.abs(b - a) * 32 < 32 + OCCUPANT_HALF_WIDTH) out.push([-a, -b]);
+    }
+  }
+  return out;
+}
 
 /**
  * True when cliff tile (tx, ty) must be drawn as a depth-sorted sprite:
@@ -37,9 +48,16 @@ export const OCCLUDER_REACH: ReadonlyArray<readonly [number, number]> = [
  * Other cliff tiles are only ever seen in front of flat ground and stay
  * baked into the terrain chunks.
  */
-export function needsOccluder(isCliff: CliffTest, width: number, height: number, tx: number, ty: number): boolean {
+export function needsOccluder(
+  isCliff: CliffTest,
+  width: number,
+  height: number,
+  tx: number,
+  ty: number,
+  reach: ReadonlyArray<readonly [number, number]>,
+): boolean {
   if (!isCliff(tx, ty)) return false;
-  for (const [dx, dy] of OCCLUDER_REACH) {
+  for (const [dx, dy] of reach) {
     const x = tx + dx;
     const y = ty + dy;
     if (x < 0 || y < 0 || x >= width || y >= height) continue;
