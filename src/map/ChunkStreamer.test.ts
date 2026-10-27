@@ -90,6 +90,15 @@ describe('ChunkStreamer', () => {
     expect(streamer.stats().full).toBe(0);
   });
 
+  it('a camera moved after update (minimap jump) is culled again before render: visible on its low texture', () => {
+    const { key, image, streamer, far, inView } = setup();
+    streamer.update(far, 1);
+    expect(image.visible).toBe(false);
+    streamer.cull(inView);
+    expect(image.visible).toBe(true);
+    expect(image.key).toBe(`${key}~low`);
+  });
+
   it('re-requests a chunk coming back into view: low at once, then half and full as decodes land', async () => {
     const { key, tm, image, streamer, dec, far, inView, settle } = setup();
     streamer.update(far, 1);

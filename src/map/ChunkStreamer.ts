@@ -130,6 +130,18 @@ export class ChunkStreamer {
     }
   }
 
+  /**
+   * Visibility only, against the current view: run right before rendering,
+   * so a camera moved after update() (minimap click, jump hotkey handled by
+   * another scene) never renders a frame with stale culling (blank ground).
+   */
+  cull(view: WorldView): void {
+    for (const s of this.slots) {
+      const r = s.rect;
+      s.image.setVisible(r.x < view.x + view.width && r.x + r.w > view.x && r.y < view.y + view.height && r.y + r.h > view.y);
+    }
+  }
+
   destroy(): void {
     this.destroyed = true;
     for (const s of this.slots) {

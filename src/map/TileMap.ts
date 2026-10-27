@@ -108,6 +108,7 @@ export class TileMap {
         }
       : null;
     this.fog = new FogLayer(scene, mapData.width, mapData.height, rockAt);
+    scene.events.on(Phaser.Scenes.Events.PRE_RENDER, this.cullChunks, this);
   }
 
   private placeDecor(): void {
@@ -191,7 +192,7 @@ export class TileMap {
     this.forest.update(time);
     this.occluders?.update(view);
     this.surface.update(time);
-    this.chunks.update(view, this.scene.cameras.main.zoom);
+    this.chunks.update(liveView(this.scene.cameras.main), this.scene.cameras.main.zoom);
     this.updateClouds(delta);
     this.fog.update(delta);
   }
@@ -265,7 +266,12 @@ export class TileMap {
     return g;
   }
 
+  private cullChunks(): void {
+    this.chunks.cull(liveView(this.scene.cameras.main));
+  }
+
   destroy(): void {
+    this.scene.events.off(Phaser.Scenes.Events.PRE_RENDER, this.cullChunks, this);
     this.chunks.destroy();
     this.occluders?.destroy();
     this.surface.destroy();
@@ -282,4 +288,15 @@ export class TileMap {
 /** Cloud layer side (layer px) covering a screen side plus the pad. */
 function cloudLayerSize(screen: number): number {
   return Math.ceil((screen + CLOUD_PAD * 2) * CLOUD_LAYER_RES);
+}
+
+/**
+ * The camera's world view from its current scroll and zoom. `worldView`
+ * itself is only refreshed while the camera renders, so right after a jump
+ * (minimap click) it still holds the previous frame's view.
+ */
+function liveView(cam: Phaser.Cameras.Scene2D.Camera): { x: number; y: number; width: number; height: number } {
+  const w = cam.width / cam.zoom;
+  const h = cam.height / cam.zoom;
+  return { x: cam.scrollX + (cam.width - w) / 2, y: cam.scrollY + (cam.height - h) / 2, width: w, height: h };
 }
