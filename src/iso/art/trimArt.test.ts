@@ -29,6 +29,13 @@ describe('trimRect', () => {
     expect(r.top + r.height).toBe(61);
   });
 
+  it('keeps an even height (half-size normal maps stay texel-exact) by keeping one more empty row', () => {
+    const r = trimRect(alphaWith(100, 61, [10, 20, 89, 60]), 100, 61);
+    expect(r.height % 2).toBe(0);
+    expect(r.top).toBe(19);
+    expect(r.top + r.height).toBe(61);
+  });
+
   it('leaves an empty canvas alone', () => {
     expect(trimRect(new Uint8ClampedArray(40 * 30 * 4), 40, 30)).toEqual({ left: 0, top: 0, width: 40, height: 30 });
   });

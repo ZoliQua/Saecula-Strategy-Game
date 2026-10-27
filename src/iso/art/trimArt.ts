@@ -32,7 +32,9 @@ export function trimRect(rgba: Uint8ClampedArray, width: number, height: number)
   }
   if (x1 < 0) return { left: 0, top: 0, width, height };
   const left = Math.min(x0, width - 1 - x1);
-  return { left, top: y0, width: width - 2 * left, height: height - y0 };
+  // An even height keeps a half-size normal map texel-exact (one more empty row if needed).
+  const top = (height - y0) % 2 === 1 && y0 > 0 ? y0 - 1 : y0;
+  return { left, top, width: width - 2 * left, height: height - top };
 }
 
 /** A copy of `rect` of `canvas` (the canvas itself when nothing is cut). */
