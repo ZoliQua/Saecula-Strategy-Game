@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { TERRAIN_LOOK } from '../config/visual';
+import { TERRAIN_LOOK, TERRAIN_STREAM } from '../config/visual';
 import { cliffField, type CliffField } from '../iso/art/cliffArt';
 import { lightingActive, lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap, flatGroundNormal } from '../iso/art/lighting/litTextures';
@@ -20,6 +20,8 @@ let bakeSeq = 0;
 export interface BakedChunk {
   readonly image: Phaser.GameObjects.Image;
   readonly key: string;
+  /** Always-resident low-resolution texture (TERRAIN_STREAM.lowDownscale), the fallback while streaming. */
+  readonly lowKey: string;
   readonly rect: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
   readonly normal: HTMLCanvasElement | null;
   canvas: HTMLCanvasElement | null;
@@ -87,7 +89,7 @@ export class TerrainBake {
   destroy(): void {
     for (const c of this.chunks) {
       c.image.destroy();
-      if (this.scene.textures.exists(c.key)) this.scene.textures.remove(c.key);
+      for (const key of [c.key, c.lowKey]) if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
     }
     this.chunks.length = 0;
   }
@@ -125,11 +127,28 @@ export class TerrainBake {
     this.scene.textures.addCanvas(key, chunk.canvas);
     attachNormalMap(this.scene, key, chunk.normal ?? flatGroundNormal());
     const image = lit(this.scene.add.image(x, y, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH));
-    const baked: BakedChunk = { image, key, rect: { x, y, w, h }, normal: chunk.normal, canvas: chunk.canvas, blob: null };
+    const lowKey = `${key}~low`;
+    if (this.scene.textures.exists(lowKey)) this.scene.textures.remove(lowKey);
+    this.scene.textures.addCanvas(lowKey, downscaled(chunk.canvas, TERRAIN_STREAM.lowDownscale));
+    attachNormalMap(this.scene, lowKey, chunk.normal ?? flatGroundNormal());
+    const baked: BakedChunk = { image, key, lowKey, rect: { x, y, w, h }, normal: chunk.normal, canvas: chunk.canvas, blob: null };
     // A lossless copy for streaming: encoded off the main thread, so the texture can be dropped later.
     chunk.canvas.toBlob((b) => (baked.blob = b), 'image/png');
     this.chunks.push(baked);
   }
+}
+
+/** A smoothed copy of `src` at 1 / `factor` resolution. */
+function downscaled(src: HTMLCanvasElement, factor: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.ceil(src.width / factor));
+  c.height = Math.max(1, Math.ceil(src.height / factor));
+  const ctx = c.getContext('2d');
+  if (ctx) {
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, c.width, c.height);
+  }
+  return c;
 }
 
 /** Cliff description for painting, or null on maps without cliffs. */

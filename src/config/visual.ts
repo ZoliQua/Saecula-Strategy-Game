@@ -238,4 +238,9 @@ export const TERRAIN_STREAM = {
   halfKeepMargin: 288,
   /** Main-thread ms per frame for installing restored chunks (at least one per frame). */
   budgetMs: 3,
+  /** Every chunk keeps a texture at 1 / this resolution, always: terrain is never blank (camera jumps, fast zoom-out). */
+  lowDownscale: 8,
+  /** A failed decode is retried this many times (after `retryMs`); the low texture shows meanwhile. */
+  decodeRetries: 2,
+  retryMs: 500,
 } as const;
