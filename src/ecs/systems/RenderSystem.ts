@@ -142,13 +142,18 @@ export class RenderSystem {
     return releaseAbsentCivArt(this.scene, civsInPlay, inUse);
   }
 
-  /** Texture keys of every game object in the scene, shown or hidden (ghosts, pools). */
+  /** Texture keys of every game object in the scene, shown or hidden (ghosts, pools), inside Containers / Layers too. */
   private keysInUse(): Set<string> {
     const inUse = new Set<string>();
-    for (const o of this.scene.children.list) {
-      const key = (o as Partial<Phaser.GameObjects.Image>).texture?.key;
-      if (key) inUse.add(key);
-    }
+    const visit = (objects: readonly Phaser.GameObjects.GameObject[]): void => {
+      for (const o of objects) {
+        const key = (o as Partial<Phaser.GameObjects.Image>).texture?.key;
+        if (key) inUse.add(key);
+        const children = (o as Partial<Phaser.GameObjects.Container>).list;
+        if (Array.isArray(children)) visit(children);
+      }
+    };
+    visit(this.scene.children.list);
     return inUse;
   }
 

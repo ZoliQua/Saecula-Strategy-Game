@@ -222,6 +222,12 @@ describe('releaseAbsentCivArt', () => {
     expect([...map.keys()].sort()).toEqual(['building_wonder~chungarian', 'building_wonder~chungarian@p3', ...unitKeys('hungarian')].sort());
   });
 
+  it('keeps a unit sheet whose shadow alone is shown (same rule as forgetUnitArt, civArtGroupsInUse)', () => {
+    const { host, map } = fakeHost(unitKeys('hungarian'));
+    releaseAbsentCivArt(host, new Set(['english']), new Set(['villager_placeholder~chungarian#shadow']));
+    expect([...map.keys()].sort()).toEqual(unitKeys('hungarian').sort());
+  });
+
   it('leaves the civs in play alone', () => {
     const keys = ['building_house~a3~chungarian', 'building_wonder~chungarian', ...unitKeys('hungarian')];
     const { host, map } = fakeHost(keys);

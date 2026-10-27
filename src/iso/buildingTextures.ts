@@ -5,6 +5,7 @@ import type { AgeId, BuildingType, CivId } from '../types';
 import { AGE_STYLED_BUILDINGS, artAgeFor } from './art/architecture/ageStyle';
 import {
   ageArtKey,
+  civArtGroupsInUse,
   parseBuildingArtKey,
   parseCivArtKey,
   parseWallPieceKey,
@@ -203,9 +204,10 @@ export function releaseAbsentCivArt(host: TextureHost, civsInPlay: ReadonlySet<C
     if (!art || civsInPlay.has(art.civ)) continue;
     groups.set(art.group, [...(groups.get(art.group) ?? []), { key, shares: art.sharesNormals }]);
   }
+  const shown = civArtGroupsInUse(inUse);
   let removed = 0;
-  for (const members of groups.values()) {
-    if (members.some((m) => inUse.has(m.key))) continue;
+  for (const [group, members] of groups) {
+    if (shown.has(group)) continue;
     // Sharers first (detached), owners last.
     for (const { key, shares } of [...members].sort((a, b) => Number(b.shares) - Number(a.shares))) {
       if (shares) host.textures.get(key).dataSource = [];

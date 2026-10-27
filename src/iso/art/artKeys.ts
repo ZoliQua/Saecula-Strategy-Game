@@ -101,3 +101,17 @@ export function parseCivArtKey(key: string): CivArtKey | undefined {
   if (!m || !m[1] || !civId) return undefined;
   return { civ: civId, group: m[1], sharesNormals: m[3] !== undefined && m[3] !== '#shadow' };
 }
+
+/**
+ * Groups (parseCivArtKey) with at least one texture in `inUse`: the one
+ * in-use rule of every civ-art eviction (texture groups and the unit-art
+ * cache), so a group shown only by, say, its unit shadow stays whole.
+ */
+export function civArtGroupsInUse(inUse: Iterable<string>): Set<string> {
+  const groups = new Set<string>();
+  for (const key of inUse) {
+    const art = parseCivArtKey(key);
+    if (art) groups.add(art.group);
+  }
+  return groups;
+}

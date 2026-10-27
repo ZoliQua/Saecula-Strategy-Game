@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ageArtKey,
+  civArtGroupsInUse,
   parseBuildingArtKey,
   parseCivArtKey,
   parseWallPieceKey,
@@ -112,5 +113,12 @@ describe('parseCivArtKey', () => {
     for (const key of ['building_house', 'construction_3', 'decor_trees', 'fx_glow', 'unit_knight~cmartian']) {
       expect(parseCivArtKey(key)).toBeUndefined();
     }
+  });
+});
+
+describe('civArtGroupsInUse', () => {
+  it('marks a whole group in use when any member is (albedo, team variant, mask or shadow alone)', () => {
+    const groups = civArtGroupsInUse(['unit_knight~chungarian#shadow', 'building_house~a2~cenglish@p3', 'decor_trees']);
+    expect(groups).toEqual(new Set(['unit_knight~chungarian', 'building_house~a2~cenglish']));
   });
 });

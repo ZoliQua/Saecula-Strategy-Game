@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { UNIT_SHADOW_DOWNSCALE } from '../../../config/visual';
 import { UNIT_SPECS } from '../../../ecs/archetypes/unit';
 import type { CivId, UnitType } from '../../../types';
-import { unitArtKey } from '../artKeys';
+import { civArtGroupsInUse, unitArtKey } from '../artKeys';
 import { shadowKey, shareNormalMap } from '../lighting/litTextures';
 import { PAINTED_HEADINGS } from './layout';
 import { spendPaintBudget } from './paintBudget';
@@ -95,8 +95,10 @@ export function unitArt(scene: Phaser.Scene, type: UnitType, civ: CivId, force =
  * request (e.g. the menu after the game) simply paints them again.
  */
 export function forgetUnitArt(civsInPlay: ReadonlySet<CivId>, inUse: ReadonlySet<string>): void {
+  // Same rule as releaseAbsentCivArt: a sheet stays while its albedo, mask or shadow is shown.
+  const shown = civArtGroupsInUse(inUse);
   for (const [key, art] of arts) {
-    if (civsInPlay.has(art.civ) || inUse.has(key) || inUse.has(art.maskKey)) continue;
+    if (civsInPlay.has(art.civ) || shown.has(key)) continue;
     arts.delete(key);
     pending.delete(art);
   }
