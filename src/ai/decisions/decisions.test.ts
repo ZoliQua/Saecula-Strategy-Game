@@ -21,6 +21,8 @@ import {
   pickGatherType,
   pickRebalance,
   pickResearch,
+  reserveForGoal,
+  savedForUnit,
   weightsForGoal,
 } from '.';
 
@@ -165,6 +167,30 @@ describe('army decisions', () => {
     expect(nextUnitToTrain(mix, { knight: 2, crossbowman: 1, pikeman: 1 }, all)).toBe('crossbowman');
     expect(nextUnitToTrain(mix, { knight: 2, crossbowman: 1 }, (t) => t === 'pikeman')).toBe('pikeman');
     expect(nextUnitToTrain(mix, {}, () => false)).toBeNull();
+  });
+
+  it('saves for a unit it waits for (cannon): other units leave its cost untouched until it is affordable', () => {
+    const cost = { food: 0, wood: 65, gold: 275 };
+    const reserve = { food: 0, wood: 0, gold: 50 };
+    const savesFor = ['cannon'] as const;
+    // Short of the cannon: its cost joins the reserve.
+    expect(reserveForGoal('cannon', { food: 500, wood: 500, gold: 200 }, cost, reserve, savesFor)).toEqual({ food: 0, wood: 65, gold: 325 });
+    // Affordable (above the reserve): no extra saving, the cannon goes next.
+    expect(reserveForGoal('cannon', { food: 500, wood: 500, gold: 400 }, cost, reserve, savesFor)).toEqual(reserve);
+    // Units not saved for (and no goal) leave the reserve alone.
+    expect(reserveForGoal('musketeer', { food: 0, wood: 0, gold: 0 }, cost, reserve, savesFor)).toEqual(reserve);
+    expect(reserveForGoal(null, { food: 0, wood: 0, gold: 0 }, cost, reserve, savesFor)).toEqual(reserve);
+  });
+
+  it('saves for a cannon while the army is short of its share, even when another unit is further below its own', () => {
+    const mix = { musketeer: 0.45, cannon: 0.2, cavalry: 0.2, pikeman: 0.15 };
+    const savesFor = ['cannon'] as const;
+    // An old age-2 army of 20: muskets are the furthest below, but a cannon is wanted too.
+    expect(savedForUnit(mix, { crossbowman: 20 }, all, savesFor)).toBe('cannon');
+    // At its share (4 of 21 after the next): nothing to save for.
+    expect(savedForUnit(mix, { crossbowman: 16, cannon: 5 }, all, savesFor)).toBeNull();
+    // No foundry (no trainer): nothing to save for.
+    expect(savedForUnit(mix, { crossbowman: 20 }, (t) => t !== 'cannon', savesFor)).toBeNull();
   });
 });
 

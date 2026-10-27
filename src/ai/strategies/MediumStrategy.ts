@@ -7,7 +7,7 @@ import { TECH_SPECS } from '../../game/technologies';
 import type { BuildingType, Resources, TechId, UnitType } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { ArmyControl } from '../ArmyControl';
-import { countByType, counterMix, nextUnitToTrain } from '../decisions/army';
+import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
 import { attackReady } from '../decisions/combat';
 import { weightsForGoal } from '../decisions/gathering';
 import { pickResearch } from '../decisions/research';
@@ -20,6 +20,7 @@ import {
   buildHouseIfNeeded,
   farmNeeded,
   type BuildFn,
+  unstaffedSite,
 } from '../economyBuildings';
 import type { WorldView } from '../perception';
 import { assignIdleVillagers, rebalanceGatherers } from '../workforce';
@@ -260,6 +261,9 @@ export class MediumStrategy extends BaseStrategy {
     const build = this.builder(ctx, view);
     buildCampIfNeeded(view, 'wood', build);
     buildCampIfNeeded(view, 'gold', build);
+    // A site whose builders were killed or taken gets new ones (not into a fight at home).
+    const site = this.army.underAttack(view) ? undefined : unstaffedSite(view);
+    if (site) this.assignBuilders(ctx, view, site, AI_COMMON.buildersPerSite);
   }
 
   /** The age's military buildings in build order, one site at a time. */
@@ -301,10 +305,14 @@ export class MediumStrategy extends BaseStrategy {
     const mix = this.armyMix(ctx, view);
     const reserve = this.reserve(ctx, view);
     const counts = countByType(view.military);
+    const trainable = (t: UnitType) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0;
     for (let i = 0; i < this.tune.trainPerDecision; i++) {
-      const type = nextUnitToTrain(mix, counts, (t) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0
-        && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, reserve));
-      if (!type || !this.train(ctx, view, type, this.tune.militaryQueue, reserve)) return;
+      // A cannon the army is short of is saved for: the other units only spend what lies above its cost.
+      const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits);
+      const saving = goal ? reserveForGoal(goal, ctx.player.resources, UNIT_SPECS[goal].cost, reserve, AI_COMMON.savesForUnits) : reserve;
+      const type = nextUnitToTrain(mix, counts, (t) => trainable(t)
+        && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, t === goal ? reserve : saving));
+      if (!type || !this.train(ctx, view, type, this.tune.militaryQueue, type === goal ? reserve : saving)) return;
       counts[type] = (counts[type] ?? 0) + 1;
     }
   }

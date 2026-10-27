@@ -50,6 +50,8 @@ export const AI_COMMON = {
   enemyGroundRadius: 10,
   /** How long an enemy villager's last seen spot is remembered (ms). */
   villagerMemoryMs: 180_000,
+  /** Expensive units the army saves for when the mix wants one next (cheaper units then leave its cost banked). */
+  savesForUnits: ['cannon'] as readonly UnitType[],
 } as const;
 
 /** A placement ring (Chebyshev tiles around the anchor). */
@@ -180,8 +182,11 @@ export const AI_MEDIUM: MediumTuning = {
   minDefenders: 5,
   /** Attack when this many military units (scouts excluded) exist. */
   attackWave: 12,
-  /** §10.2 first attack: an early pressure wave at a rolled time with whatever army exists then. */
-  firstAttackMs: { min: 5 * 60_000, max: 8 * 60_000 },
+  /**
+   * §10.2 first attack (5-8 min): an early pressure wave at a rolled time with whatever army exists
+   * then. Rolled up to 7.5 min, so a squad still a scout short at the roll leaves by 8.
+   */
+  firstAttackMs: { min: 5 * 60_000, max: 7.5 * 60_000 },
   /**
    * The pressure wave: a raid of fast, food-only scouts (no gold, which
    * the Roman age needs for Feudalism), sent once `minArmy` exist besides

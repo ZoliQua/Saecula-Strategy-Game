@@ -1,6 +1,7 @@
 import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS } from '../../config/balance';
 import { AI_COUNTERS, AI_MEDIUM, type CounterTuning } from '../../config/aiBalance';
-import type { UnitType } from '../../types';
+import type { Resources, UnitType } from '../../types';
+import { canAfford } from '../economy';
 
 export type ArmyMix = Readonly<Partial<Record<UnitType, number>>>;
 type Sightings = Readonly<Partial<Record<UnitType, number>>>;
@@ -74,6 +75,39 @@ export function nextUnitToTrain(
     }
   }
   return best;
+}
+
+/**
+ * The first unit of `savesFor` (expensive ones, such as the cannon) that
+ * the army is still short of (below its share of the army after the next
+ * unit) and `canTrain` (a trainer exists), or null.
+ */
+export function savedForUnit(
+  mix: ArmyMix,
+  counts: Readonly<Partial<Record<UnitType, number>>>,
+  canTrain: (type: UnitType) => boolean,
+  savesFor: readonly UnitType[],
+): UnitType | null {
+  const total = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0) + 1;
+  return savesFor.find((t) => (mix[t] ?? 0) * total - (counts[t] ?? 0) >= 1 && canTrain(t)) ?? null;
+}
+
+/**
+ * What other units must leave in the bank while the AI saves for `goal`
+ * (see savedForUnit): when `goal` is one of `savesFor` but `have` cannot
+ * pay its `cost` above `reserve` yet, the cost joins the reserve;
+ * otherwise the reserve is unchanged. Without this, cheap units keep
+ * spending the gold and the cannon never comes.
+ */
+export function reserveForGoal(
+  goal: UnitType | null,
+  have: Resources,
+  cost: Resources,
+  reserve: Resources,
+  savesFor: readonly UnitType[],
+): Resources {
+  if (!goal || !savesFor.includes(goal) || canAfford(have, cost, reserve)) return reserve;
+  return { food: reserve.food + cost.food, wood: reserve.wood + cost.wood, gold: reserve.gold + cost.gold };
 }
 
 /** Counts units by type. */

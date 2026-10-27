@@ -58,31 +58,31 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
   });
 
   /**
-   * Measured (re-measured in Task 19, unchanged) on seeds 1-8: Easy's TC falls at 10.49 / 13.11 / 12.60 /
-   * 12.14 / 13.85 / 11.97 / 12.12 / 10.78 min; the scout pressure (§10.3 first attack, rolled at 3-5 min,
-   * leaves once three scouts are out) at 4.70 / 4.71 / 4.97 / 4.98 / 4.99 / 4.74 / 4.76 / 4.70 min. No seed
-   * in 1-8 is left out.
+   * Measured (re-measured in the final-review fix wave: two-lode start economy) on seeds 1-8: Easy's TC
+   * falls at 10.52 / 13.11 / 12.60 / 12.07 / 14.25 / 11.97 / 12.12 / 10.83 min; the scout pressure (§10.3
+   * first attack, rolled at 3-5 min, leaves once three scouts are out) at 4.70 / 4.71 / 4.97 / 4.90 / 4.99 /
+   * 4.74 / 4.76 / 4.68 min. No seed in 1-8 is left out.
    */
-  it('on seeds 1-8: first attack leaves at 3-5 min (§10.3; measured 4.70-4.99) and Easy\'s TC falls within 14.5 min (worst 13.85)', () => {
+  it('on seeds 1-8: first attack leaves at 3-5 min (§10.3; measured 4.68-4.99) and Easy\'s TC falls within 15 min (worst 14.25)', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const r = duel(seed, (rng) => new EasyStrategy(rng));
       expect(r.firstAttackAt, `seed ${seed} first attack`).toBeGreaterThanOrEqual(3 * MIN);
       expect(r.firstAttackAt, `seed ${seed} first attack`).toBeLessThanOrEqual(5 * MIN);
-      expect(r.wonAt, `seed ${seed}`).toBeLessThan(14.5 * MIN);
+      expect(r.wonAt, `seed ${seed}`).toBeLessThan(15 * MIN);
     }
   });
 
-  it('beats Medium on fixed seed 4 within 23 minutes (measured 21.86 min)', () => {
+  it('beats Medium on fixed seed 4 within 23 minutes (measured 20.15 min)', () => {
     expect(duel(4, (rng) => new MediumStrategy(rng)).wonAt).toBeLessThan(23 * MIN);
   });
 
   /**
-   * Age-up pace on its own (64×64 meadow, passive human, Hard handicap), measured in Task 19 on seeds 1-8:
-   * age 2 at 12.62 / 11.89 / 12.67 / 12.65 / 13.09 / 12.72 / 12.85 / 11.27 min, age 3 at 19.39 / 19.07 /
-   * 20.27 / 19.84 / 20.82 / 20.32 / 20.04 / 18.50 min. No seed is left out. (§10.3 asks for ASAP; Hard
-   * is no faster than Medium yet: a known follow-up.)
+   * Age-up pace on its own (64×64 meadow, passive human, Hard handicap), re-measured in the final-review
+   * fix wave on seeds 1-8: age 2 at 12.65 / 11.89 / 12.64 / 12.62 / 13.24 / 12.72 / 12.82 / 11.27 min, age 3
+   * at 19.84 / 19.07 / 20.29 / 20.65 / 20.87 / 20.32 / 20.42 / 18.87 min. No seed is left out. (§10.3 asks
+   * for ASAP; Hard is no faster than Medium yet: a known follow-up, final-review m4.)
    */
-  it('on seeds 1-8 alone: age 2 by 13.5 min (worst 13.09) and age 3 by 21.5 min (worst 20.82)', () => {
+  it('on seeds 1-8 alone: age 2 by 13.5 min (worst 13.24) and age 3 by 21.5 min (worst 20.87)', () => {
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
       const hard = match.players.get(2)!;

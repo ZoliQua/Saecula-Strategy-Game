@@ -78,3 +78,16 @@ export function buildCampIfNeeded(view: WorldView, type: 'wood' | 'gold', build:
   if (dropoffDistance(view, type, cluster) <= AI_COMMON.campDistance) return null;
   return build(CAMP_FOR[type], cluster);
 }
+
+/**
+ * An own construction site nobody is building any more (its builders were
+ * killed, or taken for other work), so the AI can send new ones; wall
+ * segments are left out (a wall line's builders walk it segment by segment).
+ */
+export function unstaffedSite(view: WorldView): Entity | undefined {
+  const staffed = new Set<number>();
+  for (const v of view.villagers) if (v.buildCommand) staffed.add(v.buildCommand.targetId);
+  return view.buildings.find(
+    (b) => b.underConstruction && b.building?.type !== 'wall' && b.id !== undefined && !staffed.has(b.id),
+  );
+}
