@@ -1,4 +1,6 @@
+import { drawBow } from '../baseGear';
 import { axesAlong, type Axes, type Figure } from '../figure';
+import type { HatDef, ShieldPainter, WeaponStyleDef } from '../gear';
 import { M, type Material } from '../materials';
 import { madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { ENGLISH_M } from './englishMaterials';
@@ -7,7 +9,8 @@ import { ENGLISH_M } from './englishMaterials';
  * English headgear and shields (M4 design decision 5): the sallet with
  * its swept tail, the grenadier's mitre cap, the light dragoon's
  * Tarleton helmet with a bearskin crest, and the heater shield bearing
- * St George's cross on a team-coloured rim.
+ * St George's cross on a team-coloured rim; the yew longbow and the
+ * arming sword as weapon styles. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -65,4 +68,26 @@ export function stGeorgeShield(fig: Figure, hand: V3, T: Xform): void {
 }
 
 /** Tall self bow of yew (longbow): held like the bow, but about the archer's height. */
-export const LONGBOW = { half: 19.5, bend: 4.6, thick: 1.25, wood: ENGLISH_M.yew as Material } as const;
+const LONGBOW = { half: 19.5, bend: 4.6, thick: 1.25, wood: ENGLISH_M.yew as Material } as const;
+
+/** Straight arming sword: wrapped grip, wheel pommel, wide straight cross-guard, long tapering blade. */
+function armingSword(fig: Figure, at: (k: number) => V3, side: V3): void {
+  fig.capsule(at(-2.4), at(1.4), 0.8, M.darkLeather);
+  fig.sphere(at(-3.0), 1.3, M.steel);
+  fig.capsule(madd(at(1.8), side, -3.6), madd(at(1.8), side, 3.6), 0.65, M.steel);
+  fig.cone(at(2.2), at(15.2), 1.15, 0.7, M.steel);
+  fig.cone(at(15.2), at(17.4), 0.7, 0.05, M.steel);
+}
+
+export const ENGLISH_HATS = {
+  sallet: { draw: sallet, coversHead: false },
+  mitre: { draw: mitre, coversHead: false },
+  tarleton: { draw: tarleton, coversHead: false },
+} satisfies Record<string, HatDef>;
+
+export const ENGLISH_SHIELDS = { stGeorge: stGeorgeShield } satisfies Record<string, ShieldPainter>;
+
+export const ENGLISH_WEAPON_STYLES = {
+  longbow: { kind: 'bow', draw: (fig, w, d) => drawBow(fig, w, d, LONGBOW.half, LONGBOW.bend, LONGBOW.thick, LONGBOW.wood) },
+  arming: { kind: 'gladius', draw: (fig, w, d, side) => armingSword(fig, (k) => madd(w.at, d, k), side) },
+} satisfies Record<string, WeaponStyleDef>;

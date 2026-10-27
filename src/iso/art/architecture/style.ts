@@ -2,6 +2,7 @@ import type { ArchStyleId } from '../../../config/civs';
 import type { BuildingType } from '../../../types';
 import type { WindowLook } from '../isoProps';
 import type { RoofMaterial } from '../roofCover';
+import type { CrestCharge } from './charges';
 
 /*
  * ArchStyle (M4 design decision 3): the data that turns one painter
@@ -90,16 +91,32 @@ export interface Ornaments {
   readonly boardedGables: boolean;
 }
 
-/** Heraldic charge on crests and shields (facade.ts crest). */
-export type CrestCharge = 'double_cross' | 'st_george';
+/** Heraldic charge on crests and shields (charges.ts, painted by facade.ts crest). */
+export type { CrestCharge } from './charges';
 
 /**
  * Painter family: which layout set paints the style (registry.ts
  * ARCH_FAMILIES). A civ with bespoke buildings adds a family id whose
  * factory spreads an existing family and overrides types, e.g.
  * `gothic: (s) => ({ ...medievalArt(s), town_center: gothicHall(s) })`.
+ *
+ * Families and style ids stay two unions (M4 review M7): a family is a
+ * set of painters, a style (ArchStyleId, config/civs.ts) is one civ's
+ * age reading of a family — palette, roof profile, ornaments, charge,
+ * seed salt. Several styles may ride one family (M5: German `fachwerk`
+ * on `tudor`, French `classicisme` on `baroque`), so a new civ adds
+ * style ids freely and a family id only where its silhouette needs
+ * painters of its own.
  */
 export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor' | 'georgian';
+
+/**
+ * Families whose painters size their canvases from the style
+ * (`headroom`, roof pitch): the parametric Hungarian layouts that cheap
+ * civ styles ride. Bespoke families size their own canvases, so they
+ * must fit whatever headroom a style sets (style.test.ts).
+ */
+export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque'];
 
 export interface ArchStyle {
   readonly id: ArchStyleId;
@@ -112,8 +129,9 @@ export interface ArchStyle {
   readonly seedSalt: number;
   /**
    * Extra canvas height (art px) for taller silhouettes; trimmed away when
-   * unused. Size it for the pitch: style.test.ts checks that every
-   * registered style's volume fits its canvas.
+   * unused. Read by the parametric families (PARAMETRIC_FAMILIES) only.
+   * Size it for the pitch: style.test.ts checks that every registered
+   * style's volume fits its canvas.
    */
   readonly headroom: number;
 }

@@ -1,24 +1,13 @@
-import { beforeAll, describe, expect, it } from 'vitest';
-import type { AgeId, BuildingType } from '../../../../types';
-import type { LitArt } from '../../lighting/normalLayer';
-import { hashPainting, installRecordingCanvas } from '../../testing/recordingCanvas';
+import { pinBuildings } from '../../testing/pinnedArt.testkit';
 
 /*
  * Pixel-identity guard for the English building art (M4 final review M1):
- * every English building type x age and every Wonder stage is painted onto
- * recording canvases and the draw-log hash (plus lighting data) is pinned,
- * so later shared-helper refactors cannot silently change civ #2.
+ * every English building type x age and every Wonder stage (see
+ * testing/pinnedArt.testkit.ts), so later shared-helper refactors cannot
+ * silently change civ #2. Recorded at 39e00c4 (end of M4).
  */
 
-const TYPES: readonly BuildingType[] = [
-  'town_center', 'house', 'farm', 'lumber_camp', 'mining_camp', 'barracks', 'archery_range',
-  'stable', 'blacksmith', 'foundry', 'tower', 'wall', 'wonder',
-];
-const AGES: readonly AgeId[] = [1, 2, 3];
-const TEAM = 0x3b6fd6;
-
-/** Recorded at 39e00c4 (end of M4). */
-const EXPECTED: Record<string, string> = {
+pinBuildings('english', {
   'town_center@1': '3ee6f5e804a944c8',
   'house@1': '03ad224b6b045771',
   'farm@1': '003c9732d64fa7e5',
@@ -61,32 +50,4 @@ const EXPECTED: Record<string, string> = {
   'wonder~s1': 'b9e928c29acde161',
   'wonder~s2': '2729ffbc05dc1492',
   'wonder~s3': '84f331d250d4c693',
-};
-
-function lightingData(art: LitArt): unknown {
-  return { volume: art.volume, glows: art.glows, lights: art.lights, smoke: art.smoke, normal: art.normal !== null };
-}
-
-describe('English building art stays pixel-identical', () => {
-  let buildings: typeof import('../../buildings');
-  beforeAll(async () => {
-    installRecordingCanvas();
-    buildings = await import('../../buildings');
-  });
-
-  const cases: Array<[string, () => string]> = [];
-  for (const age of AGES) {
-    for (const type of TYPES) {
-      cases.push([`${type}@${age}`, () => hashPainting(() => lightingData(buildings.paintBuilding(type, TEAM, age, 'english', false)))]);
-    }
-  }
-  for (const stage of [1, 2, 3]) {
-    cases.push([`wonder~s${stage}`, () => hashPainting(() => lightingData(buildings.paintWonderStage(stage, 'english')))]);
-  }
-
-  it.each(cases)('%s', (name, run) => {
-    const hash = run();
-    if (process.env.PRINT_ART_HASHES) console.log(`  '${name}': '${hash}',`);
-    expect(hash).toBe(EXPECTED[name]);
-  });
 });

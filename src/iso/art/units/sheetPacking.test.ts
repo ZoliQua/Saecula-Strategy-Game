@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UNIT_SHADOW_DOWNSCALE } from '../../../config/visual';
 import type { CivId } from '../../../types';
-import { UNIT_TYPES } from '../testing/unitPins';
+import { UNIT_TYPES } from '../testing/unitPins.testkit';
 import { frameContent } from './layout';
 import { contactShadow, unitLook } from './looks';
 import { FrameRaster } from './raster';

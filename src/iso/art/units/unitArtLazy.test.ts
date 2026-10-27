@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type Phaser from 'phaser';
-import { installRecordingCanvas } from '../testing/recordingCanvas';
+import { installRecordingCanvas } from '../testing/recordingCanvas.testkit';
 import { frameIndex, PAINTED_HEADINGS } from './layout';
 
 // UnitArt only needs Phaser for the WebGL partial upload (instanceof); the fake scene has no renderer.

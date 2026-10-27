@@ -2,10 +2,10 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { BuildingType } from '../../../types';
 import { buildingSeed } from '../buildings';
 import { IsoPainter } from '../isoPainter';
-import { hashPainting, installRecordingCanvas } from '../testing/recordingCanvas';
+import { hashPainting, installRecordingCanvas } from '../testing/recordingCanvas.testkit';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
 import { ARCH_FAMILIES, ARCH_STYLES } from './registry';
-import { roofOf, type ArchStyle, type Ornaments, type RoofProfile } from './style';
+import { PARAMETRIC_FAMILIES, roofOf, type ArchStyle, type Ornaments, type RoofProfile } from './style';
 import { styledGable } from './styledRoofs';
 import type { BuildingArt } from './types';
 
@@ -183,6 +183,25 @@ describe('ArchStyle', () => {
       for (const [type, art] of Object.entries(ARCH_FAMILIES[s.family](s))) {
         const top = Math.max(0, ...probe(s, type as BuildingType).painterVolumeZ());
         expect(top, `${s.id} ${type}`).toBeLessThanOrEqual(art.maxHeight);
+      }
+    }
+  });
+
+  it('every registered style rides a registered family', () => {
+    for (const s of Object.values(ARCH_STYLES)) expect(Object.keys(ARCH_FAMILIES), s.id).toContain(s.family);
+    for (const f of PARAMETRIC_FAMILIES) expect(Object.keys(ARCH_FAMILIES)).toContain(f);
+  });
+
+  it('every bespoke family fits its canvas whatever the headroom', () => {
+    const bespoke = Object.values(ARCH_STYLES).filter((s) => !PARAMETRIC_FAMILIES.includes(s.family));
+    expect(bespoke.length).toBeGreaterThan(0);
+    for (const base of bespoke) {
+      for (const headroom of [0, base.headroom, 120]) {
+        const s = { ...base, headroom };
+        for (const [type, art] of Object.entries(ARCH_FAMILIES[s.family](s))) {
+          const top = Math.max(0, ...probe(s, type as BuildingType).painterVolumeZ());
+          expect(top, `${s.id} ${type} headroom ${headroom}`).toBeLessThanOrEqual(art.maxHeight);
+        }
       }
     }
   });

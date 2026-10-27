@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { BuildingType } from '../../../../types';
 import { paintBuilding } from '../../buildings';
 import { IsoPainter } from '../../isoPainter';
-import { hashPainting, installRecordingCanvas } from '../../testing/recordingCanvas';
+import { hashPainting, installRecordingCanvas } from '../../testing/recordingCanvas.testkit';
 import { HUNGARIAN_MEDIEVAL } from '../hungarianStyles';
 import { ARCH_FAMILIES } from '../registry';
 import type { ArchStyle } from '../style';

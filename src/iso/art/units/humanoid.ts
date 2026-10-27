@@ -1,5 +1,16 @@
 import { axesAlong, type Axes, type Figure } from './figure';
-import { drawHat, drawShield, drawWeapon, type HatKind, type ShieldKind, type WeaponKind, type WeaponStyle } from './gear';
+import {
+  drawBackItem,
+  drawHat,
+  drawShield,
+  drawWeapon,
+  hatCoversHead,
+  type BackItem,
+  type HatKind,
+  type ShieldKind,
+  type WeaponKind,
+  type WeaponStyle,
+} from './gear';
 import { M, type Material } from './materials';
 import { add, applyDir, applyPoint, ik2, madd, norm, rotate, sub, type V3, type Xform } from './rigMath';
 
@@ -35,7 +46,7 @@ export interface HumanLook {
   readonly highBoots?: boolean;
   readonly belt?: Material;
   readonly crossBelts?: Material;
-  readonly back?: 'quiver' | 'bolts';
+  readonly back?: BackItem;
   readonly weapon: WeaponKind;
   /** Visual variant of the weapon (same pose). */
   readonly weaponStyle?: WeaponStyle;
@@ -108,7 +119,7 @@ export function drawHuman(fig: Figure, look: HumanLook, pose: HumanPose): void {
     fig.capsule(at([3.6, 4.6, 12.4]), at([4.3, -4.2, 3.8]), 0.95, look.crossBelts);
     fig.capsule(at([3.6, -4.6, 12.4]), at([4.3, 4.2, 3.8]), 0.95, look.crossBelts);
   }
-  if (look.back === 'quiver' || look.back === 'bolts') drawQuiver(fig, at, T, look.back);
+  if (look.back) drawBackItem(fig, look.back, at, T);
 
   // Neck and head.
   fig.capsule(at([0, 0, 13.4]), at([0.2, 0, 16.4]), 2.4, M.skin);
@@ -119,7 +130,7 @@ export function drawHuman(fig: Figure, look: HumanLook, pose: HumanPose): void {
   fig.sphere(hp([5.35, 2.35, 0.9]), 0.95, M.eye);
   fig.sphere(hp([5.35, -2.35, 0.9]), 0.95, M.eye);
   fig.sphere(hp([6.2, 0, -0.7]), 1.15, M.skin);
-  if (look.hat !== 'greatHelm' && look.hat !== 'hood') {
+  if (!hatCoversHead(look.hat)) {
     fig.sphere(hp([-1.0, 0, 0.9]), 6.35, look.hair ?? M.hair);
   }
   drawHat(fig, look.hat, hc, headAxes);
@@ -171,21 +182,5 @@ function drawArms(fig: Figure, look: HumanLook, pose: HumanPose, T: Xform): void
     fig.capsule(mid, end, 2.05, look.forearms ?? look.sleeves);
     fig.sphere(end, 2.15, look.hands ?? M.skin);
     if (look.pauldrons) fig.sphere(madd(shoulder, T.z, 0.6), 3.1, look.pauldrons);
-  }
-}
-
-function drawQuiver(fig: Figure, at: (p: V3) => V3, T: Xform, kind: 'quiver' | 'bolts'): void {
-  if (kind === 'quiver') {
-    const bottom = at([-4.9, 2.6, 2.5]);
-    const top = at([-4.9, -2.2, 15.5]);
-    fig.capsule(bottom, top, 1.9, M.leather);
-    for (const [dy, dz] of [[0.8, 0.4], [-0.6, 1.0], [0.1, -0.6]] as const) {
-      fig.sphere(add(madd(top, T.y, dy), [0, 0, 1.8 + dz]), 1.05, M.feather);
-    }
-  } else {
-    // Bolt case on the right hip.
-    const c = at([-1, -6.2, 1.5]);
-    fig.box(c, [T.x, T.y, T.z], [1.6, 1.1, 3.2], M.leather);
-    fig.sphere(madd(c, T.z, 3.6), 1.0, M.feather);
   }
 }

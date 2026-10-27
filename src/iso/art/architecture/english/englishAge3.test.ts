@@ -4,7 +4,7 @@ import type { BuildingType } from '../../../../types';
 import { paintBuilding, paintWonderStage } from '../../buildings';
 import { IsoPainter } from '../../isoPainter';
 import { NormalLayer } from '../../lighting/normalLayer';
-import { hashPainting, installRecordingCanvas, type RecordedCanvas } from '../../testing/recordingCanvas';
+import { hashPainting, installRecordingCanvas, type RecordedCanvas } from '../../testing/recordingCanvas.testkit';
 import { ARCH_FAMILIES } from '../registry';
 import type { ArchStyle } from '../style';
 import { WONDER_STAGES } from '../wonder';

@@ -1,26 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { AgeId, BuildingType } from '../../types';
-import type { LitArt } from './lighting/normalLayer';
-import { canonicalColor, hashPainting, installRecordingCanvas } from './testing/recordingCanvas';
+import { lightingData, PIN_TEAM, pinBuildings } from './testing/pinnedArt.testkit';
+import { canonicalColor, hashPainting, installRecordingCanvas } from './testing/recordingCanvas.testkit';
 
 /*
  * Pixel-identity guard for the Hungarian building art (M4 Task 2): every
- * Hungarian building type × age, and every Wonder stage, is painted onto
- * recording canvases (albedo + face-normal layer) and the hash of the
- * full draw log plus the lighting data (volume, glows, lights, smoke) is
- * compared to hashes recorded before the style refactor. A draw log that
- * matches call for call paints the same pixels.
+ * Hungarian building type × age, and every Wonder stage (see
+ * testing/pinnedArt.testkit.ts), compared to hashes recorded at 543b214,
+ * before the ArchStyle refactor.
  */
 
-const TYPES: readonly BuildingType[] = [
-  'town_center', 'house', 'farm', 'lumber_camp', 'mining_camp', 'barracks', 'archery_range',
-  'stable', 'blacksmith', 'foundry', 'tower', 'wall', 'wonder',
-];
-const AGES: readonly AgeId[] = [1, 2, 3];
-const TEAM = 0x3b6fd6;
-
-/** Recorded at 543b214, before the ArchStyle refactor. */
-const EXPECTED: Record<string, string> = {
+pinBuildings('hungarian', {
   'town_center@1': '2bd4ba82ec0d2cd8',
   'house@1': '770321401bb75cb2',
   'farm@1': '934780d76e02a741',
@@ -63,33 +52,13 @@ const EXPECTED: Record<string, string> = {
   'wonder~s1': '6bed279c75fca7e1',
   'wonder~s2': 'b373622070a961a1',
   'wonder~s3': '1667e726c6577523',
-};
+});
 
-function lightingData(art: LitArt): unknown {
-  return { volume: art.volume, glows: art.glows, lights: art.lights, smoke: art.smoke, normal: art.normal !== null };
-}
-
-describe('Hungarian building art stays pixel-identical', () => {
+describe('building pin hashes', () => {
   let buildings: typeof import('./buildings');
   beforeAll(async () => {
     installRecordingCanvas();
     buildings = await import('./buildings');
-  });
-
-  const cases: Array<[string, () => string]> = [];
-  for (const age of AGES) {
-    for (const type of TYPES) {
-      cases.push([`${type}@${age}`, () => hashPainting(() => lightingData(buildings.paintBuilding(type, TEAM, age, 'hungarian', false)))]);
-    }
-  }
-  for (const stage of [1, 2, 3]) {
-    cases.push([`wonder~s${stage}`, () => hashPainting(() => lightingData(buildings.paintWonderStage(stage, 'hungarian')))]);
-  }
-
-  it.each(cases)('%s', (name, run) => {
-    const hash = run();
-    if (process.env.PRINT_ART_HASHES) console.log(`  '${name}': '${hash}',`);
-    expect(hash).toBe(EXPECTED[name]);
   });
 
   it('logs equal colours equally whatever their CSS spelling', () => {
@@ -101,7 +70,7 @@ describe('Hungarian building art stays pixel-identical', () => {
 
   it('notices a one-colour change (the log hash is sensitive)', () => {
     const paint = (team: number) => hashPainting(() => lightingData(buildings.paintBuilding('town_center', team, 1, 'hungarian', false)));
-    expect(paint(TEAM)).toBe(paint(TEAM));
-    expect(paint(TEAM + 1)).not.toBe(paint(TEAM));
+    expect(paint(PIN_TEAM)).toBe(paint(PIN_TEAM));
+    expect(paint(PIN_TEAM + 1)).not.toBe(paint(PIN_TEAM));
   });
 });

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../game/wallNeighbours';
 import type { AgeId, CivId } from '../../../types';
-import { installRecordingCanvas } from '../testing/recordingCanvas';
+import { installRecordingCanvas } from '../testing/recordingCanvas.testkit';
 
 /*
  * Join continuity (M4 Task 5 fix round 1): next to a post, every arm of

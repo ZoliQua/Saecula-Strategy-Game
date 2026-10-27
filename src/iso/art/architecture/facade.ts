@@ -2,7 +2,8 @@ import type { Ctx } from '../canvas';
 import type { IsoPainter } from '../isoPainter';
 import { baked } from '../lighting/normalLayer';
 import { css, shade } from '../palette';
-import type { ArchStyle, CrestCharge } from './style';
+import { CHARGES } from './charges';
+import type { ArchStyle } from './style';
 
 /*
  * Face-local facade details: call these inside IsoPainter.leftFace /
@@ -112,23 +113,6 @@ export function shutteredWindow(p: IsoPainter, x: number, y: number, w: number, 
     for (let k = 2; k < h; k += 3) ctx.fillRect(sx + 1, y + k, w * 0.55 - 2, 0.7);
   }
 }
-
-/** Heraldic charges painted on a crest of size s centred at (x, y). */
-const CHARGES: Record<CrestCharge, (ctx: Ctx, x: number, y: number, s: number) => void> = {
-  // Double cross (kettőskereszt) in white.
-  double_cross: (ctx, x, y, s) => {
-    ctx.fillStyle = 'rgba(250,244,230,.92)';
-    ctx.fillRect(x - s * 0.1, y - s * 0.8, s * 0.2, s * 1.5);
-    ctx.fillRect(x - s * 0.42, y - s * 0.5, s * 0.84, s * 0.16);
-    ctx.fillRect(x - s * 0.3, y - s * 0.15, s * 0.6, s * 0.16);
-  },
-  // St George's cross, white so it reads on every team field.
-  st_george: (ctx, x, y, s) => {
-    ctx.fillStyle = 'rgba(250,244,230,.92)';
-    ctx.fillRect(x - s * 0.13, y - s * 0.95, s * 0.26, s * 1.95);
-    ctx.fillRect(x - s * 0.75, y - s * 0.38, s * 1.5, s * 0.26);
-  },
-};
 
 /** Team-coloured heraldic shield with a gold rim, bearing the style's charge. */
 export function crest(ctx: Ctx, style: ArchStyle, x: number, y: number, s: number, team: number): void {
