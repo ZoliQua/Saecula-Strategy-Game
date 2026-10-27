@@ -14,9 +14,10 @@ const CORNERS = [WALL_N | WALL_E, WALL_E | WALL_S, WALL_S | WALL_W, WALL_W | WAL
  * runs with and without their rhythm post, the eight ends, the four
  * square corners and a lone post. They are painted ahead of need (a
  * first paint costs 5-17 ms; a new wall line used to paint several in
- * one frame): age 1 behind the loading card, ages 2-3 in spare frame
- * time during play (scenes/game/artLoadPlan.ts). The periodic eviction
- * keeps them (commonWallPieceKeys).
+ * one frame): age 1 behind the loading card, age 2 in spare frame time
+ * during play and each later age once a civ's owner reaches the age
+ * before it (scenes/game/artLoadPlan.ts). The periodic eviction keeps
+ * those of the ages a civ's owners can show (keepWallKeys).
  */
 export const COMMON_WALL_PIECES: readonly number[] = [
   ...RUNS,
@@ -34,5 +35,23 @@ export function commonWallPieceKeys(
 ): Set<string> {
   const out = new Set<string>();
   for (const civ of civs) for (const age of ages) for (const piece of COMMON_WALL_PIECES) out.add(keyOf(piece, age, civ));
+  return out;
+}
+
+/**
+ * Common wall pieces the periodic eviction keeps: for each civ, the ages
+ * some owner of it is in (`civAges`) plus the next age (painted ahead of
+ * the age-up, artLoadPlan ageUpArtJobs). Recompute on every age change.
+ */
+export function keepWallKeys(civAges: ReadonlyMap<CivId, ReadonlySet<AgeId>>, keyOf: PieceKeyOf = wallPieceKey): Set<string> {
+  const out = new Set<string>();
+  for (const [civ, ages] of civAges) {
+    const kept = new Set<AgeId>();
+    for (const age of ages) {
+      kept.add(age);
+      if (age < 3) kept.add((age + 1) as AgeId);
+    }
+    for (const key of commonWallPieceKeys([...kept], [civ], keyOf)) out.add(key);
+  }
   return out;
 }

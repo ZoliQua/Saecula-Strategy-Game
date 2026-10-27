@@ -100,19 +100,16 @@ describe('planArtLoad', () => {
     expect(AGE1_TYPES.length).toBeLessThan(ALL_TYPES.length);
   });
 
-  it('paints the age-1 common wall pieces of each civ while loading and leaves ages 2-3 to the game', () => {
+  it('paints the age-1 common wall pieces of each civ while loading, age 2 in the game and age 3 only after an age-up', () => {
     const { critical, background } = recordPlan('hungarian', ['hungarian', 'english']);
     const walls = (list: string[], age: number, civ: string) => list.filter((p) => p.startsWith('w:') && p.endsWith(`:${age}:${civ}`));
     for (const civ of ['hungarian', 'english']) {
       expect(walls(critical, 1, civ)).toHaveLength(COMMON_WALL_PIECES.length);
       expect(walls(critical, 2, civ)).toHaveLength(0);
       expect(walls(background, 2, civ)).toHaveLength(COMMON_WALL_PIECES.length);
-      expect(walls(background, 3, civ)).toHaveLength(COMMON_WALL_PIECES.length);
+      expect(walls(background, 3, civ)).toHaveLength(0);
     }
-    expect(background.filter((p) => p.startsWith('w:')).every((p) => !p.includes(':1:'))).toBe(true);
-    // Age 2 comes first: it is needed first.
-    const lastAge2 = background.map((p) => p.includes(':2:')).lastIndexOf(true);
-    expect(background.findIndex((p) => p.includes(':3:'))).toBeGreaterThan(lastAge2);
+    expect(background.filter((p) => p.startsWith('w:')).every((p) => p.includes(':2:'))).toBe(true);
   });
 });
 

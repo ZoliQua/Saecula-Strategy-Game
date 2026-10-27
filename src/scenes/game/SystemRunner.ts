@@ -35,7 +35,7 @@ import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { PathBudget } from '../../map/pathBudget';
 import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/constants';
-import { commonWallPieceKeys } from '../../iso/art/walls/commonWallPieces';
+import { keepWallKeys } from '../../iso/art/walls/commonWallPieces';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';
@@ -71,8 +71,8 @@ export class SystemRunner {
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
   private readonly evictTimer: Phaser.Time.TimerEvent;
-  /** Common wall pieces (all ages of each civ in play, painted while loading): eviction keeps them. */
-  private readonly keepWalls: Set<string>;
+  /** Common wall pieces of the ages each civ's owners can show (keepWallKeys): eviction keeps them. */
+  private keepWalls: Set<string>;
   /** A* searches shared by every system, refilled each frame. */
   private readonly paths = new PathBudget(PATHFINDS_PER_FRAME, PATHFINDS_MAX_PER_TICK);
 
@@ -89,7 +89,7 @@ export class SystemRunner {
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
     this.render.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
-    this.keepWalls = commonWallPieceKeys([1, 2, 3], [...new Set(players.all().map((p) => p.civ))]);
+    this.keepWalls = keepWallKeys(civAges(players));
     this.selection = new SelectionSystem(scene, world);
     this.selection.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
@@ -139,6 +139,7 @@ export class SystemRunner {
     });
     // Once the age-up wave has played out, drop age styles nobody shows any more (per civ).
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
+      this.keepWalls = keepWallKeys(civAges(players));
       scene.time.delayedCall(AGE_UP_FX.maxSpreadMs + AGE_UP_FX.swapMs + 1500, () => {
         const active = players.all().filter((p) => !p.defeated);
         if (active.length === 0) return;
@@ -215,6 +216,16 @@ export class SystemRunner {
 /** Civs of the players still in the game. */
 function activeCivs(players: PlayerManager): Set<CivId> {
   return new Set(players.all().filter((p) => !p.defeated).map((p) => p.civ));
+}
+
+/** Ages each civ's active players are in. */
+function civAges(players: PlayerManager): Map<CivId, Set<AgeId>> {
+  const out = new Map<CivId, Set<AgeId>>();
+  for (const p of players.all()) {
+    if (p.defeated) continue;
+    out.set(p.civ, (out.get(p.civ) ?? new Set<AgeId>()).add(p.age));
+  }
+  return out;
 }
 
 /** Lowest of `ages`, or undefined when empty. */

@@ -80,9 +80,10 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
  *    go to the background queue instead, so the first one placed in age 3
  *    reuses the painted base (normal map, trim) rather than a 50-80 ms
  *    frame; only the owner's team-colour variant is still painted then.
- *  - Every civ: the age-1 common wall pieces; ages 2 and 3 go to the
- *    background queue (age 2 first), done seconds into the game — long
- *    before anyone can leave the Roman age.
+ *  - Every civ: the age-1 common wall pieces; age 2 goes to the
+ *    background queue, done seconds into the game — long before anyone
+ *    can leave the Roman age. Age 3 is queued when the civ reaches age 2
+ *    (ageUpArtJobs).
  */
 export function planArtLoad(human: CivId, owners: ReadonlyMap<CivId, number>, paint: ArtPainters): ArtLoadPlan {
   const types = Object.keys(BUILDING_SPECS) as BuildingType[];
@@ -100,8 +101,8 @@ export function planArtLoad(human: CivId, owners: ReadonlyMap<CivId, number>, pa
     for (const civ of civs) for (const piece of COMMON_WALL_PIECES) into.push(() => paint.wall(piece, age, civ));
   };
   walls(1, critical);
+  // Age 3 follows each civ's first age-2 player (ageUpArtJobs): only ages its owners can show next.
   walls(2, background);
-  walls(3, background);
   background.push(...lateBuildings); // needed last (age 3)
   return { critical, background };
 }
