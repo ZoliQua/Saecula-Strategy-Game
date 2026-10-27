@@ -443,6 +443,7 @@ IsoRTS/
     │   ├── game.ts              ← Phaser config
     │   ├── constants.ts         ← TILE_WIDTH, MAX_PLAYERS, stb.
     │   ├── balance.ts           ← stat konstansok (egyetlen forrás)
+    │   ├── civs.ts              ← nép-regiszter (CIV_DEFS: elérhetőség, kor-stílusok, címer)
     │   └── visual.ts            ← világítás, napszak, árnyék (csak megjelenés)
     ├── scenes/
     │   ├── BootScene.ts
@@ -586,6 +587,11 @@ A preload-ban Phaser `load.atlas()` tölti be.
 **Javaslat:** MVP-ben (1) palette swap + (2) egyszerű overlay. A (3)
 stretch goal.
 
+**M4 döntés:** a nép-regiszter TypeScriptben van (`src/config/civs.ts`,
+`CIV_DEFS`), nem `civs.json`-ban (típusos, nincs loader / zod felület). Az
+angol nép a palette swap + overlay fölött saját sziluetteket is kap, ahol
+olcsó (lásd 9. szekció, M4).
+
 ---
 
 ## 9. Fejlesztési fázisok (milestones)
@@ -626,7 +632,25 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
 ### M4 — Multi-civ support (2 nép)
 - Második nép (angol), palette swap + overlay
 - Civ választó a GameSetupScene-ben
-- Architektúra-rendszer: `civs.json`-ból tölti be a sprite overrideokat
+- Architektúra-rendszer: a nép-regiszter (`src/config/civs.ts`, `CIV_DEFS`)
+  adja meg népenként és koronként az építészeti stílust, a fal-stílust és az
+  egység-kinézetet (nem `civs.json`).
+- Tervezési döntések (részletek: `docs/superpowers/plans/2026-10-27-m4-multi-civ.md`):
+  - Palette swap + overlay fölött saját sziluettek (tetőhajlás, oromzat,
+    kémény, favázas szerkezet, tornyok); a magyar kinézet pixelre azonos marad.
+  - Angol korok: római kori brit (szürke kő, meredek nád/pala), Tudor/normann
+    (favázas emelet, meredek cseréptető, téglakémények), georgiánus (vörös
+    tégla, fehér ablakok, palatető); csoda: gótikus katedrális; falak: cölöpsánc
+    → szürke kőfal → tégla bástya.
+  - Egységek: azonos váz és felszerelés; a nép a színpalettát, a címert és
+    néhány sisak/pajzs változatot határozza meg. A csapatszín-maszk marad a
+    tulajdonos jelölése.
+  - Ki melyik nép: az ember a beállításban választ (Magyar / Angol); az AI
+    népe „Vegyes” (alapértelmezés, mag alapján keverve) / Magyar / Angol,
+    a `GameSetupConfig`-ban tárolva.
+  - Textúra-keret: csak a meccsen szereplő népek grafikája készül el, és
+    csak az marad memóriában; a nép-függő textúra-kulcsok `~c<nép>` szegmenst
+    kapnak. A ≤ 256 MB GPU keret továbbra is köt.
 
 ### M5 — Skálázás teljes 8 népre
 - Iteratív bővítés: civ-enként külön branch
