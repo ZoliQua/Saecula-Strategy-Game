@@ -5,15 +5,17 @@ import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
 /**
- * Fixed seeds; measured (64×64, passive human, Task 17 start economy: a 5-6 tile gold lode, 4-6 berry bushes
- * of 125 food): age 2 at 11.79 / 12.00 / 11.67 / 12.00 / 12.55 / 11.77 / 11.50 / 12.65 min (median 11.9),
- * first raid 6.0 / 7.7 / 6.6 / 7.6 / 7.9 / 6.6 / 8.0 / 6.1 min. No seed is left out (11 and 2024 used to
- * stall on gather ping-pong and far-away gold; both fixed).
+ * Fixed seeds; measured (64×64, passive human, Task 17 start economy, Task 19 full age-up gold reserve in
+ * the Middle age): age 2 at 11.79 / 12.00 / 11.67 / 12.00 / 12.55 / 11.77 / 11.50 / 12.65 min (median 11.9),
+ * age 3 at 18.97 / 18.77 / 19.79 / 19.90 / 20.90 / 19.79 / 19.52 / 20.72 min, first raid 6.04 / 7.74 / 6.56 /
+ * 7.61 / 7.93 / 6.57 / 7.99 / 6.05 min. No seed is left out (11 and 2024 used to stall on gather ping-pong
+ * and far-away gold; both fixed).
  */
 const SEEDS = [4242, 7, 99, 1234, 555, 8, 11, 2024];
 
 interface Milestones {
   age2: number;
+  age3: number;
   firstAttack: number;
 }
 
@@ -21,11 +23,12 @@ function play(seed: number): Milestones {
   const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: (id) => new MediumStrategy(createRng(id * 977 + seed)) });
   const ai = match.players.get(2)!;
   const strategy = match.ais[0]!.strategy;
-  const m: Milestones = { age2: Infinity, firstAttack: Infinity };
-  match.run(17 * MIN, 100, (t) => {
+  const m: Milestones = { age2: Infinity, age3: Infinity, firstAttack: Infinity };
+  match.run(23 * MIN, 100, (t) => {
     if (m.firstAttack === Infinity && strategy.thoughts!().recent.some((r) => r.kind === 'attack')) m.firstAttack = t;
     if (m.age2 === Infinity && ai.age >= 2) m.age2 = t;
-    return m.age2 < Infinity && m.firstAttack < Infinity;
+    if (m.age3 === Infinity && ai.age >= 3) m.age3 = t;
+    return m.age3 < Infinity && m.firstAttack < Infinity;
   });
   return m;
 }
@@ -36,11 +39,13 @@ const median = (xs: number[]) => {
 };
 
 describe('MediumStrategy headless simulation (64×64 meadow, 8 seeds, passive human)', () => {
-  it('on the listed seeds: raids by 8.5 min (measured worst 8.0), age 2 by 13 min each (worst 12.65), median ≤ 12 min', () => {
+  it('on the listed seeds: raids by 8 min (§10.2: 5-8; worst 7.99), age 2 by 12.75 min each (worst 12.65), median ≤ 12, age 3 by 21.5 (worst 20.9)', () => {
     const runs = SEEDS.map(play);
     for (const [i, r] of runs.entries()) {
-      expect(r.firstAttack, `seed ${SEEDS[i]} raid`).toBeLessThanOrEqual(8.5 * MIN);
-      expect(r.age2, `seed ${SEEDS[i]} age 2`).toBeLessThanOrEqual(13 * MIN);
+      expect(r.firstAttack, `seed ${SEEDS[i]} raid`).toBeGreaterThanOrEqual(5 * MIN);
+      expect(r.firstAttack, `seed ${SEEDS[i]} raid`).toBeLessThanOrEqual(8 * MIN);
+      expect(r.age2, `seed ${SEEDS[i]} age 2`).toBeLessThanOrEqual(12.75 * MIN);
+      expect(r.age3, `seed ${SEEDS[i]} age 3`).toBeLessThanOrEqual(21.5 * MIN);
     }
     expect(median(runs.map((r) => r.age2))).toBeLessThanOrEqual(12 * MIN);
   });
