@@ -7,8 +7,10 @@ import { roofLift, styledGable } from '../styledRoofs';
 import { parapet } from '../towerParts';
 import type { AgeArtSet } from '../types';
 import { normanTower } from './englishTowers';
-import { brickStack, dummy, hangingBanner, hedge } from './englishParts';
-import { framedGable, halfTimberLattice, jettyStorey, leadedWindow } from './halfTimber';
+import { brickStack } from '../kits/chimneyStack';
+import { framedGable, halfTimberLattice, leadedWindow } from '../kits/halfTimber';
+import { jettyStorey } from '../kits/jetty';
+import { dummy, hangingBanner, hedge } from './englishParts';
 import { normanKeep } from './normanKeep';
 import { tudorWorkArt } from './tudorWork';
 

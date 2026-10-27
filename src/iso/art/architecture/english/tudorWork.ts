@@ -7,8 +7,10 @@ import { stripField } from '../medievalWork';
 import type { ArchStyle } from '../style';
 import { roofLift, styledGable, styledHip } from '../styledRoofs';
 import type { AgeArtSet } from '../types';
-import { brickStack, earthButt, hangingBanner, hedge, spoilHeap } from './englishParts';
-import { framedGable, halfTimberLattice, jettyStorey, leadedWindow } from './halfTimber';
+import { brickStack } from '../kits/chimneyStack';
+import { framedGable, halfTimberLattice, leadedWindow } from '../kits/halfTimber';
+import { jettyStorey } from '../kits/jetty';
+import { earthButt, hangingBanner, hedge, spoilHeap } from './englishParts';
 import { drumWall } from './roundhouse';
 
 /*

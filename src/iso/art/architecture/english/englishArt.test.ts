@@ -7,7 +7,7 @@ import { HUNGARIAN_MEDIEVAL } from '../hungarianStyles';
 import { ARCH_FAMILIES } from '../registry';
 import type { ArchStyle } from '../style';
 import { ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './englishStyles';
-import { jettyStorey } from './halfTimber';
+import { jettyStorey } from '../kits/jetty';
 import { coneRoof, drumWall, roundhouse } from './roundhouse';
 
 const TEAM = 0x3b6fd6;
