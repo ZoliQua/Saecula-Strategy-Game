@@ -14,6 +14,8 @@ import { tileToScreen } from '../iso/coordinates';
 import type { MapData } from '../map/MapData';
 import { TerrainBake } from '../map/TerrainBake';
 import { TileMap } from '../map/TileMap';
+import { WallArtPrewarm } from '../iso/art/walls/WallArtPrewarm';
+import { wallTexture } from '../iso/textures';
 import { Loading } from '../ui/screens/Loading';
 import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
@@ -34,6 +36,8 @@ import { CameraController } from './systems/CameraController';
 
 /** Main-thread time per frame spent baking terrain while the loading card shows. */
 const BAKE_SLICE_MS = 24;
+/** Share of the loading bar taken by the terrain bake (the rest: wall pieces). */
+const LOAD_SHARE_TERRAIN = 0.9;
 
 /** Scene lifecycle and wiring; logic lives in the helpers under ./game. */
 export class GameScene extends Phaser.Scene {
@@ -82,7 +86,7 @@ export class GameScene extends Phaser.Scene {
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
     // The terrain bake (seconds on cliff maps) runs a slice per frame behind a loading card.
     const terrain = new TerrainBake(this, this.mapData);
-    this.bake = { terrain, steps: terrain.steps(), loading: new Loading(), frames: 0, config, generated };
+    this.bake = { terrain, steps: this.loadSteps(terrain), loading: new Loading(), frames: 0, config, generated };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.bake) {
         this.bake.loading.destroy();
@@ -95,7 +99,19 @@ export class GameScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
   }
 
-  /** Runs terrain bake slices for up to BAKE_SLICE_MS per frame, then starts the game. */
+  /**
+   * Loading work in slices, with progress 0..1: the terrain bake, then the
+   * common wall pieces of every age (so no game frame pays for a first paint).
+   */
+  private *loadSteps(terrain: TerrainBake): Generator<number, void> {
+    for (const p of terrain.steps()) yield p * LOAD_SHARE_TERRAIN;
+    const walls = new WallArtPrewarm((piece, age) => wallTexture(this, piece, age));
+    for (const age of [1, 2, 3] as const) walls.request(age);
+    const total = walls.remaining;
+    while (walls.step()) yield LOAD_SHARE_TERRAIN + (1 - LOAD_SHARE_TERRAIN) * (1 - walls.remaining / total);
+  }
+
+  /** Runs loading slices for up to BAKE_SLICE_MS per frame, then starts the game. */
   private onBakeUpdate(): void {
     const b = this.bake;
     if (!b) return;

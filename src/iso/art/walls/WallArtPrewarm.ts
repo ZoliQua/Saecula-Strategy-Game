@@ -21,10 +21,11 @@ export const COMMON_WALL_PIECES: readonly number[] = [
 ];
 
 /**
- * Paints the common wall pieces of an age ahead of need, one per frame
- * (a first paint costs ~10 ms; a new wall line used to paint several in
- * one frame). Requested when an age is first reached; keys() tells the
- * periodic eviction which pieces to keep.
+ * Paints the common wall pieces of the requested ages ahead of need, one
+ * per step (a first paint costs 7-17 ms; a new wall line used to paint
+ * several in one frame). GameScene runs the steps behind the loading
+ * card, for all three ages, so no game frame pays for them; keys() /
+ * commonWallPieceKeys tell the periodic eviction which pieces to keep.
  */
 export class WallArtPrewarm {
   private readonly queue: Array<[number, AgeId]> = [];
@@ -52,8 +53,21 @@ export class WallArtPrewarm {
 
   /** Texture keys of the common pieces of every requested age. */
   keys(): Set<string> {
-    const out = new Set<string>();
-    for (const age of this.ages) for (const piece of COMMON_WALL_PIECES) out.add(this.keyOf(piece, age));
-    return out;
+    return commonWallPieceKeys([...this.ages], this.keyOf);
   }
+
+  /** Pieces still to paint. */
+  get remaining(): number {
+    return this.queue.length;
+  }
+}
+
+/** Texture keys of the common wall pieces of `ages`. */
+export function commonWallPieceKeys(
+  ages: readonly AgeId[],
+  keyOf: (piece: number, age: AgeId) => string = wallPieceKey,
+): Set<string> {
+  const out = new Set<string>();
+  for (const age of ages) for (const piece of COMMON_WALL_PIECES) out.add(keyOf(piece, age));
+  return out;
 }

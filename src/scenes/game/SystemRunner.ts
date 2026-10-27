@@ -33,8 +33,7 @@ import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { PathBudget } from '../../map/pathBudget';
-import { WallArtPrewarm } from '../../iso/art/walls/WallArtPrewarm';
-import { wallTexture } from '../../iso/textures';
+import { commonWallPieceKeys } from '../../iso/art/walls/WallArtPrewarm';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { CameraController } from '../systems/CameraController';
@@ -69,8 +68,8 @@ export class SystemRunner {
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
   private readonly evictTimer: Phaser.Time.TimerEvent;
-  /** Common wall pieces of every age in play, painted ahead of need. */
-  private readonly wallPrewarm: WallArtPrewarm;
+  /** Common wall pieces (all ages, painted while loading): eviction keeps them. */
+  private readonly keepWalls = commonWallPieceKeys([1, 2, 3]);
   /** A* searches shared by every system, refilled each frame. */
   private readonly paths = new PathBudget();
 
@@ -123,16 +122,13 @@ export class SystemRunner {
     this.xray = new UnitXRay(scene, world, tileMap.coverSources());
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
-    this.wallPrewarm = new WallArtPrewarm((piece, age) => wallTexture(scene, piece, age));
-    for (const p of players.all()) this.wallPrewarm.request(p.age);
     this.evictTimer = scene.time.addEvent({
       delay: ART_EVICT_INTERVAL_MS,
       loop: true,
-      callback: () => this.render.releaseUnusedArt(this.wallPrewarm.keys()),
+      callback: () => this.render.releaseUnusedArt(this.keepWalls),
     });
     // Once the age-up wave has played out, drop age styles nobody shows any more.
-    this.unsubscribeAge = gameEvents.on('ageChanged', ({ age }) => {
-      this.wallPrewarm.request(age);
+    this.unsubscribeAge = gameEvents.on('ageChanged', () => {
       scene.time.delayedCall(AGE_UP_FX.maxSpreadMs + AGE_UP_FX.swapMs + 1500, () => {
         const active = players.all().filter((p) => !p.defeated);
         if (active.length === 0) return;
@@ -180,7 +176,6 @@ export class SystemRunner {
     this.tileMap.applyFog(this.fogData);
     this.selection.update();
     this.render.update();
-    this.wallPrewarm.step();
     this.xray.update();
     this.buildingFx.update(delta);
     this.projectileRender.update();
