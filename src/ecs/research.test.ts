@@ -45,6 +45,14 @@ describe('research', () => {
     expect(tc.research).toMatchObject({ techId: 'feudalism', elapsed: 0, totalTime: 120 });
   });
 
+  it('refuses a collapsing building and does not charge (the research would be paid for, then lost)', () => {
+    const { world, tc, player, wallet } = setup();
+    world.addComponent(tc, 'dying', { ttlMs: 2000 });
+    expect(startResearch(world, tc, 'feudalism', player, wallet).reason).toBe('destroyed');
+    expect(player.resources.food).toBe(2000);
+    expect(tc.research).toBeUndefined();
+  });
+
   it('refuses without enough resources and does not charge', () => {
     const { world, tc, player, wallet } = setup({ food: 499, wood: 0, gold: 300 });
     expect(startResearch(world, tc, 'feudalism', player, wallet).reason).toBe('insufficient-resources');

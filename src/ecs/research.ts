@@ -30,6 +30,7 @@ export function uiWallet(): Wallet {
 
 export type ResearchFailure =
   | 'wrong-building'
+  | 'destroyed'
   | 'under-construction'
   | 'already-researching'
   | 'already-in-progress'
@@ -59,6 +60,7 @@ export function startResearch(
   if (!building.building || building.building.type !== spec.building) {
     return { ok: false, reason: 'wrong-building' };
   }
+  if (building.dying) return { ok: false, reason: 'destroyed' };
   if (building.underConstruction) return { ok: false, reason: 'under-construction' };
   if (building.research) return { ok: false, reason: 'already-researching' };
   if ((building.trainingQueue?.entries.length ?? 0) > 0) {
