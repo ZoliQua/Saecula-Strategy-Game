@@ -1,6 +1,7 @@
 import type { ArchStyleId } from '../../../config/civs';
 import { baroqueArt } from './baroque';
-import { ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
+import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
+import { georgianArt } from './english/georgian';
 import { romanoBritishArt } from './english/romanoBritish';
 import { tudorArt } from './english/tudor';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
@@ -28,6 +29,7 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   baroque: HUNGARIAN_BAROQUE,
   romano_british: ENGLISH_ROMANO_BRITISH,
   tudor: ENGLISH_TUDOR,
+  georgian: ENGLISH_GEORGIAN,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -37,6 +39,7 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   baroque: baroqueArt,
   romano_british: romanoBritishArt,
   tudor: tudorArt,
+  georgian: georgianArt,
 };
 
 /** Every style's painted set, by style id. */

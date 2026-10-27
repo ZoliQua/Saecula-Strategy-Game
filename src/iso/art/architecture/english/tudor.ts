@@ -4,9 +4,9 @@ import { archedOpening, R } from '../facade';
 import { post, torch } from '../parts';
 import type { ArchStyle } from '../style';
 import { roofLift, styledGable } from '../styledRoofs';
-import { medievalTower } from '../towers';
 import { parapet } from '../towerParts';
 import type { AgeArtSet } from '../types';
+import { normanTower } from './englishTowers';
 import { brickStack, dummy, hangingBanner, hedge } from './englishParts';
 import { framedGable, halfTimberLattice, jettyStorey, leadedWindow } from './halfTimber';
 import { normanKeep } from './normanKeep';
@@ -200,6 +200,6 @@ export function tudorArt(s: ArchStyle): AgeArtSet {
         p.flag(2.86, 2.86, 15, 34, team);
       },
     },
-    tower: medievalTower(s),
+    tower: normanTower(s),
   };
 }

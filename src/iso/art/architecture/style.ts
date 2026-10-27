@@ -99,7 +99,7 @@ export type CrestCharge = 'double_cross' | 'st_george';
  * factory spreads an existing family and overrides types, e.g.
  * `gothic: (s) => ({ ...medievalArt(s), town_center: gothicHall(s) })`.
  */
-export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor';
+export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor' | 'georgian';
 
 export interface ArchStyle {
   readonly id: ArchStyleId;

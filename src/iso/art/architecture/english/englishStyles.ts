@@ -5,8 +5,9 @@ import type { ArchStyle, Ornaments } from '../style';
  * The English age styles (M4 design decision 4, CLAUDE.md §4.2 "Tudor,
  * szürke kő, meredek tetők"): cooler and greyer than the Hungarian
  * sets, with steeper roofs. Their own families (romanoBritish.ts,
- * tudor.ts) paint the bespoke silhouettes; the palette and roof profile
- * also drive the shared tower painters until Task 4 replaces them.
+ * tudor.ts, georgian.ts) paint the bespoke silhouettes; the towers
+ * (englishTowers.ts), the foundry and the Gothic cathedral Wonder read
+ * the same palettes.
  */
 
 const ENGLISH_ORNAMENTS: Ornaments = { chimneys: true, halfTimber: true, quoins: true, pilasters: false, dormers: true, boardedGables: false };
@@ -78,4 +79,40 @@ export const ENGLISH_TUDOR: ArchStyle = {
   charge: 'st_george',
   seedSalt: 8191,
   headroom: 50,
+};
+
+/** White-painted sash frames and glazing bars over crown glass reflecting the sky (the dusk glow lights it at night). */
+const SASH_WINDOW: WindowLook = { frame: 0xf2efe6, glassTop: 0x8d9ba6, glassBottom: 0x3c3a40, bars: 0xf2efe6 };
+
+/** Age 3 (Felvilágosodás): Georgian — red brick in Flemish bond, Portland stone dressings, white sashes, Welsh slate hips. */
+export const ENGLISH_GEORGIAN: ArchStyle = {
+  id: 'georgian',
+  family: 'georgian',
+  palette: {
+    stone: 0xb4ad9c,
+    ashlar: 0xddd6c4,
+    plaster: 0xebe5d6,
+    plasterDeep: 0xd9ccb0,
+    timber: 0x3a2e25,
+    darkWood: 0x2f2b28,
+    board: 0x2f2b28,
+    brick: 0xa24b33,
+    rawBrick: 0xa8603f,
+    stack: 0x98452f,
+    planks: 0x5a4634,
+    doors: { main: 0x22302a, gate: 0x2c3a31, work: 0x3a2e25 },
+    roof: 0x56606b,
+    roofAlt: 0x4e5560,
+    thatch: 0xa58c55,
+    trim: 0xf2efe6,
+    metal: 0x7d878c,
+    shutter: 0x22302a,
+    window: SASH_WINDOW,
+    roofs: {},
+  },
+  roof: { pitch: 1.15, eave: 1, form: 'native' },
+  ornaments: ENGLISH_ORNAMENTS,
+  charge: 'st_george',
+  seedSalt: 12289,
+  headroom: 40,
 };

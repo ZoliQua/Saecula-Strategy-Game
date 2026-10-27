@@ -45,7 +45,7 @@ function backToFront(n: number): number[] {
   return [...Array(n).keys()].sort((a, b) => towards(facetAngle(a, n)) - towards(facetAngle(b, n)));
 }
 
-export type DrumDetail = 'daub' | 'wattle' | 'stone';
+export type DrumDetail = 'daub' | 'wattle' | 'stone' | 'brick';
 
 /** Faceted round wall (drum) of radius r tiles centred on (uc, vc), from z0 to z1. Only the visible half is painted. */
 export function drumWall(p: IsoPainter, uc: number, vc: number, r: number, z0: number, z1: number, color: number, detail: DrumDetail = 'daub'): void {
@@ -95,6 +95,28 @@ function drumTexture(p: IsoPainter, uc: number, vc: number, r: number, z0: numbe
       ellipse(ctx, x, y, (3 + p.random() * 3) * (0.35 + face * 0.65), 2 + p.random() * 1.4);
       ctx.fillStyle = css(shade(color, wallLight(a) * (0.78 + p.random() * 0.4)));
       ctx.fill();
+    }
+    return;
+  }
+  if (detail === 'brick') {
+    // Brick courses round the drum with staggered perpends, foreshortened towards the sides.
+    for (let row = 0, z = z0 + 4.6; z < z1; row++, z += 4.6) {
+      ctx.strokeStyle = css(shade(color, 1.25), 0.3);
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      for (let k = 0; k <= 24; k++) {
+        const [x, y] = rim(p, uc, vc, r, -Math.PI / 4 + (k / 24) * Math.PI, z);
+        if (k === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      const n = Math.round(r * 40);
+      for (let k = 0; k < n; k++) {
+        const a = -Math.PI / 4 + ((k + (row % 2) * 0.5) / n) * Math.PI;
+        const [x, y] = rim(p, uc, vc, r, a, z - 4.6);
+        ctx.fillStyle = css(shade(color, wallLight(a) * (k % 2 ? 0.78 : 1.05)), 0.35);
+        ctx.fillRect(x, y - 4, 0.7, 4);
+      }
     }
     return;
   }

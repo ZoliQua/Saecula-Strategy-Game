@@ -14,7 +14,7 @@ const HALL_RISE = 42;
 const CINDER = 0x6b6156;
 
 /** Glowing furnace mouth (face-local): iron frame, molten core, spill of light on the sill. */
-function furnaceMouth(p: IsoPainter, surround: number, x: number, w: number, h: number, light: number): void {
+export function furnaceMouth(p: IsoPainter, surround: number, x: number, w: number, h: number, light: number): void {
   const ctx = p.ctx;
   archedOpening(ctx, x, w, h, shade(surround, 0.9), 0x1a0d06, light);
   const g = ctx.createRadialGradient(x + w / 2, -h * 0.3, 1, x + w / 2, -h * 0.3, w * 0.9);
@@ -38,7 +38,7 @@ function furnaceMouth(p: IsoPainter, surround: number, x: number, w: number, h: 
 }
 
 /** A cast bronze cannon barrel lying on the ground along u. */
-function barrel(p: IsoPainter, u0: number, u1: number, v: number): void {
+export function barrel(p: IsoPainter, u0: number, u1: number, v: number): void {
   const ctx = p.ctx;
   const a = p.p(u0, v, 4);
   const b = p.p(u1, v, 5.5);
@@ -57,7 +57,8 @@ function barrel(p: IsoPainter, u0: number, u1: number, v: number): void {
   ctx.fill();
 }
 
-function shotPyramid(p: IsoPainter, u: number, v: number): void {
+/** Pyramid of cast-iron round shot at a ground point. */
+export function shotPyramid(p: IsoPainter, u: number, v: number): void {
   const ctx = p.ctx;
   const [x, y] = p.p(u, v, 0);
   for (const [row, n] of [[0, 4], [1, 3], [2, 2], [3, 1]] as const) {
@@ -75,7 +76,8 @@ function shotPyramid(p: IsoPainter, u: number, v: number): void {
   }
 }
 
-function heap(p: IsoPainter, u: number, v: number, r: number, h: number, color: number): void {
+/** Loose heap (ore, coal, cinders) of radius r art px and height h at a ground point. */
+export function heap(p: IsoPainter, u: number, v: number, r: number, h: number, color: number): void {
   const ctx = p.ctx;
   const [x, y] = p.p(u, v, 0);
   const g = ctx.createLinearGradient(x - r, 0, x + r, 0);

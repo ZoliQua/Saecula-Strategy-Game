@@ -27,7 +27,7 @@ export interface BuildingShowcaseOptions {
   civs?: CivId[];
   /** Lay out wall rings, diagonal runs and gaps (one block per age) instead of the grid. */
   walls?: boolean;
-  /** Show the Wonder's construction stages and the finished basilica side by side. */
+  /** Show the Wonder's construction stages and the finished Wonder side by side (one row per civ with `civs`). */
   wonder?: boolean;
 }
 
@@ -111,23 +111,27 @@ export class BuildingShowcaseScene extends Phaser.Scene {
     cam.centerOn((types.length * CELL_W) / 2, (rows.length * CELL_H) / 2);
   }
 
+  /** Wonder stages 1..3 and the finished Wonder, one row per civ (`civs`, else the showcase civ). */
   private layWonder(): void {
-    const keys = [1, 2, 3].map((s) => wonderStageTexture(this, s, this.civ));
-    keys.push(buildingTexture(this, 'wonder', 3, this.opts.playerId ?? 1, this.civ));
-    keys.forEach((key, i) => {
-      const x = i * 330 + 165;
-      const y = 300;
-      const ground = this.add.graphics().setDepth(-1).fillStyle(0x587a3a, 1);
-      ground.fillPoints([[x, y + 10], [x + 150, y - 65], [x, y - 140], [x - 150, y - 65]].map(([a, b]) => new Phaser.Geom.Point(a, b)), true);
-      const img = lit(this.add.image(x, y, key).setScale(1 / ART_SCALE));
-      img.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
-      const info = BUILDING_LIGHT.get(key);
-      this.lighting?.attachBuilding({
-        sprite: img, type: 'wonder', footprint: { w: 4, h: 4 }, volume: info?.volume ?? [], glows: info?.glows ?? [],
-        lights: info?.lights ?? [], isComplete: () => i === 3, heightScale: () => 1,
+    const civs = this.opts.civs ?? [this.civ];
+    civs.forEach((civ, row) => {
+      const keys = [1, 2, 3].map((s) => wonderStageTexture(this, s, civ));
+      keys.push(buildingTexture(this, 'wonder', 3, this.opts.playerId ?? 1, civ));
+      keys.forEach((key, i) => {
+        const x = i * 330 + 165;
+        const y = 300 + row * 420;
+        const ground = this.add.graphics().setDepth(-1).fillStyle(0x587a3a, 1);
+        ground.fillPoints([[x, y + 10], [x + 150, y - 65], [x, y - 140], [x - 150, y - 65]].map(([a, b]) => new Phaser.Geom.Point(a, b)), true);
+        const img = lit(this.add.image(x, y, key).setScale(1 / ART_SCALE)).setDepth(row);
+        img.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
+        const info = BUILDING_LIGHT.get(key);
+        this.lighting?.attachBuilding({
+          sprite: img, type: 'wonder', footprint: { w: 4, h: 4 }, volume: info?.volume ?? [], glows: info?.glows ?? [],
+          lights: info?.lights ?? [], isComplete: () => i === 3, heightScale: () => 1,
+        });
       });
     });
-    this.cameras.main.setZoom(this.opts.zoom ?? 1).centerOn(660, 180);
+    this.cameras.main.setZoom(this.opts.zoom ?? 1).centerOn(660, 180 + (civs.length - 1) * 210);
   }
 
   /** Per age: a ring with a gap and a tower in one corner, a 45° run, a stair-stepped run. */

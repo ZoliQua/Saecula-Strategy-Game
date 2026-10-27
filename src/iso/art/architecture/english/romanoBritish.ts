@@ -4,8 +4,8 @@ import { R, shutteredWindow } from '../facade';
 import { haystack, palisade, post, torch, wattleFence } from '../parts';
 import type { ArchStyle } from '../style';
 import { styledGable, styledHip } from '../styledRoofs';
-import { romanTower } from '../towers';
 import type { AgeArtSet } from '../types';
+import { timberWatchtower } from './englishTowers';
 import { cruckGable, cruckWall, dummy, hangingBanner, roundFence, vexillum } from './englishParts';
 import { romanoBritishWorkArt } from './romanoBritishWork';
 import { roundhouse } from './roundhouse';
@@ -166,6 +166,6 @@ export function romanoBritishArt(s: ArchStyle): AgeArtSet {
         p.flag(2.82, 2.12, 14, 30, team);
       },
     },
-    tower: romanTower(s),
+    tower: timberWatchtower(s),
   };
 }
