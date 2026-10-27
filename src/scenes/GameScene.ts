@@ -12,12 +12,15 @@ import { DAY_START_PHASE } from '../config/visual';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { tileToScreen } from '../iso/coordinates';
 import type { MapData } from '../map/MapData';
+import { TerrainBake } from '../map/TerrainBake';
 import { TileMap } from '../map/TileMap';
+import { Loading } from '../ui/screens/Loading';
 import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
 import { BuildPlacement } from './game/BuildPlacement';
 import {
   generateGameMap,
+  type GeneratedGame,
   spawnPresetWalls,
   spawnResourceNodes,
   spawnStartingEntities,
@@ -26,6 +29,9 @@ import { OrderIssuer } from './game/OrderIssuer';
 import { PointerInput } from './game/PointerInput';
 import { SystemRunner } from './game/SystemRunner';
 import { CameraController } from './systems/CameraController';
+
+/** Main-thread time per frame spent baking terrain while the loading card shows. */
+const BAKE_SLICE_MS = 24;
 
 /** Scene lifecycle and wiring; logic lives in the helpers under ./game. */
 export class GameScene extends Phaser.Scene {
@@ -42,6 +48,15 @@ export class GameScene extends Phaser.Scene {
   private timeScale = 1;
   private gameOverTriggered = false;
   private commandUnsubscribe: (() => void) | null = null;
+  /** Terrain bake in progress (null once the game runs). */
+  private bake: {
+    terrain: TerrainBake;
+    steps: Generator<number, void>;
+    loading: Loading;
+    frames: number;
+    config: GameSetupConfig;
+    generated: GeneratedGame;
+  } | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -53,12 +68,50 @@ export class GameScene extends Phaser.Scene {
 
     const config = withSetup(defaultSetupConfig(), data ?? {});
     this.players = createPlayers(config.civ, config.aiCount);
-    const { mapData, starts, walls } = generateGameMap(config);
-    const playerStart = starts[0] ?? { tx: 10, ty: 10 };
-    this.mapData = mapData;
+    const generated = generateGameMap(config);
+    this.mapData = generated.mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
-    this.tileMap = new TileMap(this, mapData);
+    // The terrain bake (seconds on cliff maps) runs a slice per frame behind a loading card.
+    const terrain = new TerrainBake(this, this.mapData);
+    this.bake = { terrain, steps: terrain.steps(), loading: new Loading(), frames: 0, config, generated };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.bake) {
+        this.bake.loading.destroy();
+        this.bake.terrain.destroy();
+        this.bake = null;
+        this.events.off(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
+      }
+      this.lighting.destroy();
+    });
+    this.events.on(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
+  }
+
+  /** Runs terrain bake slices for up to BAKE_SLICE_MS per frame, then starts the game. */
+  private onBakeUpdate(): void {
+    const b = this.bake;
+    if (!b) return;
+    // Let the loading card paint before the first heavy slice.
+    if (b.frames++ === 0) return;
+    const until = performance.now() + BAKE_SLICE_MS;
+    for (;;) {
+      const step = b.steps.next();
+      if (step.done) {
+        this.events.off(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
+        this.bake = null;
+        b.loading.destroy();
+        this.startGame(b.terrain, b.config, b.generated);
+        return;
+      }
+      b.loading.set(step.value);
+      if (performance.now() >= until) return;
+    }
+  }
+
+  private startGame(terrain: TerrainBake, config: GameSetupConfig, generated: GeneratedGame): void {
+    const { mapData, starts, walls } = generated;
+    const playerStart = starts[0] ?? { tx: 10, ty: 10 };
+    this.tileMap = new TileMap(this, mapData, terrain);
 
     const bounds = this.tileMap.getWorldBounds();
     const padding = 200;
@@ -103,12 +156,13 @@ export class GameScene extends Phaser.Scene {
       };
     }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      // Scene events outlive a restart: drop the frame hook, or the next game would run a stale one.
+      this.events.off(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
       disposeDev();
       this.commandUnsubscribe?.();
       this.commandUnsubscribe = null;
       this.runner.destroy();
       this.tileMap.destroy();
-      this.lighting.destroy();
     });
 
     const resourceNodes = this.world.with('position', 'resourceNode');

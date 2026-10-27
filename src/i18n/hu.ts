@@ -194,6 +194,11 @@ export const hu = {
     wall: 'Védőfal',
     wonder: 'Győzelmi emlékmű',
   },
+  mapLoading: {
+    kicker: 'Térkép előkészítése',
+    title: 'A táj formálódik',
+    body: 'Sziklák, partok és erdők rajzolása…',
+  },
   gameOver: {
     victoryTitle: 'Győzelem!',
     defeatTitle: 'Vereség',

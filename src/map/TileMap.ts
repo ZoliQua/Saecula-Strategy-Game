@@ -1,17 +1,16 @@
 import Phaser from 'phaser';
 import { ART_SCALE } from '../iso/art/canvas';
-import { lightingActive, lit } from '../iso/art/lighting/LightManager';
-import { attachNormalMap, flatGroundNormal } from '../iso/art/lighting/litTextures';
 import { BUSH_VARIANTS, ROCK_VARIANTS } from '../iso/art/decor';
 import { hash2, tileVariant } from '../iso/art/palette';
-import { paintTerrainChunk } from '../iso/art/terrain';
-import { cliffField, type CliffField } from '../iso/art/cliffArt';
 import { TERRAIN_LOOK } from '../config/visual';
 import { TerrainSurface } from './TerrainSurface';
 import { buildWaterMask, hasWater } from './waterMask';
 import { marchRelief } from './cliffRelief';
-import { CliffOccluders, planOccluders, type OccluderPlan } from './CliffOccluders';
-import { screenToTile, tileToScreen, type TileCoord } from '../iso/coordinates';
+import { CliffOccluders } from './CliffOccluders';
+import type { CliffField } from '../iso/art/cliffArt';
+import { lit } from '../iso/art/lighting/LightManager';
+import { mapWorldBounds, TerrainBake, type WorldBounds } from './TerrainBake';
+import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
 import type { CoverSource } from '../iso/coverage';
 import { DECOR_ORIGIN_Y, decorKeys, FX_KEYS } from '../iso/textures';
@@ -22,18 +21,12 @@ import { ForestLayer } from './ForestLayer';
 import type { FogOfWarData } from './FogOfWarData';
 
 const HIGHLIGHT_DEPTH_OFFSET = 0.5;
-const TERRAIN_DEPTH = -1000;
 const CLOUD_DEPTH = 9_000;
 /** Cloud pattern repeat scale in world px per texture px. */
 const CLOUD_SCALE_X = 3;
 const CLOUD_SCALE_Y = 1.6;
 /** Screen px of cloud layer beyond each view edge. */
 const CLOUD_PAD = 64;
-const CHUNK = 512;
-/** Distinguishes chunk texture keys of map views alive at once (menu diorama + game). */
-let tileMapSeq = 0;
-/** Multiple of the cliff normal texel (4 px): chunk normal maps then share the occluders' world texel grid. */
-const CHUNK_OVERLAP = 4;
 const DECOR_DEPTH_OFFSET = 0.1;
 const HOVER_COLOR = 0xf5a857;
 
@@ -54,8 +47,7 @@ export class TileMap {
 
   private readonly scene: Phaser.Scene;
   private readonly mapData: MapData;
-  private readonly chunks: Phaser.GameObjects.Image[] = [];
-  private readonly seq = tileMapSeq++;
+  private readonly chunks: Phaser.GameObjects.Image[];
   private readonly decor = new Map<number, Decor>();
   private forest!: ForestLayer;
   private readonly cliffs: CliffField | null;
@@ -68,15 +60,17 @@ export class TileMap {
   private highlight: Phaser.GameObjects.Graphics | null = null;
   private selection: Phaser.GameObjects.Graphics | null = null;
 
-  constructor(scene: Phaser.Scene, mapData: MapData) {
+  /** `bake`: a finished TerrainBake (spread over frames by the caller); baked here at once when omitted. */
+  constructor(scene: Phaser.Scene, mapData: MapData, bake: TerrainBake = new TerrainBake(scene, mapData).runAll()) {
     this.scene = scene;
     this.mapData = mapData;
     this.width = mapData.width;
     this.height = mapData.height;
 
-    this.cliffs = makeCliffField(mapData);
-    const plan = this.cliffs ? planOccluders(this.cliffs, lightingActive(scene)) : null;
-    this.bakeTerrain(plan);
+    if (!bake.finished) throw new Error('TileMap needs a finished terrain bake');
+    this.cliffs = bake.cliffs;
+    this.chunks = bake.chunks;
+    const plan = bake.plan;
     this.occluders = this.cliffs && plan ? new CliffOccluders(scene, this.cliffs, plan) : null;
     this.placeDecor();
     this.surface = new TerrainSurface(
@@ -106,32 +100,6 @@ export class TileMap {
         }
       : null;
     this.fog = new FogLayer(scene, mapData.width, mapData.height, rockAt);
-  }
-
-  private bakeTerrain(plan: OccluderPlan | null): void {
-    const b = this.computeWorldBounds();
-    const x0 = b.minX - 64;
-    // Raised plateau tops along the far map edges reach a cliff height above the map.
-    // Every chunk origin (x0/y0 − CHUNK_OVERLAP + k · CHUNK) sits on the 4 px normal texel grid.
-    const y0 = b.minY - 32 - Math.ceil((this.cliffs?.relief.maxHeight ?? 0) / 4) * 4;
-    const x1 = b.maxX + 64;
-    const y1 = b.maxY + 32;
-    let n = 0;
-    for (let y = y0; y < y1; y += CHUNK) {
-      for (let x = x0; x < x1; x += CHUNK) {
-        const w = Math.min(CHUNK, x1 - x);
-        const h = Math.min(CHUNK, y1 - y);
-        // Chunks overlap by CHUNK_OVERLAP px so filtering never opens a seam.
-        const o = CHUNK_OVERLAP;
-        if (!rectTouchesMap(this.mapData, x - o, y - o, w + o * 2, h + o * 2)) continue;
-        const key = `terrain_chunk_${this.seq}_${n++}`;
-        if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
-        const chunk = paintTerrainChunk(this.mapData, x - o, y - o, w + o * 2, h + o * 2, this.cliffs, lightingActive(this.scene), plan);
-        this.scene.textures.addCanvas(key, chunk.canvas);
-        attachNormalMap(this.scene, key, chunk.normal ?? flatGroundNormal());
-        this.chunks.push(lit(this.scene.add.image(x - o, y - o, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH)));
-      }
-    }
   }
 
   private placeDecor(): void {
@@ -266,16 +234,8 @@ export class TileMap {
     return this.computeWorldBounds();
   }
 
-  private computeWorldBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
-    const corners = [
-      tileToScreen({ tx: 0, ty: 0 }),
-      tileToScreen({ tx: this.width - 1, ty: 0 }),
-      tileToScreen({ tx: 0, ty: this.height - 1 }),
-      tileToScreen({ tx: this.width - 1, ty: this.height - 1 }),
-    ];
-    const xs = corners.map((c) => c.sx);
-    const ys = corners.map((c) => c.sy);
-    return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
+  private computeWorldBounds(): WorldBounds {
+    return mapWorldBounds(this.width, this.height);
   }
 
   private placeOverlay(overlay: Phaser.GameObjects.Graphics, tile: TileCoord): void {
@@ -314,29 +274,4 @@ export class TileMap {
     this.highlight?.destroy();
     this.selection?.destroy();
   }
-}
-
-/** Cliff description for painting, or null on maps without cliffs. */
-function makeCliffField(map: MapData): CliffField | null {
-  const raw = map.getRawTiles();
-  const cliff = new Uint8Array(raw.length);
-  let any = false;
-  raw.forEach((t, i) => {
-    if (t !== TERRAIN.cliff) return;
-    cliff[i] = 1;
-    any = true;
-  });
-  return any ? cliffField(map.width, map.height, cliff, TERRAIN_LOOK.cliffHeight, 0, TERRAIN_LOOK.surfaceRes) : null;
-}
-
-/** True when a world rect overlaps the map (padded two tiles, for raised tops and the rim fade). */
-function rectTouchesMap(map: MapData, x: number, y: number, w: number, h: number): boolean {
-  const pad = 2;
-  for (let py = y; py <= y + h; py += 16) {
-    for (let px = x; px <= x + w; px += 16) {
-      const t = screenToTile({ sx: px, sy: py });
-      if (t.tx > -pad && t.ty > -pad && t.tx < map.width + pad && t.ty < map.height + pad) return true;
-    }
-  }
-  return false;
 }
