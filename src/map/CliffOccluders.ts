@@ -5,7 +5,7 @@ import { CLIFF_NORMAL_DOWNSCALE, occluderCellBounds, type OccluderSink } from '.
 import { lit } from '../iso/art/lighting/LightManager';
 import { attachNormalMap } from '../iso/art/lighting/litTextures';
 import { encodeNormal, N_UP } from '../iso/art/lighting/viewSpace';
-import { needsOccluder, occluderReach } from './cliffGeometry';
+import { needsOccluder, occluderReach, tilesInFrontOfFootprint } from './cliffGeometry';
 import { alphaBounds, shelfPack, type Rect } from './occluderPacking';
 
 /** Copies a w×h block of RGBA pixels between ImageData buffers. */
@@ -19,6 +19,8 @@ function copyRect(src: ImageData, sx: number, sy: number, dst: ImageData, dx: nu
 /** Occluders sort just after flat things on their row, before the row's trees (+0.1) and units (+0.3). */
 const OCCLUDER_DEPTH_OFFSET = 0.05;
 const ATLAS_WIDTH = 2048;
+/** An occluder raised by a building sorts this far above the building's sprite (and its construction site plate, +0.01). */
+const RAISED_DEPTH_OFFSET = 0.02;
 
 let seq = 0;
 
@@ -74,13 +76,17 @@ export function planOccluders(field: CliffField, withNormals: boolean): Occluder
  */
 export class CliffOccluders {
   private readonly images: Phaser.GameObjects.Image[] = [];
+  /** Occluder image per tile id (ty · width + tx). */
+  private readonly byTile = new Map<number, Phaser.GameObjects.Image>();
+  /** Depths raised by buildings behind an occluder (see sortAboveFootprint), per image. */
+  private readonly raised = new Map<Phaser.GameObjects.Image, number[]>();
   private readonly key = `cliff_occluders_${seq++}`;
   /** Texture bytes held (albedo + normal), for the memory report. */
   readonly bytes: number;
 
   constructor(
     private readonly scene: Phaser.Scene,
-    field: CliffField,
+    private readonly field: CliffField,
     plan: OccluderPlan,
   ) {
     // The plan's cells are worst-case sized; most blocks (no face) fill half. Trim and repack.
@@ -122,11 +128,45 @@ export class CliffOccluders {
       const b = occluderCellBounds(it.tx, it.ty, field.relief.maxHeight);
       const img = scene.add.image(b.x + it.trim.x, b.y + it.trim.y, this.key, i).setOrigin(0, 0);
       this.images.push(lit(img.setDepth(it.tx + it.ty + OCCLUDER_DEPTH_OFFSET)));
+      this.byTile.set(it.ty * field.width + it.tx, img);
     });
   }
 
   get count(): number {
     return this.images.length;
+  }
+
+  /**
+   * A building with footprint (fx, fy, w, h) drawn at `depth`: raised
+   * rock beside its +u / +v walls hides part of it, so those occluders
+   * sort just above it until the returned release function is called.
+   */
+  sortAboveFootprint(fx: number, fy: number, w: number, h: number, depth: number): () => void {
+    const touched: Array<{ img: Phaser.GameObjects.Image; tileDepth: number }> = [];
+    for (const [tx, ty] of tilesInFrontOfFootprint(fx, fy, w, h)) {
+      if (tx < 0 || ty < 0 || tx >= this.field.width || ty >= this.field.height) continue;
+      const img = this.byTile.get(ty * this.field.width + tx);
+      if (!img || tx + ty + OCCLUDER_DEPTH_OFFSET > depth) continue;
+      const list = this.raised.get(img) ?? [];
+      list.push(depth + RAISED_DEPTH_OFFSET);
+      this.raised.set(img, list);
+      touched.push({ img, tileDepth: tx + ty });
+      this.applyDepth(img, tx + ty);
+    }
+    return () => {
+      for (const { img, tileDepth } of touched) {
+        const list = this.raised.get(img);
+        const i = list?.indexOf(depth + RAISED_DEPTH_OFFSET) ?? -1;
+        if (list && i >= 0) list.splice(i, 1);
+        if (list?.length === 0) this.raised.delete(img);
+        this.applyDepth(img, tileDepth);
+      }
+    };
+  }
+
+  private applyDepth(img: Phaser.GameObjects.Image, tileDepth: number): void {
+    const raised = this.raised.get(img) ?? [];
+    img.setDepth(Math.max(tileDepth + OCCLUDER_DEPTH_OFFSET, ...raised));
   }
 
   /** Hides occluders outside the camera view (fewer objects for the renderer to walk). */

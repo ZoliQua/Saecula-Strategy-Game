@@ -57,6 +57,9 @@ export function applyDying(sprite: Phaser.GameObjects.Sprite, entity: Renderable
   if (d && !entity.building) sprite.setAlpha(dyingAlpha(d.ttlMs));
 }
 
+/** Buildings draw this far above their front footprint tile (after its decor, before its units). */
+export const BUILDING_DEPTH_OFFSET = 0.2;
+
 /** Draw depth: footprint depth for buildings, interpolated along the step for walking units. */
 export function renderDepth(entity: Renderable): number {
   if (entity.building) {
@@ -64,7 +67,7 @@ export function renderDepth(entity: Renderable): number {
       entity.position,
       entity.building.footprint.width,
       entity.building.footprint.height,
-    ) + 0.2;
+    ) + BUILDING_DEPTH_OFFSET;
   }
   const mv = entity.movable;
   if (!mv || mv.path.length === 0) return tileDepth(entity.position) + 0.3;

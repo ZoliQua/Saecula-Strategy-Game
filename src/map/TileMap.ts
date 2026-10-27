@@ -175,6 +175,11 @@ export class TileMap {
     this.decor.set(id, { sprite, kind });
   }
 
+  /** See CliffOccluders.sortAboveFootprint; returns the release function (no-op without cliffs). */
+  sortCliffsAboveBuilding(fx: number, fy: number, w: number, h: number, depth: number): () => void {
+    return this.occluders?.sortAboveFootprint(fx, fy, w, h, depth) ?? (() => undefined);
+  }
+
   /** Re-reads terrain for one tile (e.g. a depleted resource). */
   refreshTile(tx: number, ty: number): void {
     this.syncDecor(tx, ty);

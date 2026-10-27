@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cliffFootDistance, needsOccluder, occluderReach, type CliffTest } from './cliffGeometry';
+import { cliffFootDistance, needsOccluder, occluderReach, tilesInFrontOfFootprint, type CliffTest } from './cliffGeometry';
 
 const REACH = occluderReach(58.6);
 
@@ -72,5 +72,18 @@ describe('cliffFootDistance', () => {
   it('is Infinity on a cliff tile or with no cliff behind', () => {
     expect(cliffFootDistance(only([5, 5]), 5, 5)).toBe(Infinity);
     expect(cliffFootDistance(only([6, 5]), 5, 5)).toBe(Infinity);
+  });
+});
+
+describe('tilesInFrontOfFootprint', () => {
+  const key = (t: readonly [number, number]) => `${t[0]},${t[1]}`;
+  const tiles = new Set(tilesInFrontOfFootprint(10, 20, 3, 3).map(key));
+
+  it('lists the tiles beside the +u and +v walls whose raised rock overlaps the building', () => {
+    for (const t of [[13, 20], [13, 22], [14, 21], [10, 23], [12, 24], [13, 23]] as const) expect(tiles.has(key(t))).toBe(true);
+  });
+
+  it('skips the footprint, the tiles behind it and tiles off to the side', () => {
+    for (const t of [[11, 21], [9, 21], [11, 19], [13, 19], [9, 23], [16, 20]] as const) expect(tiles.has(key(t))).toBe(false);
   });
 });

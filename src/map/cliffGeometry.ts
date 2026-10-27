@@ -83,3 +83,24 @@ export function cliffFootDistance(isCliff: CliffTest, u: number, v: number): num
   if (d === Infinity && isCliff(i - 1, j - 1)) d = Math.hypot(du, dv);
   return d;
 }
+
+/** How many tiles beyond a footprint's front walls a cliff block can still overlap the building's sprite. */
+const FOOTPRINT_FRONT_REACH = 2;
+
+/**
+ * Tiles in front of a w×h footprint at (fx, fy) along u or v (beside its
+ * +u wall or its +v wall, up to FOOTPRINT_FRONT_REACH tiles out). Raised
+ * rock standing there hides part of the building, but sorts before it by
+ * plain tile depth; such occluders take the building's depth instead.
+ */
+export function tilesInFrontOfFootprint(fx: number, fy: number, w: number, h: number): Array<readonly [number, number]> {
+  const out: Array<readonly [number, number]> = [];
+  const r = FOOTPRINT_FRONT_REACH;
+  for (let ty = fy; ty < fy + h + r; ty++) {
+    for (let tx = fx; tx < fx + w + r; tx++) {
+      if (tx < fx + w && ty < fy + h) continue;
+      out.push([tx, ty]);
+    }
+  }
+  return out;
+}
