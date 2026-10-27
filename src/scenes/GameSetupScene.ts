@@ -1,11 +1,15 @@
 import Phaser from 'phaser';
 import { civsInPlay, defaultSetupConfig, type GameSetupConfig } from '../game/GameSetupConfig';
 import { UnitArtPrewarm } from '../iso/art/units/UnitArtPrewarm';
+import { AVAILABLE_CIVS } from '../config/civs';
+import { civPreview, paintNextCivPreview } from '../ui/civPreview';
 import { GameSetup } from '../ui/screens/GameSetup';
 import type { MainMenuScene } from './MainMenuScene';
 
 /** Shortest "Betöltés…" state, so the card transition never flashes by. */
 const MIN_LOADING_MS = 450;
+/** Civ previews the menu has not painted yet wait until the card's entrance has played (setup.css, staggered rows). */
+const PREVIEW_DELAY_MS = 1500;
 
 /** Reopening the setup card after a failed start: the previous choices and why it failed. */
 export interface SetupReturn {
@@ -18,7 +22,8 @@ export const prewarmReport = { totalMs: 0, maxStepMs: 0, frames: 0 };
 
 /**
  * Runs on top of MainMenuScene (whose live diorama stays behind the
- * card). Owns the DOM setup card, then pre-warms unit art (civs in play)
+ * card). Owns the DOM setup card (painting any civ preview the menu
+ * has not, one per frame after the card's entrance), then pre-warms unit art (civs in play)
  * while the card fades out and hands the config to GameScene.
  */
 export class GameSetupScene extends Phaser.Scene {
@@ -26,6 +31,8 @@ export class GameSetupScene extends Phaser.Scene {
   private prewarm: UnitArtPrewarm | null = null;
   private config: GameSetupConfig | null = null;
   private loadingMs = 0;
+  private openMs = 0;
+  private previewsShown = false;
   private leaving = false;
 
   constructor() {
@@ -36,6 +43,8 @@ export class GameSetupScene extends Phaser.Scene {
     this.prewarm = null;
     this.config = null;
     this.loadingMs = 0;
+    this.openMs = 0;
+    this.previewsShown = false;
     this.leaving = false;
     prewarmReport.frames = 0;
     this.setup = new GameSetup(
@@ -64,6 +73,17 @@ export class GameSetupScene extends Phaser.Scene {
     this.time.delayedCall(380, () => this.scene.stop());
   }
 
+  /** Paints one missing civ preview per frame and hands every ready one to the card (the menu may have painted some meanwhile). */
+  private paintPreview(): void {
+    if (this.previewsShown) return;
+    const painted = paintNextCivPreview(this.textures);
+    for (const civ of AVAILABLE_CIVS) {
+      const preview = civPreview(civ);
+      if (preview) this.setup?.setPreview(civ, preview);
+    }
+    this.previewsShown = painted === null;
+  }
+
   private beginLoading(config: GameSetupConfig): void {
     this.config = config;
     this.setup?.setBusy();
@@ -72,6 +92,8 @@ export class GameSetupScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    this.openMs += delta;
+    if (!this.config && !this.leaving && this.openMs >= PREVIEW_DELAY_MS) this.paintPreview();
     if (!this.config || this.leaving) return;
     this.loadingMs += delta;
     // One unit type per frame: the card animation keeps running between steps.

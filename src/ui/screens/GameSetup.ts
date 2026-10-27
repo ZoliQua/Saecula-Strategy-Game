@@ -1,5 +1,5 @@
 import {
-  AVAILABLE_CIVS,
+  AI_CIV_CHOICES,
   AVAILABLE_DIFFICULTIES,
   AVAILABLE_TEMPLATES,
   DIFFICULTIES,
@@ -17,8 +17,10 @@ import {
 } from '../../game/GameSetupConfig';
 import { MAP_TEMPLATES } from '../../map/generator';
 import { hu } from '../../i18n/hu';
-import { CIV_IDS } from '../../config/civs';
+import type { CivId } from '../../types';
+import { civPreview, type CivPreview } from '../civPreview';
 import { el, uiRoot } from '../dom';
+import { CivPicker } from './CivPicker';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
 import '../screens.css';
@@ -34,8 +36,8 @@ export interface GameSetupHandlers {
 }
 
 /**
- * Game setup card: map template / size, AI count, difficulty, civ and
- * seed. Options that are not implemented yet are shown disabled with a
+ * Game setup card: map template / size, AI count, difficulty, the
+ * human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
  * "hamarosan" tag. Lives over the main menu's live diorama.
  */
 export class GameSetup {
@@ -45,12 +47,13 @@ export class GameSetup {
   private readonly aiSeg: Segmented<string>;
   private readonly sizeSeg: Segmented<string>;
   private readonly diffSeg: Segmented<string>;
+  private readonly aiCivSeg: Segmented<string>;
+  private readonly civPicker: CivPicker;
   private readonly seedInput: HTMLInputElement;
   private readonly aiHint: HTMLElement;
   private readonly summary: HTMLElement;
   private readonly startBtn: HTMLButtonElement;
   private readonly backBtn: HTMLButtonElement;
-  private readonly civChips: HTMLButtonElement[] = [];
   private readonly templateChips: HTMLButtonElement[] = [];
   private busy = false;
   private teardown = 0;
@@ -103,20 +106,13 @@ export class GameSetup {
 
     this.aiHint = el('div', { class: 'setup-hint', 'aria-live': 'polite' });
 
-    const civGrid = el('div', { class: 'civ-grid', role: 'radiogroup', 'aria-label': t.civ });
-    for (const id of CIV_IDS) {
-      const available = AVAILABLE_CIVS.includes(id);
-      const chip = el(
-        'button',
-        { class: 'civ-chip', type: 'button', role: 'radio', 'aria-checked': available && this.config.civ === id, disabled: !available },
-        el('span', { class: 'civ-name' }, hu.civs[id]),
-        available ? null : el('span', { class: 'soon' }, t.comingSoon),
-      );
-      if (available) chip.addEventListener('click', () => this.change({ civ: id }));
-      chip.dataset['civ'] = id;
-      this.civChips.push(chip);
-      civGrid.append(chip);
-    }
+    this.civPicker = new CivPicker(this.config.civ, civPreview, (civ) => this.change({ civ }));
+    const aiCivItems: SegmentItem<string>[] = AI_CIV_CHOICES.map((id) =>
+      id === 'mixed' ? { value: id, label: t.aiCivMixed, sub: t.aiCivMixedSub } : { value: id, label: hu.civs[id] },
+    );
+    this.aiCivSeg = new Segmented('ai-civs', t.aiCivs, aiCivItems, this.config.aiCivs, (v) =>
+      this.change({ aiCivs: v as GameSetupConfig['aiCivs'] }),
+    );
 
     this.seedInput = el('input', {
       class: 'seed-input',
@@ -170,7 +166,8 @@ export class GameSetup {
         field(t.size, this.sizeSeg.root),
         field(t.opponents, this.aiSeg.root, this.aiHint),
         field(t.difficulty, this.diffSeg.root),
-        field(t.civ, civGrid),
+        field(t.civ, this.civPicker.root),
+        field(t.aiCivs, this.aiCivSeg.root),
         field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
       ),
       notice ? el('div', { class: 'setup-notice', role: 'alert' }, notice) : null,
@@ -199,6 +196,11 @@ export class GameSetup {
     const label = this.startBtn.querySelector('.label');
     if (label) label.textContent = hu.setup.loading;
     for (const b of this.card.querySelectorAll('button, input')) (b as HTMLButtonElement).disabled = true;
+  }
+
+  /** A civ preview finished painting after the card opened. */
+  setPreview(civ: CivId, preview: CivPreview): void {
+    this.civPicker.setPreview(civ, preview);
   }
 
   /** Plays the exit animation. */
@@ -235,7 +237,8 @@ export class GameSetup {
     this.aiSeg.set(String(c.aiCount));
     this.diffSeg.set(c.difficulty);
     for (const chip of this.templateChips) chip.setAttribute('aria-checked', String(chip.dataset['tpl'] === c.template));
-    for (const chip of this.civChips) chip.setAttribute('aria-checked', String(chip.dataset['civ'] === c.civ));
+    this.aiCivSeg.set(c.aiCivs);
+    this.civPicker.set(c.civ);
     if (document.activeElement !== this.seedInput) this.seedInput.value = String(c.seed);
     const crowded = exceedsRecommendedAi(c);
     this.aiHint.textContent = crowded ? hu.setup.opponentsCrowded : `${hu.setup.opponentsOk}: ${MAP_SIZES[c.mapSize].recommendedAi}`;

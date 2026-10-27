@@ -44,6 +44,9 @@ export interface GameSetupConfig {
 
 export type AiCivChoice = 'mixed' | CivId;
 
+/** The "Ellenfelek népe" options in setup order: a seeded mix first, then each playable civ. */
+export const AI_CIV_CHOICES: readonly AiCivChoice[] = ['mixed', ...AVAILABLE_CIVS];
+
 /** A fresh random seed (injectable rng for tests). */
 export function randomSeed(rng: () => number = Math.random): number {
   return 1 + Math.floor(rng() * MAX_SEED);

@@ -49,8 +49,7 @@
 .seg-sub.soon, .civ-chip .soon { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .seg-item[aria-checked='true'] .seg-sub { color: rgba(255, 207, 143, 0.75); }
 
-/* civ chips */
-.civ-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+/* chips (civ "hamarosan" chips and map templates share this look) */
 .civ-chip {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; padding: 5px 6px;
   border: 0; border-radius: 11px; cursor: pointer; font: 600 13.5px var(--font); color: var(--ink-2);
@@ -62,6 +61,90 @@
   box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.55), 0 8px 22px -10px rgba(245, 168, 87, 0.7);
 }
 .civ-chip[disabled] { cursor: default; opacity: 0.6; color: var(--ink-3); }
+
+/* civ picker: a card per playable civ, then compact "hamarosan" chips */
+.civ-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.civ-soon { grid-column: span 1; min-height: 38px; font-size: 12px; opacity: 0.5; }
+.civ-soon .soon { font-size: 9px; }
+.civ-card {
+  --tilt: 0px;
+  grid-column: span 3; position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; padding: 6px 6px 10px;
+  border: 0; border-radius: 13px; cursor: pointer; text-align: left; font: inherit; color: var(--ink-2); overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.22));
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(var(--tilt));
+  transition: transform 0.35s var(--ease), background 0.3s, box-shadow 0.3s, color 0.25s;
+}
+/* a soft light sweep across the glass on hover */
+.civ-card::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 236, 205, 0.1) 46%, transparent 62%);
+  transform: translateX(-60%); transition: opacity 0.3s;
+}
+.civ-card:hover:not([disabled]) { --tilt: -2px; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 14px 26px -18px rgba(0, 0, 0, 0.9); }
+.civ-card:hover:not([disabled])::after { opacity: 1; animation: civ-sweep 0.9s var(--ease) both; }
+@keyframes civ-sweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+.civ-card[aria-checked='true'] {
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(245, 168, 87, 0.24), rgba(245, 168, 87, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.6), inset 0 1px 0 rgba(255, 220, 170, 0.18), 0 12px 30px -14px rgba(245, 168, 87, 0.65);
+}
+
+/* the lit town centre on its pool of warm light */
+.civ-stage {
+  position: relative; flex: none; width: 100%; height: 100px; border-radius: 10px; display: grid; place-items: end center; overflow: hidden;
+  background: radial-gradient(90% 70% at 50% 78%, rgba(245, 168, 87, 0.16), rgba(0, 0, 0, 0) 70%), rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.civ-pool {
+  position: absolute; left: 22%; right: 22%; bottom: 4px; height: 24px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 196, 120, 0.32), rgba(255, 160, 80, 0));
+  transition: opacity 0.4s, transform 0.5s var(--ease); opacity: 0.55;
+}
+.civ-art, .civ-glow {
+  grid-area: 1 / 1; position: relative; width: 124px; height: auto; margin-bottom: 2px;
+  transform-origin: 50% 90%; transition: transform 0.5s var(--ease), opacity 0.5s, filter 0.4s;
+}
+.civ-art { filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.5)) saturate(0.92) brightness(0.95); }
+.civ-glow { mix-blend-mode: screen; opacity: 0.55; pointer-events: none; }
+.civ-stage:not(.ready) .civ-art, .civ-stage:not(.ready) .civ-glow { opacity: 0; transform: translateY(6px) scale(0.96); }
+/* while the preview paints: a faint shimmering diamond where the building will stand */
+.civ-stage:not(.ready)::before {
+  content: ''; position: absolute; left: 50%; bottom: 14px; width: 46px; height: 46px; margin-left: -23px; border-radius: 6px;
+  transform: scaleY(0.5) rotate(45deg); transform-origin: 50% 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); background-size: 200% 100%;
+  animation: civ-shimmer 1.2s linear infinite;
+}
+@keyframes civ-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.civ-card:hover:not([disabled]) .civ-art, .civ-card:hover:not([disabled]) .civ-glow { transform: scale(1.06); }
+.civ-card:hover:not([disabled]) .civ-art { filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.5)) saturate(1) brightness(1); }
+.civ-card[aria-checked='true'] .civ-art { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) saturate(1.05) brightness(1.04); }
+.civ-card[aria-checked='true'] .civ-glow { animation: civ-flicker 2.6s ease-in-out infinite; }
+.civ-card[aria-checked='true'] .civ-pool { opacity: 1; transform: scaleX(1.12); }
+@keyframes civ-flicker {
+  0%, 100% { opacity: 0.85; } 18% { opacity: 1; } 34% { opacity: 0.72; } 52% { opacity: 0.95; } 70% { opacity: 0.8; }
+}
+
+.civ-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0 8px; }
+.civ-card .civ-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: 0.03em; transition: color 0.25s; }
+.civ-card[aria-checked='true'] .civ-name { color: var(--amber-2); }
+.civ-desc {
+  font-size: 11.5px; line-height: 1.35; color: var(--ink-3); transition: color 0.25s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.civ-card[aria-checked='true'] .civ-desc { color: rgba(255, 220, 175, 0.72); }
+.civ-check {
+  position: absolute; top: 12px; right: 12px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  color: #22170b; background: var(--amber); box-shadow: 0 0 12px -2px rgba(245, 168, 87, 0.8);
+  opacity: 0; transform: scale(0.4); transition: opacity 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.civ-card[aria-checked='true'] .civ-check { opacity: 1; transform: none; }
+.civ-card:active:not([disabled]) { --tilt: 0px; transition-duration: 0.1s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .civ-card, .civ-art, .civ-glow, .civ-check { transition: none; }
+  .civ-card:hover:not([disabled])::after, .civ-card[aria-checked='true'] .civ-glow, .civ-stage:not(.ready)::before { animation: none; }
+}
 
 /* map templates: two rows of chips */
 .tpl-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
@@ -115,7 +198,8 @@
 @media (max-width: 760px) {
   .setup-row { grid-template-columns: 1fr; gap: 6px; }
   .setup-label { padding-top: 0; }
-  .civ-grid { grid-template-columns: repeat(2, 1fr); }
+  .civ-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .civ-card { grid-column: 1 / -1; }
   .setup-foot { flex-direction: column; align-items: stretch; }
   .setup-actions .btn { flex: 1; }
 }

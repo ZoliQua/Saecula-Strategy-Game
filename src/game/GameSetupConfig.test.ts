@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../map/random';
 import {
+  AI_CIV_CHOICES,
   assignCivs,
   civsInPlay,
   clampAiCount,
@@ -95,6 +96,18 @@ describe('GameSetupConfig', () => {
   it('draws seeds from 1..999999', () => {
     expect(randomSeed(() => 0)).toBe(1);
     expect(randomSeed(() => 0.999999999)).toBe(999_999);
+  });
+});
+
+describe('AI_CIV_CHOICES', () => {
+  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol)', () => {
+    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english']);
+  });
+
+  it('every choice survives withSetup unchanged', () => {
+    for (const aiCivs of AI_CIV_CHOICES) {
+      expect(withSetup(defaultSetupConfig(5), { aiCivs }).aiCivs).toBe(aiCivs);
+    }
   });
 });
 

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MENU_CIV } from '../config/civs';
+import { AVAILABLE_CIVS, MENU_CIV } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
@@ -15,7 +15,8 @@ import { FogOfWarData } from '../map/FogOfWarData';
 import { generateMap } from '../map/generator';
 import { TERRAIN } from '../map/TerrainTypes';
 import { TileMap } from '../map/TileMap';
-import { directionFromDelta, type BuildingType, type Direction, type UnitType } from '../types';
+import { directionFromDelta, type BuildingType, type CivId, type Direction, type UnitType } from '../types';
+import { paintNextCivPreview } from '../ui/civPreview';
 import { MainMenu } from '../ui/screens/MainMenu';
 import type { SetupReturn } from './GameSetupScene';
 
@@ -31,6 +32,47 @@ const MENU_POND: ReadonlyArray<{ tx: number; ty: number; r: number }> = [
 ];
 const MENU_ROCK = { tx: -9, ty: -3, r: 2.6 } as const;
 
+/** One civ's corner of the diorama: its settlement, in its own player colour, offset from the map centre (tiles). */
+interface Quarter {
+  readonly civ: CivId;
+  readonly playerId: number;
+  readonly at: TileCoord;
+  readonly buildings: ReadonlyArray<readonly [BuildingType, number, number]>;
+  readonly walkers: readonly UnitType[];
+}
+
+/** The two playable civs side by side: a Hungarian town in front, an English one up the slope behind it. */
+const QUARTERS: readonly Quarter[] = [
+  {
+    civ: MENU_CIV,
+    playerId: 1,
+    at: { tx: 0, ty: 0 },
+    buildings: [
+      ['town_center', -1, -1],
+      ['house', 3, -2],
+      ['house', -4, 2],
+      ['barracks', 3, 2],
+      ['farm', -4, -2],
+    ],
+    walkers: ['villager', 'villager', 'swordsman', 'villager'],
+  },
+  {
+    civ: AVAILABLE_CIVS.find((c) => c !== MENU_CIV) ?? MENU_CIV,
+    playerId: 2,
+    at: { tx: -4, ty: -9 },
+    buildings: [
+      ['town_center', -1, -1],
+      ['house', -4, -1],
+      ['house', 3, 0],
+      ['barracks', 1, -5],
+      ['farm', -1, 3],
+    ],
+    walkers: ['villager', 'archer', 'villager'],
+  },
+];
+/** Civ previews for the setup card are painted once the menu's entrance has played. */
+const PREVIEW_DELAY_MS = 1800;
+
 interface Walker {
   sprites: UnitSprites;
   /** Heading towards b (outbound) and back. */
@@ -45,8 +87,9 @@ const WALK_MS = 4200;
 
 /**
  * Main menu: a live diorama of the world (swaying trees, drifting
- * clouds, a small settlement with walking villagers) under a slow
- * camera drift, with the DOM hero overlay on top.
+ * clouds, a Hungarian and an English quarter with walking villagers)
+ * under a slow camera drift, with the DOM hero overlay on top. Once the
+ * hero has entered it also paints the setup card's civ previews.
  */
 export class MainMenuScene extends Phaser.Scene {
   private tileMap: TileMap | null = null;
@@ -54,6 +97,10 @@ export class MainMenuScene extends Phaser.Scene {
   private menu: MainMenu | null = null;
   private readonly walkers: Walker[] = [];
   private focus = { sx: 0, sy: 0 };
+  private menuMs = 0;
+  private previewsDone = false;
+  /** The setup card is open (it paints any missing preview itself, after its entrance). */
+  private away = false;
 
   constructor() {
     super({ key: 'MainMenuScene' });
@@ -61,6 +108,9 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(data?: Partial<SetupReturn>): void {
     this.cameras.main.setBackgroundColor('#090c12');
+    this.menuMs = 0;
+    this.previewsDone = false;
+    this.away = false;
     const { map } = generateMap({
       template: 'meadow',
       width: MENU_MAP_SIZE,
@@ -72,7 +122,9 @@ export class MainMenuScene extends Phaser.Scene {
     const start = { tx: Math.floor(MENU_MAP_SIZE / 2), ty: Math.floor(MENU_MAP_SIZE / 2) };
     // Clear a settlement clearing before the map is painted.
     map.forEachTile(({ tx, ty }) => {
-      if (Math.abs(tx - start.tx) + Math.abs(ty - start.ty) <= 6) map.setTile(tx, ty, TERRAIN.grass);
+      for (const q of QUARTERS) {
+        if (Math.abs(tx - start.tx - q.at.tx) + Math.abs(ty - start.ty - q.at.ty) <= 6) map.setTile(tx, ty, TERRAIN.grass);
+      }
       // A pond and a rock outcrop in view show off the animated water and the raised cliffs.
       const pond = Math.min(...MENU_POND.map((p) => Math.hypot(tx - p.tx - start.tx, ty - p.ty - start.ty) - p.r));
       if (pond <= 0) map.setTile(tx, ty, TERRAIN.water);
@@ -85,10 +137,10 @@ export class MainMenuScene extends Phaser.Scene {
     map.forEachTile(({ tx, ty }) => fog.markVisible(tx, ty));
     this.tileMap.applyFog(fog);
 
-    const place = (type: BuildingType, tx: number, ty: number) => {
+    const place = (q: Quarter, type: BuildingType, tx: number, ty: number) => {
       const spec = BUILDING_SPECS[type];
       const front = tileToScreen({ tx: tx + spec.width - 1, ty: ty + spec.height - 1 });
-      const key = buildingTexture(this, type, MENU_AGE, 1, MENU_CIV);
+      const key = buildingTexture(this, type, MENU_AGE, q.playerId, q.civ);
       const img = this.add.image(front.sx, front.sy + 16, key);
       img.setScale(1 / ART_SCALE).setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / img.height);
       img.setDepth(tx + spec.width - 1 + ty + spec.height - 1 + 0.2);
@@ -105,33 +157,39 @@ export class MainMenuScene extends Phaser.Scene {
         heightScale: () => 1,
       });
     };
-    place('town_center', start.tx - 1, start.ty - 1);
-    place('house', start.tx + 3, start.ty - 2);
-    place('house', start.tx - 4, start.ty + 2);
-    place('barracks', start.tx + 3, start.ty + 2);
-    place('farm', start.tx - 4, start.ty - 2);
+    let delay = 0;
+    for (const q of QUARTERS) {
+      const ox = start.tx + q.at.tx;
+      const oy = start.ty + q.at.ty;
+      for (const [type, dx, dy] of q.buildings) place(q, type, ox + dx, oy + dy);
+      q.walkers.forEach((u, i) => {
+        const a = { tx: ox - 3 + (i % 3) * 3, ty: oy + 2 + Math.floor(i / 3) * 2 };
+        const b = { tx: a.tx + 2 + (i % 2), ty: a.ty - 3 };
+        this.walk(u, q, a, b, delay);
+        delay += 700;
+      });
+    }
 
-    const units: UnitType[] = ['villager', 'villager', 'villager', 'swordsman', 'archer', 'villager'];
-    units.forEach((u, i) => {
-      const a = { tx: start.tx - 3 + (i % 3) * 3, ty: start.ty + 2 + Math.floor(i / 3) * 2 };
-      const b = { tx: a.tx + 2 + (i % 2), ty: a.ty - 3 };
-      this.walk(u, a, b, i * 700);
+    // Frame both quarters, shifted right of centre so the hero copy on the left keeps clear ground.
+    const mid = tileToScreen({
+      tx: start.tx + QUARTERS.reduce((s, q) => s + q.at.tx, 0) / QUARTERS.length,
+      ty: start.ty + QUARTERS.reduce((s, q) => s + q.at.ty, 0) / QUARTERS.length,
     });
-
-    const center = tileToScreen(start);
-    this.focus = { sx: center.sx - 140, sy: center.sy + 20 };
-    this.cameras.main.setZoom(1.25);
+    this.focus = { sx: mid.sx - 250, sy: mid.sy - 12 };
+    this.cameras.main.setZoom(1.15);
     this.cameras.main.centerOn(this.focus.sx, this.focus.sy);
     if (this.game.renderer.type === Phaser.WEBGL) {
       this.cameras.main.postFX.addVignette(0.6, 0.5, 0.95, 0.3);
     }
 
     this.menu = new MainMenu(() => {
+      this.away = true;
       this.menu?.setAway(true);
       this.scene.launch('GameSetupScene');
     });
     // A start that failed (no valid map) comes straight back to the setup card.
     if (data?.config && data.notice) {
+      this.away = true;
       this.menu.setAway(true);
       this.scene.launch('GameSetupScene', { config: data.config, notice: data.notice });
     }
@@ -148,6 +206,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The setup card was closed: bring the hero copy back. */
   showMenu(): void {
+    this.away = false;
     this.menu?.setAway(false);
   }
 
@@ -158,10 +217,10 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   /** A unit strolling back and forth between two tiles. */
-  private walk(type: UnitType, a: TileCoord, b: TileCoord, delay: number): void {
+  private walk(type: UnitType, q: Quarter, a: TileCoord, b: TileCoord, delay: number): void {
     const pa = tileToScreen(a);
     const pb = tileToScreen(b);
-    const sprites = createUnitSprites(this, type, MENU_CIV, PLAYER_COLORS[0] ?? 0xffffff, true);
+    const sprites = createUnitSprites(this, type, q.civ, PLAYER_COLORS[q.playerId - 1] ?? 0xffffff, true);
     const sprite = sprites.body.setPosition(pa.sx, pa.sy).setDepth(tileDepth(a) + 0.3);
     this.lighting?.attachCaster(sprite, sprites.key);
     const tiles = Math.hypot(b.tx - a.tx, b.ty - a.ty);
@@ -198,6 +257,9 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   override update(time: number, delta: number): void {
+    this.menuMs += delta;
+    // One setup-card civ preview per frame, after the hero's entrance (skipped once all are painted).
+    if (this.menuMs >= PREVIEW_DELAY_MS && !this.previewsDone && !this.away) this.previewsDone = paintNextCivPreview(this.textures) === null;
     this.tileMap?.update(time, delta);
     this.lighting?.update(delta);
     pumpUnitArt(this);

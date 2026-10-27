@@ -1,5 +1,6 @@
 import { hu } from '../../i18n/hu';
 import { el } from '../dom';
+import { arrowStep, nextEnabled } from './radioNav';
 
 export interface SegmentItem<T extends string> {
   value: T;
@@ -69,17 +70,17 @@ export class Segmented<T extends string> {
   }
 
   private onKey(e: KeyboardEvent, from: number): void {
-    const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    const dir = arrowStep(e.key);
     if (dir === 0) return;
     e.preventDefault();
-    for (let step = 1; step <= this.items.length; step++) {
-      const j = (from + dir * step + this.items.length * step) % this.items.length;
-      const item = this.items[j];
-      if (item && !item.disabled) {
-        this.pick(item.value);
-        this.buttons[j]?.focus();
-        return;
-      }
-    }
+    const j = nextEnabled(
+      this.items.map((it) => !it.disabled),
+      from,
+      dir,
+    );
+    const item = this.items[j];
+    if (!item) return;
+    this.pick(item.value);
+    this.buttons[j]?.focus();
   }
 }
