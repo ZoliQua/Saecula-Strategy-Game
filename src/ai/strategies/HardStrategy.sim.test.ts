@@ -75,4 +75,26 @@ describe('HardStrategy headless duels (64×64 meadow)', () => {
   it('beats Medium on fixed seed 4 within 23 minutes (measured 21.86 min)', () => {
     expect(duel(4, (rng) => new MediumStrategy(rng)).wonAt).toBeLessThan(23 * MIN);
   });
+
+  /**
+   * Age-up pace on its own (64×64 meadow, passive human, Hard handicap), measured in Task 19 on seeds 1-8:
+   * age 2 at 12.62 / 11.89 / 12.67 / 12.65 / 13.09 / 12.72 / 12.85 / 11.27 min, age 3 at 19.39 / 19.07 /
+   * 20.27 / 19.84 / 20.82 / 20.32 / 20.04 / 18.50 min. No seed is left out. (§10.3 asks for ASAP; Hard
+   * is no faster than Medium yet: a known follow-up.)
+   */
+  it('on seeds 1-8 alone: age 2 by 13.5 min (worst 13.09) and age 3 by 21.5 min (worst 20.82)', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
+      const hard = match.players.get(2)!;
+      let age2 = Infinity;
+      let age3 = Infinity;
+      match.run(22 * MIN, 100, (t) => {
+        if (age2 === Infinity && hard.age >= 2) age2 = t;
+        if (age3 === Infinity && hard.age >= 3) age3 = t;
+        return age3 < Infinity;
+      });
+      expect(age2, `seed ${seed} age 2`).toBeLessThanOrEqual(13.5 * MIN);
+      expect(age3, `seed ${seed} age 3`).toBeLessThanOrEqual(21.5 * MIN);
+    }
+  });
 });
