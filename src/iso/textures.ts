@@ -8,6 +8,7 @@ import { paintWallBanner } from './art/walls/wallBanner';
 import { WONDER_STAGES } from './art/architecture/wonder';
 import { paintWallPiece, wallPieceKey, wallPieceKeyAge } from './art/walls/paintWall';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
+import { cropCanvas, trimLitArt, type TrimRect } from './art/trimArt';
 import {
   paintArrow,
   paintBolt,
@@ -32,7 +33,7 @@ import {
   type DecorArt,
 } from './art/decor';
 import { paintTreeAtlas } from './art/trees';
-import { attachNormalMap, registerShadowSilhouette, shareNormalMap } from './art/lighting/litTextures';
+import { attachNormalMap, halfNormalCanvas, registerShadowSilhouette, shareNormalMap } from './art/lighting/litTextures';
 import {
   FOLIAGE_DERIVE,
   normalMapFor,
@@ -151,7 +152,10 @@ export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeI
   if (!host.textures.exists(ageKey)) registerLitArt(host, ageKey, paintBuilding(type, teamColor(1), artAge));
   const key = teamArtKey(ageKey, playerId);
   if (key === ageKey || host.textures.exists(key)) return key;
-  registerCanvas(host, key, paintBuilding(type, teamColor(playerId), artAge, false).canvas);
+  // Same crop as the base, so the variant lines up with the normal map it shares.
+  const variant = paintBuilding(type, teamColor(playerId), artAge, false).canvas;
+  const rect = TRIMS.get(ageKey);
+  registerCanvas(host, key, rect ? cropCanvas(variant, rect) : variant);
   shareNormalMap(host, ageKey, key);
   const info = BUILDING_LIGHT.get(ageKey);
   if (info) BUILDING_LIGHT.set(key, info);
@@ -237,10 +241,33 @@ export function releaseStaleBuildingArt(
   return removed;
 }
 
-/** Registers painted art with its normal map and remembers its lighting data. */
-function registerLitArt(host: TextureHost, key: string, art: LitArt): void {
+/**
+ * Frees wall pieces (any age) that no game object shows: joins change as
+ * walls are built and razed, so a long game would otherwise keep every
+ * shape it ever saw. `inUse` must hold the texture key of every game
+ * object, visible or not (placement ghosts too). Returns the number removed.
+ */
+export function releaseUnusedWallPieces(host: TextureHost, inUse: ReadonlySet<string>): number {
+  let removed = 0;
+  for (const key of host.textures.getTextureKeys()) {
+    if (wallPieceKeyAge(key) === undefined || inUse.has(key)) continue;
+    host.textures.remove(key);
+    BUILDING_LIGHT.delete(key);
+    removed++;
+  }
+  return removed;
+}
+
+/** Crop applied to each registered lit art (team variants reuse their base's). */
+const TRIMS = new Map<string, TrimRect>();
+
+/** Registers painted art (trimmed to its content) with its normal map and remembers its lighting data. */
+function registerLitArt(host: TextureHost, key: string, painted: LitArt): void {
+  const { art, rect } = trimLitArt(painted);
+  TRIMS.set(key, rect);
   registerCanvas(host, key, art.canvas);
-  attachNormalMap(host, key, art.normal);
+  // Buildings, wall pieces and Wonder stages keep a half-size normal map (memory budget).
+  attachNormalMap(host, key, art.normal && halfNormalCanvas(art.normal, art.canvas));
   BUILDING_LIGHT.set(key, { volume: art.volume, glows: art.glows, lights: art.lights, smoke: art.smoke });
 }
 
