@@ -13,13 +13,14 @@ const LODE = 5 * RESOURCE_NODE_AMOUNT.gold;
 function twoStarts(): GeneratedMap {
   const map = new MapData(40, 20, TERRAIN.grass);
   const starts = [{ tx: 8, ty: 8 }, { tx: 31, ty: 8 }];
+  const outerLodes = starts.map((s) => Array.from({ length: 5 }, (_, i) => ({ tx: s.tx - 2 + i, ty: s.ty + 10 })));
   for (const s of starts) {
     for (let i = 0; i < 5; i++) map.setTile(s.tx - 4 + i, s.ty - 5, TERRAIN.gold_mine);
     for (let i = 0; i < 5; i++) map.setTile(s.tx - 2 + i, s.ty + 10, TERRAIN.gold_mine);
     for (let i = 0; i < 6; i++) map.setTile(s.tx + 5, s.ty - 3 + i, TERRAIN.berries);
     for (let i = 0; i < 9; i++) map.setTile(s.tx - 6, s.ty - 4 + i, TERRAIN.forest);
   }
-  return { map, playerStarts: starts, walls: [] };
+  return { map, playerStarts: starts, walls: [], outerLodes };
 }
 
 describe('validateMap', () => {
@@ -65,8 +66,6 @@ describe('validateMap', () => {
     expect(validateMap(g).problems).toEqual([
       'player 0: only 0 gold near the start',
       `player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`,
-      // Its one workable lode is no second lode.
-      'player 0: only 0 gold tiles of its own outside its start lode (outer lode)',
       'player 1: only 0 food near the start',
     ]);
   });
@@ -77,7 +76,7 @@ describe('validateMap', () => {
     expect(ownedGold(g, 0)).toBe(LODE);
     expect(validateMap(g).problems).toEqual([
       `player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`,
-      'player 0: only 0 gold tiles of its own outside its start lode (outer lode)',
+      'player 0: only 0 workable tiles of its own in its outer gold lode',
     ]);
     // Gold in player 0's reach but nearer to player 1 is player 1's...
     for (let ty = 1; ty <= 5; ty++) g.map.setTile(21, ty, TERRAIN.gold_mine);
@@ -85,7 +84,8 @@ describe('validateMap', () => {
     // ...gold nearer to player 0 is its own.
     for (let ty = 1; ty <= 5; ty++) g.map.setTile(18, ty, TERRAIN.gold_mine);
     expect(ownedGold(g, 0)).toBe(2 * LODE);
-    expect(validateMap(g).ok).toBe(true);
+    // The amount is back, but untagged gold is no outer lode.
+    expect(validateMap(g).problems).toEqual(['player 0: only 0 workable tiles of its own in its outer gold lode']);
   });
 });
 
@@ -101,17 +101,28 @@ describe('validateMap outer lode (M3 N1)', () => {
     expect(ownedGold(g, 0)).toBe(2 * LODE);
     expect(outerLodeTiles(g, 0)).toBe(0);
     expect(validateMap(g).problems).toEqual([
-      `player 0: only 0 gold tiles of its own outside its start lode (outer lode)`,
+      'player 0: only 0 workable tiles of its own in its outer gold lode',
     ]);
   });
 
-  it('counts a separate lode of its own as the outer lode', () => {
+  it('counts only the tagged outer lode: prize or random gold of its own never stands in for it', () => {
     const g = twoStarts();
     expect(outerLodeTiles(g, 0)).toBe(5);
-    // A lode nearer to the other start is not player 0's.
-    for (let i = 0; i < 5; i++) g.map.setTile(6 + i, 18, TERRAIN.grass);
-    for (let ty = 1; ty <= 5; ty++) g.map.setTile(21, ty, TERRAIN.gold_mine);
-    expect(outerLodeTiles(g, 0)).toBe(0);
+    // The lode found no room (placeOuterGoldLodes tagged nothing), but a 5-tile prize lies nearer player 0.
+    for (let i = 0; i < 5; i++) {
+      g.map.setTile(6 + i, 18, TERRAIN.grass);
+      g.map.setTile(14 + i, 1, TERRAIN.gold_mine);
+    }
+    const prizeOnly = { ...g, outerLodes: [[], g.outerLodes[1] ?? []] };
+    expect(ownedGold(prizeOnly, 0)).toBe(2 * LODE);
+    expect(outerLodeTiles(prizeOnly, 0)).toBe(0);
+    expect(validateMap(prizeOnly).problems).toEqual(['player 0: only 0 workable tiles of its own in its outer gold lode']);
+  });
+
+  it('does not count tagged tiles nearer to another start', () => {
+    const g = twoStarts();
+    const shifted = { ...g, outerLodes: [g.outerLodes[1] ?? [], g.outerLodes[1] ?? []] };
+    expect(outerLodeTiles(shifted, 0)).toBe(0);
   });
 });
 

@@ -16,15 +16,16 @@ const ATTEMPTS = 96;
  * ground the start's villagers reach. Forest in the one-tile apron around
  * it is cleared to grass, so the lode never plugs a road and can be worked
  * from every side. `blocked` tiles (preset walls) are kept out and walked
- * around. Run it after the start economies; validation rejects a map
- * where a lode found no room.
+ * around. Run it after the start economies. Returns each start's lode
+ * tiles (empty where no site fitted); validation rejects a map where a
+ * lode found no room, so generation retries.
  */
 export function placeOuterGoldLodes(
   map: MapData,
   rng: () => number,
   starts: readonly TileCoord[],
   blocked: TilePredicate = () => false,
-): void {
+): TileCoord[][] {
   const center = { tx: (map.width - 1) / 2, ty: (map.height - 1) / 2 };
   const g = START_ECONOMY.outerGold;
   // First beyond every start's economy radius (apron too), on grass or forest. On a crowded map, then
@@ -33,7 +34,7 @@ export function placeOuterGoldLodes(
     { ring: g.ring, keepOut: nearAnyStart(starts, START_ECONOMY.radius + 1), forest: true },
     { ring: g.crowdedRing, keepOut: nearAnyStart(starts, START_CORE_RADIUS + 1), forest: false },
   ];
-  starts.forEach((start, i) => {
+  return starts.map((start, i) => {
     const others = starts.filter((_, j) => j !== i);
     const reached = floodFrom([villagerSpawnTiles(start)[1]!], map.width, map.height, (tx, ty) =>
       inBounds(map, tx, ty) && isPassable(map.getTile(tx, ty)) && !blocked(tx, ty),
@@ -49,9 +50,10 @@ export function placeOuterGoldLodes(
         if (!lodeFits(site, lode)) continue;
         for (const t of apron(lode)) if (map.getTile(t.tx, t.ty) === TERRAIN.forest) map.setTile(t.tx, t.ty, TERRAIN.grass);
         for (const t of lode) map.setTile(t.tx, t.ty, TERRAIN.gold_mine);
-        return;
+        return lode;
       }
     }
+    return [];
   });
 }
 

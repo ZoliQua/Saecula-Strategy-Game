@@ -21,6 +21,6 @@ export function generateMeadow(options: TemplateOptions): GeneratedMap {
   const center = { tx: Math.floor(width / 2), ty: Math.floor(height / 2) };
   seedGoodies(map, rng, center, 4, randInt(rng, 2, 4), 6);
   placeStartEconomies(map, rng, playerStarts);
-  placeOuterGoldLodes(map, rng, playerStarts);
-  return { map, playerStarts, walls: [] };
+  const outerLodes = placeOuterGoldLodes(map, rng, playerStarts);
+  return { map, playerStarts, walls: [], outerLodes };
 }

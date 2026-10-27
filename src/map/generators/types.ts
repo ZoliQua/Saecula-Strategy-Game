@@ -24,6 +24,12 @@ export interface GeneratedMap {
   readonly playerStarts: readonly TileCoord[];
   /** Walls spawned as real wall entities (empty on most templates). */
   readonly walls: readonly PresetWall[];
+  /**
+   * Each start's outer gold lode as placed (placeOuterGoldLodes), by start
+   * index; empty when no site fitted. Validation counts only these tiles,
+   * so centre-prize or random gold never stands in for a missing lode.
+   */
+  readonly outerLodes: readonly (readonly TileCoord[])[];
 }
 
 export const MAX_PLAYER_SLOTS = 6;

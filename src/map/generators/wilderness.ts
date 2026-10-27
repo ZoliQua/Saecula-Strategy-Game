@@ -48,9 +48,9 @@ export function generateWilderness(options: TemplateOptions): GeneratedMap {
 
   seedGoodies(map, rng, center, 3, randInt(rng, 2, 4), 0);
   placeStartEconomies(map, rng, playerStarts);
-  placeOuterGoldLodes(map, rng, playerStarts);
+  const outerLodes = placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.forest);
-  return { map, playerStarts, walls: [] };
+  return { map, playerStarts, walls: [], outerLodes };
 }
 
 function carveNoisyClearing(map: MapData, center: TileCoord, radius: number, noiseSeed: number): void {

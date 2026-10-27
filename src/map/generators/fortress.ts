@@ -55,8 +55,8 @@ export function generateFortress(options: TemplateOptions): GeneratedMap {
     }
   });
   // The outer gold lies outside the walls (or in a roomy yard), reached through the gates.
-  placeOuterGoldLodes(map, rng, playerStarts, (tx, ty) => taken.has(ty * width + tx));
-  return { map, playerStarts, walls };
+  const outerLodes = placeOuterGoldLodes(map, rng, playerStarts, (tx, ty) => taken.has(ty * width + tx));
+  return { map, playerStarts, walls, outerLodes };
 }
 
 /** The ring radius: FORTRESS_RING_RADIUS, less when starts are so close that rings would leave no road between. */

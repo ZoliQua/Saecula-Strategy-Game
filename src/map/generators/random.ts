@@ -51,9 +51,9 @@ export function generateRandom(options: TemplateOptions): GeneratedMap {
   const playerStarts = spreadStarts(map, playerCount);
   for (const s of playerStarts) clearDisk(map, s, START_CLEARING);
   placeStartEconomies(map, rng, playerStarts);
-  placeOuterGoldLodes(map, rng, playerStarts);
+  const outerLodes = placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.forest);
-  return { map, playerStarts, walls: [] };
+  return { map, playerStarts, walls: [], outerLodes };
 }
 
 /** `count` starts in the largest walkable region, each as far from the others as it can be. */

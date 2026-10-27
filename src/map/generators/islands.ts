@@ -65,9 +65,9 @@ export function generateIslands(options: TemplateOptions): GeneratedMap {
     seedGoodies(map, rng, mid, 2, randInt(rng, 1, 3), 3);
   }
   placeStartEconomies(map, rng, playerStarts);
-  placeOuterGoldLodes(map, rng, playerStarts);
+  const outerLodes = placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.cliff);
-  return { map, playerStarts, walls: [] };
+  return { map, playerStarts, walls: [], outerLodes };
 }
 
 /**
