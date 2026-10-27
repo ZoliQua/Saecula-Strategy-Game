@@ -38,6 +38,8 @@ const median = (xs: number[]) => {
   return (s[(s.length - 1) >> 1]! + s[s.length >> 1]!) / 2;
 };
 
+// The raid bound is the spec's 8 min against a measured worst of 7.99 (seed 11): any economy change that
+// delays the raid by a second flips it — re-measure rather than widen past the spec.
 describe('MediumStrategy headless simulation (64×64 meadow, 8 seeds, passive human)', () => {
   it('on the listed seeds: raids by 8 min (§10.2: 5-8; worst 7.99), age 2 by 12.75 min each (worst 12.65), median ≤ 12, age 3 by 21.5 (worst 20.9)', () => {
     const runs = SEEDS.map(play);
