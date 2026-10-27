@@ -8,6 +8,8 @@ import { createVillager } from '../archetypes/villager';
 import { createEcsWorld } from '../world';
 import { GatheringSystem } from './GatheringSystem';
 import { MovementSystem } from './MovementSystem';
+import { REPATH_RETRY_MS } from '../../config/balance';
+import type { PathAllowance } from '../../map/pathBudget';
 
 function setup() {
   // Small map: TC at (0,0) 3x3, tree at (5,5), villager at (4,5).
@@ -132,5 +134,37 @@ describe('GatheringSystem', () => {
     expect(villager.gatherer!.targetNodeId).toBeUndefined();
     expect(villager.movable!.path).toHaveLength(0);
     expect(Math.abs(villager.position!.tx - 2)).toBeLessThanOrEqual(2);
+  });
+  it('a partial load bound for an unreachable drop-off is re-planned only every REPATH_RETRY_MS', () => {
+    const { map, world, villager } = setup();
+    // Wall the villager in at (8,8) (forest ring): the TC is never reachable.
+    villager.position = { tx: 8, ty: 8 };
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) map.setTile(8 + dx, 8 + dy, TERRAIN.forest);
+    villager.gatherer!.carrying = 3;
+    villager.gatherer!.carryingType = 'wood';
+    villager.gatherer!.dropoffId = 1;
+    let searches = 0;
+    const counting: PathAllowance = { take: () => (searches++, true) };
+    const system = new GatheringSystem(world, map, null, counting);
+    for (let i = 0; i < 20; i++) system.update(50);
+    expect(searches).toBe(1);
+    system.update(REPATH_RETRY_MS);
+    system.update(50);
+    expect(searches).toBe(2);
+  });
+
+  it('waits for the path budget: a refused search is retried next tick', () => {
+    const { world, map, villager } = setup();
+    villager.position = { tx: 10, ty: 10 };
+    villager.gatherer!.carrying = 3;
+    villager.gatherer!.carryingType = 'wood';
+    villager.gatherer!.dropoffId = 1;
+    let allow = false;
+    const system = new GatheringSystem(world, map, null, { take: () => allow });
+    system.update(50);
+    expect(villager.movable!.path).toHaveLength(0);
+    allow = true;
+    system.update(50);
+    expect(villager.movable!.path.length).toBeGreaterThan(0);
   });
 });

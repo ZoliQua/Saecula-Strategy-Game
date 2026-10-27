@@ -1,6 +1,7 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToNearest } from '../../map/pathfinding';
 import { BREACH_SEARCH_RADIUS, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { findBreachTarget } from '../../game/breach';
@@ -45,6 +46,7 @@ export class CombatSystem {
     world: EcsWorld,
     mapData: MapData,
     private readonly players: PlayerManager | null = null,
+    private readonly paths: PathAllowance = UNLIMITED_PATHS,
   ) {
     this.world = world;
     this.mapData = mapData;
@@ -170,6 +172,7 @@ export class CombatSystem {
     // Already moving toward something? Keep going; we'll re-check next tick.
     if (a.movable.path.length > 0) return;
     if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
+    if (!this.paths.take()) return;
     // Every tile in reach blocked (e.g. ringed by walls): head for the target itself;
     // findPathToNearest stops at the closest reachable tile.
     const goal = findAdjacentToTarget(this.mapData, target, a.position, a.attacker.range) ?? target.position;

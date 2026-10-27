@@ -15,6 +15,7 @@ import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { generateMap, type MapTemplate } from '../../map/generator';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
+import { PathBudget } from '../../map/pathBudget';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
 import type { Difficulty } from '../../game/GameSetupConfig';
@@ -72,15 +73,17 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   });
   const enemyOf = options.enemyOf ?? (() => 1);
   const fogFor = (id: number): FogOfWarData | null => ais.find((a) => a.player.id === id)?.fog ?? null;
+  // Same per-frame A* budget as the game (scaled to the step length).
+  const paths = new PathBudget();
   const systems = {
-    pathfinding: new PathfindingSystem(world, map),
-    gathering: new GatheringSystem(world, map, players),
+    pathfinding: new PathfindingSystem(world, map, paths),
+    gathering: new GatheringSystem(world, map, players, paths),
     farms: new FarmRegenSystem(world),
-    construction: new ConstructionSystem(world, map),
+    construction: new ConstructionSystem(world, map, paths),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor),
-    combat: new CombatSystem(world, map, players),
+    combat: new CombatSystem(world, map, players, paths),
     projectiles: new ProjectileSystem(world, players),
     movement: new MovementSystem(world, players),
     death: new DeathSystem(world, map),
@@ -89,6 +92,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   let now = 0;
   const step = (dt: number) => {
     now += dt;
+    paths.reset(dt);
     systems.pathfinding.update();
     systems.gathering.update(dt);
     systems.farms.update(dt);

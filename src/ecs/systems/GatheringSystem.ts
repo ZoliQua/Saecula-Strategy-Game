@@ -1,25 +1,24 @@
-import type { With } from 'miniplex';
-import { GATHER_RETARGET_RADIUS } from '../../config/balance';
-import type { TileCoord } from '../../iso/coordinates';
+import { REPATH_RETRY_MS } from '../../config/balance';
 import { gatherRateMultiplier } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import type { MapData } from '../../map/MapData';
+import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPath } from '../../map/pathfinding';
+import type { TileCoord } from '../../iso/coordinates';
 import type { ResourceType } from '../../types';
 import { uiStore } from '../../ui/store';
 import type { Entity } from '../components';
 import { faceToward } from './facing';
+import {
+  findAdjacentPassable,
+  findAdjacentToBuildingNode,
+  findAdjacentToFootprint,
+  isAdjacentToFootprint,
+  isAdjacentToNode,
+} from './gathering/gatherGeometry';
+import { findEntityById, findNearestDropoff, findNearestNodeOfType } from './gathering/gatherQueries';
+import type { Dropoff, ResourceNode, Villager } from './gathering/gatherTypes';
 import type { EcsWorld } from '../world';
-
-type Villager = With<
-  Entity,
-  'position' | 'gatherer' | 'movable' | 'owner'
->;
-type ResourceNode = With<Entity, 'position' | 'resourceNode'>;
-type Dropoff = With<
-  Entity,
-  'position' | 'resourceDropoff' | 'building'
->;
 
 /**
  * Full gather cycle state machine for villagers with a `gatherer`
@@ -32,23 +31,34 @@ type Dropoff = With<
  *
  * We don't store an explicit state — we derive the next action from
  * `gatherer.targetNodeId`, `carrying`, `capacity`, and proximity.
+ *
+ * Every A* search asks the shared per-frame budget first (a refused walk
+ * simply retries next tick), and a walk that found no way (unreachable
+ * node or drop-off) waits REPATH_RETRY_MS before planning again.
  */
 export class GatheringSystem {
   private readonly world: EcsWorld;
   private readonly mapData: MapData;
   private readonly players: PlayerManager | null;
+  private readonly paths: PathAllowance;
+  /** Clock and per-villager earliest next search after a failed one. */
+  private nowMs = 0;
+  private readonly repathAt = new WeakMap<object, number>();
 
   constructor(
     world: EcsWorld,
     mapData: MapData,
     players: PlayerManager | null = null,
+    paths: PathAllowance = UNLIMITED_PATHS,
   ) {
     this.world = world;
     this.mapData = mapData;
     this.players = players;
+    this.paths = paths;
   }
 
   update(deltaMs: number): void {
+    this.nowMs += deltaMs;
     const dt = deltaMs / 1000;
     const villagers = this.world.with('position', 'gatherer', 'movable', 'owner');
     for (const v of villagers) {
@@ -62,6 +72,8 @@ export class GatheringSystem {
     v.gatherer.targetNodeId = v.gatherIntent.nodeId;
     v.gatherer.dropoffId = undefined;
     this.world.removeComponent(v as Entity, 'gatherIntent');
+    // A new order plans at once, whatever the last failed search was.
+    this.repathAt.delete(v);
     this.walkToNode(v);
   }
 
@@ -76,7 +88,7 @@ export class GatheringSystem {
       if (g.carrying > 0 && g.dropoffId !== undefined) this.handleFull(v);
       return;
     }
-    const node = this.findEntityById(g.targetNodeId) as
+    const node = findEntityById(this.world, g.targetNodeId) as
       | ResourceNode
       | undefined;
     // An empty farm regrows (FarmRegenSystem): its farmer waits instead of leaving.
@@ -144,7 +156,7 @@ export class GatheringSystem {
   private handleFull(v: Villager): void {
     const g = v.gatherer;
     if (!g.carryingType || g.carrying <= 0) return;
-    const dropoff = this.findNearestDropoff(v, g.carryingType);
+    const dropoff = findNearestDropoff(this.world, v, g.carryingType);
     if (!dropoff) {
       // No dropoff reachable — stay put.
       v.movable.path = [];
@@ -170,29 +182,29 @@ export class GatheringSystem {
   private walkToNode(v: Villager): void {
     const g = v.gatherer;
     if (g.targetNodeId === undefined) return;
-    const node = this.findEntityById(g.targetNodeId) as
-      | ResourceNode
-      | undefined;
+    const node = findEntityById(this.world, g.targetNodeId) as ResourceNode | undefined;
     if (!node) return;
-    const goal = (node as Entity).building
-      ? findAdjacentToBuildingNode(this.mapData, node, v.position)
-      : findAdjacentPassable(this.mapData, node.position, v.position);
-    if (!goal) return;
-    const path = findPath(this.mapData, v.position, goal);
-    if (!path) return;
-    v.movable.path = path.slice(1);
-    v.movable.progress = 0;
+    this.walkTo(v, () =>
+      (node as Entity).building
+        ? findAdjacentToBuildingNode(this.mapData, node, v.position)
+        : findAdjacentPassable(this.mapData, node.position, v.position),
+    );
   }
 
   private walkToFootprint(v: Villager, dropoff: Dropoff): void {
-    const goal = findAdjacentToFootprint(
-      this.mapData,
-      dropoff,
-      v.position,
-    );
-    if (!goal) return;
-    const path = findPath(this.mapData, v.position, goal);
-    if (!path) return;
+    this.walkTo(v, () => findAdjacentToFootprint(this.mapData, dropoff, v.position));
+  }
+
+  /** Plans a walk to `goal()` within the path budget; a failed plan backs off (see class doc). */
+  private walkTo(v: Villager, goal: () => TileCoord | null): void {
+    if ((this.repathAt.get(v) ?? 0) > this.nowMs) return;
+    const to = goal();
+    if (to && !this.paths.take()) return;
+    const path = to ? findPath(this.mapData, v.position, to) : null;
+    if (!path) {
+      this.repathAt.set(v, this.nowMs + REPATH_RETRY_MS);
+      return;
+    }
     v.movable.path = path.slice(1);
     v.movable.progress = 0;
   }
@@ -204,7 +216,7 @@ export class GatheringSystem {
    */
   private retarget(v: Villager): void {
     const g = v.gatherer;
-    const next = g.carryingType ? this.findNearestNodeOfType(v, g.carryingType) : undefined;
+    const next = g.carryingType ? findNearestNodeOfType(this.world, v, g.carryingType) : undefined;
     g.targetNodeId = next?.id ?? undefined;
     if (!next) g.dropoffId = undefined;
     if (g.carrying >= g.capacity || (!next && g.carrying > 0)) {
@@ -236,161 +248,4 @@ export class GatheringSystem {
     }
     v.gatherer.carrying -= floored;
   }
-
-  private findEntityById(id: number): Entity | undefined {
-    for (const entity of this.world.entities) {
-      if (entity.id === id) return entity;
-    }
-    return undefined;
-  }
-
-  private findNearestDropoff(
-    v: Villager,
-    type: ResourceType,
-  ): Dropoff | undefined {
-    let best: Dropoff | undefined;
-    let bestDist = Infinity;
-    const dropoffs = this.world.with('position', 'resourceDropoff', 'building');
-    for (const d of dropoffs) {
-      if (!d.resourceDropoff.accepts.includes(type)) continue;
-      if (d.owner?.playerId !== v.owner.playerId || (d as Entity).dying) continue;
-      const dist = footprintDistance(v.position, d);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = d;
-      }
-    }
-    return best;
-  }
-
-  /**
-   * Nearest node of `type` within GATHER_RETARGET_RADIUS of `v`; a farm
-   * only if it is its owner's and nobody else works it.
-   */
-  private findNearestNodeOfType(v: Villager, type: ResourceType): ResourceNode | undefined {
-    let best: ResourceNode | undefined;
-    let bestDist = Infinity;
-    const nodes = this.world.with('position', 'resourceNode');
-    for (const n of nodes) {
-      if (n.resourceNode.type !== type) continue;
-      if (n.resourceNode.amount <= 0) continue;
-      if (Math.max(Math.abs(n.position.tx - v.position.tx), Math.abs(n.position.ty - v.position.ty)) > GATHER_RETARGET_RADIUS) continue;
-      const dist = manhattan(v.position, n.position);
-      if (dist >= bestDist) continue;
-      if ((n as Entity).building && !this.isFreeFarmFor(n as Entity, v)) continue;
-      bestDist = dist;
-      best = n;
-    }
-    return best;
-  }
-
-  private isFreeFarmFor(farm: Entity, v: Villager): boolean {
-    if (farm.owner?.playerId !== v.owner.playerId || farm.dying) return false;
-    for (const o of this.world.with('gatherer')) {
-      if (o !== v && o.gatherer.targetNodeId === farm.id) return false;
-    }
-    return true;
-  }
-}
-
-function isAdjacentToNode(v: TileCoord, node: ResourceNode): boolean {
-  const b = (node as Entity).building;
-  if (!b) {
-    const dx = Math.abs(v.tx - node.position.tx);
-    const dy = Math.abs(v.ty - node.position.ty);
-    return dx <= 1 && dy <= 1;
-  }
-  return (
-    v.tx >= node.position.tx - 1 &&
-    v.tx <= node.position.tx + b.footprint.width &&
-    v.ty >= node.position.ty - 1 &&
-    v.ty <= node.position.ty + b.footprint.height
-  );
-}
-
-function isAdjacentToFootprint(v: TileCoord, d: Dropoff): boolean {
-  const { width, height } = d.building.footprint;
-  const x0 = d.position.tx - 1;
-  const y0 = d.position.ty - 1;
-  const x1 = d.position.tx + width;
-  const y1 = d.position.ty + height;
-  return v.tx >= x0 && v.tx <= x1 && v.ty >= y0 && v.ty <= y1;
-}
-
-function findAdjacentPassable(
-  map: MapData,
-  target: TileCoord,
-  preferNear: TileCoord,
-): TileCoord | null {
-  const candidates: TileCoord[] = [];
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      if (dx === 0 && dy === 0) continue;
-      const tile = { tx: target.tx + dx, ty: target.ty + dy };
-      if (map.isPassable(tile.tx, tile.ty)) candidates.push(tile);
-    }
-  }
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => manhattan(a, preferNear) - manhattan(b, preferNear));
-  return candidates[0]!;
-}
-
-function findAdjacentToBuildingNode(
-  map: MapData,
-  node: ResourceNode,
-  preferNear: TileCoord,
-): TileCoord | null {
-  const b = (node as Entity).building;
-  if (!b) return null;
-  const { width, height } = b.footprint;
-  const candidates: TileCoord[] = [];
-  for (let dx = -1; dx <= width; dx++) {
-    candidates.push({ tx: node.position.tx + dx, ty: node.position.ty - 1 });
-    candidates.push({ tx: node.position.tx + dx, ty: node.position.ty + height });
-  }
-  for (let dy = 0; dy < height; dy++) {
-    candidates.push({ tx: node.position.tx - 1, ty: node.position.ty + dy });
-    candidates.push({ tx: node.position.tx + width, ty: node.position.ty + dy });
-  }
-  const passable = candidates.filter((t) => map.isPassable(t.tx, t.ty));
-  if (passable.length === 0) return null;
-  passable.sort(
-    (a, b2) =>
-      Math.abs(a.tx - preferNear.tx) + Math.abs(a.ty - preferNear.ty) -
-      (Math.abs(b2.tx - preferNear.tx) + Math.abs(b2.ty - preferNear.ty)),
-  );
-  return passable[0]!;
-}
-
-function findAdjacentToFootprint(
-  map: MapData,
-  d: Dropoff,
-  preferNear: TileCoord,
-): TileCoord | null {
-  const { width, height } = d.building.footprint;
-  const candidates: TileCoord[] = [];
-  for (let dx = -1; dx <= width; dx++) {
-    for (const dy of [-1, height]) {
-      candidates.push({ tx: d.position.tx + dx, ty: d.position.ty + dy });
-    }
-  }
-  for (let dy = 0; dy < height; dy++) {
-    candidates.push({ tx: d.position.tx - 1, ty: d.position.ty + dy });
-    candidates.push({ tx: d.position.tx + width, ty: d.position.ty + dy });
-  }
-  const passable = candidates.filter((t) => map.isPassable(t.tx, t.ty));
-  if (passable.length === 0) return null;
-  passable.sort((a, b) => manhattan(a, preferNear) - manhattan(b, preferNear));
-  return passable[0]!;
-}
-
-function manhattan(a: TileCoord, b: TileCoord): number {
-  return Math.abs(a.tx - b.tx) + Math.abs(a.ty - b.ty);
-}
-
-function footprintDistance(v: TileCoord, d: Dropoff): number {
-  const { width, height } = d.building.footprint;
-  const cx = d.position.tx + (width - 1) / 2;
-  const cy = d.position.ty + (height - 1) / 2;
-  return Math.abs(v.tx - cx) + Math.abs(v.ty - cy);
 }

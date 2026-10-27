@@ -1,6 +1,7 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPath } from '../../map/pathfinding';
 import { FARM_BALANCE, REPATH_RETRY_MS, TRAINER_BUILDINGS } from '../../config/balance';
 import { BUILDING_SPECS, towerAttacker } from '../archetypes/building';
@@ -31,7 +32,11 @@ export class ConstructionSystem {
   private nowMs = 0;
   private readonly repathAt = new WeakMap<object, number>();
 
-  constructor(world: EcsWorld, mapData: MapData) {
+  constructor(
+    world: EcsWorld,
+    mapData: MapData,
+    private readonly paths: PathAllowance = UNLIMITED_PATHS,
+  ) {
     this.world = world;
     this.mapData = mapData;
   }
@@ -141,6 +146,7 @@ export class ConstructionSystem {
   private walkToSite(b: Builder, site: Site): void {
     if ((this.repathAt.get(b) ?? 0) > this.nowMs) return;
     const goal = findAdjacent(this.mapData, site, b.position);
+    if (goal && !this.paths.take()) return;
     const path = goal ? findPath(this.mapData, b.position, goal) : null;
     if (!path) {
       this.repathAt.set(b, this.nowMs + REPATH_RETRY_MS);

@@ -32,6 +32,7 @@ import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
+import { PathBudget } from '../../map/pathBudget';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { CameraController } from '../systems/CameraController';
@@ -65,6 +66,8 @@ export class SystemRunner {
   private aiPlayers: AIPlayer[] = [];
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
+  /** A* searches shared by every system, refilled each frame. */
+  private readonly paths = new PathBudget();
 
   constructor(
     scene: Phaser.Scene,
@@ -79,15 +82,15 @@ export class SystemRunner {
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
     this.selection = new SelectionSystem(scene, world);
-    this.pathfinding = new PathfindingSystem(world, mapData);
+    this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
     this.movement = new MovementSystem(world, players);
-    this.gathering = new GatheringSystem(world, mapData, players);
+    this.gathering = new GatheringSystem(world, mapData, players, this.paths);
     this.farms = new FarmRegenSystem(world);
-    this.construction = new ConstructionSystem(world, mapData);
+    this.construction = new ConstructionSystem(world, mapData, this.paths);
     this.training = new TrainingSystem(world, mapData, players);
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
-    this.combat = new CombatSystem(world, mapData, players);
+    this.combat = new CombatSystem(world, mapData, players, this.paths);
     this.projectiles = new ProjectileSystem(world, players);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
@@ -139,6 +142,7 @@ export class SystemRunner {
   update(time: number, delta: number): void {
     this.cameraController.update(delta);
     this.tileMap.update(time, delta);
+    this.paths.reset(delta);
     this.pathfinding.update();
     this.gathering.update(delta);
     this.farms.update(delta);
