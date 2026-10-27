@@ -92,9 +92,10 @@ const BANK_PALISADE: WallAgeStyle = {
   },
 };
 
-const ASHLAR = TU.ashlar;
+/** Cool grey Kentish ragstone ashlar (the Hungarian curtain is a warm limestone). */
+const ASHLAR = 0x9a9c99;
 const RUBBLE = TU.stone;
-const WALK = shade(TU.ashlar, 0.82);
+const WALK = shade(ASHLAR, 0.82);
 
 /** Wall face: weathering at the foot, cross-slit loops at intervals. */
 function curtainFace(ctx: Ctx, w: number, h: number, light: number): void {
@@ -114,8 +115,8 @@ const NORMAN_CURTAIN: WallAgeStyle = {
   shadow: (p, arm) => armShadow(p, arm, 0.22 * arm.girth),
   arm: (p, arm) => {
     const g = arm.girth;
-    prism(p, arm.a, arm.b, 0.22 * g, 0, 12, { color: RUBBLE, detail: 'fieldstone', batter: 0.04 });
-    prism(p, arm.a, arm.b, 0.18 * g, 12, 58, { color: ASHLAR, detail: 'stone', top: WALK, face: (w, h, l) => curtainFace(p.ctx, w, h, l) });
+    prism(p, arm.a, arm.b, 0.235 * g, 0, 16, { color: RUBBLE, detail: 'fieldstone', batter: 0.055 });
+    prism(p, arm.a, arm.b, 0.18 * g, 16, 58, { color: ASHLAR, detail: 'stone', top: WALK, face: (w, h, l) => curtainFace(p.ctx, w, h, l) });
     // Projecting string course under the parapet, then the merlons.
     prism(p, arm.a, arm.b, 0.2 * g, 55, 58.5, { color: shade(ASHLAR, 1.06), top: WALK });
     for (const c of stations(arm, 0.2, 0.04)) {
@@ -125,8 +126,8 @@ const NORMAN_CURTAIN: WallAgeStyle = {
   },
   post: (p) => {
     padShadow(p, 0.36);
-    frustum(p, 0.13, 0.13, 0.87, 0.87, 0, 14, 0.035, { color: RUBBLE, detail: 'fieldstone', top: WALK });
-    p.box(0.17, 0.17, 0.83, 0.83, 14, 92, { color: ASHLAR, detail: 'stone' });
+    frustum(p, 0.12, 0.12, 0.88, 0.88, 0, 16, 0.05, { color: RUBBLE, detail: 'fieldstone', top: WALK });
+    p.box(0.17, 0.17, 0.83, 0.83, 16, 92, { color: ASHLAR, detail: 'stone' });
     const face = (w: number) => {
       const ctx = p.ctx;
       crossLoop(ctx, w / 2, -18, 16, 1);
@@ -141,13 +142,13 @@ const NORMAN_CURTAIN: WallAgeStyle = {
         ctx.fill();
       }
     };
-    p.leftFace(0.17, 0.83, 0.83, 14, face, 78);
-    p.rightFace(0.17, 0.83, 0.83, 14, face, 78);
+    p.leftFace(0.17, 0.83, 0.83, 16, face, 76);
+    p.rightFace(0.17, 0.83, 0.83, 16, face, 76);
     // Clasping buttresses on the three visible corners, string course wrapped round them.
     const strip = { color: shade(ASHLAR, 1.04), detail: 'stone' } as const;
-    p.box(0.14, 0.73, 0.27, 0.86, 14, 84, strip);
-    p.box(0.73, 0.14, 0.86, 0.27, 14, 84, strip);
-    p.box(0.73, 0.73, 0.86, 0.86, 14, 84, strip);
+    p.box(0.14, 0.73, 0.27, 0.86, 16, 84, strip);
+    p.box(0.73, 0.14, 0.86, 0.27, 16, 84, strip);
+    p.box(0.73, 0.73, 0.86, 0.86, 16, 84, strip);
     p.box(0.15, 0.15, 0.85, 0.85, 66, 69, { color: shade(ASHLAR, 1.08) }, WALK);
     // Corbel table, parapet and square merlons.
     p.box(0.15, 0.15, 0.85, 0.85, 88, 96, { color: shade(ASHLAR, 1.02) }, WALK);
@@ -170,6 +171,8 @@ const PARAPET = 0x6a8a3e;
 const PARAPET_TOP = 0x7c9d48;
 /** Cordon top: the narrow ledge left in front of the turf parapet (kept dull so joins don't flash white). */
 const CORDON_TOP = shade(GE.ashlar, 0.78);
+/** Turfed berm on top of the plinth (seen from above on 45° runs). */
+const BERM = shade(PARAPET, 0.82);
 
 /** Long-and-short stone quoins at both ends of a face (the bastion's angles). */
 function quoins(ctx: Ctx, w: number, h: number, light: number): void {
@@ -218,14 +221,14 @@ const STAR_FORT: WallAgeStyle = {
   shadow: (p, arm) => armShadow(p, arm, 0.3 * arm.girth),
   arm: (p, arm) => {
     const g = arm.girth;
-    prism(p, arm.a, arm.b, 0.31 * g, 0, 5, { color: PORTLAND, detail: 'stone', top: CORDON_TOP });
+    prism(p, arm.a, arm.b, 0.31 * g, 0, 5, { color: PORTLAND, detail: 'stone', top: BERM });
     prism(p, arm.a, arm.b, 0.3 * g, 5, 28, { color: BRICK, detail: 'brick', batter: 0.07 });
     prism(p, arm.a, arm.b, 0.245 * g, 28, 31.5, { color: PORTLAND, top: CORDON_TOP, face: (w, h) => cordonFace(p.ctx, w, h) });
     prism(p, arm.a, arm.b, 0.235 * g, 31.5, 40, { color: PARAPET, top: PARAPET_TOP, batter: 0.09, face: (w, h, l) => turfFace(p.ctx, w, h, l) });
   },
   post: (p, arms) => {
     padShadow(p, 0.4);
-    frustum(p, 0.12, 0.12, 0.88, 0.88, 0, 5, 0, { color: PORTLAND, detail: 'stone', top: CORDON_TOP });
+    frustum(p, 0.12, 0.12, 0.88, 0.88, 0, 5, 0, { color: PORTLAND, detail: 'stone', top: BERM });
     frustum(p, 0.13, 0.13, 0.87, 0.87, 5, 32, 0.075, { color: BRICK, detail: 'brick', face: (w, h, l) => quoins(p.ctx, w, h, l) });
     frustum(p, 0.19, 0.19, 0.81, 0.81, 32, 35.5, 0, { color: PORTLAND, top: CORDON_TOP, face: (w, h) => cordonFace(p.ctx, w, h) });
     frustum(p, 0.2, 0.2, 0.8, 0.8, 35.5, 44, 0.08, { color: PARAPET, top: shade(PARAPET_TOP, 0.92), face: (w, h, l) => turfFace(p.ctx, w, h, l) });
