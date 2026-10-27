@@ -25,6 +25,13 @@ const CLOUD_DEPTH = 9_000;
 /** Cloud pattern repeat scale in world px per texture px. */
 const CLOUD_SCALE_X = 3;
 const CLOUD_SCALE_Y = 1.6;
+/**
+ * The cloud TileSprite is this fraction of the screen, scaled back up. In
+ * WebGL Phaser draws it from its repeat pattern; its own canvas texture
+ * (screen-sized, ~8 MB at DPR 2) is allocated but never sampled, so a
+ * small one changes nothing on screen.
+ */
+const CLOUD_LAYER_RES = 1 / 8;
 /** Screen px of cloud layer beyond each view edge. */
 const CLOUD_PAD = 64;
 const DECOR_DEPTH_OFFSET = 0.1;
@@ -86,7 +93,7 @@ export class TileMap {
     // whole world, >100 MB on large maps); update() keeps it over the view
     // and offsets the pattern so the clouds stay fixed to the ground.
     this.clouds = scene.add
-      .tileSprite(0, 0, scene.scale.width + CLOUD_PAD * 2, scene.scale.height + CLOUD_PAD * 2, FX_KEYS.clouds)
+      .tileSprite(0, 0, cloudLayerSize(scene.scale.width), cloudLayerSize(scene.scale.height), FX_KEYS.clouds)
       .setOrigin(0, 0)
       .setDepth(CLOUD_DEPTH)
       .setAlpha(0.2);
@@ -193,15 +200,16 @@ export class TileMap {
   /** Keeps the screen-sized cloud layer over the camera, pattern locked to the world. */
   private updateClouds(delta: number): void {
     const cam = this.scene.cameras.main;
-    const w = this.scene.scale.width + CLOUD_PAD * 2;
-    const h = this.scene.scale.height + CLOUD_PAD * 2;
+    const w = cloudLayerSize(this.scene.scale.width);
+    const h = cloudLayerSize(this.scene.scale.height);
     if (this.clouds.width !== w || this.clouds.height !== h) this.clouds.setSize(w, h);
     const k = 1 / cam.zoom;
+    const r = CLOUD_LAYER_RES;
     const x = cam.worldView.x - CLOUD_PAD * k;
     const y = cam.worldView.y - CLOUD_PAD * k;
     this.cloudDrift.x += delta * 0.006;
     this.cloudDrift.y += delta * 0.0025;
-    this.clouds.setScale(k).setPosition(x, y).setTileScale(CLOUD_SCALE_X * cam.zoom, CLOUD_SCALE_Y * cam.zoom);
+    this.clouds.setScale(k / r).setPosition(x, y).setTileScale(CLOUD_SCALE_X * cam.zoom * r, CLOUD_SCALE_Y * cam.zoom * r);
     this.clouds.tilePositionX = x / CLOUD_SCALE_X + this.cloudDrift.x;
     this.clouds.tilePositionY = y / CLOUD_SCALE_Y + this.cloudDrift.y;
   }
@@ -274,4 +282,9 @@ export class TileMap {
     this.highlight?.destroy();
     this.selection?.destroy();
   }
+}
+
+/** Cloud layer side (layer px) covering a screen side plus the pad. */
+function cloudLayerSize(screen: number): number {
+  return Math.ceil((screen + CLOUD_PAD * 2) * CLOUD_LAYER_RES);
 }
