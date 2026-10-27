@@ -13,9 +13,10 @@ import { drumWall } from './roundhouse';
 
 /*
  * Age 2 English workplaces: hedged strip fields with a granary on
- * staddle stones, a tarred weatherboard wood shed, a stone-slated mine
- * house with a headframe, turf archery butts behind a framed pavilion,
- * and a framed smithy with a brick forge stack.
+ * staddle stones, a jettied magpie-framed saw shed over a saw pit, a
+ * fieldstone engine house with a tall round stack and a timber
+ * headframe with its winding wheel, turf archery butts facing a long
+ * framed range, and a framed smithy with a brick forge stack.
  */
 
 /** Staddle stone (mushroom-shaped granary support). */
@@ -100,8 +101,14 @@ function windingWheel(p: IsoPainter, s: ArchStyle, u: number, v: number, h: numb
   ctx.moveTo(x + 13, y);
   ctx.lineTo(sx + 13, sy - 4);
   ctx.stroke();
+  const rim: Array<readonly [number, number]> = [];
+  for (let k = 0; k <= 20; k++) rim.push([x + Math.cos((k / 20) * Math.PI * 2) * 13, y + Math.sin((k / 20) * Math.PI * 2) * 14]);
+  const spokes = [0, 1, 2, 3, 4, 5].map((k) => {
+    const a = (k / 6) * Math.PI;
+    return [[x - Math.cos(a) * 13, y - Math.sin(a) * 14], [x + Math.cos(a) * 13, y + Math.sin(a) * 14]] as const;
+  });
+  p.normals.cylinderStroke([rim, ...spokes], 2.6, x - 14, 28);
   post(p, u + 0.2, v - 0.2, 0, h + 4, 2.6, s.palette.timber);
-  p.normalCylinder(x - 14, y - 15, 28, 30);
   p.addVolumePoint(u, v, h + 14);
 }
 

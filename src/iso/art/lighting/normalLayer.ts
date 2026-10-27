@@ -100,6 +100,32 @@ export class NormalLayer {
     ctx.restore();
   }
 
+  /**
+   * Cylinder normals along stroked polylines (legs, spokes, rims, poles):
+   * only the stroke is covered, never the rectangle around it. The
+   * cylinder gradient runs across x..x+w.
+   */
+  cylinderStroke(lines: ReadonlyArray<readonly Pt[]>, width: number, x: number, w: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    for (let i = 0; i <= 6; i++) {
+      const t = i / 6;
+      g.addColorStop(t, normalCss(cylinderNormal((t - 0.5) * Math.PI * 0.9)));
+    }
+    ctx.strokeStyle = g;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (const line of lines) {
+      line.forEach(([px, py], i) => (i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
+    }
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
+  }
+
   /** Combines faces with the albedo into the final normal map. */
   finish(albedo: HTMLCanvasElement, opts: DeriveOptions = BUILDING_DERIVE): HTMLCanvasElement | null {
     if (!this.canvas || !this.ctx) return null;

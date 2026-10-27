@@ -10,9 +10,10 @@ import { coneRoof, drumWall, roundhouse } from './roundhouse';
 
 /*
  * Age 1 English workplaces: Celtic fields behind drystone walls with a
- * raised granary, a cruck-framed wood shed, a slate-roofed lead mine
- * with its spoil heap, an open thatched butts shelter, and a roundhouse
- * smithy with a stone forge stack.
+ * raised granary, a cruck-framed wood shed, a lead mine with timber
+ * shear legs over the shaft, a thatched roundhouse store and its spoil
+ * heap, an open thatched butts shelter, and a roundhouse smithy with a
+ * stone forge stack.
  */
 
 /** Ridged plot of a crop between (u0, v0) and (u1, v1). */
@@ -66,7 +67,7 @@ function shearLegs(p: IsoPainter, s: ArchStyle, u: number, v: number, h: number)
     ctx.moveTo(x, y);
     ctx.lineTo(apex[0], apex[1]);
     ctx.stroke();
-    p.normalCylinder(Math.min(x, apex[0]) - 2, apex[1], Math.abs(x - apex[0]) + 4, y - apex[1]);
+    p.normals.cylinderStroke([[[x, y], apex]], w + 1, Math.min(x, apex[0]) - w, Math.abs(x - apex[0]) + w * 2);
   }
   ctx.strokeStyle = '#2a221c';
   ctx.lineWidth = 2;

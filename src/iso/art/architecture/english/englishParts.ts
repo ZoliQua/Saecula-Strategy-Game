@@ -250,7 +250,8 @@ export function dummy(p: IsoPainter, u: number, v: number, wood = 0x4a3624): voi
   ellipse(ctx, x, y - 29, 4.5, 4.5);
   ctx.fillStyle = '#b9a06a';
   ctx.fill();
-  p.normalCylinder(x - 9, y - 34, 18, 34);
+  p.normals.cylinderStroke([[[x, y], [x, y - 26]], [[x - 9, y - 18.5], [x + 9, y - 18.5]]], 3, x - 9, 18);
+  p.normals.cylinderPoly([[x - 4.5, y - 29], [x, y - 33.5], [x + 4.5, y - 29], [x, y - 24.5]], x - 4.5, 9);
 }
 
 /**
