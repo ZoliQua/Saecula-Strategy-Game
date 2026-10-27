@@ -22,14 +22,19 @@ export interface ArtLoadPlan {
   readonly background: ReadonlyArray<() => void>;
 }
 
+/** Age-3 single-style buildings of AI-only civs: painted in spare frame time, not on first placement. */
+const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
+
 /**
  * Which civ art a match paints while loading and which it leaves for the
  * game (Global Constraint 8: an extra civ adds ≤ ~1 s of load).
  *  - The human's civ: every building type's age-1 base (the build menu
  *    shows all of them, locked ones too).
  *  - An AI-only civ: only the types buildable in age 1; later types are
- *    first needed in their own age style (or are age-3 single-style
- *    buildings) and are painted when built, like every age-2/3 style.
+ *    first needed in their own age style and are painted when built, like
+ *    every age-2/3 style. The age-3 single-style buildings (foundry, Wonder)
+ *    go to the background queue instead, so the first one placed in age 3
+ *    is a cache hit rather than a 50-80 ms frame.
  *  - Every civ: the age-1 common wall pieces; ages 2 and 3 go to the
  *    background queue (age 2 first), done seconds into the game — long
  *    before anyone can leave the Roman age.
@@ -38,9 +43,11 @@ export function planArtLoad(human: CivId, civs: readonly CivId[], paint: ArtPain
   const types = Object.keys(BUILDING_SPECS) as BuildingType[];
   const critical: Array<() => void> = [];
   const background: Array<() => void> = [];
+  const lateBuildings: Array<() => void> = [];
   for (const civ of civs) {
     for (const type of types) {
       if (civ === human || BUILDING_BALANCE[type].age === 1) critical.push(() => paint.building(type, civ));
+      else if (BACKGROUND_BUILDINGS.includes(type)) lateBuildings.push(() => paint.building(type, civ));
     }
   }
   const walls = (age: AgeId, into: Array<() => void>) => {
@@ -49,6 +56,7 @@ export function planArtLoad(human: CivId, civs: readonly CivId[], paint: ArtPain
   walls(1, critical);
   walls(2, background);
   walls(3, background);
+  background.push(...lateBuildings); // needed last (age 3)
   return { critical, background };
 }
 

@@ -44,10 +44,19 @@ describe('planArtLoad', () => {
       expect(walls(background, 2, civ)).toHaveLength(COMMON_WALL_PIECES.length);
       expect(walls(background, 3, civ)).toHaveLength(COMMON_WALL_PIECES.length);
     }
-    expect(background.every((p) => p.startsWith('w:'))).toBe(true);
+    expect(background.filter((p) => p.startsWith('w:')).every((p) => !p.includes(':1:'))).toBe(true);
     // Age 2 comes first: it is needed first.
     const lastAge2 = background.map((p) => p.includes(':2:')).lastIndexOf(true);
     expect(background.findIndex((p) => p.includes(':3:'))).toBeGreaterThan(lastAge2);
+  });
+});
+
+describe('planArtLoad background buildings', () => {
+  it('queues the foundry and Wonder of an AI-only civ in the background (after the walls) instead of dropping them', () => {
+    const { critical, background } = recordPlan('hungarian', ['hungarian', 'english']);
+    expect(background.filter((p) => p.startsWith('b:'))).toEqual(['b:foundry:english', 'b:wonder:english']);
+    expect(critical.some((p) => p === 'b:foundry:english' || p === 'b:wonder:english')).toBe(false);
+    expect(background.findIndex((p) => p.startsWith('b:'))).toBeGreaterThan(background.map((p) => p.startsWith('w:')).lastIndexOf(true));
   });
 });
 
