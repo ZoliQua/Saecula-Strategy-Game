@@ -82,18 +82,22 @@ export function buildCampIfNeeded(view: WorldView, type: 'wood' | 'gold', build:
 /**
  * A construction site no villager is building (its builders were killed
  * or taken), so it is not left half-built for good. Wall segments are
- * walked line by line elsewhere. Sites far out from the base centre, or
- * with an armed enemy in sight close by, are left: fresh builders would
- * walk into the fight that emptied them.
+ * walked line by line elsewhere. Sites with an armed enemy in sight close
+ * by are left (fresh builders would walk into the fight that emptied
+ * them), and so are sites far out from the base centre, except camps and
+ * other drop-offs, which belong next to their resource wherever it lies.
  */
 export function unstaffedSite(view: WorldView): Entity | undefined {
   const staffed = new Set<number>();
   for (const v of view.villagers) if (v.buildCommand) staffed.add(v.buildCommand.targetId);
   const home = baseAnchor(view);
-  const armed = view.visibleEnemyUnits.filter((u) => u.attacker !== undefined && u.unit?.unitType !== 'villager' && u.unit?.unitType !== 'scout');
+  // Scouts count: they hunt lone builders. Villagers do not.
+  const armed = view.visibleEnemyUnits.filter((u) => u.attacker !== undefined && u.unit?.unitType !== 'villager');
   return view.buildings.find((b) => {
     if (!b.underConstruction || b.building?.type === 'wall' || b.id === undefined || staffed.has(b.id) || !b.position) return false;
-    if (home && distanceToFootprint(home, b) > AI_COMMON.restaffRadius) return false;
+    // Camps and other drop-offs serve their resource wherever it lies; any other site far out is left.
+    const dropoff = b.building !== undefined && campAccepts(b.building.type).length > 0;
+    if (!dropoff && home && distanceToFootprint(home, b) > AI_COMMON.restaffRadius) return false;
     return !armed.some((u) => u.position && distanceToFootprint(u.position, b) <= AI_COMMON.restaffThreatRadius);
   });
 }

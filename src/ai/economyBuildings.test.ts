@@ -35,12 +35,22 @@ describe('unstaffedSite', () => {
     const tower = site(7, 'tower', false, 16, 10);
     // An armed enemy beside the site: builders would walk into the fight.
     expect(unstaffedSite(view([tc, tower], [], [enemy('swordsman', 17, 11)]))).toBeUndefined();
-    // A villager or a scout nearby is no attack.
-    expect(unstaffedSite(view([tc, tower], [], [enemy('villager', 17, 11), enemy('scout', 16, 12)]))).toBe(tower);
+    // A villager nearby is no attack; a scout (it hunts lone builders) is.
+    expect(unstaffedSite(view([tc, tower], [], [enemy('villager', 17, 11)]))).toBe(tower);
+    expect(unstaffedSite(view([tc, tower], [], [enemy('scout', 16, 12)]))).toBeUndefined();
     // An armed enemy far from the site does not hold it up.
     expect(unstaffedSite(view([tc, tower], [], [enemy('swordsman', 40, 40)]))).toBe(tower);
     // A forward site far out from the base is left.
     const forward = site(8, 'tower', false, 11 + AI_COMMON.restaffRadius + 2, 11);
     expect(unstaffedSite(view([tc, forward], []))).toBeUndefined();
+  });
+
+  it('re-staffs a camp or other drop-off far out from the base unless armed enemies are near it (fix round 1)', () => {
+    const tc = site(1, 'town_center', true, 10, 10);
+    const far = 11 + AI_COMMON.restaffRadius + 6;
+    const camp = site(9, 'mining_camp', false, far, 11);
+    expect(unstaffedSite(view([tc, camp], []))).toBe(camp);
+    expect(unstaffedSite(view([tc, site(10, 'lumber_camp', false, 11, far)], []))?.id).toBe(10);
+    expect(unstaffedSite(view([tc, camp], [], [enemy('knight', far + 2, 12)]))).toBeUndefined();
   });
 });
