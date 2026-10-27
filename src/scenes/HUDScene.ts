@@ -21,11 +21,19 @@ export class HUDScene extends Phaser.Scene {
 
   create(): void {
     this.hud = new Hud(this.textures);
-    this.events.on(Phaser.Scenes.Events.UPDATE, (_t: number, d: number) => this.hud?.update(d));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.hud?.destroy();
       this.hud = null;
     });
+  }
+
+  /**
+   * Per-frame HUD refresh. An override rather than an UPDATE listener: scene
+   * events outlive a stop/relaunch, so a listener added in create() would stack
+   * once per game.
+   */
+  override update(_time: number, deltaMs: number): void {
+    this.hud?.update(deltaMs);
   }
 
   setupMinimap(
