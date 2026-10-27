@@ -8,6 +8,8 @@ import type { Material } from '../materials';
  */
 const ST_GEORGE_WHITE = 0xf2efe6;
 const ST_GEORGE_RED = 0xc8202e;
+/** Dark border round the white field: the cross panel stays apart from red team cloth. */
+const FIELD_EDGE = 0x2a2422;
 
 export const ENGLISH_M = {
   wool: { color: 0xcbbd9c } as Material,
@@ -19,13 +21,13 @@ export const ENGLISH_M = {
   surcoat: {
     color: 0xffffff,
     team: true,
-    charge: { field: ST_GEORGE_WHITE, cross: ST_GEORGE_RED, front: 0.3, panel: 0.4, bar: 0.11, armAt: 0.72, arm: 0.055 },
+    charge: { field: ST_GEORGE_WHITE, cross: ST_GEORGE_RED, front: 0.3, panel: 0.4, bar: 0.11, armAt: 0.72, arm: 0.055, edge: FIELD_EDGE, edgeWidth: 0.1 },
   } as Material,
   /** Heater shield: white field and red cross inside a team rim. */
   stGeorgeShield: {
     color: 0xffffff,
     team: true,
-    charge: { field: ST_GEORGE_WHITE, cross: ST_GEORGE_RED, front: 0.62, panel: 1, bar: 0.17, armAt: 0.62, arm: 0.085 },
+    charge: { field: ST_GEORGE_WHITE, cross: ST_GEORGE_RED, front: 0.62, panel: 1, bar: 0.17, armAt: 0.62, arm: 0.085, edge: FIELD_EDGE, edgeWidth: 0.1 },
   } as Material,
   /** Cast-iron gun barrel (the Hungarian gun is bronze). */
   ironBarrel: { color: 0x4a4d52, metal: 0.55, bands: { count: 4, color: 0x2e3034, width: 0.08 } } as Material,

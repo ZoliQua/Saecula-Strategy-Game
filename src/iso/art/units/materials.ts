@@ -39,6 +39,12 @@ export interface Charge {
   /** Height of the cross arm, as u = (l3 + 1) / 2, and its half height in u. */
   readonly armAt: number;
   readonly arm: number;
+  /**
+   * Optional dark border inside the field (its colour, and its width in
+   * l1 / l2 units), so the cross reads on cloth of its own colour.
+   */
+  readonly edge?: number;
+  readonly edgeWidth?: number;
 }
 
 /** Collects the materials one figure uses; primitives refer to them by index. */

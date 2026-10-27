@@ -125,4 +125,13 @@ describe('heraldic charge on an ellipsoid', () => {
     // Rim near the edge stays in the team mask.
     expect(at(px, 30, 48).mask).toBeGreaterThan(200);
   });
+
+  it('frames the field with a dark edge, so the cross reads on a red team', () => {
+    const px = paintDisc();
+    // Just inside the field border, where the upright meets it: dark, not team (the cross stops short of the team rim).
+    const edge = at(px, 30, 44);
+    expect(edge.mask).toBe(0);
+    expect(edge.r).toBeLessThan(90);
+    expect(edge.g).toBeLessThan(90);
+  });
 });

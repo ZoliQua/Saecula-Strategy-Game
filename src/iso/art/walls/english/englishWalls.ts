@@ -1,6 +1,6 @@
 import type { WallStyleId } from '../../../../config/civs';
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../../game/wallNeighbours';
-import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from '../../architecture/english/englishStyles';
+import { ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR, NORMAN_RAGSTONE } from '../../architecture/english/englishStyles';
 import type { Ctx } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
@@ -13,15 +13,14 @@ import { armShadow, crossLoop, frustum, line, padShadow, plank } from './english
  * to the English towers and palettes: a split-oak palisade on a turfed
  * earth bank with thatched timber watch-posts (Romano-British), a grey
  * ashlar curtain with square merlons, cross-slit loops and square
- * Norman towers with clasping buttresses (Norman), and a low brick
- * star-fort trace (Georgian): steeply battered brick scarp, Portland
- * stone cordon, turf parapet, and angled bastions with stone quoins
- * and a gun on the salient — the brick and stone of the Martello tower.
+ * Norman towers with clasping buttresses (Norman), and a low star-fort
+ * trace (Georgian): a turf glacis, a battered plum-brick scarp, a grey
+ * stone cordon and an embrasured brick parapet, with quoined bastions
+ * carrying a stone guérite and a gun.
  */
 
 const RB = ENGLISH_ROMANO_BRITISH.palette;
 const TU = ENGLISH_TUDOR.palette;
-const GE = ENGLISH_GEORGIAN.palette;
 
 const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW | WALL_SE];
 
@@ -104,8 +103,8 @@ const BANK_PALISADE: WallAgeStyle = {
   },
 };
 
-/** Cool grey Kentish ragstone ashlar (the Hungarian curtain is a warm limestone). */
-const ASHLAR = 0x9a9c99;
+/** Cool grey Kentish ragstone ashlar, shared with the Norman tower (the Hungarian curtain is a warm limestone). */
+const ASHLAR = NORMAN_RAGSTONE;
 const RUBBLE = TU.stone;
 const WALK = shade(ASHLAR, 0.82);
 
@@ -179,31 +178,71 @@ const NORMAN_CURTAIN: WallAgeStyle = {
   },
 };
 
-const BRICK = GE.brick;
-const PORTLAND = GE.ashlar;
-const PARAPET = 0x6a8a3e;
-const PARAPET_TOP = 0x7c9d48;
-/** Cordon top: the narrow ledge left in front of the turf parapet (kept dull so joins don't flash white). */
-const CORDON_TOP = shade(GE.ashlar, 0.78);
-/** Turfed berm on top of the plinth (seen from above on 45° runs). */
-const BERM = shade(PARAPET, 0.82);
+/**
+ * Georgian fortification brick: a dark plum stock brick, well apart from
+ * the bright red Hungarian brick, with grey ragstone dressings instead of
+ * pale limestone, so the age-3 runs read English from afar.
+ */
+const BRICK = 0x733832;
+const DRESSING = shade(NORMAN_RAGSTONE, 0.94);
+const COPING = shade(NORMAN_RAGSTONE, 0.86);
+/** The sloped turf glacis in front of the scarp (the Hungarian runs carry their green on top). */
+const GLACIS = 0x5a7a33;
+const GLACIS_TOP = 0x6f9440;
 
 /** Long-and-short stone quoins at both ends of a face (the bastion's angles). */
 function quoins(ctx: Ctx, w: number, h: number, light: number): void {
   for (let y = 0, i = 0; y < h - 2; y += 6, i++) {
     const qw = i % 2 ? 5 : 9;
-    ctx.fillStyle = css(shade(PORTLAND, light * 0.96));
+    ctx.fillStyle = css(shade(DRESSING, light * 0.98));
     ctx.fillRect(0, -y - 5.5, qw, 5);
     ctx.fillRect(w - qw, -y - 5.5, qw, 5);
   }
 }
 
-/** Rounded Portland cordon: a bright band over a shadowed underside. */
+/** Rounded stone cordon: a lit band over a shadowed underside. */
 function cordonFace(ctx: Ctx, w: number, h: number): void {
-  ctx.fillStyle = 'rgba(255,252,240,.45)';
+  ctx.fillStyle = 'rgba(240,244,248,.35)';
   ctx.fillRect(0, -h, w, 1.2);
-  ctx.fillStyle = 'rgba(40,30,20,.35)';
+  ctx.fillStyle = 'rgba(30,26,24,.4)';
   ctx.fillRect(0, -1.2, w, 1.2);
+}
+
+/** Splayed gun embrasures cut down into the brick parapet at intervals, over its coping line. */
+function embrasures(ctx: Ctx, w: number, h: number, light: number): void {
+  ctx.fillStyle = css(shade(COPING, light), 0.9);
+  ctx.fillRect(0, -h, w, 1.6);
+  for (let x = 14; x < w - 8; x += 28) {
+    ctx.fillStyle = css(shade(0x1c1512, light));
+    ctx.beginPath();
+    ctx.moveTo(x - 4.5, -h);
+    ctx.lineTo(x + 4.5, -h);
+    ctx.lineTo(x + 2, -h + 4.5);
+    ctx.lineTo(x - 2, -h + 4.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/** Grass blades along the foot of the glacis, darker turf at the top break of slope. */
+function glacisFace(ctx: Ctx, w: number, h: number, light: number): void {
+  ctx.fillStyle = css(shade(GLACIS_TOP, light * 1.08), 0.55);
+  for (let x = 2; x < w; x += 5) ctx.fillRect(x, -2 - ((x * 7) % 3), 1, 2 + ((x * 3) % 3));
+  ctx.fillStyle = 'rgba(20,30,10,.25)';
+  ctx.fillRect(0, -h, w, 1.4);
+}
+
+/** A stone guérite (sentry box) on the bastion's right-hand salient: a small grey turret with a lead cap. */
+function guerite(p: IsoPainter, z: number): void {
+  const [u0, v0, u1, v1] = [0.6, 0.2, 0.78, 0.38];
+  p.box(u0, v0, u1, v1, z, z + 11, { color: DRESSING, detail: 'stone' }, COPING);
+  const slit = (w: number) => {
+    p.ctx.fillStyle = '#16120f';
+    p.ctx.fillRect(w / 2 - 0.9, -8.5, 1.8, 5.5);
+  };
+  p.leftFace(u0, u1, v1, z, slit, 11);
+  p.rightFace(v0, v1, u1, z, slit, 11);
+  p.hipRoof(u0, v0, u1, v1, z + 11, 9, 0x4c5359, 0.03);
 }
 
 /** A field gun on the bastion's terreplein, its muzzle over the salient. */
@@ -227,29 +266,36 @@ function gun(p: IsoPainter, z: number): void {
   p.normalCylinder(Math.min(a[0], b[0]) - 3, Math.min(a[1], b[1]) - 3, Math.abs(b[0] - a[0]) + 6, Math.abs(b[1] - a[1]) + 6);
 }
 
-/** Age 3 (Felvilágosodás): low brick star-fort trace with stone cordon and turf parapet; quoined bastions with a gun. */
+/**
+ * Age 3 (Felvilágosodás): a low star-fort trace — a sloped turf glacis in
+ * front, a battered plum-brick scarp, a grey stone cordon and a brick
+ * parapet with gun embrasures under grey coping; quoined bastions with a
+ * stone guérite and a gun on corner and end bastions.
+ */
 const STAR_FORT: WallAgeStyle = {
   readback: true,
   postBody: 0.22,
   armStart: reachBody(0.22),
   postHalf: 0.37,
   postTop: 46,
-  shadow: (p, arm) => armShadow(p, arm, 0.3 * arm.girth),
+  shadow: (p, arm) => armShadow(p, arm, 0.36 * arm.girth),
   arm: (p, arm) => {
     const g = arm.girth;
-    prism(p, arm.a, arm.b, 0.31 * g, 0, 9, { color: PORTLAND, detail: 'stone', top: BERM });
-    prism(p, arm.a, arm.b, 0.3 * g, 9, 28, { color: BRICK, detail: 'brick', batter: 0.07 });
-    prism(p, arm.a, arm.b, 0.245 * g, 28, 31.5, { color: PORTLAND, top: CORDON_TOP, face: (w, h) => cordonFace(p.ctx, w, h) });
-    prism(p, arm.a, arm.b, 0.235 * g, 31.5, 40, { color: PARAPET, top: PARAPET_TOP, batter: 0.09, face: (w, h, l) => turfFace(p.ctx, w, h, l) });
+    prism(p, arm.a, arm.b, 0.44 * g, 0, 7, { color: GLACIS, top: GLACIS_TOP, batter: 0.15, face: (w, h, l) => glacisFace(p.ctx, w, h, l) });
+    prism(p, arm.a, arm.b, 0.29 * g, 7, 27, { color: BRICK, detail: 'brick', batter: 0.07 });
+    prism(p, arm.a, arm.b, 0.235 * g, 27, 30, { color: DRESSING, top: COPING, face: (w, h) => cordonFace(p.ctx, w, h) });
+    prism(p, arm.a, arm.b, 0.22 * g, 30, 37.5, { color: BRICK, detail: 'brick', top: COPING, batter: 0.03, face: (w, h, l) => embrasures(p.ctx, w, h, l) });
   },
   post: (p, arms) => {
-    padShadow(p, 0.4);
-    frustum(p, 0.12, 0.12, 0.88, 0.88, 0, 9, 0, { color: PORTLAND, detail: 'stone', top: BERM });
-    frustum(p, 0.13, 0.13, 0.87, 0.87, 9, 32, 0.075, { color: BRICK, detail: 'brick', face: (w, h, l) => quoins(p.ctx, w, h, l) });
-    frustum(p, 0.19, 0.19, 0.81, 0.81, 32, 35.5, 0, { color: PORTLAND, top: CORDON_TOP, face: (w, h) => cordonFace(p.ctx, w, h) });
-    frustum(p, 0.2, 0.2, 0.8, 0.8, 35.5, 44, 0.08, { color: PARAPET, top: shade(PARAPET_TOP, 0.92), face: (w, h, l) => turfFace(p.ctx, w, h, l) });
-    // Corner and end bastions mount a gun; rhythm piers of a straight run carry only the flag.
-    if (!STRAIGHT.includes(arms)) gun(p, 44);
+    padShadow(p, 0.44);
+    frustum(p, 0.02, 0.02, 0.98, 0.98, 0, 7, 0.14, { color: GLACIS, top: GLACIS_TOP, face: (w, h, l) => glacisFace(p.ctx, w, h, l) });
+    frustum(p, 0.15, 0.15, 0.85, 0.85, 7, 30, 0.075, { color: BRICK, detail: 'brick', face: (w, h, l) => quoins(p.ctx, w, h, l) });
+    frustum(p, 0.21, 0.21, 0.79, 0.79, 30, 33, 0, { color: DRESSING, top: COPING, face: (w, h) => cordonFace(p.ctx, w, h) });
+    frustum(p, 0.22, 0.22, 0.78, 0.78, 33, 41, 0.02, { color: BRICK, detail: 'brick', top: COPING, face: (w, h, l) => embrasures(p.ctx, w, h, l) });
+    // Corner and end bastions mount a gun and a guérite on their salient; rhythm piers of a straight run carry only the flag.
+    if (STRAIGHT.includes(arms)) return;
+    gun(p, 41);
+    guerite(p, 41);
   },
 };
 

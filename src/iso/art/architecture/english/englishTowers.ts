@@ -8,6 +8,7 @@ import type { ArchStyle } from '../style';
 import { archer, brazier, parapet, type Headgear } from '../towerParts';
 import type { BuildingArt } from '../types';
 import { hangingBanner } from './englishParts';
+import { NORMAN_RAGSTONE as RAGSTONE } from './englishStyles';
 import { drumWall } from './roundhouse';
 
 type Pt = readonly [number, number];
@@ -116,24 +117,24 @@ export function normanTower(s: ArchStyle): BuildingArt {
     maxHeight: 220,
     paint: (p, team) => {
       const z = TOWER_PLATFORM_Z[2];
-      const wall: WallStyle = { color: c.ashlar, detail: 'stone' };
+      const wall: WallStyle = { color: RAGSTONE, detail: 'stone' };
       const ctx = p.ctx;
       p.footShadow();
       p.box(0.07, 0.07, 0.93, 0.93, 0, 16, { color: shade(c.stone, 0.9), detail: 'fieldstone' }, c.stone);
       p.box(0.13, 0.13, 0.87, 0.87, 16, z, wall);
       const face = (light: number, front: boolean) => (w: number, h: number) => {
         for (const x of [0, w - 7]) {
-          ctx.fillStyle = css(shade(c.ashlar, light * 1.12));
+          ctx.fillStyle = css(shade(RAGSTONE, light * 1.12));
           ctx.fillRect(x, -h, 7, h);
-          ctx.fillStyle = css(shade(c.ashlar, light * 0.7));
+          ctx.fillStyle = css(shade(RAGSTONE, light * 0.7));
           ctx.fillRect(x + (x === 0 ? 6 : 0), -h, 1.2, h);
         }
         for (const y of [h * 0.38, h * 0.74]) {
-          ctx.fillStyle = css(shade(c.ashlar, light * 1.15));
+          ctx.fillStyle = css(shade(RAGSTONE, light * 1.15));
           ctx.fillRect(0, -y - 2.6, w, 2.2);
         }
         // Corbel table under the parapet.
-        ctx.fillStyle = css(shade(c.ashlar, light * 0.82));
+        ctx.fillStyle = css(shade(RAGSTONE, light * 0.82));
         ctx.fillRect(0, -h, w, 3);
         for (let x = 4; x < w - 3; x += 6) ctx.fillRect(x, -h + 3, 3, 3.5);
         ctx.fillStyle = '#17120e';
@@ -142,10 +143,10 @@ export function normanTower(s: ArchStyle): BuildingArt {
         // Paired belfry lights with a colonnette.
         p.window(w / 2 - 7, -h * 0.68, 5.5, 14, true);
         p.window(w / 2 + 1.5, -h * 0.68, 5.5, 14, true);
-        ctx.fillStyle = css(shade(c.ashlar, light * 1.1));
+        ctx.fillStyle = css(shade(RAGSTONE, light * 1.1));
         ctx.fillRect(w / 2 - 0.9, -h * 0.68 + 2, 1.8, 13);
         if (front) {
-          ctx.fillStyle = css(shade(c.ashlar, light * 1.15));
+          ctx.fillStyle = css(shade(RAGSTONE, light * 1.15));
           ctx.beginPath();
           ctx.arc(w / 2, -18, 8.5, Math.PI, 0);
           ctx.lineTo(w / 2 + 8.5, 0);
@@ -159,9 +160,9 @@ export function normanTower(s: ArchStyle): BuildingArt {
       p.ground(0.13, 0.13, 0.87, 0.87, shade(c.roofAlt, 0.9), z);
       // Stair turret at the back corner rising above the wall-walk.
       const t = 0.26;
-      p.box(0.1, 0.1, 0.1 + t, 0.1 + t, z, z + 26, wall, shade(c.ashlar, 1.08));
+      p.box(0.1, 0.1, 0.1 + t, 0.1 + t, z, z + 26, wall, shade(RAGSTONE, 1.08));
       for (const [a, b] of [[0.1, 0.1], [0.1 + t - 0.075, 0.1], [0.1, 0.1 + t - 0.075], [0.1 + t - 0.075, 0.1 + t - 0.075]] as const) {
-        p.box(a, b, a + 0.075, b + 0.075, z + 26, z + 33, wall, shade(c.ashlar, 1.08));
+        p.box(a, b, a + 0.075, b + 0.075, z + 26, z + 33, wall, shade(RAGSTONE, 1.08));
       }
       parapet(p, 0.1, 0.1, 0.9, 0.9, z, wall, 'back', 3);
       lookout(p, 0.1, 0.9, z, team, 'kettle');

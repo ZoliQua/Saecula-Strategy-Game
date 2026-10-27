@@ -48,6 +48,9 @@ export const ENGLISH_ROMANO_BRITISH: ArchStyle = {
   headroom: 30,
 };
 
+/** Cool grey Kentish ragstone ashlar of the Norman curtain walls and towers (the Tudor ashlar dresses houses). */
+export const NORMAN_RAGSTONE = 0x9a9c99;
+
 /** Age 2 (Középkor): Tudor / Norman — black-and-white framing over grey stone, red-brown peg tile, brick stacks. */
 export const ENGLISH_TUDOR: ArchStyle = {
   id: 'tudor',
