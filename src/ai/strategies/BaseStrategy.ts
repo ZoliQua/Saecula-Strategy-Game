@@ -19,7 +19,6 @@ import { aiTrainAccount, canAfford, NO_RESERVE } from '../economy';
 import { Perception, type WorldView } from '../perception';
 import { ThoughtLog, type AIThoughts } from '../thoughts';
 
-
 /**
  * Shared AI skeleton: a cheap upkeep pass every AI_COMMON.upkeepMs and a
  * full decision every `decisionMs` (rolled per cycle), both on a fresh

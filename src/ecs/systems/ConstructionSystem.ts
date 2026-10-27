@@ -12,7 +12,6 @@ import type { EcsWorld } from '../world';
 /** How far (tiles) from the finished segment a builder looks for the next wall segment. */
 const CHAIN_RADIUS = 3;
 
-
 type Builder = With<Entity, 'position' | 'movable' | 'buildCommand' | 'owner'>;
 type Site = With<
   Entity,

@@ -19,6 +19,7 @@ import {
 import { findEntityById, findNearestDropoff, findNearestNodeOfType } from './gathering/gatherQueries';
 import type { Dropoff, ResourceNode, Villager } from './gathering/gatherTypes';
 import type { EcsWorld } from '../world';
+import { TERRAIN } from '../../map/TerrainTypes';
 
 /**
  * Full gather cycle state machine for villagers with a `gatherer`
@@ -231,8 +232,7 @@ export class GatheringSystem {
     if ((node as Entity).building) return;
     const { tx, ty } = node.position;
     // Natural resource tiles revert to grass on depletion.
-    const TERRAIN_GRASS = 0;
-    this.mapData.setTile(tx, ty, TERRAIN_GRASS as 0);
+    this.mapData.setTile(tx, ty, TERRAIN.grass);
     this.world.remove(node as Entity);
   }
 

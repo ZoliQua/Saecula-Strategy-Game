@@ -9,7 +9,6 @@ import type { WorldView } from '../perception';
 import { assignIdleVillagers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
-
 /**
  * Easy AI (PROGRAM_TERV.md §10.1): a slow decision every 20-30 s that
  * follows a short decision tree 80% of the time (and builds something

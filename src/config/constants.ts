@@ -2,7 +2,6 @@ export const TILE_WIDTH = 64;
 export const TILE_HEIGHT = 32;
 
 export const MAX_PLAYERS = 6;
-export const DEFAULT_MAP_SIZE = 64;
 
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
