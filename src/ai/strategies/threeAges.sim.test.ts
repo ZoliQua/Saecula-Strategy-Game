@@ -6,6 +6,7 @@ import { HardStrategy } from './HardStrategy';
 import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
+const WAR_CHEST_GOLD = 2000;
 
 /**
  * M3 smoke (§M3.14) without a browser: the human slot is driven by a
@@ -13,8 +14,11 @@ const MIN = 60_000;
  * system running. A head-on Medium-vs-Hard duel ends before age 2 (Hard's
  * 3-5 min raids break Medium's economy; measured on 96×96 seeds 1-4: the
  * human falls at 10.6-17.4 min), so an Easy third player is the early
- * target of both; once both reach the Enlightenment they turn on each other.
- * Measured (96×96, seed 1): both in age 3 by 19.5 min.
+ * target of both; once both reach the Enlightenment they turn on each other
+ * (with a war chest, see WAR_CHEST_GOLD). `live()` counts units, buildings and
+ * projectiles (the 500 budget of CLAUDE.md §10), not resource nodes.
+ * Measured (96×96, seed 1): both in age 3 by 19.5 min; foundries for both,
+ * 4 cannons, cannonballs, bullets, bolts and arrows; at most 197 entities.
  */
 describe('three-age match (96×96 meadow, seed 1): human slot = Medium AI vs Hard AI', () => {
   it('both reach age 3, fight with age-3 armies, and the world stays within the 500-entity budget', () => {
@@ -25,7 +29,8 @@ describe('three-age match (96×96 meadow, seed 1): human slot = Medium AI vs Har
       aiCount: 2,
       strategy: (id) => (id === 2 ? new HardStrategy(createRng(10)) : new EasyStrategy(createRng(4))),
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
-      enemyOf: (id) => (id === 2 && duel ? 1 : 3),
+      // Hard and the human go for Easy first; Easy (3) fights back at Hard.
+      enemyOf: (id) => (id === 3 ? 2 : duel ? 1 : 3),
       humanStrategy: new MediumStrategy(createRng(6)),
       humanEnemy: () => (duel ? 2 : 3),
     });
@@ -46,6 +51,9 @@ describe('three-age match (96×96 meadow, seed 1): human slot = Medium AI vs Har
       if (!duel && human.age >= 3 && hard.age >= 3) {
         duel = true;
         bothAge3At = t;
+        // The 96×96 meadow's gold is mined out by now (cannons cost 275 gold): a war chest lets the
+        // Enlightenment siege path (foundry, cannons) run. AI gold economy is a known follow-up.
+        for (const p of [human, hard]) p.resources.gold += WAR_CHEST_GOLD;
       }
       return duel && t >= bothAge3At + 8 * MIN;
     });
@@ -59,6 +67,11 @@ describe('three-age match (96×96 meadow, seed 1): human slot = Medium AI vs Har
     expect(hard.researched.size).toBeGreaterThan(0);
     expect(seen.projectiles.size).toBeGreaterThan(0);
     expect(seen.dying).toBeGreaterThan(0);
-    expect(seen.age3Kinds.size).toBeGreaterThan(0);
+    // The Enlightenment siege path: foundries finished, cannons and muskets fired.
+    const foundries = match.world.entities.filter((e) => e.building?.type === 'foundry' && !e.underConstruction);
+    expect(foundries.length).toBeGreaterThan(0);
+    expect(seen.projectiles.has('cannonball')).toBe(true);
+    expect(seen.projectiles.has('bullet')).toBe(true);
+    expect(seen.age3Kinds.has('cannon')).toBe(true);
   });
 });
