@@ -80,14 +80,18 @@ export function nextUnitToTrain(
 /**
  * The first unit of `savesFor` (expensive ones, such as the cannon) that
  * the army is still short of (below its share of the army after the next
- * unit) and `canTrain` (a trainer exists), or null.
+ * unit) and `canTrain` (a trainer exists), or null. Null too when the AI
+ * knows no gold node (`goldNodesKnown`): with no gold income the saving
+ * would never end and the cheaper gold units would stop for good.
  */
 export function savedForUnit(
   mix: ArmyMix,
   counts: Readonly<Partial<Record<UnitType, number>>>,
   canTrain: (type: UnitType) => boolean,
   savesFor: readonly UnitType[],
+  goldNodesKnown: number,
 ): UnitType | null {
+  if (goldNodesKnown === 0) return null;
   const total = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0) + 1;
   return savesFor.find((t) => (mix[t] ?? 0) * total - (counts[t] ?? 0) >= 1 && canTrain(t)) ?? null;
 }

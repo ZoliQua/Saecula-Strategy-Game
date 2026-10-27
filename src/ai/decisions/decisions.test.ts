@@ -186,11 +186,17 @@ describe('army decisions', () => {
     const mix = { musketeer: 0.45, cannon: 0.2, cavalry: 0.2, pikeman: 0.15 };
     const savesFor = ['cannon'] as const;
     // An old age-2 army of 20: muskets are the furthest below, but a cannon is wanted too.
-    expect(savedForUnit(mix, { crossbowman: 20 }, all, savesFor)).toBe('cannon');
+    expect(savedForUnit(mix, { crossbowman: 20 }, all, savesFor, 1)).toBe('cannon');
     // At its share (4 of 21 after the next): nothing to save for.
-    expect(savedForUnit(mix, { crossbowman: 16, cannon: 5 }, all, savesFor)).toBeNull();
+    expect(savedForUnit(mix, { crossbowman: 16, cannon: 5 }, all, savesFor, 1)).toBeNull();
     // No foundry (no trainer): nothing to save for.
-    expect(savedForUnit(mix, { crossbowman: 20 }, (t) => t !== 'cannon', savesFor)).toBeNull();
+    expect(savedForUnit(mix, { crossbowman: 20 }, (t) => t !== 'cannon', savesFor, 1)).toBeNull();
+  });
+
+  it('saves for nothing when no gold node is known (a mined-out map must not starve the gold units for good)', () => {
+    const mix = { musketeer: 0.45, cannon: 0.2, cavalry: 0.2, pikeman: 0.15 };
+    expect(savedForUnit(mix, { crossbowman: 20 }, all, ['cannon'], 1)).toBe('cannon');
+    expect(savedForUnit(mix, { crossbowman: 20 }, all, ['cannon'], 0)).toBeNull();
   });
 });
 

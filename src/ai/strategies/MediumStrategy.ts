@@ -307,8 +307,8 @@ export class MediumStrategy extends BaseStrategy {
     const counts = countByType(view.military);
     const trainable = (t: UnitType) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0;
     for (let i = 0; i < this.tune.trainPerDecision; i++) {
-      // A cannon the army is short of is saved for: the other units only spend what lies above its cost.
-      const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits);
+      // A cannon the army is short of is saved for (while gold can still come in): the other units only spend what lies above its cost.
+      const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits, view.resources.gold.length);
       const saving = goal ? reserveForGoal(goal, ctx.player.resources, UNIT_SPECS[goal].cost, reserve, AI_COMMON.savesForUnits) : reserve;
       const type = nextUnitToTrain(mix, counts, (t) => trainable(t)
         && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, t === goal ? reserve : saving));
