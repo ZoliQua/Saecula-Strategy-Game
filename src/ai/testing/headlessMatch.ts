@@ -34,6 +34,10 @@ export interface HeadlessMatchOptions {
   readonly enemyOf?: (playerId: number) => number;
   /** Difficulty handicap per AI player (default: none). */
   readonly difficulty?: (playerId: number) => Difficulty;
+  /** Drives the human slot (player 1) with an AI too, attacking `humanEnemy` (default: passive human). */
+  readonly humanStrategy?: AIStrategy;
+  /** Whom the AI-driven human attacks (default player 2; read every step, so it may change). */
+  readonly humanEnemy?: () => number;
 }
 
 export interface HeadlessMatch {
@@ -71,8 +75,12 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     return new AIPlayer(p, options.strategy(p.id));
   });
+  const human = players.human();
+  const humanAi = options.humanStrategy && human ? new AIPlayer(human, options.humanStrategy) : null;
+  const humanEnemy = options.humanEnemy ?? (() => 2);
   const enemyOf = options.enemyOf ?? (() => 1);
-  const fogFor = (id: number): FogOfWarData | null => ais.find((a) => a.player.id === id)?.fog ?? null;
+  const fogFor = (id: number): FogOfWarData | null =>
+    (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
   // Same per-frame A* budget as the game (scaled to the step length).
   const paths = new PathBudget();
   const systems = {
@@ -105,6 +113,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     systems.movement.update(dt);
     systems.death.update(dt);
     for (const ai of ais) ai.update({ world, mapData: map, enemyPlayerId: enemyOf(ai.player.id) }, dt);
+    humanAi?.update({ world, mapData: map, enemyPlayerId: humanEnemy() }, dt);
     systems.population.update();
   };
   return {
