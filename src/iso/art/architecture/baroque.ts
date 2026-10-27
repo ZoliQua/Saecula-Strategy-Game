@@ -3,10 +3,10 @@ import { archedOpening, baroqueWindow, clockFace, cornice } from './facade';
 import { baroqueWorkArt } from './baroqueWork';
 import { baroqueBlock, pediment, railFence, sentryBox, volutedGable } from './baroqueParts';
 import { foundryArt } from './foundry';
-import { chimney, lantern } from './parts';
+import { lantern } from './parts';
 import { dormerLeft, dormerRight, finial, helm, type HelmProfile } from './roofs';
 import type { ArchStyle } from './style';
-import { hasDormers, styledHip, styledMansard } from './styledRoofs';
+import { hasDormers, onRoof, roofChimney, roofLift, styledHip, styledMansard } from './styledRoofs';
 import { baroqueTower } from './towers';
 import type { AgeArtSet } from './types';
 import { wonderArt } from './wonder';
@@ -52,7 +52,7 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
             ctx.stroke();
           }
         }
-        if (s.ornaments.chimneys) chimney(p, 0.6, 0.7, 0.78, 0.88, 70, 136, { color: c.plaster });
+        roofChimney(p, s, 0.6, 0.7, 0.78, 0.88, 70, 136, 34 + 14, { color: c.plaster });
         baroqueBlock(p, s, 0.3, 0.45, 2.7, 2.45, 0, 84, {
           bays: 5,
           left: (w, h, l) => storeyWindows(p, s, w, h, l, 5, (i) => i === 2),
@@ -60,14 +60,14 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         });
         styledMansard(p, s, 0.3, 0.45, 2.7, 2.45, 84, 34, 0.24, 14, c.roofAlt);
         if (hasDormers(s)) {
-          for (const uc of [0.72, 2.28]) dormerLeft(p, uc, 2.38, 94, 0.2, 16, c.trim, c.roofAlt, 'slate');
-          for (const vc of [0.95, 1.45, 1.95]) dormerRight(p, 2.63, vc, 94, 0.2, 16, c.trim, c.roofAlt, 'slate');
+          for (const uc of [0.72, 2.28]) dormerLeft(p, uc, 2.38, onRoof(s, 84, 94), 0.2, 16, c.trim, c.roofAlt, 'slate');
+          for (const vc of [0.95, 1.45, 1.95]) dormerRight(p, 2.63, vc, onRoof(s, 84, 94), 0.2, 16, c.trim, c.roofAlt, 'slate');
         }
         // Facade tower with the main portal, clock stage and helm.
         baroqueBlock(p, s, 1.12, 2.2, 1.88, 2.96, 0, 150, {
           left: (w, _h, l) => {
             archedOpening(ctx, w / 2 - 14, 28, 40, c.trim, 0x2a1c12, l);
-            p.door(w / 2 - 11, 22, 35, 0x5a3518);
+            p.door(w / 2 - 11, 22, 35, c.doors.main);
             cornice(ctx, w, 50, c.trim, l, 4);
             baroqueWindow(p, s, w / 2 - 7, -100, 14, 26, l);
           },
@@ -105,7 +105,7 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
       paint: (p) => {
         p.footShadow();
         p.ground(0.12, 0.12, 1.88, 1.88, 0xb3a991);
-        if (s.ornaments.chimneys) chimney(p, 0.55, 0.5, 0.75, 0.7, 30, 112, { color: c.plaster, detail: 'plaster' });
+        roofChimney(p, s, 0.55, 0.5, 0.75, 0.7, 30, 112, 44, { color: c.plaster, detail: 'plaster' });
         baroqueBlock(p, s, 0.32, 0.3, 1.68, 1.62, 0, 50, {
           left: (w, h, l) => {
             baroqueWindow(p, s, w * 0.18, -h + 12, 11, 21, l);
@@ -137,12 +137,12 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
           right: (w, h, l) => {
             cornice(p.ctx, w, 34, c.trim, l, 4);
             archedOpening(p.ctx, w / 2 - 15, 30, 36, c.trim, 0x22170e, l);
-            p.door(w / 2 - 12, 24, 32, 0x4a2e18);
+            p.door(w / 2 - 12, 24, 32, c.doors.gate);
             for (const x of [w * 0.17, w * 0.83]) baroqueWindow(p, s, x - 6, -h + 16, 12, 22, l);
           },
         });
         styledMansard(p, s, 0.3, 0.3, 2.7, 1.85, 80, 30, 0.22, 12, c.roofAlt);
-        if (hasDormers(s)) for (const uc of [0.62, 1.0, 2.0, 2.38]) dormerLeft(p, uc, 1.79, 90, 0.18, 14, c.trim, c.roofAlt, 'slate');
+        if (hasDormers(s)) for (const uc of [0.62, 1.0, 2.0, 2.38]) dormerLeft(p, uc, 1.79, onRoof(s, 80, 90), 0.18, 14, c.trim, c.roofAlt, 'slate');
         pediment(p, s, 1.15, 1.85, 1.85, 80, 36, team);
         lantern(p, 2.7, 0.75, 40, 2.9, 0.75);
         lantern(p, 2.7, 1.4, 40, 2.9, 1.4);
@@ -173,10 +173,11 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         p.material = 'tile';
         styledMansard(p, s, 0.3, 0.3, 2.7, 2.0, 56, 26, 0.2, 16, c.roof);
         // Ventilation cupola on the ridge.
-        p.box(1.42, 1.07, 1.64, 1.29, 90, 108, { color: c.trim }, c.trim);
-        p.leftFace(1.42, 1.64, 1.29, 90, (w) => p.window(w / 2 - 3, -15, 6, 10, true), 18);
-        helm(p, 1.53, 1.18, 108, CUPOLA_HELM, c.metal);
-        finial(p, 1.53, 1.18, 137, 12, false);
+        const cupola = roofLift(s, 26 + 16);
+        p.box(1.42, 1.07, 1.64, 1.29, 90 + cupola, 108 + cupola, { color: c.trim }, c.trim);
+        p.leftFace(1.42, 1.64, 1.29, 90 + cupola, (w) => p.window(w / 2 - 3, -15, 6, 10, true), 18);
+        helm(p, 1.53, 1.18, 108 + cupola, CUPOLA_HELM, c.metal);
+        finial(p, 1.53, 1.18, 137 + cupola, 12, false);
         lantern(p, 2.7, 0.9, 40, 2.9, 0.9);
         railFence(p, 0.15, 2.86, 2.86, 2.86, 15);
         railFence(p, 2.86, 2.25, 2.86, 2.86, 15);

@@ -9,7 +9,6 @@ import type { ArchStyle, CrestCharge } from './style';
  * rightFace callbacks (x along the wall, y up as negative values).
  */
 
-export const WHITE_TRIM = 0xf3ecdc;
 /** Baked shade for details painted on right (+u) faces. */
 export const R = baked(0.72);
 
@@ -43,8 +42,8 @@ export function timberFrame(
   }
 }
 
-/** Pilasters (flat white columns) with base and capital at the given x positions. */
-export function pilasters(ctx: Ctx, h: number, xs: readonly number[], color = WHITE_TRIM, width = 7, light = 1): void {
+/** Pilasters (flat columns in `color`) with base and capital at the given x positions. */
+export function pilasters(ctx: Ctx, h: number, xs: readonly number[], color: number, width = 7, light = 1): void {
   for (const x of xs) {
     ctx.fillStyle = css(shade(color, light));
     ctx.fillRect(x - width / 2, -h, width, h);
@@ -57,7 +56,7 @@ export function pilasters(ctx: Ctx, h: number, xs: readonly number[], color = WH
 }
 
 /** Horizontal molding (cornice / string course) at height y (positive, from the face's base). */
-export function cornice(ctx: Ctx, w: number, y: number, color = WHITE_TRIM, light = 1, depth = 5): void {
+export function cornice(ctx: Ctx, w: number, y: number, color: number, light = 1, depth = 5): void {
   ctx.fillStyle = css(shade(color, light * 1.05));
   ctx.fillRect(0, -y - depth, w, depth * 0.55);
   ctx.fillStyle = css(shade(color, light * 0.82));

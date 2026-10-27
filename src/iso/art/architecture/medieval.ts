@@ -3,10 +3,10 @@ import type { IsoPainter } from '../isoPainter';
 import { shade } from '../palette';
 import { archedOpening, boardedGable, crest, R, shutteredWindow, timberFrame } from './facade';
 import { medievalWorkArt } from './medievalWork';
-import { chimney, palisade, post, torch, wattleFence } from './parts';
+import { palisade, post, torch, wattleFence } from './parts';
 import { porchRoofLeft, porchRoofRight } from './roofs';
 import type { ArchStyle } from './style';
-import { boardedFill, styledGable, styledHip } from './styledRoofs';
+import { boardedFill, roofChimney, styledGable, styledHip } from './styledRoofs';
 import { medievalTower } from './towers';
 import type { AgeArtSet } from './types';
 
@@ -61,7 +61,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
         p.box(0.45, 0.55, 2.6, 2.55, 0, 38, { color: c.stone, detail: 'fieldstone' });
         p.leftFace(0.45, 2.6, 2.55, 0, (w) => {
           archedOpening(ctx, w * 0.5 - 12, 24, 28, c.ashlar);
-          p.door(w * 0.5 - 10, 20, 25, 0x5a3518);
+          p.door(w * 0.5 - 10, 20, 25, c.doors.main);
           p.window(16, -26, 7, 12, true);
           p.window(w - 26, -26, 7, 12, true);
         }, 38);
@@ -106,7 +106,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
           p.window(w * 0.14, -29, 9, 10);
           p.window(w * 0.75, -29, 9, 10);
         }, 40);
-        if (s.ornaments.chimneys) chimney(p, 0.6, 0.55, 0.8, 0.75, 30, 108, { color: c.plaster, detail: 'plaster' });
+        roofChimney(p, s, 0.6, 0.55, 0.8, 0.75, 30, 108, 56, { color: c.plaster, detail: 'plaster' });
         p.material = 'thatch';
         styledGable(p, s, 0.4, 0.2, 1.32, 1.72, 40, 56, c.thatch, c.plaster, 'v', 0.16, boardedFill(s, (w, rise) => boardedGable(ctx, w, rise, c.board)));
         for (let i = 0; i <= 3; i++) post(p, 1.72, 0.32 + i * 0.43, 0, 28, 2.2, c.timber);
@@ -126,7 +126,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
         p.box(0.3, 0.3, 2.7, 1.9, 0, 28, { color: c.stone, detail: 'fieldstone' });
         p.rightFace(0.3, 1.9, 2.7, 0, (w) => {
           archedOpening(ctx, w * 0.5 - 15, 30, 26, c.ashlar, 0x22170e, R);
-          p.door(w * 0.5 - 13, 26, 23, 0x4a2e18);
+          p.door(w * 0.5 - 13, 26, 23, c.doors.gate);
         }, 28);
         timberStorey(p, s, 0.26, 0.26, 2.74, 1.94, 28, 64, 7);
         p.leftFace(0.26, 2.74, 1.94, 28, (w) => {

@@ -9,7 +9,9 @@ import type { ArchStyle, Ornaments, RoofProfile } from './style';
 const NATIVE_ROOF: RoofProfile = { pitch: 1, eave: 1, form: 'native' };
 const ALL_ORNAMENTS: Ornaments = { chimneys: true, halfTimber: true, quoins: true, pilasters: true, dormers: true, boardedGables: true };
 
+/** White trim of every Hungarian age (mouldings, pilasters, cornices). */
 const WHITE_TRIM = 0xf3ecdc;
+const DOORS = { main: 0x5a3518, gate: 0x4a2e18, work: 0x3e2614 } as const;
 const VERDIGRIS = 0x5f9e88;
 const GREEN_SHUTTER = 0x3f5a3a;
 
@@ -26,6 +28,10 @@ export const HUNGARIAN_ROMAN: ArchStyle = {
     darkWood: 0x5e3b20,
     board: 0x7a4a2a,
     brick: 0x8d8170,
+    rawBrick: 0x8d8170,
+    stack: 0x8d8170,
+    planks: 0x7a4a2a,
+    doors: DOORS,
     roof: 0xb4532f,
     roofAlt: 0x5d5a55,
     thatch: 0xc49a4a,
@@ -62,6 +68,10 @@ export const HUNGARIAN_MEDIEVAL: ArchStyle = {
     darkWood: 0x5a3a22,
     board: 0x8a6a44,
     brick: 0x8d8170,
+    rawBrick: 0x8d8170,
+    stack: 0x8d8170,
+    planks: 0x6e4528,
+    doors: DOORS,
     roof: 0x6f5c4a,
     roofAlt: 0x6f5c4a,
     thatch: 0xb08d4e,
@@ -91,6 +101,10 @@ export const HUNGARIAN_BAROQUE: ArchStyle = {
     darkWood: 0x6e4528,
     board: 0x8c3d26,
     brick: 0x9c4a32,
+    rawBrick: 0xa8603f,
+    stack: 0x9a4a32,
+    planks: 0x6e4528,
+    doors: DOORS,
     roof: 0xa3472c,
     roofAlt: 0x56606b,
     thatch: 0xb08d4e,

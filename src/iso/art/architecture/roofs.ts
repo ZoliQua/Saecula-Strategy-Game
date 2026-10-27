@@ -27,9 +27,9 @@ export function mansardRoof(
   inset: number,
   upperRise: number,
   color: number,
-  upperColor = color,
-  overhang = 0.08,
-  trim = 0xf3ecdc,
+  upperColor: number,
+  overhang: number,
+  trim: number,
 ): Pt {
   const o = overhang;
   const zt = eave + lowerRise;

@@ -2,10 +2,11 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { BuildingType } from '../../../types';
 import { buildingSeed } from '../buildings';
 import { IsoPainter } from '../isoPainter';
-import { hashPainting, installRecordingCanvas } from '../recordingCanvas';
+import { hashPainting, installRecordingCanvas } from '../testing/recordingCanvas';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
-import { ARCH_FAMILIES } from './registry';
+import { ARCH_FAMILIES, ARCH_STYLES } from './registry';
 import { roofOf, type ArchStyle, type Ornaments, type RoofProfile } from './style';
+import { styledGable } from './styledRoofs';
 import type { BuildingArt } from './types';
 
 const TEAM = 0x3b6fd6;
@@ -41,6 +42,38 @@ function paint(s: ArchStyle, type: BuildingType): { hash: string; painter: IsoPa
 
 function result(s: ArchStyle, type: BuildingType) {
   return paint(s, type).painter.result(false);
+}
+
+type Pt = readonly [number, number];
+
+/** Painter that also notes every roof (footprint area, top z) and every smoke anchor's z. */
+class RoofProbe extends IsoPainter {
+  readonly roofs: Array<{ area: number; top: number }> = [];
+  readonly smokeZ: number[] = [];
+  override recordRoof(u0: number, v0: number, u1: number, v1: number, eave: number, peaks: Pt[], top: number): void {
+    this.roofs.push({ area: (u1 - u0) * (v1 - v0), top });
+    super.recordRoof(u0, v0, u1, v1, eave, peaks, top);
+  }
+  override addSmoke(u: number, v: number, z: number): void {
+    this.smokeZ.push(z);
+    super.addSmoke(u, v, z);
+  }
+  painterVolumeZ(): number[] {
+    return this.result(false).volume.map((v) => v.z);
+  }
+  /** Highest top of the main roof: roofs at least half the largest's footprint (a mansard's curb and upper hip). */
+  mainRidge(): number {
+    const largest = Math.max(...this.roofs.map((r) => r.area));
+    if (!Number.isFinite(largest)) throw new Error('no roof');
+    return Math.max(...this.roofs.filter((r) => r.area >= largest / 2).map((r) => r.top));
+  }
+}
+
+function probe(s: ArchStyle, type: BuildingType): RoofProbe {
+  const art = artOf(s, type);
+  const p = new RoofProbe(art.size, art.size, art.maxHeight, 7);
+  art.paint(p, TEAM);
+  return p;
 }
 
 describe('ArchStyle', () => {
@@ -115,5 +148,49 @@ describe('ArchStyle', () => {
       expect(buildingSeed('house', 2, s)).toBe('house'.length * 977 + 131);
     }
     expect(buildingSeed('house', 2, { ...HUNGARIAN_MEDIEVAL, seedSalt: 4099 })).toBe('house'.length * 977 + 131 + 4099);
+  });
+
+  it('chimney tops and smoke anchors clear the main ridge on steep roofs', () => {
+    const cases: Array<[ArchStyle, BuildingType]> = [
+      [HUNGARIAN_ROMAN, 'house'],
+      [HUNGARIAN_ROMAN, 'blacksmith'],
+      [HUNGARIAN_MEDIEVAL, 'house'],
+      [HUNGARIAN_MEDIEVAL, 'blacksmith'],
+      [HUNGARIAN_BAROQUE, 'town_center'],
+      [HUNGARIAN_BAROQUE, 'house'],
+      [HUNGARIAN_BAROQUE, 'blacksmith'],
+      [HUNGARIAN_BAROQUE, 'foundry'],
+    ];
+    for (const pitch of [1, 1.6]) {
+      for (const [base, type] of cases) {
+        const p = probe(withRoof(base, { pitch }), type);
+        expect(p.smokeZ.length, `${base.id} ${type}`).toBeGreaterThan(0);
+        for (const z of p.smokeZ) expect(z, `${base.id} ${type} @${pitch}`).toBeGreaterThan(p.mainRidge());
+      }
+    }
+  });
+
+  it('roof-mounted extras ride on the roof: the stable cupola keeps its clearance at any pitch', () => {
+    const clearance = (pitch: number) => {
+      const p = probe(withRoof(HUNGARIAN_BAROQUE, { pitch }), 'stable');
+      return Math.max(...p.painterVolumeZ()) - p.mainRidge();
+    };
+    expect(clearance(1.6)).toBeCloseTo(clearance(1), 6);
+  });
+
+  it('every registered style fits its canvas (headroom matches the pitch)', () => {
+    for (const s of Object.values(ARCH_STYLES)) {
+      for (const [type, art] of Object.entries(ARCH_FAMILIES[s.family](s))) {
+        const top = Math.max(0, ...probe(s, type as BuildingType).painterVolumeZ());
+        expect(top, `${s.id} ${type}`).toBeLessThanOrEqual(art.maxHeight);
+      }
+    }
+  });
+
+  it("a style's roof material covers only the wrapped roof (no leak into later roofs)", () => {
+    const p = new IsoPainter(2, 2, 100, 1);
+    p.material = 'shingle';
+    styledGable(p, withRoof(HUNGARIAN_MEDIEVAL, { material: 'copper' }), 0.2, 0.2, 1.8, 1.8, 30, 30, 0x777777, 0xdddddd, 'u');
+    expect(p.material).toBe('shingle');
   });
 });

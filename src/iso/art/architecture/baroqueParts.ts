@@ -7,9 +7,6 @@ import type { ArchStyle } from './style';
 
 type Pt = readonly [number, number];
 
-/** Baked shade for details painted on right (+u) faces. */
-export const RB = R;
-
 type FaceDraw = (w: number, h: number, light: number) => void;
 
 /**
@@ -45,7 +42,7 @@ export function baroqueBlock(
     draw?.(w, h, light);
   };
   p.leftFace(u0, u1, v1, z0 + plinth, (w) => face(w, 1, opts.left), h);
-  p.rightFace(v0, v1, u1, z0 + plinth, (w) => face(w, RB, opts.right), h);
+  p.rightFace(v0, v1, u1, z0 + plinth, (w) => face(w, R, opts.right), h);
 }
 
 /**

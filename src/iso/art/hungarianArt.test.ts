@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { AgeId, BuildingType } from '../../types';
 import type { LitArt } from './lighting/normalLayer';
-import { canonicalColor, hashPainting, installRecordingCanvas } from './recordingCanvas';
+import { canonicalColor, hashPainting, installRecordingCanvas } from './testing/recordingCanvas';
 
 /*
  * Pixel-identity guard for the Hungarian building art (M4 Task 2): every

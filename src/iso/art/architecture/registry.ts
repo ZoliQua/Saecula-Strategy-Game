@@ -6,6 +6,18 @@ import { romanArt } from './roman';
 import type { ArchFamily, ArchStyle } from './style';
 import type { AgeArtSet } from './types';
 
+/*
+ * Adding a civ's architecture:
+ * 1. Style ids: extend ArchStyleId (config/civs.ts) and point the civ's
+ *    CivDef.architecture at them.
+ * 2. Styles: ArchStyle objects (e.g. architecture/english/), non-zero
+ *    seedSalt, headroom sized for the pitch; register them below.
+ * 3. Bespoke buildings: add an ArchFamily id (style.ts) and a factory
+ *    here that spreads an existing family and overrides types, e.g.
+ *    `tudor: (s) => ({ ...medievalArt(s), town_center: normanKeep(s) })`.
+ *    The age-3 family must provide `wonder` (WonderArt with paintStage).
+ */
+
 /** Architectural styles by registry id (config/civs.ts CivDef.architecture). */
 export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   roman: HUNGARIAN_ROMAN,

@@ -30,7 +30,7 @@ export function romanTower(s: ArchStyle): BuildingArt {
         p.window(w / 2 - 4, -z + 34, 8, 15, true);
         p.window(w / 2 - 3.5, -62, 7, 13, true);
         cornice(p.ctx, w, z - 22, c.trim, light, 4);
-        if (light === 1) p.door(w / 2 - 6, 12, 22, 0x5a3518);
+        if (light === 1) p.door(w / 2 - 6, 12, 22, c.doors.main);
       };
       p.leftFace(0.15, 0.85, 0.85, 12, face(1), z - 12);
       p.rightFace(0.15, 0.85, 0.85, 12, face(R), z - 12);

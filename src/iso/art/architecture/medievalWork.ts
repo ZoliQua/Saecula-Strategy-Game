@@ -2,10 +2,10 @@ import { ellipse } from '../canvas';
 import type { IsoPainter } from '../isoPainter';
 import { css } from '../palette';
 import { archedOpening, boardedGable, R } from './facade';
-import { chimney, forgeLight, forgeMouth, goldPile, haystack, logPile, post, strawButt, torch, wattleFence } from './parts';
+import { forgeLight, forgeMouth, goldPile, haystack, logPile, post, strawButt, torch, wattleFence } from './parts';
 import { porchRoofLeft, porchRoofRight } from './roofs';
 import type { ArchStyle } from './style';
-import { boardedFill, styledGable, styledHip } from './styledRoofs';
+import { boardedFill, roofChimney, styledGable, styledHip } from './styledRoofs';
 import type { AgeArtSet } from './types';
 
 /** Ripe strip field: alternating stubble / standing wheat strips. */
@@ -76,7 +76,7 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         p.ground(0.1, 0.1, 1.9, 1.9, 0x857455);
         p.box(0.22, 0.22, 1.18, 1.5, 0, 6, { color: c.stone }, c.stone);
         p.box(0.25, 0.25, 1.15, 1.47, 6, 42, { color: c.darkWood, detail: 'logs' });
-        p.leftFace(0.25, 1.15, 1.47, 6, (w) => p.door(w * 0.35, 16, 26, 0x3e2614), 36);
+        p.leftFace(0.25, 1.15, 1.47, 6, (w) => p.door(w * 0.35, 16, 26, c.doors.work), 36);
         p.material = 'shingle';
         styledGable(p, s, 0.25, 0.25, 1.15, 1.47, 42, 52, c.roof, c.darkWood, 'v', 0.14, boardedFill(s, (w, r) => boardedGable(p.ctx, w, r, c.board)));
         torch(p, 0.3, 1.47, 30, 0.3, 1.66);
@@ -96,7 +96,7 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         p.box(0.18, 0.95, 1.05, 1.75, 0, 34, { color: c.stone, detail: 'fieldstone' });
         p.leftFace(0.18, 1.05, 1.75, 0, (w) => {
           archedOpening(ctx, w * 0.4, 16, 24, c.ashlar);
-          p.door(w * 0.4 + 1, 14, 22, 0x3e2614);
+          p.door(w * 0.4 + 1, 14, 22, c.doors.work);
         }, 34);
         p.material = 'shingle';
         styledGable(p, s, 0.18, 0.95, 1.05, 1.75, 34, 44, c.roof, c.stone, 'u', 0.12, boardedFill(s, (w, r) => boardedGable(ctx, w, r, c.board, R)));
@@ -146,10 +146,10 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         p.footShadow();
         p.ground(0.05, 0.05, 2.95, 2.95, 0x8d9c64);
         p.box(0.25, 0.25, 1.6, 1.25, 0, 8, { color: c.stone }, c.stone);
-        p.box(0.25, 0.25, 1.6, 1.25, 8, 46, { color: 0x6e4528, detail: 'planks' });
-        p.rightFace(0.25, 1.25, 1.6, 8, (w) => p.door(w * 0.4, 16, 26, 0x3e2614), 38);
+        p.box(0.25, 0.25, 1.6, 1.25, 8, 46, { color: c.planks, detail: 'planks' });
+        p.rightFace(0.25, 1.25, 1.6, 8, (w) => p.door(w * 0.4, 16, 26, c.doors.work), 38);
         p.material = 'shingle';
-        styledGable(p, s, 0.25, 0.25, 1.6, 1.25, 46, 54, c.roof, 0x6e4528, 'u', 0.14, boardedFill(s, (w, r) => boardedGable(p.ctx, w, r, c.board, R)));
+        styledGable(p, s, 0.25, 0.25, 1.6, 1.25, 46, 54, c.roof, c.planks, 'u', 0.14, boardedFill(s, (w, r) => boardedGable(p.ctx, w, r, c.board, R)));
         // Shooting gallery along the front.
         for (let i = 0; i <= 3; i++) post(p, 0.3 + i * 0.43, 1.6, 0, 30, 2.4, c.timber);
         porchRoofLeft(p, 0.22, 1.63, 1.3, 0.32, 40, 30, c.roof);
@@ -164,11 +164,11 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x7a7266);
-        chimney(p, 1.08, 0.28, 1.45, 0.65, 0, 112, { color: c.stone, detail: 'fieldstone' });
+        roofChimney(p, s, 1.08, 0.28, 1.45, 0.65, 0, 112, 46, { color: c.stone, detail: 'fieldstone' }, 'forge');
         p.box(0.28, 0.3, 1.4, 1.5, 0, 38, { color: c.stone, detail: 'fieldstone' });
         p.leftFace(0.28, 1.4, 1.5, 0, (w) => {
           archedOpening(ctx, w * 0.3, 18, 26, c.ashlar);
-          p.door(w * 0.3 + 1, 16, 24, 0x3e2614);
+          p.door(w * 0.3 + 1, 16, 24, c.doors.work);
         }, 38);
         p.rightFace(0.3, 1.5, 1.4, 0, (w) => forgeMouth(p, w * 0.35, 22, 26), 38);
         p.material = 'shingle';

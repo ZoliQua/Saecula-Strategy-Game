@@ -3,10 +3,10 @@ import type { IsoPainter } from '../isoPainter';
 import { css } from '../palette';
 import { archedOpening, baroqueWindow } from './facade';
 import { baroqueBlock, railFence } from './baroqueParts';
-import { chimney, forgeLight, forgeMouth, goldPile, lantern, logPile, plankStack, post, target } from './parts';
+import { forgeLight, forgeMouth, goldPile, lantern, logPile, plankStack, post, target } from './parts';
 import { finial, helm } from './roofs';
 import type { ArchStyle } from './style';
-import { styledGable, styledHip } from './styledRoofs';
+import { roofChimney, roofLift, styledGable, styledHip } from './styledRoofs';
 import type { AgeArtSet } from './types';
 
 /** Sweep well (gémeskút): curb, forked post, long sweep with a counterweight, hanging pole and bucket. */
@@ -104,7 +104,7 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         p.box(0.22, 0.22, 1.0, 1.3, 0, 8, { color: c.stone }, c.stone);
         p.box(0.22, 0.22, 1.0, 1.3, 8, 44, { color: c.board, detail: 'planks' });
         p.leftFace(0.22, 1.0, 1.3, 8, (w) => {
-          p.door(w * 0.55, 14, 24, 0x3e2614);
+          p.door(w * 0.55, 14, 24, c.doors.work);
           p.window(w * 0.16, -26, 9, 11);
         }, 36);
         p.material = 'tile';
@@ -160,15 +160,16 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         baroqueBlock(p, s, 0.2, 0.85, 1.05, 1.75, 0, 44, {
           left: (w, h, l) => {
             archedOpening(ctx, w * 0.55, 15, 24, c.trim, 0x2a1c12, l);
-            p.door(w * 0.55 + 1, 13, 22, 0x3e2614);
+            p.door(w * 0.55 + 1, 13, 22, c.doors.work);
             baroqueWindow(p, s, w * 0.15, -h + 12, 10, 16, l);
           },
           right: (w, h, l) => baroqueWindow(p, s, w * 0.4, -h + 12, 10, 16, l),
         });
         p.material = 'tile';
         styledHip(p, s, 0.2, 0.85, 1.05, 1.75, 44, 34, c.roof, 0.08);
-        p.box(0.54, 1.22, 0.7, 1.38, 70, 86, { color: c.trim }, c.trim);
-        helm(p, 0.62, 1.3, 86, [[0, 0.11], [6, 0.1], [11, 0.05], [16, 0.01]], c.metal);
+        const turret = roofLift(s, 34);
+        p.box(0.54, 1.22, 0.7, 1.38, 70 + turret, 86 + turret, { color: c.trim }, c.trim);
+        helm(p, 0.62, 1.3, 86 + turret, [[0, 0.11], [6, 0.1], [11, 0.05], [16, 0.01]], c.metal);
         lantern(p, 0.42, 1.75, 30, 0.42, 1.92);
         // Rails and an ore cart.
         for (const du of [-0.08, 0.08]) {
@@ -216,12 +217,12 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
-        chimney(p, 1.08, 0.28, 1.4, 0.6, 0, 118, { color: 0x9a4a32, detail: 'brick' });
+        roofChimney(p, s, 1.08, 0.28, 1.4, 0.6, 0, 118, 36, { color: c.stack, detail: 'brick' }, 'forge');
         baroqueBlock(p, s, 0.3, 0.3, 1.5, 1.5, 0, 46, {
           color: c.plasterDeep,
           left: (w, h, l) => {
             archedOpening(ctx, w * 0.6, 16, 26, c.trim, 0x2a1c12, l);
-            p.door(w * 0.6 + 1, 14, 24, 0x3e2614);
+            p.door(w * 0.6 + 1, 14, 24, c.doors.work);
             baroqueWindow(p, s, w * 0.18, -h + 12, 11, 18, l);
           },
           right: (w) => forgeMouth(p, w * 0.32, 24, 28),

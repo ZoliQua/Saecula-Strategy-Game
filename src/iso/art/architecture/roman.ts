@@ -1,8 +1,8 @@
 import { ellipse } from '../canvas';
 import { css, shade } from '../palette';
-import { chimney, column, forgeLight, goldPile, logPile, target, torch } from './parts';
+import { column, forgeLight, goldPile, logPile, target, torch } from './parts';
 import { roofOf, type ArchStyle } from './style';
-import { styledGable, styledHip } from './styledRoofs';
+import { roofChimney, styledGable, styledHip } from './styledRoofs';
 import { romanTower } from './towers';
 import type { AgeArtSet } from './types';
 
@@ -25,7 +25,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.box(0.3, 0.3, 2.7, 2.7, 0, 12, { color: c.stone, detail: 'stone' }, c.stone);
         p.box(0.45, 0.45, 2.55, 2.55, 12, 76, { color: c.plaster, detail: 'plaster' });
         p.leftFace(0.45, 2.55, 2.55, 12, () => {
-          p.door(58, 20, 32);
+          p.door(58, 20, 32, c.doors.main);
           p.window(16, -50, 11, 16, true);
           p.window(104, -50, 11, 16, true);
         }, 64);
@@ -64,7 +64,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
           p.window(32, -31, 12, 12);
         }, 40);
         // Chimney sits on the back slope, so paint it before the roof.
-        if (s.ornaments.chimneys) chimney(p, 0.55, 0.55, 0.8, 0.8, 30, 92, { color: c.stone, detail: 'stone' });
+        roofChimney(p, s, 0.55, 0.55, 0.8, 0.8, 30, 92, 38, { color: c.stone, detail: 'stone' });
         styledGable(p, s, 0.3, 0.35, 1.7, 1.65, 40, 38, roofOf(s, 'house'), c.plaster, 'u');
       },
     },
@@ -160,7 +160,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
           for (let i = 0; i < 5; i++) p.window(14 + i * 30, -28, 9, 13, true);
         }, 36);
         p.rightFace(0.3, 1.9, 2.7, 0, () => {
-          p.door(30, 24, 34, 0x4a2e18);
+          p.door(30, 24, 34, c.doors.gate);
           // Team banners either side of the gate.
           for (const bx of [12, 66]) {
             p.ctx.fillStyle = css(team);
@@ -206,7 +206,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.ground(0.05, 0.05, 2.95, 2.95, 0xa3946a);
         p.box(0.3, 0.3, 2.7, 2.0, 0, 46, { color: c.board, detail: 'planks' });
         p.leftFace(0.3, 2.7, 2.0, 0, () => {
-          for (let i = 0; i < 4; i++) p.door(10 + i * 38, 18, 26, 0x4a2e18);
+          for (let i = 0; i < 4; i++) p.door(10 + i * 38, 18, 26, c.doors.gate);
         }, 46);
         styledGable(p, s, 0.3, 0.3, 2.7, 2.0, 46, 42, roofOf(s, 'stable'), c.board, 'u');
         // Hay bales.
@@ -220,7 +220,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
       paint: (p, team) => {
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
-        chimney(p, 1.1, 0.3, 1.45, 0.65, 0, 96, { color: c.stone, detail: 'stone' });
+        roofChimney(p, s, 1.1, 0.3, 1.45, 0.65, 0, 96, 30, { color: c.stone, detail: 'stone' }, 'forge');
         p.box(0.3, 0.3, 1.7, 1.5, 0, 38, { color: c.brick, detail: 'brick' });
         p.leftFace(0.3, 1.7, 1.5, 0, () => {
           const ctx = p.ctx;

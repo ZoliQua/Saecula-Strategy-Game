@@ -4,7 +4,7 @@ import { baroqueBlock, volutedGable } from './baroqueParts';
 import { archedOpening, baroqueWindow, clockFace, cornice } from './facade';
 import { lantern } from './parts';
 import type { ArchStyle } from './style';
-import { styledGable } from './styledRoofs';
+import { roofLift, styledGable } from './styledRoofs';
 import type { WonderArt } from './types';
 import { balustrade, crane, dome, fountain, parterre, scaffold, statue, towerHelm } from './wonderParts';
 
@@ -16,7 +16,6 @@ export function wonderStage(t: number): number {
   return Math.min(WONDER_STAGES, Math.max(1, Math.floor(t * WONDER_STAGES) + 1));
 }
 
-const RAW_BRICK = 0xa8603f;
 const NAVE_TOP = 96;
 const TOWER_TOP = 186;
 const FRONT_TOP = 124;
@@ -31,7 +30,8 @@ const RIGHT_TOWER: Block = [2.45, 2.55, 3.05, 3.15];
 
 /** Unplastered brick walls with dark window holes (early stages). */
 function rawBlock(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, z1: number): void {
-  p.box(u0, v0, u1, v1, 12, z1, { color: RAW_BRICK, detail: 'brick' }, shade(RAW_BRICK, 0.9));
+  const brick = s.palette.rawBrick;
+  p.box(u0, v0, u1, v1, 12, z1, { color: brick, detail: 'brick' }, shade(brick, 0.9));
   const holes = (w: number, h: number) => {
     for (let x = 10; x < w - 14; x += 24) if (h > 40) archedOpening(p.ctx, x, 9, Math.min(26, h - 20), s.palette.stone, 0x1d140d);
   };
@@ -42,8 +42,8 @@ function rawBlock(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, z1: numb
   const inner = [p.p(u0 + t, v0 + t, z1), p.p(u1 - t, v0 + t, z1), p.p(u1 - t, v1 - t, z1), p.p(u0 + t, v1 - t, z1)];
   const ys = inner.map((q) => q[1]);
   const g = p.ctx.createLinearGradient(0, Math.min(...ys), 0, Math.max(...ys));
-  g.addColorStop(0, css(shade(RAW_BRICK, 0.35)));
-  g.addColorStop(1, css(shade(RAW_BRICK, 0.6)));
+  g.addColorStop(0, css(shade(brick, 0.35)));
+  g.addColorStop(1, css(shade(brick, 0.6)));
   p.fillPoly(inner, g);
 }
 
@@ -190,7 +190,7 @@ function paintWonder(p: IsoPainter, s: ArchStyle, team: number, stage: number): 
   p.material = 'slate';
   styledGable(p, s, ...NAVE, NAVE_TOP, 40, c.roofAlt, c.plaster, 'v', 0.08);
   transeptArm(p, s, RIGHT_ARM, true);
-  dome(p, s, 2.0, 1.5, 118, done);
+  dome(p, s, 2.0, 1.5, 118 + roofLift(s, 40), done);
   facadeTower(p, s, LEFT_TOWER, done);
   frontispiece(p, s, team, done);
   facadeTower(p, s, RIGHT_TOWER, done);

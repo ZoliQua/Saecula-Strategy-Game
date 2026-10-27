@@ -2,14 +2,15 @@ import { ellipse } from '../canvas';
 import type { IsoPainter } from '../isoPainter';
 import { FURNACE_LIGHT } from '../lighting/buildingLights';
 import { css, shade } from '../palette';
-import { RB } from './baroqueParts';
-import { archedOpening, cornice, quoins } from './facade';
+import { archedOpening, cornice, quoins, R } from './facade';
 import { chimney } from './parts';
 import type { ArchStyle } from './style';
-import { styledGable } from './styledRoofs';
+import { roofChimney, roofLift, styledGable } from './styledRoofs';
 import type { BuildingArt } from './types';
 
 const SOOT = 0x3a302a;
+/** Native rise of the casting hall's roof (its ridge vent and stack follow the pitch). */
+const HALL_RISE = 42;
 const CINDER = 0x6b6156;
 
 /** Glowing furnace mouth (face-local): iron frame, molten core, spill of light on the sill. */
@@ -118,7 +119,7 @@ export function foundryArt(s: ArchStyle): BuildingArt {
         ctx.fillRect(x, y, 2 + p.random() * 2, 1.4);
       }
       heap(p, 2.55, 0.42, 14, 10, 0x8a5a3a);
-      chimney(p, 0.42, 0.42, 0.68, 0.68, 0, 210, { color: c.brick, detail: 'brick' });
+      roofChimney(p, s, 0.42, 0.42, 0.68, 0.68, 0, 210, HALL_RISE, { color: c.brick, detail: 'brick' }, 'forge');
       // Casting hall.
       p.box(0.25, 0.3, 2.0, 2.15, 0, 10, { color: c.stone, detail: 'stone' }, c.stone);
       p.box(0.28, 0.33, 1.97, 2.12, 10, 74, { color: c.brick, detail: 'brick' });
@@ -131,13 +132,14 @@ export function foundryArt(s: ArchStyle): BuildingArt {
         }
       };
       p.leftFace(0.28, 1.97, 2.12, 10, hall(1, 4), 64);
-      p.rightFace(0.33, 2.12, 1.97, 10, hall(RB, 4), 64);
+      p.rightFace(0.33, 2.12, 1.97, 10, hall(R, 4), 64);
       p.material = 'tile';
-      styledGable(p, s, 0.28, 0.33, 1.97, 2.12, 74, 42, c.roof, c.brick, 'u');
+      styledGable(p, s, 0.28, 0.33, 1.97, 2.12, 74, HALL_RISE, c.roof, c.brick, 'u');
       // Louvred ridge vent letting the heat out.
-      p.box(0.7, 1.12, 1.55, 1.33, 112, 126, { color: SOOT, detail: 'planks' }, SOOT);
-      p.gableRoof(0.7, 1.12, 1.55, 1.33, 126, 10, c.roof, SOOT, 'u', 0.05);
-      p.addSmoke(1.1, 1.22, 132);
+      const vent = roofLift(s, HALL_RISE);
+      p.box(0.7, 1.12, 1.55, 1.33, 112 + vent, 126 + vent, { color: SOOT, detail: 'planks' }, SOOT);
+      p.gableRoof(0.7, 1.12, 1.55, 1.33, 126 + vent, 10, c.roof, SOOT, 'u', 0.05);
+      p.addSmoke(1.1, 1.22, 132 + vent);
       // Blast furnace: battered stone base, brick shaft, iron-banded top and its own stack.
       p.box(2.0, 0.9, 2.88, 1.95, 0, 18, { color: c.stone, detail: 'stone' }, c.stone);
       p.box(2.06, 0.96, 2.82, 1.89, 18, 104, { color: c.brick, detail: 'brick' });
@@ -150,8 +152,8 @@ export function foundryArt(s: ArchStyle): BuildingArt {
         }
       }, 86);
       p.rightFace(0.96, 1.89, 2.82, 18, (w, h) => {
-        corners(ctx, w, h, RB * 0.95);
-        furnaceMouth(p, c.ashlar, w / 2 - 9, 18, 24, RB);
+        corners(ctx, w, h, R * 0.95);
+        furnaceMouth(p, c.ashlar, w / 2 - 9, 18, 24, R);
       }, 86);
       p.box(2.03, 0.93, 2.85, 1.92, 104, 112, { color: SOOT }, SOOT);
       chimney(p, 2.3, 1.2, 2.58, 1.48, 112, 184, { color: c.brick, detail: 'brick' });
