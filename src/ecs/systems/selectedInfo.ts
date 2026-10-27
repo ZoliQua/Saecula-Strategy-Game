@@ -26,7 +26,7 @@ export function infoKey(info: SelectedEntityInfo | null): string {
     const tr = (info.trainable ?? []).join(',');
     const cp = info.constructionProgress === undefined ? '-' : Math.round(info.constructionProgress * 100);
     const rs = info.research ? `${info.research.techId}@${Math.round(info.research.progress * 100)}` : '-';
-    return `b:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}`;
+    return `b:${info.id}:${info.ownerId}:${info.civ}:${info.textureKey ?? '-'}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}`;
   }
   return `r:${info.id}:${info.amount}/${info.maxAmount}`;
 }

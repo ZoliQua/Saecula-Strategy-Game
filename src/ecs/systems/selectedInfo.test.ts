@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
-import { toSelectedInfo } from './selectedInfo';
+import { infoKey, toSelectedInfo } from './selectedInfo';
 
 const civOf = (playerId: number): CivId => (playerId === 2 ? 'english' : 'hungarian');
 
@@ -55,5 +55,14 @@ describe('toSelectedInfo', () => {
     } as Partial<Entity>;
     const info = snapshot(unit);
     expect(info && info.kind === 'unit' ? info.carrying : null).toEqual({ type: 'food', amount: 0 });
+  });
+
+  it('changes the push key when an age-up re-skins a selected building (portrait must not go stale)', () => {
+    const before = snapshot({ ...barracks(1), sprite: { texture: { key: 'bld-age1' } } } as unknown as Entity);
+    const after = snapshot({ ...barracks(1), sprite: { texture: { key: 'bld-age2' } } } as unknown as Entity);
+    expect(infoKey(before)).not.toBe(infoKey(after));
+    if (before?.kind === 'building') {
+      expect(infoKey({ ...before, civ: 'english' })).not.toBe(infoKey(before));
+    }
   });
 });
