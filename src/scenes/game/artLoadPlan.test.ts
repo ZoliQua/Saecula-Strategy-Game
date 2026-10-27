@@ -2,17 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { BUILDING_BALANCE } from '../../config/balance';
 import { COMMON_WALL_PIECES } from '../../iso/art/walls/commonWallPieces';
-import type { BuildingType } from '../../types';
-import { BackgroundArt, planArtLoad } from './artLoadPlan';
+import type { BuildingType, CivId } from '../../types';
+import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, prewarmUnitTypes, type ArtPainters } from './artLoadPlan';
 
 const ALL_TYPES = Object.keys(BUILDING_SPECS) as BuildingType[];
 const AGE1_TYPES = ALL_TYPES.filter((t) => BUILDING_BALANCE[t].age === 1);
 
+/** Test painters: each paint is logged as 'building <type> <civ> <owner>', 'wall <piece> <age> <civ>' or 'unit <type> <civ>'. */
+function recordingPainters(log: string[]): ArtPainters {
+  return {
+    building: (type, civ, owner) => log.push(`building ${type} ${civ} ${owner}`),
+    wall: (piece, age, civ) => log.push(`wall ${piece} ${age} ${civ}`),
+    unit: (type, civ) => log.push(`unit ${type} ${civ}`),
+  };
+}
+
+/** Civ -> base owner: player 1 for the first civ, then 2, 3, ... */
+const ownersOf = (civs: readonly CivId[]): Map<CivId, number> => new Map(civs.map((c, i) => [c, i + 1]));
+
 function recordPlan(human: 'hungarian' | 'english', civs: Array<'hungarian' | 'english'>) {
   const painted: string[] = [];
-  const plan = planArtLoad(human, civs, {
+  const plan = planArtLoad(human, ownersOf(civs), {
     building: (type, civ) => painted.push(`b:${type}:${civ}`),
     wall: (piece, age, civ) => painted.push(`w:${piece}:${age}:${civ}`),
+    unit: () => {},
   });
   const run = (jobs: ReadonlyArray<() => void>) => {
     const from = painted.length;
@@ -21,6 +34,58 @@ function recordPlan(human: 'hungarian' | 'english', civs: Array<'hungarian' | 'e
   };
   return { critical: run(plan.critical), background: run(plan.background) };
 }
+
+describe('N-civ art budget (M5 Task 1)', () => {
+  it('AI-only civs prewarm only age-1 unit types', () => {
+    expect(prewarmUnitTypes('english', 'hungarian').sort()).toEqual(['archer', 'scout', 'swordsman', 'villager']);
+    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(10);
+  });
+
+  it('age-up jobs paint that age’s unit sheets and the next age’s wall pieces', () => {
+    const log: string[] = [];
+    ageUpArtJobs('english', 2, recordingPainters(log)).forEach((j) => j());
+    expect(log.filter((l) => l.startsWith('unit')).sort()).toEqual(['unit crossbowman english', 'unit knight english', 'unit pikeman english']);
+    expect(log.some((l) => l.startsWith('wall') && l.includes(' 3 english'))).toBe(true);
+  });
+
+  it('age-up jobs to the last age paint its unit sheets and no wall pieces', () => {
+    const log: string[] = [];
+    ageUpArtJobs('english', 3, recordingPainters(log)).forEach((j) => j());
+    expect(log.sort()).toEqual(['unit cannon english', 'unit cavalry english', 'unit musketeer english']);
+  });
+
+  it('base owner: the human for the human civ, else the lowest player id of the civ', () => {
+    const players = [
+      { id: 1, civ: 'english', isHuman: false },
+      { id: 4, civ: 'hungarian', isHuman: false },
+      { id: 2, civ: 'hungarian', isHuman: true },
+      { id: 5, civ: 'german', isHuman: false },
+      { id: 3, civ: 'german', isHuman: false },
+    ] as const;
+    expect([...civBaseOwners(players)].sort()).toEqual([['english', 1], ['german', 3], ['hungarian', 2]]);
+  });
+
+  it('BackgroundArt.enqueue appends jobs after the queued ones, also once the queue ran dry', () => {
+    const ran: number[] = [];
+    const bg = new BackgroundArt([() => ran.push(0)], { startDelayMs: 0, maxFrameWorkMs: 5, everyFrames: 1, now: () => 0 });
+    bg.enqueue([() => ran.push(1)]);
+    bg.update(16, 0);
+    bg.update(16, 0);
+    expect(bg.done).toBe(true);
+    bg.enqueue([() => ran.push(2), () => ran.push(2)]);
+    expect(bg.done).toBe(false);
+    bg.update(16, 0);
+    bg.update(16, 0);
+    expect(ran).toEqual([0, 1, 2, 2]);
+  });
+
+  it('bases are painted for each civ’s base owner', () => {
+    const log: string[] = [];
+    planArtLoad('hungarian', new Map([['hungarian', 1], ['english', 3]]), recordingPainters(log)).critical.forEach((j) => j());
+    expect(log).toContain('building house english 3');
+    expect(log.filter((l) => l.startsWith('building') && l.endsWith('english 1'))).toEqual([]);
+  });
+});
 
 describe('planArtLoad', () => {
   it("paints every age-1 building of the human's civ (the build menu shows them all) behind the loading card", () => {

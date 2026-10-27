@@ -43,6 +43,54 @@ export interface BuildingLightInfo {
 /** Per building texture key (age style, civ and team variants included). */
 export const BUILDING_LIGHT = new Map<string, BuildingLightInfo>();
 
+/** Player whose colour each building base (age key) was painted in; a base without an entry counts as player 1's. */
+export const BASE_OWNER = new Map<string, number>();
+
+/** Civ → base owner of the current match (civBaseOwners); empty outside a match (menu, previews: player 1). */
+let baseOwners: ReadonlyMap<CivId, number> = new Map();
+
+/**
+ * Sets whose colour each civ's building bases are painted in from now on
+ * (GameScene, once the players exist; an empty map restores player 1).
+ * Call rebaseCivArt next to free bases painted for someone else.
+ */
+export function setBuildingBaseOwners(owners: ReadonlyMap<CivId, number>): void {
+  baseOwners = new Map(owners);
+}
+
+/**
+ * Frees, at match start, each base of a civ in `owners` that was painted
+ * for a player who is not that civ's base owner (e.g. menu art in player
+ * 1's colour for a civ only AIs play), with its team variants — so no
+ * base is kept that nobody shows. A group with a texture in `inUse` is
+ * kept. Variants are detached first, so the normal map is destroyed once,
+ * with its base. Returns the number removed.
+ */
+export function rebaseCivArt(host: TextureHost, owners: ReadonlyMap<CivId, number>, inUse: ReadonlySet<string>): number {
+  const groups = new Map<string, string[]>();
+  for (const key of host.textures.getTextureKeys()) {
+    const art = parseBuildingArtKey(key);
+    if (art) groups.set(art.ageKey, [...(groups.get(art.ageKey) ?? []), key]);
+  }
+  let removed = 0;
+  for (const [ageKey, keys] of groups) {
+    const art = parseBuildingArtKey(ageKey);
+    const owner = art && owners.get(art.civ);
+    if (owner === undefined || (BASE_OWNER.get(ageKey) ?? 1) === owner) continue;
+    if (!host.textures.exists(ageKey) || keys.some((key) => inUse.has(key))) continue;
+    // Variants first (detached from the shared normal source), the base last.
+    for (const key of keys.sort((a, b) => Number(a === ageKey) - Number(b === ageKey))) {
+      if (key !== ageKey) host.textures.get(key).dataSource = [];
+      host.textures.remove(key);
+      BUILDING_LIGHT.delete(key);
+      TRIMS.delete(key);
+      removed++;
+    }
+    BASE_OWNER.delete(ageKey);
+  }
+  return removed;
+}
+
 type TextureHost = Pick<Phaser.Scene, 'textures'>;
 
 function teamColor(playerId: number): number {
@@ -52,8 +100,9 @@ function teamColor(playerId: number): number {
 /**
  * Texture key of a building in a civ's age style and a player's colour,
  * painting it on first need: the (type, age, civ) base once with its
- * normal map, each other team as an albedo-only variant sharing the map
- * of its own civ's base. Textures stay cached until
+ * normal map, in the colour of the civ's base owner (setBuildingBaseOwners),
+ * each other team as an albedo-only variant sharing the map of its own
+ * civ's base. Textures stay cached until
  * releaseStaleBuildingArt frees age styles nobody shows; it detaches a
  * variant's shared normal source before removing it, and removes a base
  * only after all its variants.
@@ -61,8 +110,12 @@ function teamColor(playerId: number): number {
 export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeId, playerId: number, civ: CivId): string {
   const ageKey = ageArtKey(BUILDING_SPECS[type].textureKey, type, age, civ);
   const artAge = artAgeFor(type, age);
-  if (!host.textures.exists(ageKey)) registerLitArt(host, ageKey, paintBuilding(type, teamColor(1), artAge, civ));
-  const key = teamArtKey(ageKey, playerId);
+  if (!host.textures.exists(ageKey)) {
+    const owner = baseOwners.get(civ) ?? 1;
+    registerLitArt(host, ageKey, paintBuilding(type, teamColor(owner), artAge, civ));
+    BASE_OWNER.set(ageKey, owner);
+  }
+  const key = teamArtKey(ageKey, playerId, BASE_OWNER.get(ageKey) ?? 1);
   if (key === ageKey || host.textures.exists(key)) return key;
   // Same crop as the base, so the variant lines up with the normal map it shares.
   const variant = paintBuilding(type, teamColor(playerId), artAge, civ, false).canvas;
@@ -139,6 +192,7 @@ export function releaseStaleBuildingArt(
     if (shared) host.textures.get(key).dataSource = [];
     host.textures.remove(key);
     BUILDING_LIGHT.delete(key);
+    BASE_OWNER.delete(key);
     removed++;
   };
   const stale = (civ: CivId, age: AgeId): boolean => {
@@ -214,6 +268,7 @@ export function releaseAbsentCivArt(host: TextureHost, civsInPlay: ReadonlySet<C
       host.textures.remove(key);
       BUILDING_LIGHT.delete(key);
       TRIMS.delete(key);
+      BASE_OWNER.delete(key);
       removed++;
     }
   }

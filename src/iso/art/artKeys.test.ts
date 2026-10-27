@@ -34,6 +34,14 @@ describe('building art keys', () => {
     expect(teamArtKey('building_house~a2~cenglish', 3)).toBe('building_house~a2~cenglish@p3');
   });
 
+  it("use the civ's base owner's key unsuffixed (anyone else, player 1 included, gets @p<id>)", () => {
+    expect(teamArtKey('k', 3, 3)).toBe('k');
+    expect(teamArtKey('k', 1, 3)).toBe('k@p1');
+    const base = ageArtKey('building_house', 'house', 2, 'english');
+    expect(parseBuildingArtKey(teamArtKey(base, 3, 3))).toEqual({ baseKey: 'building_house', age: 2, civ: 'english', ageKey: base });
+    expect(parseBuildingArtKey(teamArtKey(base, 1, 3))).toEqual({ baseKey: 'building_house', age: 2, civ: 'english', ageKey: base, playerId: 1 });
+  });
+
   it('round-trip through the parser', () => {
     for (const civ of ['hungarian', 'english'] as const) {
       for (const age of [1, 2, 3] as const) {

@@ -21,15 +21,19 @@ function asCiv(s: string | undefined): CivId | undefined {
   return CIV_IDS.find((id) => id === s);
 }
 
-/** Texture key of a building's base art (player 1's colour) in an age style for a civ. */
+/** Texture key of a building's base art (in its civ's base owner's colour) in an age style for a civ. */
 export function ageArtKey(baseKey: string, type: BuildingType, age: AgeId, civId: CivId): string {
   const a = artAgeFor(type, age);
   return a === 1 ? `${baseKey}${civ(civId)}` : `${baseKey}~a${a}${civ(civId)}`;
 }
 
-/** Texture key of a team-colour variant (player 1 uses the painted base). */
-export function teamArtKey(key: string, playerId: number): string {
-  return playerId <= 1 ? key : `${key}@p${playerId}`;
+/**
+ * Texture key of a player's team colour: the painted base itself for the
+ * player it was painted for (`baseOwner`, its civ's base owner), else a
+ * variant `@p<id>` (player 1 included).
+ */
+export function teamArtKey(key: string, playerId: number, baseOwner = 1): string {
+  return playerId === baseOwner ? key : `${key}@p${playerId}`;
 }
 
 export interface BuildingArtKey {

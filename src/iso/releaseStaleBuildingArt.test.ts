@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type Phaser from 'phaser';
 import type { AgeId, CivId } from '../types';
 import {
+  BASE_OWNER,
   BUILDING_LIGHT,
+  rebaseCivArt,
   releaseAbsentCivArt,
   releaseStaleBuildingArt,
   releaseUnusedWallPieces,
@@ -233,5 +235,64 @@ describe('releaseAbsentCivArt', () => {
     const { host, map } = fakeHost(keys);
     expect(releaseAbsentCivArt(host, new Set(['hungarian', 'english']), new Set())).toBe(0);
     expect(map.size).toBe(keys.length);
+  });
+});
+
+describe('shared civ whose base owner is gone (M5 Task 1, Review Focus 2)', () => {
+  it('keeps the base (and so the variant’s normal map) when base owner 3 is defeated but player 5’s variant is shown', () => {
+    const { host, map, normals, destroyed } = fakeHost(['building_house~cenglish', 'building_house~cenglish@p5']);
+    BASE_OWNER.set('building_house~cenglish', 3);
+    // Player 3 is out (undefined age); player 5 is the civ's last active player, still in age 1.
+    releaseStaleBuildingArt(host, ages({ 5: 1 }), mins({ english: 1 }), new Set(['building_house~cenglish@p5']));
+    rebaseCivArt(host, new Map([['english', 3]]), new Set(['building_house~cenglish@p5']));
+    expect(map.has('building_house~cenglish')).toBe(true);
+    const normal = normals.get('building_house~cenglish')!;
+    expect(map.get('building_house~cenglish@p5')?.dataSource).toEqual([normal]);
+    expect(destroyed).not.toContain(normal);
+  });
+
+  it('keeps the age-1 base for player 5 when base owner 3 ages up first', () => {
+    const { host, map, normals } = fakeHost(['building_house~cenglish', 'building_house~cenglish@p5', 'building_house~a2~cenglish']);
+    BASE_OWNER.set('building_house~cenglish', 3);
+    BASE_OWNER.set('building_house~a2~cenglish', 3);
+    releaseStaleBuildingArt(host, ages({ 3: 2, 5: 1 }), mins({ english: 1 }), new Set());
+    expect([...map.keys()].sort()).toEqual(['building_house~a2~cenglish', 'building_house~cenglish', 'building_house~cenglish@p5']);
+    expect(map.get('building_house~cenglish@p5')?.dataSource).toEqual([normals.get('building_house~cenglish')]);
+  });
+});
+
+describe('rebaseCivArt', () => {
+  it('frees a base painted for a player who is not its civ’s base owner, variants first (normal map destroyed once)', () => {
+    const { host, map, normals, destroyed } = fakeHost([
+      'building_house~cenglish',
+      'building_house~cenglish@p3',
+      'building_house~chungarian',
+      'building_town_center~cenglish',
+    ]);
+    BASE_OWNER.set('building_house~cenglish', 1);
+    BASE_OWNER.set('building_house~chungarian', 1);
+    BASE_OWNER.set('building_town_center~cenglish', 3);
+    BUILDING_LIGHT.set('building_house~cenglish', { volume: [], glows: [], lights: [], smoke: [] });
+    const n = rebaseCivArt(host, new Map([['hungarian', 1], ['english', 3]]), new Set());
+    expect(n).toBe(2);
+    expect([...map.keys()].sort()).toEqual(['building_house~chungarian', 'building_town_center~cenglish']);
+    expect(destroyed.filter((d) => d === normals.get('building_house~cenglish'))).toHaveLength(1);
+    expect(BASE_OWNER.has('building_house~cenglish')).toBe(false);
+    expect(BUILDING_LIGHT.has('building_house~cenglish')).toBe(false);
+  });
+
+  it('treats a base without a record as painted for player 1 (menu art)', () => {
+    const { host, map } = fakeHost(['building_farm~cenglish']);
+    BASE_OWNER.delete('building_farm~cenglish');
+    expect(rebaseCivArt(host, new Map([['english', 2]]), new Set())).toBe(1);
+    expect(map.size).toBe(0);
+  });
+
+  it('leaves a mismatched base alone while it or a variant is in use, and civs outside the match', () => {
+    const { host, map } = fakeHost(['building_house~cenglish', 'building_house~cenglish@p2', 'building_house~chungarian']);
+    BASE_OWNER.set('building_house~cenglish', 1);
+    BASE_OWNER.set('building_house~chungarian', 1);
+    expect(rebaseCivArt(host, new Map([['english', 3]]), new Set(['building_house~cenglish@p2']))).toBe(0);
+    expect(map.size).toBe(3);
   });
 });

@@ -1,4 +1,4 @@
-import { BUILDING_BALANCE } from '../../config/balance';
+import { BUILDING_BALANCE, UNIT_BALANCE } from '../../config/balance';
 import {
   BACKGROUND_ART_EVERY_FRAMES,
   BACKGROUND_ART_FORCE_AFTER_FRAMES,
@@ -7,12 +7,54 @@ import {
 } from '../../config/constants';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { COMMON_WALL_PIECES } from '../../iso/art/walls/commonWallPieces';
-import type { AgeId, BuildingType, CivId } from '../../types';
+import type { AgeId, BuildingType, CivId, UnitType } from '../../types';
 
 /** Paints (and registers) one texture; textures already present are cache hits. */
 export interface ArtPainters {
-  building(type: BuildingType, civ: CivId): void;
+  /** A building type's age-1 base, in the colour of `owner` (its civ's base owner). */
+  building(type: BuildingType, civ: CivId, owner: number): void;
   wall(piece: number, age: AgeId, civ: CivId): void;
+  /** A unit type's sheet (allocation + first idle frames). */
+  unit(type: UnitType, civ: CivId): void;
+}
+
+const UNIT_TYPES = Object.keys(UNIT_BALANCE) as UnitType[];
+
+/**
+ * Unit sheets painted while loading: every type for the human's civ (the
+ * HUD and the build/train panels show them), only the age-1 types for an
+ * AI-only civ; its later sheets follow its age-ups (ageUpArtJobs) and a
+ * unit trained before that is painted on demand (unitArt).
+ */
+export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
+  return civ === human ? [...UNIT_TYPES] : UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === 1);
+}
+
+/**
+ * Background jobs when the first player of `civ` reaches `age`: the unit
+ * sheets of that age's types and the civ's common wall pieces of the
+ * next age (the one its owners can show next).
+ */
+export function ageUpArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
+  const jobs: Array<() => void> = UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === age).map((t) => () => paint.unit(t, civ));
+  if (age < 3) {
+    const next = (age + 1) as AgeId;
+    for (const piece of COMMON_WALL_PIECES) jobs.push(() => paint.wall(piece, next, civ));
+  }
+  return jobs;
+}
+
+/**
+ * Base owner of each civ in a match: the human's id for the human's civ,
+ * otherwise the lowest player id of that civ. Building bases are painted
+ * in that player's colour, so no civ keeps a base nobody shows.
+ */
+export function civBaseOwners(players: ReadonlyArray<{ readonly id: number; readonly civ: CivId; readonly isHuman: boolean }>): Map<CivId, number> {
+  const owners = new Map<CivId, number>();
+  for (const p of [...players].sort((a, b) => Number(b.isHuman) - Number(a.isHuman) || a.id - b.id)) {
+    if (!owners.has(p.civ)) owners.set(p.civ, p.id);
+  }
+  return owners;
 }
 
 export interface ArtLoadPlan {
@@ -28,6 +70,8 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
 /**
  * Which civ art a match paints while loading and which it leaves for the
  * game (Global Constraint 8: an extra civ adds ≤ ~1 s of load).
+ * `owners` maps each civ in the match to its base owner (civBaseOwners):
+ * its building bases are painted in that player's colour.
  *  - The human's civ: every building type's age-1 base (the build menu
  *    shows all of them, locked ones too).
  *  - An AI-only civ: only the types buildable in age 1; later types are
@@ -40,15 +84,16 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
  *    background queue (age 2 first), done seconds into the game — long
  *    before anyone can leave the Roman age.
  */
-export function planArtLoad(human: CivId, civs: readonly CivId[], paint: ArtPainters): ArtLoadPlan {
+export function planArtLoad(human: CivId, owners: ReadonlyMap<CivId, number>, paint: ArtPainters): ArtLoadPlan {
   const types = Object.keys(BUILDING_SPECS) as BuildingType[];
+  const civs = [...owners.keys()];
   const critical: Array<() => void> = [];
   const background: Array<() => void> = [];
   const lateBuildings: Array<() => void> = [];
-  for (const civ of civs) {
+  for (const [civ, owner] of owners) {
     for (const type of types) {
-      if (civ === human || BUILDING_BALANCE[type].age === 1) critical.push(() => paint.building(type, civ));
-      else if (BACKGROUND_BUILDINGS.includes(type)) lateBuildings.push(() => paint.building(type, civ));
+      if (civ === human || BUILDING_BALANCE[type].age === 1) critical.push(() => paint.building(type, civ, owner));
+      else if (BACKGROUND_BUILDINGS.includes(type)) lateBuildings.push(() => paint.building(type, civ, owner));
     }
   }
   const walls = (age: AgeId, into: Array<() => void>) => {
@@ -103,6 +148,11 @@ export class BackgroundArt {
 
   get done(): boolean {
     return this.queue.length === 0;
+  }
+
+  /** Appends jobs (duplicates are fine: painters are cache hits for textures already there). */
+  enqueue(jobs: ReadonlyArray<() => void>): void {
+    this.queue.push(...jobs);
   }
 
   /** Call once per frame, after the frame's systems ran; `frameStartMs` is when the frame's work began. */

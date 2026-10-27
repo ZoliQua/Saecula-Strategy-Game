@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { civsInPlay, defaultSetupConfig, type GameSetupConfig } from '../game/GameSetupConfig';
+import { prewarmUnitTypes } from './game/artLoadPlan';
 import { UnitArtPrewarm } from '../iso/art/units/UnitArtPrewarm';
 import { AVAILABLE_CIVS } from '../config/civs';
 import { civPreview, paintNextCivPreview } from '../ui/civPreview';
@@ -87,8 +88,9 @@ export class GameSetupScene extends Phaser.Scene {
   private beginLoading(config: GameSetupConfig): void {
     this.config = config;
     this.setup?.setBusy();
-    // Only the civs in this match get unit sheets (texture memory budget).
-    this.prewarm = new UnitArtPrewarm(this, civsInPlay(config));
+    // Only the civs in this match get unit sheets, AI-only civs their age-1 types (texture memory and load budget).
+    const sheets = civsInPlay(config).flatMap((civ) => prewarmUnitTypes(civ, config.civ).map((type) => [type, civ] as const));
+    this.prewarm = new UnitArtPrewarm(this, sheets);
   }
 
   override update(_time: number, delta: number): void {
