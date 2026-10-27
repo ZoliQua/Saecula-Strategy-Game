@@ -27,6 +27,14 @@ describe('PathBudget', () => {
     expect(n).toBe(30);
   });
 
+  it('a cap keeps a long frame (GC hitch, slow machine) from granting a burst of searches', () => {
+    const b = new PathBudget(5, 10);
+    b.reset(100);
+    let n = 0;
+    while (b.take()) n++;
+    expect(n).toBe(10);
+  });
+
   it('unused searches do not carry over', () => {
     const b = new PathBudget(5);
     b.reset(100);

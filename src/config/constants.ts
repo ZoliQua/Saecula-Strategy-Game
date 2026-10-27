@@ -17,3 +17,5 @@ export const CAMERA_SPEED = 600;
 export const PATHFINDS_PER_FRAME = 5;
 /** The frame length PATHFINDS_PER_FRAME refers to (ms). */
 export const PATHFIND_FRAME_MS = 1000 / 60;
+/** In the game a long frame earns at most this many searches (headless steps are not capped). */
+export const PATHFINDS_MAX_PER_TICK = 2 * PATHFINDS_PER_FRAME;

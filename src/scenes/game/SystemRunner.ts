@@ -33,6 +33,7 @@ import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { PathBudget } from '../../map/pathBudget';
+import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/constants';
 import { commonWallPieceKeys } from '../../iso/art/walls/WallArtPrewarm';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
@@ -71,7 +72,7 @@ export class SystemRunner {
   /** Common wall pieces (all ages, painted while loading): eviction keeps them. */
   private readonly keepWalls = commonWallPieceKeys([1, 2, 3]);
   /** A* searches shared by every system, refilled each frame. */
-  private readonly paths = new PathBudget();
+  private readonly paths = new PathBudget(PATHFINDS_PER_FRAME, PATHFINDS_MAX_PER_TICK);
 
   constructor(
     scene: Phaser.Scene,

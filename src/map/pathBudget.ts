@@ -17,13 +17,18 @@ export interface PathAllowance {
 export class PathBudget implements PathAllowance {
   private left: number;
 
-  constructor(private readonly perFrame: number = PATHFINDS_PER_FRAME) {
+  /** `maxPerTick` caps the scaled share (the game: a GC hitch must not grant a burst). */
+  constructor(
+    private readonly perFrame: number = PATHFINDS_PER_FRAME,
+    private readonly maxPerTick: number = Infinity,
+  ) {
     this.left = perFrame;
   }
 
   /** Starts a tick of `deltaMs` game time; unused searches do not carry over. */
   reset(deltaMs: number): void {
-    this.left = Math.max(this.perFrame, Math.round((this.perFrame * deltaMs) / PATHFIND_FRAME_MS));
+    const scaled = Math.max(this.perFrame, Math.round((this.perFrame * deltaMs) / PATHFIND_FRAME_MS));
+    this.left = Math.min(scaled, this.maxPerTick);
   }
 
   take(): boolean {
