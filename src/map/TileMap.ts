@@ -9,6 +9,7 @@ import { marchRelief } from './cliffRelief';
 import { CliffOccluders } from './CliffOccluders';
 import type { CliffField } from '../iso/art/cliffArt';
 import { lit } from '../iso/art/lighting/LightManager';
+import { ChunkStreamer } from './ChunkStreamer';
 import { mapWorldBounds, TerrainBake, type WorldBounds } from './TerrainBake';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
@@ -54,7 +55,7 @@ export class TileMap {
 
   private readonly scene: Phaser.Scene;
   private readonly mapData: MapData;
-  private readonly chunks: Phaser.GameObjects.Image[];
+  private readonly chunks: ChunkStreamer;
   private readonly decor = new Map<number, Decor>();
   private forest!: ForestLayer;
   private readonly cliffs: CliffField | null;
@@ -76,7 +77,7 @@ export class TileMap {
 
     if (!bake.finished) throw new Error('TileMap needs a finished terrain bake');
     this.cliffs = bake.cliffs;
-    this.chunks = bake.chunks;
+    this.chunks = new ChunkStreamer(scene, bake.chunks);
     const plan = bake.plan;
     this.occluders = this.cliffs && plan ? new CliffOccluders(scene, this.cliffs, plan) : null;
     this.placeDecor();
@@ -190,9 +191,7 @@ export class TileMap {
     this.forest.update(time);
     this.occluders?.update(view);
     this.surface.update(time);
-    for (const c of this.chunks) {
-      c.setVisible(c.x < view.right && c.x + c.width > view.x && c.y < view.bottom && c.y + c.height > view.y);
-    }
+    this.chunks.update(view, this.scene.cameras.main.zoom);
     this.updateClouds(delta);
     this.fog.update(delta);
   }
@@ -267,11 +266,7 @@ export class TileMap {
   }
 
   destroy(): void {
-    for (const c of this.chunks) {
-      const key = c.texture.key;
-      c.destroy();
-      if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
-    }
+    this.chunks.destroy();
     this.occluders?.destroy();
     this.surface.destroy();
     for (const d of this.decor.values()) d.sprite.destroy();

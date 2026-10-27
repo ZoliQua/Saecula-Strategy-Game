@@ -16,6 +16,17 @@ const CHUNK_OVERLAP = 4;
 /** Distinguishes chunk texture keys of map views alive at once (menu diorama + game). */
 let bakeSeq = 0;
 
+/** A baked chunk as ChunkStreamer takes it over: its image, texture and (once encoded) a PNG copy. */
+export interface BakedChunk {
+  readonly image: Phaser.GameObjects.Image;
+  readonly key: string;
+  readonly rect: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
+  readonly normal: HTMLCanvasElement | null;
+  canvas: HTMLCanvasElement | null;
+  /** PNG of the albedo, filled asynchronously after the bake (null until then). */
+  blob: Blob | null;
+}
+
 export interface WorldBounds {
   readonly minX: number;
   readonly minY: number;
@@ -45,7 +56,7 @@ export function mapWorldBounds(width: number, height: number): WorldBounds {
 export class TerrainBake {
   cliffs: CliffField | null = null;
   plan: OccluderPlan | null = null;
-  readonly chunks: Phaser.GameObjects.Image[] = [];
+  readonly chunks: BakedChunk[] = [];
   private readonly seq = bakeSeq++;
   private done = false;
 
@@ -75,9 +86,8 @@ export class TerrainBake {
   /** Frees the chunks of a bake that never became a TileMap (scene left mid-bake). */
   destroy(): void {
     for (const c of this.chunks) {
-      const key = c.texture.key;
-      c.destroy();
-      if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
+      c.image.destroy();
+      if (this.scene.textures.exists(c.key)) this.scene.textures.remove(c.key);
     }
     this.chunks.length = 0;
   }
@@ -114,7 +124,11 @@ export class TerrainBake {
     const chunk = paintTerrainChunk(this.map, x, y, w, h, this.cliffs, lightingActive(this.scene), this.plan);
     this.scene.textures.addCanvas(key, chunk.canvas);
     attachNormalMap(this.scene, key, chunk.normal ?? flatGroundNormal());
-    this.chunks.push(lit(this.scene.add.image(x, y, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH)));
+    const image = lit(this.scene.add.image(x, y, key).setOrigin(0, 0).setDepth(TERRAIN_DEPTH));
+    const baked: BakedChunk = { image, key, rect: { x, y, w, h }, normal: chunk.normal, canvas: chunk.canvas, blob: null };
+    // A lossless copy for streaming: encoded off the main thread, so the texture can be dropped later.
+    chunk.canvas.toBlob((b) => (baked.blob = b), 'image/png');
+    this.chunks.push(baked);
   }
 }
 

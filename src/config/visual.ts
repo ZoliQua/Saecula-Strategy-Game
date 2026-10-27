@@ -219,3 +219,23 @@ export const XRAY = {
   /** Column sampling step across a unit when measuring what hides it. */
   sampleStep: 3,
 } as const;
+
+/**
+ * Terrain chunk streaming (texture memory budget, ChunkStreamer): a chunk
+ * keeps its full-resolution texture only near the view, and a
+ * half-resolution one a little further out (or everywhere in view when
+ * zoomed out so far that half resolution is ≥ 1 texel per screen px).
+ * Margins are screen px around the view; evictions use the wider `keep`
+ * margins (hysteresis). Restores decode a stored PNG off the main thread
+ * and install within `budgetMs` per frame.
+ */
+export const TERRAIN_STREAM = {
+  /** Below this zoom chunks show their half-resolution texture. */
+  lodZoom: 0.65,
+  fullMargin: 96,
+  fullKeepMargin: 160,
+  halfMargin: 192,
+  halfKeepMargin: 288,
+  /** Main-thread ms per frame for installing restored chunks (at least one per frame). */
+  budgetMs: 3,
+} as const;
