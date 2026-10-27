@@ -49,10 +49,37 @@ const NO_BONUS: UnitBonuses = {
   hpMultiplier: 1,
 };
 
-function effectsOf(player: Researched): TechEffect[] {
-  const out: TechEffect[] = [];
-  for (const id of player.researched) out.push(TECH_SPECS[id].effect);
-  return out;
+/**
+ * Per-player cache of derived bonuses, keyed by the researched set itself.
+ * Technologies are only ever added (each once, ResearchSystem), so a size
+ * change is exactly a techResearched event; a new set (new game, load)
+ * is a new key. Age changes never alter tech effects. This keeps the
+ * Movement/Gathering/Combat hot loops allocation-free.
+ */
+interface EffectCache {
+  size: number;
+  effects: readonly TechEffect[];
+  units: Map<UnitType, UnitBonuses>;
+  gather: Map<ResourceType, number>;
+  house: number | undefined;
+}
+
+const caches = new WeakMap<ReadonlySet<TechId>, EffectCache>();
+
+function cacheOf(player: Researched): EffectCache {
+  const set = player.researched;
+  let c = caches.get(set);
+  if (!c || c.size !== set.size) {
+    const effects: TechEffect[] = [];
+    for (const id of set) effects.push(TECH_SPECS[id].effect);
+    c = { size: set.size, effects, units: new Map(), gather: new Map(), house: undefined };
+    caches.set(set, c);
+  }
+  return c;
+}
+
+function effectsOf(player: Researched): readonly TechEffect[] {
+  return cacheOf(player).effects;
 }
 
 function hasMeleeAttack(type: UnitType): boolean {
@@ -62,13 +89,23 @@ function hasMeleeAttack(type: UnitType): boolean {
 /** Bonuses of the researched techs for one unit type. */
 export function unitBonuses(player: Researched, unitType: UnitType): UnitBonuses {
   if (player.researched.size === 0) return NO_BONUS;
+  const cache = cacheOf(player);
+  let cached = cache.units.get(unitType);
+  if (!cached) {
+    cached = computeUnitBonuses(cache.effects, unitType);
+    cache.units.set(unitType, cached);
+  }
+  return cached;
+}
+
+function computeUnitBonuses(effects: readonly TechEffect[], unitType: UnitType): UnitBonuses {
   let meleeAtk = 0;
   let pierceAtk = 0;
   let meleeDef = 0;
   let pierceDef = 0;
   let speedMultiplier = 1;
   let hpMultiplier = 1;
-  for (const e of effectsOf(player)) {
+  for (const e of effects) {
     switch (e.kind) {
       case 'attack':
         if (e.attack === 'melee' && hasMeleeAttack(unitType)) meleeAtk += e.bonus;
@@ -108,9 +145,15 @@ export function effectiveUnitStats(player: Researched, unitType: UnitType): Effe
 
 /** Multiplier on the gather rate of `resource` (stacks multiplicatively). */
 export function gatherMultiplier(player: Researched, resource: ResourceType): number {
-  let m = 1;
-  for (const e of effectsOf(player)) {
-    if (e.kind === 'gather' && e.resource === resource) m *= 1 + e.bonus;
+  if (player.researched.size === 0) return 1;
+  const cache = cacheOf(player);
+  let m = cache.gather.get(resource);
+  if (m === undefined) {
+    m = 1;
+    for (const e of cache.effects) {
+      if (e.kind === 'gather' && e.resource === resource) m *= 1 + e.bonus;
+    }
+    cache.gather.set(resource, m);
   }
   return m;
 }
@@ -136,9 +179,13 @@ export function gatherRateMultiplier(
 
 /** Extra population cap provided by every finished house. */
 export function houseBonus(player: Researched): number {
-  let bonus = 0;
-  for (const e of effectsOf(player)) if (e.kind === 'houseCap') bonus += e.bonus;
-  return bonus;
+  const cache = cacheOf(player);
+  if (cache.house === undefined) {
+    let bonus = 0;
+    for (const e of effectsOf(player)) if (e.kind === 'houseCap') bonus += e.bonus;
+    cache.house = bonus;
+  }
+  return cache.house;
 }
 
 /** Scales current and max HP by `factor`, keeping the health ratio. */

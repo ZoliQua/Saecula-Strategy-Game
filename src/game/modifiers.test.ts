@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TECH_SPECS } from './technologies';
-import { effectiveUnitStats, gatherMultiplier, houseBonus, scaleHealth } from './modifiers';
+import { effectiveUnitStats, gatherMultiplier, houseBonus, scaleHealth, unitBonuses } from './modifiers';
 import { createPlayer } from './Player';
 import type { TechId } from '../types';
 
@@ -71,6 +71,25 @@ describe('modifiers', () => {
     const h = { current: 50, max: 100 };
     scaleHealth(h, 1.1);
     expect(h).toEqual({ current: 55, max: 110 });
+  });
+
+  it('caches bonuses per player (no allocation per call) and refreshes when a tech is researched', () => {
+    const p = having('armor_1');
+    const first = unitBonuses(p, 'swordsman');
+    expect(unitBonuses(p, 'swordsman')).toBe(first);
+    expect(gatherMultiplier(p, 'wood')).toBe(1);
+    p.researched.add('armor_2');
+    p.researched.add('double_saw');
+    expect(unitBonuses(p, 'swordsman')).not.toBe(first);
+    expect(unitBonuses(p, 'swordsman').meleeDef).toBe(2);
+    expect(gatherMultiplier(p, 'wood')).toBeCloseTo(1.1);
+  });
+
+  it('keeps separate caches for players with different researched sets', () => {
+    const a = having('armor_1');
+    const b = having();
+    expect(unitBonuses(a, 'swordsman').meleeDef).toBe(1);
+    expect(unitBonuses(b, 'swordsman').meleeDef).toBe(0);
   });
 
   it('every tech is a one-time, well-formed entry with a prerequisite inside the table', () => {
