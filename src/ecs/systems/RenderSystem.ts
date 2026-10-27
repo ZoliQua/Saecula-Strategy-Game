@@ -105,9 +105,11 @@ export class RenderSystem {
   /**
    * Frees generated art nothing shows any more: wall pieces whose join
    * shape is gone and finished Wonder stages (texture memory budget).
+   * Keys in `keep` (pre-painted common pieces) stay.
    */
-  releaseUnusedArt(): number {
+  releaseUnusedArt(keep: ReadonlySet<string> = new Set()): number {
     const inUse = this.keysInUse();
+    for (const key of keep) inUse.add(key);
     releaseWonderStages(this.scene, inUse);
     return releaseUnusedWallPieces(this.scene, inUse);
   }
