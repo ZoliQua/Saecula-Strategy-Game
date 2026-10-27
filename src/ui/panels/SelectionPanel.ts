@@ -6,9 +6,11 @@ import { decorKeys } from '../../iso/textures';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
 import { icons, type IconName } from '../icons';
-import { uiStore, type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
+import { type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
 import type { TechId } from '../../types';
 import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
+import { formatStat, playerColor, playerColorCss } from '../format';
+import type { CivId } from '../../types';
 
 const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', { key: string; frame?: number }> = {
   food: { key: decorKeys.bush(0) },
@@ -53,7 +55,7 @@ export class SelectionPanel {
     if (!sel) return;
     const src =
       sel.kind === 'unit'
-        ? unitThumbnail(sel.unitType, sel.civ)
+        ? unitThumbnail(sel.unitType, sel.civ, playerColor(sel.ownerId))
         : sel.kind === 'building'
           ? this.buildingPicture(sel)
           : thumbnail(this.textures, RESOURCE_PORTRAIT[sel.resourceType].key, RESOURCE_PORTRAIT[sel.resourceType].frame);
@@ -86,7 +88,7 @@ export class SelectionPanel {
       const rows: Array<[IconName, string, string]> = [
         ['sword', hu.hud.attack, withBonus(spec.damage, attackBonus)],
         ['range', hu.hud.range, `${spec.range}`],
-        ['speed', hu.hud.speed, `${spec.speed}${eff.speedMultiplier !== 1 ? ` (+${Math.round((eff.speedMultiplier - 1) * 100)}%)` : ''}`],
+        ['speed', hu.hud.speed, `${formatStat(spec.speed)}${eff.speedMultiplier !== 1 ? ` (+${Math.round((eff.speedMultiplier - 1) * 100)}%)` : ''}`],
       ];
       const meleeDefBonus = eff.meleeDef - base.meleeDef;
       const pierceDefBonus = eff.pierceDef - base.pierceDef;
@@ -97,18 +99,18 @@ export class SelectionPanel {
       ]);
       if (sel.carrying) rows.push([sel.carrying.type, hu.hud.carrying, `${sel.carrying.amount}`]);
       return [
-        head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], enemy, more),
+        head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, enemy), more),
         bar(sel.hp.current, sel.hp.max, hu.hud.hp),
         stats(rows),
       ];
     }
-    const nodes: Node[] = [head(hu.buildings[sel.buildingType], hu.buildingRoles[sel.buildingType], enemy, more)];
+    const nodes: Node[] = [head(hu.buildings[sel.buildingType], hu.buildingRoles[sel.buildingType], owner(sel.ownerId, sel.civ, enemy), more)];
     if (sel.constructionProgress !== undefined) {
       nodes.push(bar(Math.round(sel.constructionProgress * 100), 100, hu.hud.underConstruction, 'build', '%'));
     } else {
       nodes.push(bar(sel.hp.current, sel.hp.max, hu.hud.hp));
     }
-    if (sel.queue && sel.queue.length > 0) nodes.push(this.queue(sel.id, sel.queue));
+    if (sel.queue && sel.queue.length > 0) nodes.push(this.queue(sel));
     if (sel.research && !enemy) nodes.push(this.research(sel));
     return nodes;
   }
@@ -132,15 +134,18 @@ export class SelectionPanel {
     );
   }
 
-  private queue(trainerId: number, queue: NonNullable<Extract<SelectedEntityInfo, { kind: 'building' }>['queue']>): Node {
+  /** Training queue in the building owner's civ and colour (an enemy barracks shows the enemy's soldiers). */
+  private queue(sel: SelectedBuildingInfo): Node {
     const row = el('div', { class: 'queue' }, el('span', { class: 'panel-title' }, hu.hud.queue));
-    queue.forEach((entry, index) => {
+    const trainerId = sel.id;
+    const color = playerColor(sel.ownerId);
+    (sel.queue ?? []).forEach((entry, index) => {
       const fill = el('span', { class: 'q-fill', style: `height:${Math.round(entry.progress * 100)}%` });
       const item = el(
         'div',
         { class: 'q-item', title: hu.units[entry.unitType] },
         fill,
-        el('img', { src: unitThumbnail(entry.unitType, uiStore.getState().civ), alt: '' }),
+        el('img', { src: unitThumbnail(entry.unitType, sel.civ, color), alt: '' }),
       );
       item.addEventListener('click', () => dispatchCommand({ type: 'cancel-queue', trainerId, index }));
       row.append(item);
@@ -152,21 +157,33 @@ export class SelectionPanel {
     this.root.remove();
   }
 
-  /** The building as drawn (age style, civ, team colour); its age-1 base art in the human's civ before it has a sprite. */
+  /** The building as drawn (age style, civ, team colour); its owner's age-1 base art before it has a sprite. */
   private buildingPicture(sel: SelectedBuildingInfo): string {
     return sel.textureKey
       ? thumbnail(this.textures, sel.textureKey)
-      : buildingThumbnail(this.textures, sel.buildingType, 1, uiStore.getState().civ);
+      : buildingThumbnail(this.textures, sel.buildingType, 1, sel.civ);
   }
 }
 
-function head(name: string, role: string, enemy = false, more?: string): Node {
+function head(name: string, role: string, badge?: Node, more?: string): Node {
   return el(
     'div',
     { class: 'sel-head' },
     el('span', { class: 'sel-name' }, name),
     el('span', { class: 'sel-role' }, role),
-    enemy ? el('span', { class: 'sel-tag enemy' }, hu.hud.enemy) : more ? el('span', { class: 'sel-tag' }, more) : null,
+    badge ?? null,
+    more ? el('span', { class: 'sel-tag' }, more) : null,
+  );
+}
+
+/** Owner badge: the player's colour swatch and civ name, marked when it is an enemy's. */
+function owner(ownerId: number, civ: CivId, enemy: boolean): Node {
+  return el(
+    'span',
+    { class: `sel-owner${enemy ? ' enemy' : ''}`, title: `${hu.hud.owner}: ${hu.civs[civ]}`, style: `--owner:${playerColorCss(ownerId)}` },
+    el('i', { class: 'sel-swatch' }),
+    el('span', {}, hu.civs[civ]),
+    enemy ? el('span', { class: 'sel-enemy' }, hu.hud.enemy) : null,
   );
 }
 

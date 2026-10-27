@@ -33,12 +33,12 @@ export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type
   return thumbnail(textures, buildingTexture({ textures }, type, age, 1, civ));
 }
 
-/** HUD portrait of a unit type in a civ's look (front idle pose, in the human player's colour). */
-export function unitThumbnail(type: UnitType, civ: CivId): string {
-  const id = `unit:${type}~${civ}`;
+/** HUD portrait of a unit type in a civ's look (front idle pose), in a player's colour (default: the human's). */
+export function unitThumbnail(type: UnitType, civ: CivId, teamColor: number = PLAYER_COLORS[0] ?? 0xffffff): string {
+  const id = `unit:${type}~${civ}~${teamColor.toString(16)}`;
   const hit = cache.get(id);
   if (hit) return hit;
-  const canvas = paintPortrait(type, civ, PLAYER_COLORS[0] ?? 0xffffff);
+  const canvas = paintPortrait(type, civ, teamColor);
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
   const url = cropToContent(canvas, ctx).toDataURL('image/png');

@@ -32,6 +32,8 @@ export interface SelectedBuildingInfo {
   id: number;
   ownerId: number;
   buildingType: BuildingType;
+  /** The owner's civ (queue portraits and the owner badge). */
+  civ: CivId;
   /** Texture the building is drawn with (age style + team colour), for the portrait. */
   textureKey?: string;
   hp: { current: number; max: number };

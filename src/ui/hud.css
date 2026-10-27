@@ -134,8 +134,19 @@
 .sel-head { display: flex; align-items: baseline; gap: 10px; }
 .sel-name { font-family: var(--font-display); font-size: 19px; font-weight: 700; letter-spacing: 0.02em; }
 .sel-role { font-size: 12px; color: var(--ink-2); }
-.sel-tag { margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 999px; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
-.sel-tag.enemy { color: #ffc2b8; box-shadow: inset 0 0 0 1px rgba(255, 122, 107, 0.4); }
+.sel-owner {
+  margin-left: auto; flex: none; align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px;
+  border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--ink-2); white-space: nowrap;
+  background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--line);
+}
+.sel-swatch {
+  width: 9px; height: 9px; border-radius: 3px; background: var(--owner);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 8px -1px var(--owner);
+}
+.sel-owner .sel-enemy { padding-left: 6px; border-left: 1px solid rgba(255, 122, 107, 0.35); color: #ffc2b8; font-weight: 500; }
+.sel-owner.enemy { box-shadow: inset 0 0 0 1px rgba(255, 122, 107, 0.4); }
+.sel-owner + .sel-tag { margin-left: 0; }
+.sel-tag { margin-left: auto; flex: none; align-self: center; font-size: 11px; padding: 3px 8px; border-radius: 999px; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
 .hp { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-2); }
 .hp-bar { flex: 1; height: 7px; border-radius: 7px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .hp-bar > i { display: block; height: 100%; border-radius: 7px; background: linear-gradient(90deg, #5fc488, var(--green)); transition: width 0.35s var(--ease), background 0.35s; }
