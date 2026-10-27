@@ -27,7 +27,7 @@ import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { AI_COMMON } from '../../config/aiBalance';
-import { AGE_UP_FX } from '../../config/visual';
+import { AGE_UP_FX, ART_EVICT_INTERVAL_MS } from '../../config/visual';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -66,6 +66,7 @@ export class SystemRunner {
   private aiPlayers: AIPlayer[] = [];
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
+  private readonly evictTimer: Phaser.Time.TimerEvent;
   /** A* searches shared by every system, refilled each frame. */
   private readonly paths = new PathBudget();
 
@@ -118,6 +119,7 @@ export class SystemRunner {
     this.xray = new UnitXRay(scene, world, tileMap.coverSources());
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
+    this.evictTimer = scene.time.addEvent({ delay: ART_EVICT_INTERVAL_MS, loop: true, callback: () => this.render.releaseUnusedArt() });
     // Once the age-up wave has played out, drop age styles nobody shows any more.
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
       scene.time.delayedCall(AGE_UP_FX.maxSpreadMs + AGE_UP_FX.swapMs + 1500, () => {
@@ -177,6 +179,7 @@ export class SystemRunner {
 
   destroy(): void {
     this.unsubscribeAge();
+    this.evictTimer.remove();
     this.cliffSort.destroy();
     this.xray.destroy();
     this.ageUpFx.destroy();

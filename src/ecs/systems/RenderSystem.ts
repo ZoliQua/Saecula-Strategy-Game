@@ -11,6 +11,7 @@ import {
   buildingTexture,
   constructionKey,
   releaseStaleBuildingArt,
+  releaseUnusedWallPieces,
   releaseWonderStages,
   wallTexture,
   wonderStageTexture,
@@ -72,7 +73,10 @@ export class RenderSystem {
     this.renderable.onEntityRemoved.subscribe((entity: Renderable) => {
       this.unlight.get(entity)?.();
       this.unlight.delete(entity);
+      // A Wonder razed mid-build: its scaffolding stages go once nothing shows them.
+      const stage = entity.sprite?.texture.key.startsWith('building_wonder~s') ?? false;
       entity.sprite?.destroy();
+      if (stage) releaseWonderStages(this.scene, this.keysInUse());
       delete entity.sprite;
       this.units.get(entity)?.team.destroy();
       this.units.delete(entity);
@@ -96,6 +100,26 @@ export class RenderSystem {
     const inUse = new Set<string>();
     for (const e of this.renderable) if (e.building && e.sprite) inUse.add(e.sprite.texture.key);
     return releaseStaleBuildingArt(this.scene, ageOf, minAge, inUse);
+  }
+
+  /**
+   * Frees generated art nothing shows any more: wall pieces whose join
+   * shape is gone and finished Wonder stages (texture memory budget).
+   */
+  releaseUnusedArt(): number {
+    const inUse = this.keysInUse();
+    releaseWonderStages(this.scene, inUse);
+    return releaseUnusedWallPieces(this.scene, inUse);
+  }
+
+  /** Texture keys of every game object in the scene, shown or hidden (ghosts, pools). */
+  private keysInUse(): Set<string> {
+    const inUse = new Set<string>();
+    for (const o of this.scene.children.list) {
+      const key = (o as Partial<Phaser.GameObjects.Image>).texture?.key;
+      if (key) inUse.add(key);
+    }
+    return inUse;
   }
 
   /** Keeps a building in its old style until releaseReskin (age-up effect running). */
@@ -241,11 +265,7 @@ export class RenderSystem {
     this.unlight.get(entity)?.();
     this.unlight.delete(entity);
     this.attachLighting(entity, sprite);
-    if (wasStage) {
-      const inUse = new Set<string>();
-      for (const e of this.renderable) if (e.building && e.sprite) inUse.add(e.sprite.texture.key);
-      releaseWonderStages(this.scene, inUse);
-    }
+    if (wasStage) releaseWonderStages(this.scene, this.keysInUse());
   }
 
   private attachLighting(entity: Renderable, sprite: Phaser.GameObjects.Sprite): void {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type Phaser from 'phaser';
 import type { AgeId } from '../types';
-import { BUILDING_LIGHT, releaseStaleBuildingArt } from './textures';
+import { BUILDING_LIGHT, releaseStaleBuildingArt, releaseUnusedWallPieces } from './textures';
 
 /** Minimal stand-in for Phaser's TextureManager: textures with a (shared) dataSource array. */
 interface FakeTexture {
@@ -97,5 +97,16 @@ describe('releaseStaleBuildingArt', () => {
     const { host, map } = fakeHost(['building_wall~j10~a1', 'building_wall~j266~a1', 'building_wall~j10~a2', 'building_wall~j10~a3']);
     releaseStaleBuildingArt(host, ages({ 1: 3, 2: 2 }), 2, new Set(['building_wall~j266~a1']));
     expect([...map.keys()].sort()).toEqual(['building_wall~j10~a2', 'building_wall~j10~a3', 'building_wall~j266~a1']);
+  });
+});
+
+describe('releaseUnusedWallPieces', () => {
+  it('drops wall pieces no game object shows, in any age, and leaves everything else', () => {
+    const { host, map } = fakeHost(['building_wall~j3~a1', 'building_wall~j5~a1', 'building_wall~j5~a2', 'building_house', 'building_wall']);
+    BUILDING_LIGHT.set('building_wall~j3~a1', { volume: [], glows: [], lights: [], smoke: [] });
+    const n = releaseUnusedWallPieces(host, new Set(['building_wall~j5~a1']));
+    expect(n).toBe(2);
+    expect([...map.keys()].sort()).toEqual(['building_house', 'building_wall', 'building_wall~j5~a1']);
+    expect(BUILDING_LIGHT.has('building_wall~j3~a1')).toBe(false);
   });
 });
