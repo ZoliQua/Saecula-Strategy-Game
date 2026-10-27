@@ -57,7 +57,7 @@ export class GameScene extends Phaser.Scene {
   private timeScale = 1;
   private gameOverTriggered = false;
   private commandUnsubscribe: (() => void) | null = null;
-  /** Civ art left for play (age-2/3 wall pieces), painted in spare frame time. */
+  /** Civ art left for play (age-2 wall pieces, then each civ's age-up art), painted in spare frame time. */
   private backgroundArt: BackgroundArt | null = null;
   /** Each civ's base owner (civBaseOwners): its building bases are painted in that player's colour. */
   private baseOwners: ReadonlyMap<CivId, number> = new Map();

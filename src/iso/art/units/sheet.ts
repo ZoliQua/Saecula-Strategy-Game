@@ -129,9 +129,8 @@ const FALLBACK_BLOCK: AnimBlock = { w: S, h: S, feetY: S / 2 };
 /**
  * Frame boxes fitted to every pose of each animation, and each frame's
  * own content rectangle (figure with its outline, and the visible part
- * of the contact shadow)
- * shelf-packed into the sheet, tallest first (computed once per type and
- * unit look). Only the rectangles are stored; sprites keep the logical
+ * of the contact shadow) shelf-packed into the sheet, tallest first
+ * (computed once per type and unit look). Only the rectangles are stored; sprites keep the logical
  * box (Frame.setTrim), so origin and feet line do not move.
  */
 export function sheetGeometry(type: UnitType, civ: CivId): SheetGeometry {
