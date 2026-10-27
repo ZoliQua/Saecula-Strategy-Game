@@ -42,7 +42,6 @@ export function nearAnyStart(starts: readonly TileCoord[], radius: number): (tx:
   return (tx, ty) => starts.some((s) => Math.abs(s.tx - tx) <= radius && Math.abs(s.ty - ty) <= radius);
 }
 
-
 /**
  * The start economy every template shares (START_ECONOMY), for every
  * start: its core cleared to grass, a gold lode of several adjacent tiles,
@@ -72,16 +71,28 @@ function placeStartEconomy(map: MapData, rng: () => number, start: TileCoord, in
   placeClump(map, rng, start, inCore, treeAngle, e.treeRing, TERRAIN.forest, trees);
 }
 
-type TilePredicate = (tx: number, ty: number) => boolean;
+export type TilePredicate = (tx: number, ty: number) => boolean;
 
 /** Ring point at `angle`, `dist` tiles from `start`. */
-function ringPoint(start: TileCoord, angle: number, dist: number): TileCoord {
+export function ringPoint(start: TileCoord, angle: number, dist: number): TileCoord {
   return { tx: Math.round(start.tx + Math.cos(angle) * dist), ty: Math.round(start.ty + Math.sin(angle) * dist) };
 }
 
 /**
- * A 2×3 (or 3×2) block of gold tiles, one corner left out when `count`
- * is 5: every tile touches open ground, so all of it can be mined at once.
+ * The tiles of a gold lode at `at` (top-left): a 3×2 block when `wide`,
+ * else 2×3, one corner left out when `count` is 5. Every tile touches open
+ * ground, so all of it can be mined at once.
+ */
+export function lodeTiles(at: TileCoord, wide: boolean, count: number): TileCoord[] {
+  const tiles: TileCoord[] = [];
+  for (let i = 0; i < 6; i++) {
+    tiles.push(wide ? { tx: at.tx + (i % 3), ty: at.ty + Math.floor(i / 3) } : { tx: at.tx + (i % 2), ty: at.ty + Math.floor(i / 2) });
+  }
+  return tiles.slice(0, count);
+}
+
+/**
+ * The start lode (lodeTiles) in the START_ECONOMY gold ring.
  * Returns the direction (radians from the start) it ended up in.
  */
 function placeGoldLode(map: MapData, rng: () => number, start: TileCoord, inCore: TilePredicate, angle: number, count: number): number {
@@ -89,12 +100,7 @@ function placeGoldLode(map: MapData, rng: () => number, start: TileCoord, inCore
   for (let attempt = 0; attempt < 32; attempt++) {
     const a = angle + (attempt === 0 ? 0 : (rng() - 0.5) * Math.PI * 1.5);
     const at = ringPoint(start, a, ring.min + rng() * (ring.max - ring.min));
-    const wide = rng() < 0.5;
-    const tiles: TileCoord[] = [];
-    for (let i = 0; i < 6; i++) {
-      tiles.push(wide ? { tx: at.tx + (i % 3), ty: at.ty + Math.floor(i / 3) } : { tx: at.tx + (i % 2), ty: at.ty + Math.floor(i / 2) });
-    }
-    const lode = tiles.slice(0, count);
+    const lode = lodeTiles(at, rng() < 0.5, count);
     if (!lode.every((t) => inBounds(map, t.tx, t.ty) && !inCore(t.tx, t.ty))) continue;
     if (!lode.every((t) => map.getTile(t.tx, t.ty) === TERRAIN.grass || map.getTile(t.tx, t.ty) === TERRAIN.forest)) continue;
     for (const t of lode) map.setTile(t.tx, t.ty, TERRAIN.gold_mine);

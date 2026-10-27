@@ -4,6 +4,7 @@ import { MapData } from '../MapData';
 import { createRng, randInt, randRange } from '../random';
 import { TERRAIN } from '../TerrainTypes';
 import { carveCorridor } from './carve';
+import { placeOuterGoldLodes } from './outerGold';
 import { fillPockets } from './regions';
 import { clearDisk, inBounds, placeStartEconomies, ringStarts, seedGoodies } from './startArea';
 import { assertPlayerCount, type GeneratedMap, type TemplateOptions } from './types';
@@ -47,6 +48,7 @@ export function generateWilderness(options: TemplateOptions): GeneratedMap {
 
   seedGoodies(map, rng, center, 3, randInt(rng, 2, 4), 0);
   placeStartEconomies(map, rng, playerStarts);
+  placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.forest);
   return { map, playerStarts, walls: [] };
 }

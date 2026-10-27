@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { START_ECONOMY } from '../config/balance';
-import { MAP_TEMPLATES, TEMPLATE_GENERATORS, type MapTemplate, type PresetWall } from './generator';
+import { generateMap, MAP_TEMPLATES, TEMPLATE_GENERATORS, type MapTemplate, type PresetWall } from './generator';
 import { terrainShare } from './generators/regions';
 import { channelAngles } from './generators/islands';
+import { inBounds } from './generators/startArea';
 import { FORTRESS_RING_RADIUS } from './generators/fortress';
 import { TERRAIN } from './TerrainTypes';
-import { startEconomy, validateMap } from './validation';
+import { ownedGold, startEconomy, validateMap } from './validation';
 
 const gen = (template: MapTemplate, size: number, seed: number, playerCount: number) =>
   TEMPLATE_GENERATORS[template]({ width: size, height: size, seed, playerCount });
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);
+const crowded = (template: MapTemplate, size: number, seed: number, playerCount: number) =>
+  generateMap({ template, width: size, height: size, seed, playerCount });
 
 describe.each(MAP_TEMPLATES)('map template %s', (template) => {
   it('is deterministic per seed (tiles, starts and walls)', () => {
@@ -39,6 +42,34 @@ describe.each(MAP_TEMPLATES)('map template %s', (template) => {
         expect(eco.gold).toBeGreaterThanOrEqual(START_ECONOMY.minGold);
         expect(eco.food).toBeGreaterThanOrEqual(START_ECONOMY.minFood);
         expect(eco.wood).toBeGreaterThanOrEqual(START_ECONOMY.minWood);
+      }
+    }
+  });
+
+  it('gives every start a second, outer gold lode of its own (START_ECONOMY.outerGold), workable and nearer to it than to any other start', () => {
+    const e = START_ECONOMY;
+    // First try on the usual sizes; crowded 6-player maps through generateMap's retries (the game's path:
+    // islands and random 64×64 miss on 15-30% of first tries, never after the retries in 100 seeds).
+    const cases = [[64, 3, SEEDS, gen], [96, 4, SEEDS, gen], [64, 6, [1, 2, 3, 4, 5], crowded], [128, 6, [1, 2, 3], crowded]] as const;
+    for (const [size, players, seeds, make] of cases) {
+      for (const seed of seeds) {
+        const g = make(template, size, seed, players);
+        g.playerStarts.forEach((s, i) => {
+          const label = `${size}/${players} seed ${seed} player ${i}`;
+          expect(ownedGold(g, i), label).toBeGreaterThanOrEqual(e.minTotalGold);
+          // The outer lode itself: gold out in its ring band, beyond the start lode's (a crowded map may
+          // fall back to a lode closer in: START_ECONOMY.outerGold.crowdedRing).
+          if (make === crowded) return;
+          let outer = 0;
+          for (let ty = s.ty - e.outerGold.ring.max - 2; ty <= s.ty + e.outerGold.ring.max + 2; ty++) {
+            for (let tx = s.tx - e.outerGold.ring.max - 2; tx <= s.tx + e.outerGold.ring.max + 2; tx++) {
+              const d = Math.hypot(tx - s.tx, ty - s.ty);
+              if (!inBounds(g.map, tx, ty)) continue;
+              if (d >= e.outerGold.ring.min - 1 && g.map.getTile(tx, ty) === TERRAIN.gold_mine) outer++;
+            }
+          }
+          expect(outer, label).toBeGreaterThanOrEqual(e.outerGold.tiles.min);
+        });
       }
     }
   });

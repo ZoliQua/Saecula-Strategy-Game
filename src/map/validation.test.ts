@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { RESOURCE_NODE_AMOUNT, START_ECONOMY } from '../config/balance';
 import { generateMap, MAP_RETRIES, MapGenerationError, retrySeed, type TemplateOptions } from './generator';
 import type { GeneratedMap } from './generators/types';
 import { MapData } from './MapData';
 import { TERRAIN } from './TerrainTypes';
-import { startEconomy, validateMap } from './validation';
+import { ownedGold, startEconomy, validateMap } from './validation';
 
-/** A 40×20 grass map with two starts and a full start economy next to each. */
+/** Gold in a 5-tile lode. */
+const LODE = 5 * RESOURCE_NODE_AMOUNT.gold;
+
+/** A 40×20 grass map with two starts and a full start economy next to each (an outer gold lode included). */
 function twoStarts(): GeneratedMap {
   const map = new MapData(40, 20, TERRAIN.grass);
   const starts = [{ tx: 8, ty: 8 }, { tx: 31, ty: 8 }];
   for (const s of starts) {
     for (let i = 0; i < 5; i++) map.setTile(s.tx - 4 + i, s.ty - 5, TERRAIN.gold_mine);
+    for (let i = 0; i < 5; i++) map.setTile(s.tx - 2 + i, s.ty + 10, TERRAIN.gold_mine);
     for (let i = 0; i < 6; i++) map.setTile(s.tx + 5, s.ty - 3 + i, TERRAIN.berries);
     for (let i = 0; i < 9; i++) map.setTile(s.tx - 6, s.ty - 4 + i, TERRAIN.forest);
   }
@@ -59,8 +64,23 @@ describe('validateMap', () => {
     expect(startEconomy(g, g.playerStarts[0]!).gold).toBe(0);
     expect(validateMap(g).problems).toEqual([
       'player 0: only 0 gold near the start',
+      `player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`,
       'player 1: only 0 food near the start',
     ]);
+  });
+
+  it('rejects a start without its outer gold lode, and does not count gold nearer to another start', () => {
+    const g = twoStarts();
+    for (let i = 0; i < 5; i++) g.map.setTile(6 + i, 18, TERRAIN.grass);
+    expect(ownedGold(g, 0)).toBe(LODE);
+    expect(validateMap(g).problems).toEqual([`player 0: only ${LODE} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`]);
+    // Gold in player 0's reach but nearer to player 1 is player 1's...
+    for (let ty = 1; ty <= 5; ty++) g.map.setTile(21, ty, TERRAIN.gold_mine);
+    expect(ownedGold(g, 0)).toBe(LODE);
+    // ...gold nearer to player 0 is its own.
+    for (let ty = 1; ty <= 5; ty++) g.map.setTile(18, ty, TERRAIN.gold_mine);
+    expect(ownedGold(g, 0)).toBe(2 * LODE);
+    expect(validateMap(g).ok).toBe(true);
   });
 });
 

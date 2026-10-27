@@ -3,6 +3,7 @@ import { MapData } from '../MapData';
 import { createRng, randInt } from '../random';
 import { TERRAIN } from '../TerrainTypes';
 import { carveBridge } from './carve';
+import { placeOuterGoldLodes } from './outerGold';
 import { fillPockets } from './regions';
 import { clearDisk, nearAnyStart, placeStartEconomies, ringStarts, scatterForestClusters, seedGoodies } from './startArea';
 import { assertPlayerCount, type GeneratedMap, type TemplateOptions } from './types';
@@ -64,6 +65,7 @@ export function generateIslands(options: TemplateOptions): GeneratedMap {
     seedGoodies(map, rng, mid, 2, randInt(rng, 1, 3), 3);
   }
   placeStartEconomies(map, rng, playerStarts);
+  placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.cliff);
   return { map, playerStarts, walls: [] };
 }

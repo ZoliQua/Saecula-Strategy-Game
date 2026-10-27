@@ -266,7 +266,8 @@ export const GATHER_RETARGET_RADIUS = 8;
 /** What one resource tile holds when the map is spawned (a forest tile is one tree, a gold tile one lode piece). */
 export const RESOURCE_NODE_AMOUNT: Readonly<Record<'food' | 'wood' | 'gold', number>> = {
   wood: 100,
-  gold: 200,
+  // Sized for three ages (age-ups 800, foundry, cannons 275 each, the Wonder 1000) with START_ECONOMY's two lodes.
+  gold: 300,
   food: 125,
 };
 
@@ -274,8 +275,12 @@ export const RESOURCE_NODE_AMOUNT: Readonly<Record<'food' | 'wood' | 'gold', num
  * Every player's start (all map templates): a gold lode of several
  * adjacent tiles, a berry patch and a forest next to the town centre
  * (AoE convention), sized so Feudalism (500 food, 300 gold) and the first
- * army are paid for from home. Validation (src/map/validation.ts)
- * requires at least the `min*` amounts reachable within `radius` tiles.
+ * army are paid for from home, plus a second, outer gold lode a short walk
+ * out (`outerGold`) for the later ages: both lodes hold about 3000-3600
+ * gold, enough for both age-ups, a foundry, a few cannons and a Wonder.
+ * Validation (src/map/validation.ts) requires at least the `min*` amounts
+ * reachable within `radius` tiles, and `minTotalGold` of the start's own
+ * gold (nearer to it than to any other start) within `outerGold.radius`.
  */
 export const START_ECONOMY = {
   /** Gold tiles in the start lode ([min, max], inclusive). */
@@ -288,7 +293,23 @@ export const START_ECONOMY = {
   treeRing: { min: 5, max: 7 },
   /** Validation radius (Chebyshev tiles from the start) for the minimums below. */
   radius: 8,
-  minGold: 800,
+  minGold: 1200,
   minFood: 500,
   minWood: 800,
+  outerGold: {
+    tiles: { min: 5, max: 6 },
+    /**
+     * Euclidean distance (tiles) from the start; the generator tries the side facing the map centre first.
+     * The lode also keeps out of every start's `radius` (and so outside a fortress ring).
+     */
+    ring: { min: 10, max: 14 },
+    /** Fallback when the ring has no room (crowded maps): closer in, on open grass only. */
+    crowdedRing: { min: 7, max: 14 },
+    /** Every outer lode tile is at least this many tiles nearer its own start than any other start. */
+    ownMargin: 3,
+    /** Validation radius (Chebyshev tiles) for `minTotalGold`. */
+    radius: 16,
+  },
+  /** Two full lodes of the minimum size. */
+  minTotalGold: 3000,
 } as const;

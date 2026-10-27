@@ -33,7 +33,7 @@ const RESOURCE_OF: Partial<Record<TerrainId, keyof StartEconomy>> = {
  * will spawn it (town centres and preset walls block their tiles): every
  * start's town centre and villager tiles are free, every start reaches
  * every other one on foot, and each start has the START_ECONOMY minimum
- * of food, wood and gold reachable close by.
+ * of food, wood and gold reachable close by, and its own outer gold.
  */
 export function validateMap(generated: GeneratedMap): MapValidation {
   const { map, playerStarts } = generated;
@@ -76,13 +76,55 @@ export function validateMap(generated: GeneratedMap): MapValidation {
     if (!reached[v.ty * w + v.tx]) problems.push(`player ${i} cannot be reached from player 0`);
   });
   playerStarts.forEach((start, i) => {
-    const own = i === 0 ? reached : floodFrom([villagerSpawnTiles(start)[1]!], w, h, walkable);
-    const eco = startEconomy(generated, start, own);
+    const reachedFrom = i === 0 ? reached : floodFrom([villagerSpawnTiles(start)[1]!], w, h, walkable);
+    const eco = startEconomy(generated, start, reachedFrom);
     if (eco.gold < START_ECONOMY.minGold) problems.push(`player ${i}: only ${eco.gold} gold near the start`);
+    const own = ownedGold(generated, i, reachedFrom);
+    if (own < START_ECONOMY.minTotalGold) problems.push(`player ${i}: only ${own} gold of its own within ${START_ECONOMY.outerGold.radius} tiles`);
     if (eco.food < START_ECONOMY.minFood) problems.push(`player ${i}: only ${eco.food} food near the start`);
     if (eco.wood < START_ECONOMY.minWood) problems.push(`player ${i}: only ${eco.wood} wood near the start`);
   });
   return { ok: problems.length === 0, problems };
+}
+
+/**
+ * Gold start `index` can count on for the later ages: workable gold tiles
+ * within START_ECONOMY.outerGold.radius (Chebyshev) that lie nearer to it
+ * than to any other start (`reached` as in startEconomy).
+ */
+export function ownedGold(generated: GeneratedMap, index: number, reached?: Uint8Array): number {
+  const { map, playerStarts } = generated;
+  const start = playerStarts[index];
+  if (!start) return 0;
+  const canReach = reached ?? floodOpen(generated, start);
+  const r = START_ECONOMY.outerGold.radius;
+  const d2 = (s: TileCoord, tx: number, ty: number) => (s.tx - tx) ** 2 + (s.ty - ty) ** 2;
+  let gold = 0;
+  for (let ty = Math.max(0, start.ty - r); ty <= Math.min(map.height - 1, start.ty + r); ty++) {
+    for (let tx = Math.max(0, start.tx - r); tx <= Math.min(map.width - 1, start.tx + r); tx++) {
+      if (map.getTile(tx, ty) !== TERRAIN.gold_mine || !workableFrom(canReach, map.width, map.height, tx, ty)) continue;
+      const mine = d2(start, tx, ty);
+      if (playerStarts.every((s, j) => j === index || d2(s, tx, ty) > mine)) gold += RESOURCE_NODE_AMOUNT.gold;
+    }
+  }
+  return gold;
+}
+
+/** Tiles walkable from `start` over the bare terrain. */
+function floodOpen(generated: GeneratedMap, start: TileCoord): Uint8Array {
+  const { map } = generated;
+  const w = map.width;
+  const h = map.height;
+  return floodFrom([villagerSpawnTiles(start)[1]!], w, h, (tx, ty) => tx >= 0 && ty >= 0 && tx < w && ty < h && isPassable(map.getTile(tx, ty)));
+}
+
+/** A villager can stand next to (tx, ty): a neighbour is in `reached`. */
+function workableFrom(reached: Uint8Array, w: number, h: number, tx: number, ty: number): boolean {
+  return STEPS.some(([dx, dy]) => {
+    const nx = tx + dx;
+    const ny = ty + dy;
+    return nx >= 0 && ny >= 0 && nx < w && ny < h && reached[ny * w + nx] === 1;
+  });
 }
 
 /**
@@ -95,20 +137,13 @@ export function startEconomy(generated: GeneratedMap, start: TileCoord, reached?
   const w = map.width;
   const h = map.height;
   const r = START_ECONOMY.radius;
-  const canReach =
-    reached ??
-    floodFrom([villagerSpawnTiles(start)[1]!], w, h, (tx, ty) => tx >= 0 && ty >= 0 && tx < w && ty < h && isPassable(map.getTile(tx, ty)));
+  const canReach = reached ?? floodOpen(generated, start);
   const out = { food: 0, wood: 0, gold: 0 };
   for (let ty = Math.max(0, start.ty - r); ty <= Math.min(h - 1, start.ty + r); ty++) {
     for (let tx = Math.max(0, start.tx - r); tx <= Math.min(w - 1, start.tx + r); tx++) {
       const type = RESOURCE_OF[map.getTile(tx, ty)];
       if (!type) continue;
-      const workable = STEPS.some(([dx, dy]) => {
-        const nx = tx + dx;
-        const ny = ty + dy;
-        return nx >= 0 && ny >= 0 && nx < w && ny < h && canReach[ny * w + nx] === 1;
-      });
-      if (workable || canReach[ty * w + tx] === 1) out[type] += RESOURCE_NODE_AMOUNT[type];
+      if (workableFrom(canReach, w, h, tx, ty) || canReach[ty * w + tx] === 1) out[type] += RESOURCE_NODE_AMOUNT[type];
     }
   }
   return out;

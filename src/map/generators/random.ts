@@ -3,6 +3,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import { MapData } from '../MapData';
 import { createRng } from '../random';
 import { TERRAIN, type TerrainId } from '../TerrainTypes';
+import { placeOuterGoldLodes } from './outerGold';
 import { fillPockets } from './regions';
 import { clearDisk, placeStartEconomies } from './startArea';
 import { assertPlayerCount, type GeneratedMap, type TemplateOptions } from './types';
@@ -50,6 +51,7 @@ export function generateRandom(options: TemplateOptions): GeneratedMap {
   const playerStarts = spreadStarts(map, playerCount);
   for (const s of playerStarts) clearDisk(map, s, START_CLEARING);
   placeStartEconomies(map, rng, playerStarts);
+  placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.forest);
   return { map, playerStarts, walls: [] };
 }

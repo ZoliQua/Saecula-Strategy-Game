@@ -2,6 +2,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import { MapData } from '../MapData';
 import { createRng, randInt } from '../random';
 import { TERRAIN } from '../TerrainTypes';
+import { placeOuterGoldLodes } from './outerGold';
 import { clearDisk, inBounds, nearAnyStart, placeStartEconomies, ringStarts, scatterForestClusters, seedGoodies } from './startArea';
 import { assertPlayerCount, type GeneratedMap, type PresetWall, type TemplateOptions } from './types';
 
@@ -18,7 +19,8 @@ export const FORTRESS_GATE_WIDTH = 3;
  * AoE2 "Arena"-style map (§11.4): every start sits inside a finished
  * stone wall ring (a square, clipped by the map edge) with a gate gap on
  * the two sides facing the open centre. All start resources are inside
- * the walls; the centre holds a richer prize of gold and trees.
+ * the walls (the outer gold lode is a short walk out of a gate); the centre
+ * holds a richer prize of gold and trees.
  */
 export function generateFortress(options: TemplateOptions): GeneratedMap {
   const { width, height, seed, playerCount } = options;
@@ -52,6 +54,8 @@ export function generateFortress(options: TemplateOptions): GeneratedMap {
       walls.push({ tile, playerIndex, minStyleAge: STONE_WALL_AGE });
     }
   });
+  // The outer gold lies outside the walls (or in a roomy yard), reached through the gates.
+  placeOuterGoldLodes(map, rng, playerStarts, (tx, ty) => taken.has(ty * width + tx));
   return { map, playerStarts, walls };
 }
 

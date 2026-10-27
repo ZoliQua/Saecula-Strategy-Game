@@ -37,7 +37,9 @@ describe('createResourceNode', () => {
       tile: { tx: 2, ty: 2 },
       type: 'food',
     });
-    expect(gold.resourceNode?.amount).toBe(200);
+    expect(gold.resourceNode?.amount).toBe(RESOURCE_NODE_AMOUNT.gold);
+    // Sized for three ages with the two start lodes (START_ECONOMY).
+    expect(RESOURCE_NODE_AMOUNT.gold).toBe(300);
     expect(food.resourceNode?.amount).toBe(RESOURCE_NODE_AMOUNT.food);
     expect(RESOURCE_NODE_AMOUNT.food).toBe(125);
   });
