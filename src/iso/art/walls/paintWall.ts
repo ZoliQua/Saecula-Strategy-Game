@@ -50,7 +50,7 @@ export function wallBannerAnchor(age: AgeId, civ: CivId): readonly [number, numb
  */
 export function paintWallPiece(piece: number, age: AgeId, civ: CivId): LitArt {
   const style = wallStyleFor(age, civ);
-  const p = new IsoPainter(1, 1, wallMaxHeight(style), 4211 + piece * 7 + age * 131);
+  const p = new IsoPainter(1, 1, wallMaxHeight(style), 4211 + piece * 7 + age * 131, style.readback === true);
   paintWallPieceInto(p, piece, style);
   return p.result();
 }

@@ -51,22 +51,28 @@ export class IsoPainter {
   /** Frame and glazing of the following windows. */
   windowLook: WindowLook = WARM_WINDOW;
 
+  /**
+   * `readback`: paint on CPU-backed canvases, so result()'s normal
+   * derivation and the texture trim read pixels back cheaply (used by
+   * the many small wall pieces).
+   */
   constructor(
     readonly w: number,
     readonly h: number,
     readonly maxHeight: number,
     seed: number,
+    readback = false,
   ) {
     // Side margin keeps the blurred foot shadow (which reaches ~0.5 tile past the footprint) unclipped.
     const width = (w + h) * HW + 72;
     const height = (w + h) * HH + maxHeight + BUILDING_BOTTOM_PAD + 8;
-    const { canvas, ctx } = makeCanvas(width, height);
+    const { canvas, ctx } = makeCanvas(width, height, readback);
     this.canvas = canvas;
     this.ctx = ctx;
     this.cx = canvas.width / 2;
     this.by = canvas.height - BUILDING_BOTTOM_PAD;
     this.rand = rng(seed);
-    this.normals = new NormalLayer(canvas.width, canvas.height);
+    this.normals = new NormalLayer(canvas.width, canvas.height, readback);
   }
 
   /** Albedo + normal map (skipped when `withNormals` is false) + shadow volume + window glows. */

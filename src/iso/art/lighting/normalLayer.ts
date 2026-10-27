@@ -48,7 +48,8 @@ export class NormalLayer {
   readonly canvas: HTMLCanvasElement | null;
   private readonly ctx: CanvasRenderingContext2D | null;
 
-  constructor(width: number, height: number) {
+  /** `readback`: CPU-backed canvas (cheap getImageData in finish()). */
+  constructor(width: number, height: number, readback = false) {
     if (!LIGHTING_ENABLED) {
       this.canvas = null;
       this.ctx = null;
@@ -58,7 +59,7 @@ export class NormalLayer {
     canvas.width = Math.ceil(width);
     canvas.height = Math.ceil(height);
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = readback ? canvas.getContext('2d', { willReadFrequently: true }) : canvas.getContext('2d');
   }
 
   /** Fills a polygon (texture px) with a constant normal. */

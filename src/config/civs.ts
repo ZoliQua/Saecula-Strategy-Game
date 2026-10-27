@@ -10,9 +10,9 @@ import type { AgeId, CivId } from '../types';
 /** Building painter set of one age style (art/buildings.ts). */
 export type ArchStyleId = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor' | 'georgian';
 /** Wall painter style (art/walls/wallStyles.ts). */
-export type WallStyleId = 'palisade' | 'curtain' | 'bastion';
+export type WallStyleId = 'palisade' | 'curtain' | 'bastion' | 'bank_palisade' | 'norman_curtain' | 'star_fort';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian';
+export type UnitLookId = 'hungarian' | 'english';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -63,12 +63,12 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'hungarian',
     heraldry: { primary: 0xc8202e, secondary: 0xf2efe6, accent: 0x2e7d3a },
   },
-  // St George's cross: white field, red cross. Romano-British, Tudor and Georgian buildings; walls and units Hungarian until M4 Task 5.
+  // St George's cross: white field, red cross. Romano-British, Tudor and Georgian buildings, walls and towers; English unit liveries.
   english: {
     available: true,
     architecture: { 1: 'romano_british', 2: 'tudor', 3: 'georgian' },
-    wallStyle: HUNGARIAN_WALLS,
-    unitLook: 'hungarian',
+    wallStyle: { 1: 'bank_palisade', 2: 'norman_curtain', 3: 'star_fort' },
+    unitLook: 'english',
     heraldry: { primary: 0xf2efe6, secondary: 0xc8202e, accent: 0x1f2f5a },
   },
   german: upcoming({ primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a }),

@@ -11,14 +11,15 @@ export const BUILDING_BOTTOM_PAD = 10;
 
 export type Ctx = CanvasRenderingContext2D;
 
-export function makeCanvas(width: number, height: number): {
+export function makeCanvas(width: number, height: number, readback = false): {
   canvas: HTMLCanvasElement;
   ctx: Ctx;
 } {
   const canvas = document.createElement('canvas');
   canvas.width = Math.ceil(width);
   canvas.height = Math.ceil(height);
-  const ctx = canvas.getContext('2d');
+  // A CPU-backed canvas makes the getImageData read-backs (normal derive, trim) cheap.
+  const ctx = readback ? canvas.getContext('2d', { willReadFrequently: true }) : canvas.getContext('2d');
   if (!ctx) throw new Error('2D canvas context unavailable');
   return { canvas, ctx };
 }

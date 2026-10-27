@@ -134,7 +134,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.opts.zoom ?? 1).centerOn(660, 180 + (civs.length - 1) * 210);
   }
 
-  /** Per age: a ring with a gap and a tower in one corner, a 45° run, a stair-stepped run. */
+  /** Per age (and civ, with `civs`): a ring with a gap and a tower in one corner, 45° runs, a cross and a T junction. */
   private layWalls(ages: AgeId[]): void {
     const tiles = new Set<string>();
     const ring: Array<[number, number]> = [];
@@ -150,14 +150,15 @@ export class BuildingShowcaseScene extends Phaser.Scene {
     for (const [u, v] of layout) tiles.add(`${u},${v}`);
     const color = PLAYER_COLORS[((this.opts.playerId ?? 1) - 1) % PLAYER_COLORS.length] ?? 0xffffff;
     const ground = this.add.graphics().setDepth(-1);
-    ages.forEach((age, row) => {
+    const rows = ages.flatMap((age) => (this.opts.civs ?? [this.civ]).map((civ) => ({ age, civ })));
+    rows.forEach(({ age, civ }, row) => {
       const ox = row * 15;
       const oy = -row * 15;
       ground.fillStyle(0x587a3a, 1);
       const c = (tx: number, ty: number) => tileToScreen({ tx: tx + ox, ty: ty + oy });
       const g = [c(-1.5, -1.5), c(13.5, -1.5), c(13.5, 11.5), c(-1.5, 11.5)];
       ground.fillPoints(g.map((p) => new Phaser.Geom.Point(p.sx, p.sy)), true);
-      const tower = buildingTexture(this, 'tower', age, this.opts.playerId ?? 1, this.civ);
+      const tower = buildingTexture(this, 'tower', age, this.opts.playerId ?? 1, civ);
       const place = (key: string, tx: number, ty: number): Phaser.GameObjects.Image => {
         const p = c(tx, ty);
         const img = lit(this.add.image(p.sx, p.sy + 16, key).setScale(1 / ART_SCALE));
@@ -173,14 +174,14 @@ export class BuildingShowcaseScene extends Phaser.Scene {
       for (const [u, v] of layout) {
         const mask = wallNeighbourMaskBy((x, y) => tiles.has(`${x},${y}`) || (x === 5 && y === 0), { tx: u, ty: v });
         const piece = wallPiece(mask, u + ox, v + oy);
-        const img = place(wallTexture(this, piece, age, this.civ), u, v);
+        const img = place(wallTexture(this, piece, age, civ), u, v);
         if (!pieceHasPost(piece)) continue;
-        const [dx, dy] = wallBannerAnchor(age, this.civ);
+        const [dx, dy] = wallBannerAnchor(age, civ);
         this.add.image(img.x + dx, img.y + dy, FX_KEYS.wallBanner).setScale(1 / ART_SCALE)
           .setOrigin(WALL_BANNER_ORIGIN.x, WALL_BANNER_ORIGIN.y).setTint(color).setDepth(img.depth + 0.001);
       }
     });
-    const k = ((ages.length - 1) / 2) * 15;
+    const k = ((rows.length - 1) / 2) * 15;
     const mid = tileToScreen({ tx: 6 + k, ty: 5 - k });
     this.cameras.main.setZoom(this.opts.zoom ?? 0.9).centerOn(mid.sx, mid.sy);
   }
