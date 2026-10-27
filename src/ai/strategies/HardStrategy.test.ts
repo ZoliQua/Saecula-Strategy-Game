@@ -6,7 +6,7 @@ import { createEcsWorld } from '../../ecs/world';
 import { createPlayer } from '../../game/Player';
 import { MapData } from '../../map/MapData';
 import { createRng } from '../../map/random';
-import { AI_HARD } from '../../config/aiBalance';
+import { AI_COMMON, AI_HARD } from '../../config/aiBalance';
 import { AIPlayer } from '../AIPlayer';
 import { HardStrategy } from './HardStrategy';
 
@@ -84,5 +84,24 @@ describe('HardStrategy', () => {
     ai.update({ world, mapData: map, enemyPlayerId: 1 }, AI_HARD.firstAttackMs.max);
     tick(3000);
     expect(own(world, 'farm').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('holds villagers for a short raid squad only until the hold cap past the first-attack time', () => {
+    const { world, map, player, hard, ai } = setup(1, 0);
+    for (const tx of [10, 13, 16]) createBuilding(world, { type: 'house', origin: { tx, ty: 10 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'barracks', origin: { tx: 14, ty: 22 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'farm', origin: { tx: 26, ty: 26 }, playerId: 2, mapData: map });
+    player.resources = { food: 5000, wood: 2000, gold: 0 };
+    // Nothing trains in this harness, so the scout squad stays short (queued scouts cap at militaryQueue).
+    const firstAttackAt = (hard as unknown as { firstAttackAtMs: number }).firstAttackAtMs;
+    const tc = own(world, 'town_center')[0]!;
+    const villagersQueued = () => tc.trainingQueue!.entries.filter((e) => e.unitType === 'villager').length;
+    const ctx = { world, mapData: map, enemyPlayerId: 1 };
+    ai.update(ctx, firstAttackAt + 1000);
+    for (let i = 0; i < 6; i++) ai.update(ctx, 500);
+    expect(villagersQueued()).toBe(0);
+    ai.update(ctx, AI_COMMON.pressureHoldCapMs);
+    for (let i = 0; i < 6; i++) ai.update(ctx, 500);
+    expect(villagersQueued()).toBeGreaterThan(0);
   });
 });

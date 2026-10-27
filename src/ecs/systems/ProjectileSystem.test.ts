@@ -135,3 +135,36 @@ describe('cannonball splash', () => {
     expect(building.health!.current).toBe(500 - 34);
   });
 });
+
+describe('projectile victims', () => {
+  const arrow = (world: ReturnType<typeof setup>['world'], target: Entity, ownerId: number) =>
+    fireProjectile(world, { kind: 'arrow', from: { x: 4, y: 10 }, target, ownerId, payload: { meleeAtk: 0, pierceAtk: 5, bonusVsCavalry: 0 } });
+
+  it('an arrow aimed at a friendly unit does no harm', () => {
+    const { world, projectiles } = setup();
+    const friend = createUnit(world, { type: 'swordsman', tile: { tx: 8, ty: 10 }, playerId: 1 });
+    arrow(world, friend, 1);
+    projectiles.update(5000);
+    expect(friend.health!.current).toBe(friend.health!.max);
+  });
+
+  it('an arrow aimed at a Gaia entity does no harm', () => {
+    const { world, projectiles } = setup();
+    const gaia = createUnit(world, { type: 'villager', tile: { tx: 8, ty: 10 }, playerId: 0 });
+    arrow(world, gaia, 1);
+    projectiles.update(5000);
+    expect(gaia.health!.current).toBe(gaia.health!.max);
+  });
+
+  it('cannonball splash skips enemies that are already dying', () => {
+    const { world, projectiles } = setup();
+    const target = createUnit(world, { type: 'swordsman', tile: { tx: 10, ty: 10 }, playerId: 2 });
+    const dying = createUnit(world, { type: 'swordsman', tile: { tx: 11, ty: 10 }, playerId: 2 });
+    world.addComponent(dying, 'dying', { ttlMs: 900 });
+    const hp = dying.health!.current;
+    fireProjectile(world, { kind: 'cannonball', from: { x: 4, y: 10 }, target, ownerId: 1, payload: { meleeAtk: 0, pierceAtk: 40, bonusVsCavalry: 0 } });
+    projectiles.update(5000);
+    expect(target.health!.current).toBeLessThan(target.health!.max);
+    expect(dying.health!.current).toBe(hp);
+  });
+});
