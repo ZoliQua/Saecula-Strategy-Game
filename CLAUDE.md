@@ -463,11 +463,20 @@ IsoRTS/
     ├── iso/
     │   ├── art/                 ← procedurális grafika (terep, épület, egység, dekor)
     │   │   ├── architecture/    ← épület-festők koronként (ArchStyle, stíluscsaládok)
-    │   │   │   └── english/     ← angol építészet (romano-brit, Tudor/normann, georgiánus, gótikus katedrális)
+    │   │   │   ├── kits/        ← népek közös díszítő-készletei (favázas rács, lépcsős oromzat, hagymakupola…)
+    │   │   │   ├── english/     ← angol építészet (romano-brit, Tudor/normann, georgiánus, gótikus katedrális)
+    │   │   │   ├── german/      ← német (limes, Fachwerk, Backstein, speyeri császári dóm)
+    │   │   │   ├── french/      ← francia (gallo-római, loire-i gótika, klasszicizmus, versailles-i palota)
+    │   │   │   ├── spanish/     ← spanyol (hispániai udvarház, mudéjar, gyarmati barokk, Alhambra)
+    │   │   │   ├── italian/     ← olasz (etruszk-római insula, komuna-tornyok, reneszánsz, firenzei dóm)
+    │   │   │   ├── russian/     ← orosz (izba, moszkvai sátortető, péteri barokk, Szent Vazul)
+    │   │   │   └── finnish/     ← finn (tőzegtetős faház, gránit, gusztávi, petäjävesi fatemplom)
     │   │   ├── units/           ← egység-rig és -festés; népenkénti megjelenés (alap + felülírás)
-    │   │   │   └── english/     ← angol egységviselet (Szent György-kereszt, sallet, hosszúíj)
+    │   │   │   ├── english/     ← angol egységviselet (Szent György-kereszt, sallet, hosszúíj)
+    │   │   │   └── <nép>/       ← a többi nép viselete (german, french, spanish, italian, russian, finnish)
     │   │   ├── walls/           ← falstílusok koronként
-    │   │   │   └── english/     ← angol falak (cölöpsánc, normann kőfal, tégla csillagerőd)
+    │   │   │   ├── english/     ← angol falak (cölöpsánc, normann kőfal, tégla csillagerőd)
+    │   │   │   └── <nép>/       ← a többi nép falai (german, french, spanish, italian, russian, finnish)
     │   │   └── lighting/        ← világítási szerződés (normal map-ek, fény, árnyék)
     │   ├── coordinates.ts       ← tile ↔ screen konverzió
     │   ├── depth.ts             ← rajzolási sorrend
@@ -659,8 +668,59 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
     kapnak. A ≤ 256 MB GPU keret továbbra is köt.
 
 ### M5 — Skálázás teljes 8 népre
-- Iteratív bővítés: civ-enként külön branch
-- Egyszerűsített art pipeline
+- A maradék hat nép, ebben a sorrendben: német, francia, spanyol, olasz,
+  orosz, finn. **Csak vizuális különbség** (4.3): egyedi egységek és
+  népbónuszok NEM részei az M5-nek (a PROGRAM_TERV.md erről szóló M5 sorai
+  későbbi stretch goal-ok).
+- Népenként: 3 kor építészeti stílusa (a 4.2 karakter római kori,
+  középkori és felvilágosodás kori értelmezése), saját Csoda, koronként
+  saját falstílus (olcsó esetben meglévő fal-készlet a nép anyagaival),
+  saját egység-kinézet (paletta, címer, koronként legalább egy erős
+  sziluett-jel: fejfedő, pajzs vagy fegyver-változat). Minden nép
+  **sziluettben** is felismerhető legyen játék-zoomon (~1,0), ne csak
+  színben.
+- Csodák: német — román stílusú császári dóm két toronypárral (Speyer);
+  francia — barokk palota (Versailles); spanyol — mór palota árkádos
+  udvarral és toronnyal (Alhambra); olasz — reneszánsz kupolás dóm
+  kampanilével (Firenze); orosz — hagymakupolás székesegyház (Szent
+  Vazul); finn — fa kereszt-alaprajzú templom zsindelyes sátortetővel
+  (Petäjävesi).
+- Egyszerűsített art pipeline: népenként és koronként döntünk — meglévő
+  festőcsalád `ArchStyle` paraméterekkel és díszítő-készletekkel (olcsó),
+  vagy saját család, ahol a sziluett megköveteli (orosz hagymakupola, finn
+  tőzeg- és zsindelytető, spanyol lapos tető és udvar, olasz árkád és
+  kupola). Az olcsó utat a német nép bizonyítja először. A legalább két
+  nép által használt festő a `src/iso/art/architecture/kits/` mappába
+  kerül.
+- Belépő feladatok az új népek előtt: (1) N-nép textúra-keret — a csak AI
+  népek egységlapjai koronként készülnek (a későbbi korok lapjai a
+  háttérsorban, a tulajdonos korváltásakor), láthatatlan alap-albedó nincs,
+  az egységlapok képkockánként tömörítve, a falak csak a használt korokban
+  maradnak; (2) bővítési felület — sisak/pajzs/fegyver és címer-töltet
+  regiszterben (a közös `gear.ts` nem importál népet), a nép-előnézetből
+  csak a data URL marad, és egy teszt őrzi, hogy népazonosító csak a
+  megengedett fájlokban szerepel.
+- Új nép felvételének ellenőrzőlistája (megosztott festőt nem érint):
+  1. `src/config/civs.ts`: az id-uniók (`ArchStyleId`, `WallStyleId`,
+     `UnitLookId`) és a nép `CIV_DEFS` sora (`available: true` csak akkor,
+     ha a nép teljesen kész).
+  2. `src/iso/art/architecture/<nép>/`: stílusok, festők, Csoda,
+     címer-töltet; egy-egy sor a `registry.ts`-ben és a `charges.ts`-ben.
+  3. `src/iso/art/walls/<nép>/`: falstílusok; egy sor a `wallStyles.ts`-ben.
+  4. `src/iso/art/units/<nép>/`: kinézet, felszerelés, anyagok; egy-egy sor
+     a `looks.ts`-ben és a `gearRegistry.ts`-ben.
+  5. `src/i18n/hu.ts`: a nép neve és egysoros leírása.
+  6. Rögzítő tesztek (draw-log hash) a nép mappáiban épületre, falra és
+     egységre; a magyar, az angol és a korábbi népek rögzítései
+     változatlanok maradnak.
+- Ágak: a belépő feladatok a `feat/M5-eight-civs` ágon; népenként külön ág
+  (`feat/M5-<nép>`), mindig az előző nép ágának végéről (egymásra épülő
+  ágak); a zárófeladat a `feat/M5-eight-civs` ágon fut, a finn ágra
+  előretekerve.
+- Keret (10.): ≤ 256 MB textúra-memória (csak textúrák, WebGL framebufferek
+  nélkül) a legrosszabb elérhető esetben: 128×128 Szigetek, 6 játékos,
+  6 különböző nép; minden további nép legfeljebb ~1 s betöltési többletet
+  okoz.
 
 ### M6 — Polish és jövőbeli bővítések
 - Több AI nehézségi szint
@@ -775,4 +835,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-25. Zoli projekt, `IsoRTS` munkacím.*
+*Utolsó frissítés: 2026-10-27. Zoli projekt, `IsoRTS` munkacím.*
