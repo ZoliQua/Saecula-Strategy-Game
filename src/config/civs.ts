@@ -8,7 +8,7 @@ import type { AgeId, CivId } from '../types';
  */
 
 /** Building painter set of one age style (art/buildings.ts). */
-export type ArchStyleId = 'roman' | 'medieval' | 'baroque';
+export type ArchStyleId = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId = 'palisade' | 'curtain' | 'bastion';
 /** Unit palette / heraldry look (art/units). */
@@ -63,10 +63,10 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'hungarian',
     heraldry: { primary: 0xc8202e, secondary: 0xf2efe6, accent: 0x2e7d3a },
   },
-  // St George's cross: white field, red cross. Hungarian painters until M4 Tasks 2-5.
+  // St George's cross: white field, red cross. Romano-British and Tudor buildings; age 3, walls and units Hungarian until M4 Tasks 4-5.
   english: {
     available: true,
-    architecture: HUNGARIAN_ARCH,
+    architecture: { 1: 'romano_british', 2: 'tudor', 3: 'baroque' },
     wallStyle: HUNGARIAN_WALLS,
     unitLook: 'hungarian',
     heraldry: { primary: 0xf2efe6, secondary: 0xc8202e, accent: 0x1f2f5a },

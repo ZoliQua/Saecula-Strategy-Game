@@ -462,6 +462,8 @@ IsoRTS/
     ├── game/                    ← Player, PlayerManager, VictoryChecker, technológiák
     ├── iso/
     │   ├── art/                 ← procedurális grafika (terep, épület, egység, dekor)
+    │   │   ├── architecture/    ← épület-festők koronként (ArchStyle, stíluscsaládok)
+    │   │   │   └── english/     ← angol építészet (romano-brit, Tudor/normann)
     │   │   └── lighting/        ← világítási szerződés (normal map-ek, fény, árnyék)
     │   ├── coordinates.ts       ← tile ↔ screen konverzió
     │   ├── depth.ts             ← rajzolási sorrend

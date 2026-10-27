@@ -91,7 +91,7 @@ export interface Ornaments {
 }
 
 /** Heraldic charge on crests and shields (facade.ts crest). */
-export type CrestCharge = 'double_cross';
+export type CrestCharge = 'double_cross' | 'st_george';
 
 /**
  * Painter family: which layout set paints the style (registry.ts
@@ -99,7 +99,7 @@ export type CrestCharge = 'double_cross';
  * factory spreads an existing family and overrides types, e.g.
  * `tudor: (s) => ({ ...medievalArt(s), town_center: normanKeep(s) })`.
  */
-export type ArchFamily = 'roman' | 'medieval' | 'baroque';
+export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor';
 
 export interface ArchStyle {
   readonly id: ArchStyleId;

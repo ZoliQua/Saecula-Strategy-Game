@@ -12,8 +12,8 @@ describe('civ registry', () => {
     for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(id === 'hungarian' || id === 'english');
   });
 
-  it('resolves English to the Hungarian styles until its own art lands', () => {
-    expect(CIV_DEFS.english.architecture).toEqual(CIV_DEFS.hungarian.architecture);
+  it('gives English its own age 1-2 architecture; age 3, walls and units stay Hungarian until their art lands', () => {
+    expect(CIV_DEFS.english.architecture).toEqual({ 1: 'romano_british', 2: 'tudor', 3: CIV_DEFS.hungarian.architecture[3] });
     expect(CIV_DEFS.english.wallStyle).toEqual(CIV_DEFS.hungarian.wallStyle);
     expect(CIV_DEFS.english.unitLook).toBe(CIV_DEFS.hungarian.unitLook);
   });
