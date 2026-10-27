@@ -3,6 +3,7 @@ import { XRAY } from '../../../config/visual';
 import { PLAYER_COLORS } from '../../../game/Player';
 import { hiddenRects, type Box, type CoverSource, type HiddenRect, type PlacedCover } from '../../../iso/coverage';
 import { frameCover } from '../../../iso/frameCover';
+import { xrayCrop } from './xrayCrop';
 import type { Entity } from '../../components';
 import type { EcsWorld } from '../../world';
 
@@ -105,17 +106,19 @@ export class UnitXRay {
     this.used++;
     if (img.texture !== body.texture || img.frame.name !== body.frame.name) img.setTexture(body.texture.key, body.frame.name);
     const k = body.scaleX;
+    // The hidden run in frame px from the drawn left edge; a mirrored body is mirrored by a negative scale (xrayCrop).
+    const crop = xrayCrop(body.frame.realWidth, (hidden.left - box.left) / k, (hidden.right - hidden.left) / k, body.flipX);
     img
       .setOrigin(body.originX, body.originY)
-      .setScale(k)
-      .setFlipX(body.flipX)
+      .setScale(crop.mirror ? -k : k, k)
+      .setFlipX(false)
       .setPosition(body.x, body.y)
       .setDepth(SILHOUETTE_DEPTH)
       .setAlpha(XRAY.alpha)
       .setTintFill(PLAYER_COLORS[((e.owner?.playerId ?? 1) - 1) % PLAYER_COLORS.length] ?? 0xffffff)
       .setVisible(true);
-    // Crop rect in the drawn (unflipped-display) image's px, see Frame.setCropUVs.
-    img.setCrop((hidden.left - box.left) / k, (hidden.top - box.top) / k, (hidden.right - hidden.left) / k, (hidden.bottom - hidden.top) / k);
+    // Crop rect in the frame's unflipped logical box px (trimmed frames included, see Frame.setCropUVs).
+    img.setCrop(crop.x, (hidden.top - box.top) / k, crop.width, (hidden.bottom - hidden.top) / k);
   }
 
   destroy(): void {
