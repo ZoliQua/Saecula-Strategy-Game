@@ -1,4 +1,4 @@
-import { CIV_DEFS, type ArchStyleId } from '../../config/civs';
+import { CIV_DEFS, DEFAULT_CIV, type ArchStyleId } from '../../config/civs';
 import type { AgeId, BuildingType, CivId } from '../../types';
 import { BAROQUE_ART } from './architecture/baroque';
 import { MEDIEVAL_ART } from './architecture/medieval';
@@ -43,7 +43,7 @@ const ALL_TYPES: readonly BuildingType[] = [
 ];
 
 export const BUILDING_ART_SIZES: Record<BuildingType, number> = Object.fromEntries(
-  ALL_TYPES.map((t) => [t, artFor(t, 1, 'hungarian').size]),
+  ALL_TYPES.map((t) => [t, artFor(t, 1, DEFAULT_CIV).size]),
 ) as Record<BuildingType, number>;
 
 /**

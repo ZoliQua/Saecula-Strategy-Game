@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type Phaser from 'phaser';
 import type { AgeId, CivId } from '../types';
-import { BUILDING_LIGHT, releaseStaleBuildingArt, releaseUnusedWallPieces, releaseWonderStages } from './buildingTextures';
+import {
+  BUILDING_LIGHT,
+  releaseAbsentCivArt,
+  releaseStaleBuildingArt,
+  releaseUnusedWallPieces,
+  releaseWonderStages,
+} from './buildingTextures';
 
 /** Minimal stand-in for Phaser's TextureManager: textures with a (shared) dataSource array. */
 interface FakeTexture {
@@ -179,5 +185,47 @@ describe('releaseWonderStages', () => {
     ]);
     releaseWonderStages(host, new Set(['building_wonder~s2~cenglish']));
     expect([...map.keys()].sort()).toEqual(['building_wonder~chungarian', 'building_wonder~s1~cenglish', 'building_wonder~s2~cenglish']);
+  });
+});
+
+describe('releaseAbsentCivArt', () => {
+  /** A unit sheet's albedo, its team mask (shares the albedo's normal map) and its shadow. */
+  const unitKeys = (civ: string) => [`villager_placeholder~c${civ}`, `villager_placeholder~c${civ}#team`, `villager_placeholder~c${civ}#shadow`];
+
+  it('frees every art of a civ nobody plays: all ages, single-style buildings, walls, stages and unit sheets', () => {
+    const hungarian = [
+      'building_house~chungarian',
+      'building_house~a3~chungarian',
+      'building_town_center~a3~chungarian@p2',
+      'building_town_center~a3~chungarian',
+      'building_wonder~chungarian',
+      'building_foundry~chungarian',
+      'building_wall~j5~a3~chungarian',
+      'building_wonder~s2~chungarian',
+      ...unitKeys('hungarian'),
+    ];
+    const kept = ['building_house~a3~cenglish', ...unitKeys('english'), 'construction_3', 'decor_trees', 'building_house'];
+    const { host, map, destroyed } = fakeHost([...hungarian, ...kept]);
+    // Phaser shares the mask's normal source with the albedo: model it like a team variant.
+    map.get('villager_placeholder~chungarian#team')!.dataSource = map.get('villager_placeholder~chungarian')!.dataSource;
+    const n = releaseAbsentCivArt(host, new Set(['english']), new Set());
+    expect(n).toBe(hungarian.length);
+    expect([...map.keys()].sort()).toEqual([...kept].sort());
+    // Each shared normal source is destroyed once, by its owner, never through a sharer.
+    expect(new Set(destroyed).size).toBe(destroyed.length);
+  });
+
+  it('keeps a group (base, team variants, mask, shadow) while any of its textures is shown', () => {
+    const keys = ['building_wonder~chungarian', 'building_wonder~chungarian@p3', ...unitKeys('hungarian'), 'building_house~a2~chungarian'];
+    const { host, map } = fakeHost(keys);
+    releaseAbsentCivArt(host, new Set(['english']), new Set(['building_wonder~chungarian@p3', 'villager_placeholder~chungarian']));
+    expect([...map.keys()].sort()).toEqual(['building_wonder~chungarian', 'building_wonder~chungarian@p3', ...unitKeys('hungarian')].sort());
+  });
+
+  it('leaves the civs in play alone', () => {
+    const keys = ['building_house~a3~chungarian', 'building_wonder~chungarian', ...unitKeys('hungarian')];
+    const { host, map } = fakeHost(keys);
+    expect(releaseAbsentCivArt(host, new Set(['hungarian', 'english']), new Set())).toBe(0);
+    expect(map.size).toBe(keys.length);
   });
 });

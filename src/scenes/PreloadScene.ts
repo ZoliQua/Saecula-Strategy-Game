@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MENU_CIV } from '../config/civs';
 import { hu } from '../i18n/hu';
 import { paintAllUnitArt, unitArt } from '../iso/art/units/UnitArt';
 import { generateArt } from '../iso/textures';
@@ -26,7 +27,7 @@ export class PreloadScene extends Phaser.Scene {
       generateArt(this);
       // Villagers are on screen from the first frame of the menu and the
       // game: paint them now (this also warms up the unit rasterizer).
-      const villager = unitArt(this, 'villager', 'hungarian', true);
+      const villager = unitArt(this, 'villager', MENU_CIV, true);
       if (villager) paintAllUnitArt(this, villager);
       this.scene.start('MainMenuScene');
     });

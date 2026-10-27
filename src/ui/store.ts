@@ -1,4 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import { DEFAULT_CIV } from '../config/civs';
 import type {
   AgeId,
   BuildingType,
@@ -94,7 +95,7 @@ const INITIAL: UiState = {
   resources: { food: 200, wood: 200, gold: 100 },
   population: { current: 3, cap: 10 },
   currentAge: 1,
-  civ: 'hungarian',
+  civ: DEFAULT_CIV,
   researchedTechs: [],
   uniqueBuilt: [],
   selectedEntity: null,

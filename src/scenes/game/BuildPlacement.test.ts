@@ -13,7 +13,7 @@ function setup() {
   const map = new MapData(40, 40);
   const world = createEcsWorld();
   const selection = { getSelected: () => null } as unknown as SelectionSystem;
-  const placement = new BuildPlacement({} as Phaser.Scene, world, map, selection, () => null, () => 3, 1);
+  const placement = new BuildPlacement({} as Phaser.Scene, world, map, selection, () => null, () => 3, 1, 'hungarian');
   const wonders = () => world.entities.filter((e) => e.building?.type === 'wonder' && e.owner?.playerId === 1);
   return { map, world, placement, wonders };
 }

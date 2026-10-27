@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MENU_CIV } from '../config/civs';
 import { PLAYER_COLORS } from '../game/Player';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { ANIM_FRAMES, frameIndex, headingSlot, unitSheetLayout, type UnitAnim } from '../iso/art/units/layout';
@@ -52,7 +53,7 @@ export class UnitShowcaseScene extends Phaser.Scene {
     TYPES.forEach((type, row) => {
       HEADINGS.forEach((dir, col) => {
         const color = PLAYER_COLORS[row % PLAYER_COLORS.length] ?? 0xffffff;
-        const sprites = createUnitSprites(this, type, this.opts.civ ?? 'hungarian', color, true);
+        const sprites = createUnitSprites(this, type, this.opts.civ ?? MENU_CIV, color, true);
         sprites.body.setPosition(col * CELL_W + CELL_W / 2, row * CELL_H + CELL_H * 0.72);
         this.lighting?.attachCaster(sprites.body, sprites.key);
         this.cells.push({ sprites, dir });

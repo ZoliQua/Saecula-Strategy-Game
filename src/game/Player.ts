@@ -1,4 +1,5 @@
 import type { AgeId, CivId, Resources, TechId } from '../types';
+import { DEFAULT_CIV } from '../config/civs';
 
 export interface Player {
   id: number;
@@ -29,7 +30,7 @@ export const PLAYER_COLORS: readonly number[] = [
 export function createPlayer(partial: Partial<Player> & { id: number }): Player {
   return {
     isHuman: false,
-    civ: 'hungarian',
+    civ: DEFAULT_CIV,
     color: PLAYER_COLORS[(partial.id - 1) % PLAYER_COLORS.length] ?? 0xffffff,
     resources: { food: 200, wood: 200, gold: 100 },
     age: 1,

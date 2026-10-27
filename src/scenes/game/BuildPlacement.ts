@@ -23,9 +23,9 @@ export class BuildPlacement {
     private readonly mapData: MapData,
     private readonly selection: SelectionSystem,
     private readonly getHoverTile: () => TileCoord | null,
-    private readonly getAge: () => AgeId = () => 1,
-    private readonly playerId = 1,
-    private readonly civ: CivId = 'hungarian',
+    private readonly getAge: () => AgeId,
+    private readonly playerId: number,
+    private readonly civ: CivId,
   ) {
     this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId, getAge, civ);
   }

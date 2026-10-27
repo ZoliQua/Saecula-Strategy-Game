@@ -6,6 +6,7 @@ import { AGE_STYLED_BUILDINGS, artAgeFor } from './art/architecture/ageStyle';
 import {
   ageArtKey,
   parseBuildingArtKey,
+  parseCivArtKey,
   parseWallPieceKey,
   parseWonderStageKey,
   teamArtKey,
@@ -182,6 +183,37 @@ export function releaseUnusedWallPieces(host: TextureHost, inUse: ReadonlySet<st
     host.textures.remove(key);
     BUILDING_LIGHT.delete(key);
     removed++;
+  }
+  return removed;
+}
+
+/**
+ * Frees all art of civs nobody plays any more (M4 design decision 7):
+ * every age, single-style buildings, wall pieces, Wonder stages and unit
+ * sheets — e.g. the menu's Hungarian art in a game without Hungarians.
+ * A group (base with its team variants, or a unit sheet with its mask
+ * and shadow) stays whole while any of its textures is in `inUse`.
+ * Sharers are detached before removal so an owner's normal map is
+ * destroyed once, with the owner. Returns the number removed.
+ */
+export function releaseAbsentCivArt(host: TextureHost, civsInPlay: ReadonlySet<CivId>, inUse: ReadonlySet<string>): number {
+  const groups = new Map<string, Array<{ key: string; shares: boolean }>>();
+  for (const key of host.textures.getTextureKeys()) {
+    const art = parseCivArtKey(key);
+    if (!art || civsInPlay.has(art.civ)) continue;
+    groups.set(art.group, [...(groups.get(art.group) ?? []), { key, shares: art.sharesNormals }]);
+  }
+  let removed = 0;
+  for (const members of groups.values()) {
+    if (members.some((m) => inUse.has(m.key))) continue;
+    // Sharers first (detached), owners last.
+    for (const { key, shares } of [...members].sort((a, b) => Number(b.shares) - Number(a.shares))) {
+      if (shares) host.textures.get(key).dataSource = [];
+      host.textures.remove(key);
+      BUILDING_LIGHT.delete(key);
+      TRIMS.delete(key);
+      removed++;
+    }
   }
   return removed;
 }

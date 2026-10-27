@@ -41,6 +41,11 @@ export const CIV_IDS: readonly CivId[] = [
   'finnish',
 ];
 
+/** Fallback civ: setup default and any missing civ lookup. */
+export const DEFAULT_CIV: CivId = 'hungarian';
+/** Civ of the main-menu diorama and of the art painted at boot (generateArt, PreloadScene). */
+export const MENU_CIV: CivId = 'hungarian';
+
 const HUNGARIAN_ARCH: Record<AgeId, ArchStyleId> = { 1: 'roman', 2: 'medieval', 3: 'baroque' };
 const HUNGARIAN_WALLS: Record<AgeId, WallStyleId> = { 1: 'palisade', 2: 'curtain', 3: 'bastion' };
 

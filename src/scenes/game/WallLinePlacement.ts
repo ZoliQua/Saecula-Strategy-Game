@@ -31,8 +31,8 @@ export class WallLinePlacement {
     private readonly mapData: MapData,
     private readonly selection: SelectionSystem,
     private readonly playerId: number,
-    private readonly getAge: () => AgeId = () => 1,
-    private readonly civ: CivId = 'hungarian',
+    private readonly getAge: () => AgeId,
+    private readonly civ: CivId,
   ) {}
 
   isDragging(): boolean {

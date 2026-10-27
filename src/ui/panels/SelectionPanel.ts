@@ -160,7 +160,6 @@ export class SelectionPanel {
   }
 }
 
-
 function head(name: string, role: string, enemy = false, more?: string): Node {
   return el(
     'div',

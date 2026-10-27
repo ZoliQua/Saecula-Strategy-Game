@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MENU_CIV } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
@@ -14,7 +15,7 @@ import { FogOfWarData } from '../map/FogOfWarData';
 import { generateMap } from '../map/generator';
 import { TERRAIN } from '../map/TerrainTypes';
 import { TileMap } from '../map/TileMap';
-import { directionFromDelta, type BuildingType, type CivId, type Direction, type UnitType } from '../types';
+import { directionFromDelta, type BuildingType, type Direction, type UnitType } from '../types';
 import { MainMenu } from '../ui/screens/MainMenu';
 import type { SetupReturn } from './GameSetupScene';
 
@@ -22,8 +23,6 @@ const MENU_MAP_SIZE = 48;
 const MENU_SEED = 7;
 /** The diorama shows off the grand Enlightenment-era town the player builds towards. */
 const MENU_AGE = 3;
-/** The diorama's town and walkers are Hungarian (generateArt pre-paints that civ). */
-const MENU_CIV: CivId = 'hungarian';
 /** Pond (a few overlapping discs for an irregular shore) and rock outcrop, relative to the settlement (tiles). */
 const MENU_POND: ReadonlyArray<{ tx: number; ty: number; r: number }> = [
   { tx: 7, ty: 7, r: 2.6 },

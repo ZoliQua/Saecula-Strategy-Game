@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { MENU_CIV } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { buildingTexture, registerLitArt } from './buildingTextures';
 import { paintConstructionSite } from './art/buildings';
@@ -78,8 +79,8 @@ export function constructionKey(size: number): string {
  */
 export function generateArt(scene: Phaser.Scene): void {
   // Age-1 art for every building up front; later age styles paint on first need.
-  // Hungarian is the menu's civ; GameScene pre-paints the civs in play while loading.
-  for (const spec of Object.values(BUILDING_SPECS)) buildingTexture(scene, spec.type, 1, 1, 'hungarian');
+  // MENU_CIV is the menu's civ; GameScene pre-paints the civs in play while loading.
+  for (const spec of Object.values(BUILDING_SPECS)) buildingTexture(scene, spec.type, 1, 1, MENU_CIV);
   for (const size of [1, 2, 3, 4]) {
     if (!scene.textures.exists(constructionKey(size))) {
       registerLitArt(scene, constructionKey(size), paintConstructionSite(size));

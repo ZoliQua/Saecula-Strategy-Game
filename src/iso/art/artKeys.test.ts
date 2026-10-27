@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ageArtKey,
   parseBuildingArtKey,
+  parseCivArtKey,
   parseWallPieceKey,
   parseWonderStageKey,
   teamArtKey,
@@ -95,5 +96,21 @@ describe('unit art keys', () => {
   it('qualify the unit sheet with the civ', () => {
     expect(unitArtKey('unit_villager', 'hungarian')).toBe('unit_villager~chungarian');
     expect(unitArtKey('unit_knight', 'english')).toBe('unit_knight~cenglish');
+  });
+});
+
+describe('parseCivArtKey', () => {
+  it('finds the civ and group of every civ-qualified key', () => {
+    expect(parseCivArtKey('building_house~a2~cenglish@p3')).toEqual({ civ: 'english', group: 'building_house~a2~cenglish', sharesNormals: true });
+    expect(parseCivArtKey('unit_knight~chungarian#team')).toEqual({ civ: 'hungarian', group: 'unit_knight~chungarian', sharesNormals: true });
+    expect(parseCivArtKey('unit_knight~chungarian#shadow')).toEqual({ civ: 'hungarian', group: 'unit_knight~chungarian', sharesNormals: false });
+    expect(parseCivArtKey(wallPieceKey(5, 3, 'english'))).toEqual({ civ: 'english', group: wallPieceKey(5, 3, 'english'), sharesNormals: false });
+    expect(parseCivArtKey(wonderStageKey(1, 'hungarian'))?.civ).toBe('hungarian');
+  });
+
+  it('ignores civ-independent and unknown-civ keys', () => {
+    for (const key of ['building_house', 'construction_3', 'decor_trees', 'fx_glow', 'unit_knight~cmartian']) {
+      expect(parseCivArtKey(key)).toBeUndefined();
+    }
   });
 });

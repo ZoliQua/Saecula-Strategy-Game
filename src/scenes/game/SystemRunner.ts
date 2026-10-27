@@ -1,4 +1,5 @@
 import { CliffBuildingSort } from '../../ecs/systems/occlusion/CliffBuildingSort';
+import { DEFAULT_CIV } from '../../config/civs';
 import { UnitXRay } from '../../ecs/systems/occlusion/UnitXRay';
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
@@ -37,7 +38,7 @@ import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/consta
 import { commonWallPieceKeys } from '../../iso/art/walls/WallArtPrewarm';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
-import type { AgeId } from '../../types';
+import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 
 /** Owns every per-frame system and ticks them in a fixed, deterministic order. */
@@ -87,7 +88,7 @@ export class SystemRunner {
     this.humanId = players.human()?.id;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
-    this.render.setCivSource((id) => players.get(id)?.civ ?? 'hungarian');
+    this.render.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.keepWalls = commonWallPieceKeys([1, 2, 3], [...new Set(players.all().map((p) => p.civ))]);
     this.selection = new SelectionSystem(scene, world);
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
@@ -129,7 +130,10 @@ export class SystemRunner {
     this.evictTimer = scene.time.addEvent({
       delay: ART_EVICT_INTERVAL_MS,
       loop: true,
-      callback: () => this.render.releaseUnusedArt(this.keepWalls),
+      callback: () => {
+        this.render.releaseUnusedArt(this.keepWalls);
+        this.render.releaseAbsentCivs(activeCivs(players));
+      },
     });
     // Once the age-up wave has played out, drop age styles nobody shows any more (per civ).
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
@@ -142,6 +146,8 @@ export class SystemRunner {
         );
       });
     });
+    // Game start: the menu / preload art of civs not in this match goes now (design decision 7).
+    this.render.releaseAbsentCivs(activeCivs(players));
   }
 
   /** What each AI is thinking, for the dev-only overlay. */
@@ -202,6 +208,11 @@ export class SystemRunner {
     this.combatFx.destroy();
     this.projectileRender.destroy();
   }
+}
+
+/** Civs of the players still in the game. */
+function activeCivs(players: PlayerManager): Set<CivId> {
+  return new Set(players.all().filter((p) => !p.defeated).map((p) => p.civ));
 }
 
 /** Lowest of `ages`, or undefined when empty. */

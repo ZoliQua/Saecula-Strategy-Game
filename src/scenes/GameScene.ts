@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DEFAULT_CIV } from '../config/civs';
 import { defaultSetupConfig, matchCivs, withSetup, type GameSetupConfig } from '../game/GameSetupConfig';
 import { createPlayers, type PlayerManager } from '../game/PlayerManager';
 import { VictoryChecker } from '../game/VictoryChecker';
@@ -232,7 +233,7 @@ export class GameScene extends Phaser.Scene {
       () => pointer?.getHoverTile() ?? null,
       () => this.players.human()?.age ?? 1,
       this.players.human()?.id ?? 1,
-      this.players.human()?.civ ?? 'hungarian',
+      this.players.human()?.civ ?? DEFAULT_CIV,
     );
     pointer = new PointerInput(
       this,

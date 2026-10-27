@@ -1,4 +1,4 @@
-import { AVAILABLE_CIVS } from '../config/civs';
+import { AVAILABLE_CIVS, DEFAULT_CIV } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import { createRng } from '../map/random';
 import type { CivId } from '../types';
@@ -55,7 +55,7 @@ export function defaultSetupConfig(seed: number = randomSeed()): GameSetupConfig
     mapSize: 'medium',
     aiCount: 3,
     difficulty: 'easy',
-    civ: 'hungarian',
+    civ: DEFAULT_CIV,
     aiCivs: 'mixed',
     seed: clampSeed(seed),
   };
@@ -83,7 +83,7 @@ export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig
     mapSize: MAP_SIZE_IDS.includes(next.mapSize) ? next.mapSize : 'medium',
     aiCount: clampAiCount(next.aiCount),
     difficulty: AVAILABLE_DIFFICULTIES.includes(next.difficulty) ? next.difficulty : 'easy',
-    civ: AVAILABLE_CIVS.includes(next.civ) ? next.civ : 'hungarian',
+    civ: AVAILABLE_CIVS.includes(next.civ) ? next.civ : DEFAULT_CIV,
     aiCivs: next.aiCivs !== 'mixed' && AVAILABLE_CIVS.includes(next.aiCivs) ? next.aiCivs : 'mixed',
     seed: clampSeed(next.seed),
   };
@@ -110,9 +110,10 @@ export function exceedsRecommendedAi(config: GameSetupConfig): boolean {
  */
 export function assignCivs(config: GameSetupConfig, rng: () => number): CivId[] {
   const n = config.aiCount;
-  if (config.aiCivs !== 'mixed') return Array.from({ length: n }, () => config.aiCivs as CivId);
+  const fixed = config.aiCivs;
+  if (fixed !== 'mixed') return Array.from({ length: n }, () => fixed);
   const pool = AVAILABLE_CIVS;
-  const pick = (): CivId => pool[Math.floor(rng() * pool.length)] ?? 'hungarian';
+  const pick = (): CivId => pool[Math.floor(rng() * pool.length)] ?? DEFAULT_CIV;
   const civs: CivId[] = shuffle([...pool], rng).slice(0, n);
   while (civs.length < n) civs.push(pick());
   return shuffle(civs, rng);

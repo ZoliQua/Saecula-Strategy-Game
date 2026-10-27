@@ -1,4 +1,5 @@
 import type { CivId } from '../types';
+import { DEFAULT_CIV } from '../config/civs';
 import type { Player } from './Player';
 import { createPlayer } from './Player';
 
@@ -50,5 +51,5 @@ export function createPlayers(humanCiv: CivId, aiCivs: readonly CivId[]): Player
 }
 
 export function createDefaultPlayers(): PlayerManager {
-  return createPlayers('hungarian', ['hungarian']);
+  return createPlayers(DEFAULT_CIV, [DEFAULT_CIV]);
 }

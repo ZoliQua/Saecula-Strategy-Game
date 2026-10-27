@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MENU_CIV } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { AGE_STYLED_BUILDINGS } from '../iso/art/architecture/ageStyle';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
@@ -44,7 +45,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
   }
 
   private get civ(): CivId {
-    return this.opts.civ ?? 'hungarian';
+    return this.opts.civ ?? MENU_CIV;
   }
 
   init(opts: BuildingShowcaseOptions): void {

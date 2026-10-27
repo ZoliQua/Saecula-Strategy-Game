@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
+import { DEFAULT_CIV } from '../../config/civs';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import { LightManager, lit } from '../../iso/art/lighting/LightManager';
 import { frameIndex, headingSlot, unitSheetLayout } from '../../iso/art/units/layout';
-import { pumpUnitArt } from '../../iso/art/units/UnitArt';
+import { forgetUnitArt, pumpUnitArt } from '../../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../../iso/art/units/unitSprite';
 import { PLAYER_COLORS } from '../../game/Player';
 import { wonderStage } from '../../iso/art/architecture/wonder';
@@ -10,6 +11,7 @@ import {
   BUILDING_LIGHT,
   buildingTexture,
   isWonderStageKey,
+  releaseAbsentCivArt,
   releaseStaleBuildingArt,
   releaseUnusedWallPieces,
   releaseWonderStages,
@@ -58,7 +60,7 @@ export class RenderSystem {
   /** Buildings whose re-skin waits for their age-up effect (AgeUpFxSystem). */
   private readonly heldReskin = new Set<Entity>();
   private ageOf: (playerId: number) => AgeId = () => 1;
-  private civOf: (playerId: number) => CivId = () => 'hungarian';
+  private civOf: (playerId: number) => CivId = () => DEFAULT_CIV;
   private fog: FogOfWarData | null = null;
   private viewerPlayerId = 1;
 
@@ -122,6 +124,16 @@ export class RenderSystem {
     for (const key of keep) inUse.add(key);
     releaseWonderStages(this.scene, inUse);
     return releaseUnusedWallPieces(this.scene, inUse);
+  }
+
+  /**
+   * Frees all art of civs not in `civsInPlay` that no game object shows
+   * (menu art at game start, defeated civs later). Returns textures removed.
+   */
+  releaseAbsentCivs(civsInPlay: ReadonlySet<CivId>): number {
+    const inUse = this.keysInUse();
+    forgetUnitArt(civsInPlay, inUse);
+    return releaseAbsentCivArt(this.scene, civsInPlay, inUse);
   }
 
   /** Texture keys of every game object in the scene, shown or hidden (ghosts, pools). */

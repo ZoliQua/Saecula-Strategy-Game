@@ -90,6 +90,19 @@ export function unitArt(scene: Phaser.Scene, type: UnitType, civ: CivId, force =
   return art;
 }
 
+/**
+ * Drops the cached sheets (CPU canvases, pending paints) of civs not in
+ * `civsInPlay`; their textures go with releaseAbsentCivArt. A later
+ * request (e.g. the menu after the game) simply paints them again.
+ */
+export function forgetUnitArt(civsInPlay: ReadonlySet<CivId>, inUse: ReadonlySet<string>): void {
+  for (const [key, art] of arts) {
+    if (civsInPlay.has(art.civ) || inUse.has(key) || inUse.has(art.maskKey)) continue;
+    arts.delete(key);
+    pending.delete(art);
+  }
+}
+
 /** Frame to show for `k`: itself once painted, else the heading's first idle frame. */
 export function readyFrame(art: UnitArt, k: number): number {
   if (art.sheet.painted[k]) return k;

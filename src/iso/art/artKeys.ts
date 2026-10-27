@@ -84,3 +84,20 @@ export function parseWonderStageKey(key: string): { stage: number; civ: CivId } 
 export function unitArtKey(baseKey: string, civId: CivId): string {
   return `${baseKey}${civ(civId)}`;
 }
+
+/** A civ-qualified texture and the group it belongs to (base + team variants / mask / shadow). */
+export interface CivArtKey {
+  readonly civ: CivId;
+  /** The group's own key (building age key, unit sheet albedo, wall piece, Wonder stage). */
+  readonly group: string;
+  /** Team variants and unit masks borrow the group key's normal map. */
+  readonly sharesNormals: boolean;
+}
+
+/** Civ and group of any civ-qualified key (see the table above), or undefined for civ-independent art. */
+export function parseCivArtKey(key: string): CivArtKey | undefined {
+  const m = /^(.+~c([a-z]+))(@p\d+|#team|#shadow)?$/.exec(key);
+  const civId = asCiv(m?.[2]);
+  if (!m || !m[1] || !civId) return undefined;
+  return { civ: civId, group: m[1], sharesNormals: m[3] !== undefined && m[3] !== '#shadow' };
+}
