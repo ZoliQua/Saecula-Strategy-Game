@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { tileToScreen } from '../../iso/coordinates';
-import { tileDepth } from '../../iso/depth';
+import { footprintDepth, tileDepth } from '../../iso/depth';
 import { DEFAULT_CIV } from '../../config/civs';
 import type { CivId } from '../../types';
 import { uiStore } from '../../ui/store';
 import { infoKey, toSelectedInfo, type SelectableWithPos } from './selectedInfo';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
+import { BUILDING_DEPTH_OFFSET, buildingOutlineDepth } from './renderPlacement';
 
 /**
  * Manages a single-entity selection for the human player (M0 scope —
@@ -202,9 +203,8 @@ export class SelectionSystem {
       g.fillPoints(pts, true);
       g.lineStyle(2, color, 0.95);
       g.strokePoints(pts, true);
-      g.setDepth(
-        selected.position.tx + w - 1 + (selected.position.ty + h - 1) - 0.1,
-      );
+      // Under the building as drawn (a building beside raised rock is sunk below the rock).
+      g.setDepth(buildingOutlineDepth(e.sprite?.depth ?? footprintDepth(selected.position, w, h) + BUILDING_DEPTH_OFFSET));
     } else if (e.resourceNode && !e.unit) {
       // Resource tile selection outlines a single diamond.
       const { sx, sy } = tileToScreen(selected.position);

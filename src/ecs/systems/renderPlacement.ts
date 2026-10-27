@@ -60,6 +60,18 @@ export function applyDying(sprite: Phaser.GameObjects.Sprite, entity: Renderable
 /** Buildings draw this far above their front footprint tile (after its decor, before its units). */
 export const BUILDING_DEPTH_OFFSET = 0.2;
 
+/** A building's selection outline lies on the ground this far below the building's sprite. */
+const OUTLINE_BELOW_BUILDING = BUILDING_DEPTH_OFFSET + 0.1;
+
+/**
+ * Depth of a building's selection outline from the building's actual draw
+ * depth (its sprite's, which CliffBuildingSort may sink below raised rock),
+ * so the outline never draws over its own building.
+ */
+export function buildingOutlineDepth(drawDepth: number): number {
+  return drawDepth - OUTLINE_BELOW_BUILDING;
+}
+
 /** Draw depth: footprint depth for buildings, interpolated along the step for walking units. */
 export function renderDepth(entity: Renderable): number {
   if (entity.building) {
