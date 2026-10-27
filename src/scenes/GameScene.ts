@@ -15,13 +15,11 @@ import { tileToScreen } from '../iso/coordinates';
 import type { MapData } from '../map/MapData';
 import { TerrainBake } from '../map/TerrainBake';
 import { TileMap } from '../map/TileMap';
-import { buildingTexture, rebaseCivArt, setBuildingBaseOwners, wallTexture } from '../iso/buildingTextures';
-import { unitArt } from '../iso/art/units/UnitArt';
 import { Loading } from '../ui/screens/Loading';
 import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
-import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, type ArtPainters } from './game/artLoadPlan';
 import { BuildPlacement } from './game/BuildPlacement';
+import { MatchArt } from './game/MatchArt';
 import {
   type GeneratedGame,
   spawnPresetWalls,
@@ -31,7 +29,6 @@ import {
 } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
 import type { SetupReturn } from './GameSetupScene';
-import type { AgeId, CivId } from '../types';
 import { OrderIssuer } from './game/OrderIssuer';
 import { PointerInput } from './game/PointerInput';
 import { SystemRunner } from './game/SystemRunner';
@@ -57,12 +54,8 @@ export class GameScene extends Phaser.Scene {
   private timeScale = 1;
   private gameOverTriggered = false;
   private commandUnsubscribe: (() => void) | null = null;
-  /** Civ art left for play (age-2 wall pieces, then each civ's age-up art), painted in spare frame time. */
-  private backgroundArt: BackgroundArt | null = null;
-  /** Each civ's base owner (civBaseOwners): its building bases are painted in that player's colour. */
-  private baseOwners: ReadonlyMap<CivId, number> = new Map();
-  /** (civ, age) pairs whose age-up art is already queued. */
-  private readonly ageArtQueued = new Set<string>();
+  /** This match's civ art: base owners, loading-card art and the background queue (age-2 walls, age-up art). */
+  private matchArt: MatchArt | null = null;
   /** Terrain bake in progress (null once the game runs). */
   private bake: {
     terrain: TerrainBake;
@@ -84,11 +77,6 @@ export class GameScene extends Phaser.Scene {
     const config = withSetup(defaultSetupConfig(), data ?? {});
     const civs = matchCivs(config);
     this.players = createPlayers(civs.human, civs.ais);
-    this.baseOwners = civBaseOwners(this.players.all());
-    setBuildingBaseOwners(this.baseOwners);
-    // Menu / previous-match bases painted for another player go now (nothing of this match shows yet).
-    rebaseCivArt(this, this.baseOwners, new Set());
-    this.ageArtQueued.clear();
     uiStore.getState().setCiv(civs.human);
     const generated = tryGenerateGameMap(config);
     if (!generated) {
@@ -97,6 +85,9 @@ export class GameScene extends Phaser.Scene {
       this.scene.start('MainMenuScene', back);
       return;
     }
+    // Only once the match will run (the menu keeps player 1's colour): each civ's bases in its base owner's colour.
+    const matchArt = new MatchArt(this, this.players.all());
+    this.matchArt = matchArt;
     this.mapData = generated.mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
@@ -111,7 +102,8 @@ export class GameScene extends Phaser.Scene {
         this.events.off(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
       }
       this.lighting.destroy();
-      setBuildingBaseOwners(new Map());
+      matchArt.destroy();
+      this.matchArt = null;
     });
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
   }
@@ -123,29 +115,12 @@ export class GameScene extends Phaser.Scene {
    */
   private *loadSteps(terrain: TerrainBake): Generator<number, void> {
     for (const p of terrain.steps()) yield p * LOAD_SHARE_TERRAIN;
-    const plan = planArtLoad(this.players.human()?.civ ?? DEFAULT_CIV, this.baseOwners, this.artPainters());
-    this.backgroundArt = new BackgroundArt(plan.background);
+    const critical = this.matchArt?.criticalJobs(this.players.human()?.civ ?? DEFAULT_CIV) ?? [];
     let done = 0;
-    for (const job of plan.critical) {
+    for (const job of critical) {
       job();
-      yield LOAD_SHARE_TERRAIN + (1 - LOAD_SHARE_TERRAIN) * (++done / plan.critical.length);
+      yield LOAD_SHARE_TERRAIN + (1 - LOAD_SHARE_TERRAIN) * (++done / critical.length);
     }
-  }
-
-  private artPainters(): ArtPainters {
-    return {
-      building: (type, civ, owner) => buildingTexture(this, type, 1, owner, civ),
-      wall: (piece, age, civ) => wallTexture(this, piece, age, civ),
-      unit: (type, civ) => unitArt(this, type, civ, true),
-    };
-  }
-
-  /** The first age-up of a civ to `age` queues that age's unit sheets and the next age's wall pieces (once per civ and age). */
-  private queueAgeUpArt(civ: CivId, age: AgeId): void {
-    const id = `${civ}:${age}`;
-    if (this.ageArtQueued.has(id)) return;
-    this.ageArtQueued.add(id);
-    this.backgroundArt?.enqueue(ageUpArtJobs(civ, age, this.artPainters()));
   }
 
   /** Runs loading slices for up to BAKE_SLICE_MS per frame, then starts the game. */
@@ -221,7 +196,6 @@ export class GameScene extends Phaser.Scene {
       // Scene events outlive a restart: drop the frame hook, or the next game would run a stale one.
       this.events.off(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
       disposeDev();
-      this.backgroundArt = null;
       this.commandUnsubscribe?.();
       this.commandUnsubscribe = null;
       this.runner.destroy();
@@ -313,7 +287,7 @@ export class GameScene extends Phaser.Scene {
     const unsubAge = gameEvents.on('ageChanged', ({ playerId, age }) => {
       if (playerId === human?.id) uiStore.getState().setAge(age);
       const civ = this.players.get(playerId)?.civ;
-      if (civ) this.queueAgeUpArt(civ, age);
+      if (civ) this.matchArt?.onAgeChanged(civ, age);
     });
     const unsubTech = gameEvents.on('techResearched', ({ playerId }) => {
       if (human && playerId === human.id) {
@@ -361,7 +335,7 @@ export class GameScene extends Phaser.Scene {
       this.syncUniqueBuildings();
     }
     this.checkVictory();
-    this.backgroundArt?.update(realDelta, frameStart);
+    this.matchArt?.update(realDelta, frameStart);
   }
 
   /** Publishes which limited buildings (wonder) the human already has, for the build menu. */

@@ -160,7 +160,7 @@ export class SelectionPanel {
   private buildingPicture(sel: SelectedBuildingInfo): string {
     return sel.textureKey
       ? thumbnail(this.textures, sel.textureKey)
-      : buildingThumbnail(this.textures, sel.buildingType, 1, sel.civ);
+      : buildingThumbnail(this.textures, sel.buildingType, 1, sel.civ, sel.ownerId);
   }
 }
 

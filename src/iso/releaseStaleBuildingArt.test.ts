@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type Phaser from 'phaser';
 import type { AgeId, CivId } from '../types';
 import {
@@ -237,6 +237,8 @@ describe('releaseAbsentCivArt', () => {
     expect(map.size).toBe(keys.length);
   });
 });
+
+afterEach(() => BASE_OWNER.clear());
 
 describe('shared civ whose base owner is gone (M5 Task 1, Review Focus 2)', () => {
   it('keeps the base (and so the variant’s normal map) when base owner 3 is defeated but player 5’s variant is shown', () => {

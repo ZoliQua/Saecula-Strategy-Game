@@ -28,9 +28,9 @@ export function thumbnail(textures: Phaser.Textures.TextureManager, key: string,
   return url;
 }
 
-/** HUD picture of a building in a civ's age style (painted on first need), in the human player's colour. */
-export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type: BuildingType, age: AgeId, civ: CivId): string {
-  return thumbnail(textures, buildingTexture({ textures }, type, age, 1, civ));
+/** HUD picture of a building in a civ's age style (painted on first need), in a player's colour (default: the human's). */
+export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type: BuildingType, age: AgeId, civ: CivId, playerId = 1): string {
+  return thumbnail(textures, buildingTexture({ textures }, type, age, playerId, civ));
 }
 
 /** HUD portrait of a unit type in a civ's look (front idle pose), in a player's colour (default: the human's). */
