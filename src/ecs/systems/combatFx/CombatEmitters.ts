@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { FX_KEYS } from '../../../iso/textures';
+import { RowEmitters } from './RowEmitters';
 
-/** Combat particles draw over the world like the ambient FX (AmbientFxSystem). */
+/** Airborne combat particles (smoke, sparks, glow) draw over the world like the ambient FX (AmbientFxSystem); ground dust and dirt are row-sorted (RowEmitters). */
 const FX_DEPTH = 8_500;
 
 type Emitter = Phaser.GameObjects.Particles.ParticleEmitter;
@@ -22,18 +23,19 @@ export interface Dir {
 export class CombatEmitters {
   private readonly gunSmoke: Emitter;
   private readonly blastSmoke: Emitter;
-  private readonly dust: Emitter;
-  private readonly kickDust: Emitter;
-  private readonly scuffDust: Emitter;
-  private readonly debris: Emitter;
+  private readonly dust: RowEmitters;
+  private readonly kickDust: RowEmitters;
+  private readonly scuffDust: RowEmitters;
+  private readonly debris: RowEmitters;
   private readonly embers: Emitter;
   private readonly sparks: Emitter;
   private readonly glow: Emitter;
-  private readonly all: Emitter[];
+  private readonly all: Array<{ destroy(): void }>;
 
   constructor(scene: Phaser.Scene) {
     const make = (key: string, cfg: Config, depth = FX_DEPTH): Emitter =>
       scene.add.particles(0, 0, key, { emitting: false, ...cfg }).setDepth(depth);
+    const ground = (key: string, cfg: Config): RowEmitters => new RowEmitters(() => make(key, cfg));
     this.gunSmoke = make(FX_KEYS.gunSmoke, {
       lifespan: { min: 2400, max: 3600 },
       speedX: { min: -5, max: 11 },
@@ -51,14 +53,14 @@ export class CombatEmitters {
       rotate: { min: 0, max: 360 },
       tint: [0x5a524b, 0x6e655c, 0x48413b],
     });
-    this.dust = make(FX_KEYS.dust, {
+    this.dust = ground(FX_KEYS.dust, {
       lifespan: { min: 600, max: 1100 },
       speed: { min: 8, max: 30 },
       angle: { min: 190, max: 350 },
       scale: { start: 0.45, end: 1.35 },
       alpha: { start: 0.55, end: 0 },
     });
-    this.scuffDust = make(FX_KEYS.dust, {
+    this.scuffDust = ground(FX_KEYS.dust, {
       lifespan: { min: 350, max: 550 },
       speedX: { min: -22, max: 22 },
       speedY: { min: -10, max: -2 },
@@ -66,7 +68,7 @@ export class CombatEmitters {
       scaleY: { start: 0.2, end: 0.45 },
       alpha: { start: 0.5, end: 0 },
     });
-    this.kickDust = make(FX_KEYS.dust, {
+    this.kickDust = ground(FX_KEYS.dust, {
       lifespan: { min: 700, max: 1300 },
       // A ring flattened onto the iso ground plane (half as tall as wide).
       speedX: { min: -95, max: 95 },
@@ -75,7 +77,7 @@ export class CombatEmitters {
       scaleX: { start: 0.8, end: 1.9 },
       alpha: { start: 0.65, end: 0 },
     });
-    this.debris = make(FX_KEYS.debris, {
+    this.debris = ground(FX_KEYS.debris, {
       lifespan: { min: 650, max: 1050 },
       speed: { min: 70, max: 170 },
       angle: { min: 205, max: 335 },

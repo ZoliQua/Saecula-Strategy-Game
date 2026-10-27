@@ -265,13 +265,17 @@ function generateFx(scene: Phaser.Scene): void {
 
 /** Combat VFX (projectiles, muzzle flash, blasts); see art/combatFx.ts. */
 function generateCombatFx(scene: Phaser.Scene): void {
-  const once = (key: string, paint: () => HTMLCanvasElement): void => {
-    if (!scene.textures.exists(key)) registerCanvas(scene, key, paint());
+  const once = (key: string, paint: () => HTMLCanvasElement, lit = false): void => {
+    if (scene.textures.exists(key)) return;
+    const canvas = paint();
+    registerCanvas(scene, key, canvas);
+    // Solid shots are lit world props (dark at night like everything else); glows and smoke stay unlit.
+    if (lit) attachNormalMap(scene, key, normalMapFor(canvas, null, ROCK_DERIVE));
   };
-  once(FX_KEYS.arrow, paintArrow);
-  once(FX_KEYS.bolt, paintBolt);
+  once(FX_KEYS.arrow, paintArrow, true);
+  once(FX_KEYS.bolt, paintBolt, true);
   once(FX_KEYS.bullet, paintBulletStreak);
-  once(FX_KEYS.cannonball, paintCannonball);
+  once(FX_KEYS.cannonball, paintCannonball, true);
   once(FX_KEYS.trail, paintTrail);
   once(FX_KEYS.shotShadow, paintSoftShadow);
   once(FX_KEYS.muzzle, paintMuzzleFlash);

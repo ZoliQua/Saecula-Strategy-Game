@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ART_SCALE } from '../../iso/art/canvas';
 import { SHOT_LOOK } from '../../config/visual';
 import { tileToScreen } from '../../iso/coordinates';
+import { lit } from '../../iso/art/lighting/LightManager';
 import { FX_KEYS } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { ProjectileKind } from '../../types';
@@ -56,7 +57,9 @@ export class ProjectileRenderSystem {
   ) {
     this.shots = world.with('projectile');
     for (const kind of Object.keys(TEXTURE) as ProjectileKind[]) {
-      this.bodies.set(kind, new ImagePool(() => scene.add.image(0, 0, TEXTURE[kind]).setScale(SCALE).setOrigin(ORIGIN_X[kind], 0.5)));
+      // Arrows, bolts and balls are lit props; the hot musket ball streak glows (unlit, additive).
+      const make = () => scene.add.image(0, 0, TEXTURE[kind]).setScale(SCALE).setOrigin(ORIGIN_X[kind], 0.5);
+      this.bodies.set(kind, new ImagePool(kind === 'bullet' ? make : () => lit(make())));
     }
     this.trails = new ImagePool(() => scene.add.image(0, 0, FX_KEYS.trail).setOrigin(1, 0.5));
     this.shadows = new ImagePool(() => scene.add.image(0, 0, FX_KEYS.shotShadow).setDepth(SHOT_SHADOW_DEPTH));

@@ -3,12 +3,7 @@ import { LightManager } from '../../../iso/art/lighting/LightManager';
 import { shadowVector } from '../../../iso/art/lighting/sun';
 import type { FogOfWarData } from '../../../map/FogOfWarData';
 
-/** Depth band for combat effects drawn on the ground (under shadows, over terrain). */
-export const GROUND_FX_DEPTH = -995;
-/** Shot shadows: just over the cast shadows. */
-export const SHOT_SHADOW_DEPTH = -988;
-/** Tile-depth offset of effects standing on a tile (units sit at +0.3). */
-export const STANDING_FX_DEPTH = 0.6;
+export { GROUND_FX_DEPTH, SHOT_SHADOW_DEPTH, STANDING_FX_DEPTH } from './fxDepths';
 
 /** Effects only show on tiles the viewer can currently see (no fog → always). */
 export function tileSeen(fog: FogOfWarData | null, x: number, y: number): boolean {

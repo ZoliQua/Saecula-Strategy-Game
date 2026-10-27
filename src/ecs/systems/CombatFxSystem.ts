@@ -4,7 +4,7 @@ import { COMBAT_FX, SHOT_LOOK } from '../../config/visual';
 import { distanceToEntity, entityPoint, type Point } from '../../game/targetGeometry';
 import { ART_SCALE } from '../../iso/art/canvas';
 import { EXPLOSION_FRAMES, EXPLOSION_ORIGIN_Y } from '../../iso/art/explosionArt';
-import { LightManager } from '../../iso/art/lighting/LightManager';
+import { LightManager, lit } from '../../iso/art/lighting/LightManager';
 import { tileToScreen } from '../../iso/coordinates';
 import { FX_KEYS } from '../../iso/textures';
 import type { FogOfWarData } from '../../map/FogOfWarData';
@@ -63,7 +63,8 @@ export class CombatFxSystem {
     this.muzzles = new TimedImages(image(FX_KEYS.muzzle, 0.07, 0.5, true), 32);
     this.blasts = new TimedImages(image(FX_KEYS.explosion, 0.5, EXPLOSION_ORIGIN_Y), 10);
     this.scorches = new TimedImages(() => image(FX_KEYS.scorch, 0.5, 0.5)().setDepth(GROUND_FX_DEPTH), 40);
-    this.stuck = new TimedImages(image(FX_KEYS.arrow, 0.86, 0.5), 60);
+    // Stuck arrows are lit props (unlike flashes and smoke).
+    this.stuck = new TimedImages(() => lit(image(FX_KEYS.arrow, 0.86, 0.5)()), 60);
 
     const shots = world.with('projectile');
     const health = world.with('health', 'position');
