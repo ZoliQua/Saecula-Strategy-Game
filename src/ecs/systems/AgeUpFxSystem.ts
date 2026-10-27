@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { AGE_UP_FX } from '../../config/visual';
 import { gameEvents } from '../../game/events';
-import { AGE_STYLED_BUILDINGS } from '../../iso/art/architecture/ageStyle';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
 import { LightManager } from '../../iso/art/lighting/LightManager';
+import { liveView } from '../../iso/liveView';
 import { constructionKey, FX_KEYS } from '../../iso/textures';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
-import { ageUpDelays, rippleOrigin, type AgeUpTarget } from './ageUpFx/ageUpSchedule';
+import { ageUpDelays, joinsAgeUpWave, rippleOrigin, type AgeUpTarget } from './ageUpFx/ageUpSchedule';
 import type { RenderSystem } from './RenderSystem';
 
 const FX_DEPTH = 8_500;
@@ -61,14 +61,13 @@ export class AgeUpFxSystem {
 
   /** Schedules the transformation of `playerId`'s on-screen buildings. */
   private start(playerId: number): void {
-    const view = this.scene.cameras.main.worldView;
+    const view = liveView(this.scene.cameras.main);
     const targets: AgeUpTarget<Entity>[] = [];
     for (const e of this.world.with('building', 'position', 'owner')) {
       const sprite = e.sprite;
-      if (e.owner.playerId !== playerId || !sprite || e.dying || !sprite.visible) continue;
-      // Walls re-skin silently: a ring of scaffolds per segment would drown the wave.
-      if (!AGE_STYLED_BUILDINGS.includes(e.building.type) || e.building.type === 'wall') continue;
-      if (!Phaser.Geom.Rectangle.Overlaps(view, sprite.getBounds())) continue;
+      if (e.owner.playerId !== playerId || !sprite || !sprite.visible || !joinsAgeUpWave(e)) continue;
+      const r = sprite.getBounds();
+      if (r.right <= view.x || r.x >= view.right || r.bottom <= view.y || r.y >= view.bottom) continue;
       const fp = e.building.footprint;
       targets.push({ item: e, tx: e.position.tx + fp.width / 2, ty: e.position.ty + fp.height / 2 });
     }

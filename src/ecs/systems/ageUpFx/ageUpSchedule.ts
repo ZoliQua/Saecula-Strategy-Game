@@ -1,3 +1,6 @@
+import { AGE_STYLED_BUILDINGS } from '../../../iso/art/architecture/ageStyle';
+import type { Entity } from '../../components';
+
 /** A building to transform, at its footprint centre (tiles). */
 export interface AgeUpTarget<T> {
   readonly item: T;
@@ -29,4 +32,15 @@ export function rippleOrigin<T>(targets: readonly AgeUpTarget<T>[], isOrigin: (i
   if (targets.length === 0) return { tx: 0, ty: 0 };
   const sum = targets.reduce((acc, t) => ({ tx: acc.tx + t.tx, ty: acc.ty + t.ty }), { tx: 0, ty: 0 });
   return { tx: sum.tx / targets.length, ty: sum.ty / targets.length };
+}
+
+/**
+ * Whether a building takes part in the age-up wave: a finished,
+ * age-styled one. Walls re-skin silently (a ring of scaffolds per segment
+ * would drown the wave); construction sites already show a scaffold and
+ * collapsing buildings are on their way out.
+ */
+export function joinsAgeUpWave(e: Pick<Entity, 'building' | 'dying' | 'underConstruction'>): boolean {
+  if (!e.building || e.dying || e.underConstruction) return false;
+  return AGE_STYLED_BUILDINGS.includes(e.building.type) && e.building.type !== 'wall';
 }

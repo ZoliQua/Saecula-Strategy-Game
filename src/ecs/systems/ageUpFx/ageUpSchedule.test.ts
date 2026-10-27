@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ageUpDelays, rippleOrigin } from './ageUpSchedule';
+import { ageUpDelays, joinsAgeUpWave, rippleOrigin } from './ageUpSchedule';
 
 const timing = { staggerMs: 200, maxSpreadMs: 1000 };
 
@@ -43,5 +43,15 @@ describe('rippleOrigin', () => {
     ];
     expect(rippleOrigin(targets, (i) => i === 'tc')).toEqual({ tx: 6, ty: 4 });
     expect(rippleOrigin(targets, () => false)).toEqual({ tx: 3, ty: 2 });
+  });
+});
+
+describe('joinsAgeUpWave', () => {
+  const b = (type: string, extra: object = {}) => ({ building: { type }, ...extra }) as unknown as Parameters<typeof joinsAgeUpWave>[0];
+  it('takes finished age-styled buildings, not walls, dying buildings or construction sites (they already show a scaffold)', () => {
+    expect(joinsAgeUpWave(b('house'))).toBe(true);
+    expect(joinsAgeUpWave(b('wall'))).toBe(false);
+    expect(joinsAgeUpWave(b('house', { dying: { atMs: 0 } }))).toBe(false);
+    expect(joinsAgeUpWave(b('house', { underConstruction: { totalTime: 25, elapsed: 3 } }))).toBe(false);
   });
 });
