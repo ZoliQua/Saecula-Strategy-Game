@@ -307,13 +307,19 @@ export class FrameRaster {
       }
     }
     const ch = m.charge;
-    if (ch && (this.front[i] ?? -1) > ch.front && Math.abs(this.across[i] ?? 0) < ch.panel && !this.back[i]) {
+    if (ch && !this.back[i]) {
+      const front = this.front[i] ?? -1;
       const across = Math.abs(this.across[i] ?? 0);
-      const w = ch.edgeWidth ?? 0;
-      const onEdge = ch.edge !== undefined && ((this.front[i] ?? -1) < ch.front + w || across > ch.panel - w);
-      const onCross = across < ch.bar || Math.abs((this.band[i] ?? 0) - ch.armAt) < ch.arm;
-      c = onEdge ? (ch.edge ?? c) : onCross ? ch.cross : ch.field;
-      this.banded = true;
+      const w = ch.edge === undefined ? 0 : (ch.edgeWidth ?? 0);
+      if (front > ch.front && across < ch.panel) {
+        const onCross = across < ch.bar || Math.abs((this.band[i] ?? 0) - ch.armAt) < ch.arm;
+        c = onCross ? ch.cross : ch.field;
+        this.banded = true;
+      } else if (w > 0 && front > ch.front - w && across < ch.panel + w) {
+        // The dark edge rings the field on the cloth outside it, so the field and the cross keep their full size.
+        c = ch.edge ?? c;
+        this.banded = true;
+      }
     }
     rgb[0] = Math.min(255, ((c >> 16) & 255) * l + spec * 255);
     rgb[1] = Math.min(255, ((c >> 8) & 255) * l + spec * 255);

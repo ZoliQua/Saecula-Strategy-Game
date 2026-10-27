@@ -101,10 +101,10 @@ describe('English unit looks', () => {
 
 describe('heraldic charge on an ellipsoid', () => {
   // A 20-px disc facing the viewer: local x (front) towards +z view, y across, z up.
-  function paintDisc() {
+  function paintDisc(material = ENGLISH_M.stGeorgeShield) {
     const fig = new Figure({ x: [0, 0, 1], y: [1, 0, 0], z: [0, 1, 0], t: [0, 0, 0] }, 1);
     fig.place(IDENTITY);
-    fig.ellipsoid([0, 0, 0], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3, 20, 20], ENGLISH_M.stGeorgeShield);
+    fig.ellipsoid([0, 0, 0], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3, 20, 20], material);
     return new FrameRaster(60, 60, 30, 30).paint(fig.prims, fig.mats.list, { rx: 0, ry: 0, alpha: 0 });
   }
   const at = (px: ReturnType<typeof paintDisc>, x: number, y: number) => {
@@ -126,12 +126,33 @@ describe('heraldic charge on an ellipsoid', () => {
     expect(at(px, 30, 48).mask).toBeGreaterThan(200);
   });
 
-  it('frames the field with a dark edge, so the cross reads on a red team', () => {
+  it('frames the field with a dark edge just outside it (on the team rim), so the cross reads on a red team', () => {
     const px = paintDisc();
-    // Just inside the field border, where the upright meets it: dark, not team (the cross stops short of the team rim).
-    const edge = at(px, 30, 44);
+    // Field border at radius ≈ 15.7 px; the edge band lies outside it, before the team rim (radius 18).
+    const edge = at(px, 30, 46);
     expect(edge.mask).toBe(0);
     expect(edge.r).toBeLessThan(90);
     expect(edge.g).toBeLessThan(90);
+    // Inside the field the upright is still cross-red right up to the border.
+    const upright = at(px, 30, 44);
+    expect(upright.r).toBeGreaterThan(upright.g * 2);
+  });
+
+  it('keeps the surcoat chest a full "+": the edge never eats the field or the arm', () => {
+    const px = paintDisc(ENGLISH_M.surcoat);
+    // Arm (u = 0.72, ≈ 9 px above the centre), off the upright: cross-red, not team.
+    const arm = at(px, 35, 21);
+    expect(arm.mask).toBe(0);
+    expect(arm.r).toBeGreaterThan(arm.g * 2);
+    // Field just inside the panel border (across 0.35 of 0.4): white, not dark.
+    const field = at(px, 37, 30);
+    expect(field.mask).toBe(0);
+    expect(field.g).toBeGreaterThan(150);
+    // Just outside the panel (the first pixel past across 0.4): the dark edge on what was team cloth.
+    const edge = at(px, 38, 30);
+    expect(edge.mask).toBe(0);
+    expect(edge.g).toBeLessThan(90);
+    // Further out the cloth is team colour again.
+    expect(at(px, 40, 30).mask).toBeGreaterThan(200);
   });
 });

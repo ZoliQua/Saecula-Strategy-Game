@@ -40,8 +40,9 @@ export interface Charge {
   readonly armAt: number;
   readonly arm: number;
   /**
-   * Optional dark border inside the field (its colour, and its width in
-   * l1 / l2 units), so the cross reads on cloth of its own colour.
+   * Optional dark border just outside the field, on the cloth (its colour,
+   * and its width in l1 / l2 units), so the cross panel reads on cloth of
+   * its own colour without the field or the cross losing any size.
    */
   readonly edge?: number;
   readonly edgeWidth?: number;

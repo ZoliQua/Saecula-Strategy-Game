@@ -21,7 +21,7 @@ export const ENGLISH_M = {
   surcoat: {
     color: 0xffffff,
     team: true,
-    charge: { field: ST_GEORGE_WHITE, cross: ST_GEORGE_RED, front: 0.3, panel: 0.4, bar: 0.11, armAt: 0.72, arm: 0.055, edge: FIELD_EDGE, edgeWidth: 0.1 },
+    charge: { field: ST_GEORGE_WHITE, cross: ST_GEORGE_RED, front: 0.3, panel: 0.4, bar: 0.11, armAt: 0.72, arm: 0.055, edge: FIELD_EDGE, edgeWidth: 0.06 },
   } as Material,
   /** Heater shield: white field and red cross inside a team rim. */
   stGeorgeShield: {
