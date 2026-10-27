@@ -23,6 +23,9 @@ const SCALE = 1 / ART_SCALE;
 const VIEW_MARGIN = 160;
 /** Rubble decals alive at once (oldest recycled). */
 const MAX_RUBBLE = 28;
+/** Collapse ground clip: how far it reaches above the footprint and out to its sides (world px; covers leaning sprites). */
+const CLIP_HEIGHT = 1200;
+const CLIP_SIDE = 96;
 /** Colour a collapsing building darkens towards (dust and soot). */
 const DUST_TINT = 0x6f6152;
 
@@ -36,6 +39,9 @@ interface Collapse {
   readonly tiles: number;
   dust: number;
   debris: number;
+  /** Clips the sinking sprite at the footprint's front ground edges (a V, not a straight cut). */
+  readonly ground: Phaser.GameObjects.Graphics;
+  readonly mask: Phaser.Display.Masks.GeometryMask;
 }
 
 /**
@@ -66,7 +72,7 @@ export class Collapses {
     const dying = world.with('dying', 'building', 'position');
     this.unsubscribe.push(
       dying.onEntityAdded.subscribe((e) => this.start(e)),
-      dying.onEntityRemoved.subscribe((e) => this.active.delete(e)),
+      dying.onEntityRemoved.subscribe((e) => this.end(e)),
     );
   }
 
@@ -88,13 +94,25 @@ export class Collapses {
     const ty = p.ty + (fp.height - 1) / 2;
     const g = tileToScreen({ tx, ty });
     const tiles = Math.max(fp.width, fp.height);
-    const c: Collapse = { e, lean: Math.random() < 0.5 ? -1 : 1, cx: g.sx, cy: g.sy, span: (fp.width + fp.height) * 32, tiles, dust: 0, debris: 0 };
+    const ground = groundClip(this.scene, p.tx, p.ty, fp.width, fp.height);
+    const mask = ground.createGeometryMask();
+    const c: Collapse = { e, lean: Math.random() < 0.5 ? -1 : 1, cx: g.sx, cy: g.sy, span: (fp.width + fp.height) * 32, tiles, dust: 0, debris: 0, ground, mask };
     this.active.set(e, c);
     if (!tileSeen(this.fog, tx, ty)) return;
     this.spawnRubble(tx, ty, g.sx, g.sy, b.type === 'wall' ? 0.5 : ((fp.width + fp.height) / 4) * 0.85);
     if (!this.nearView(g.sx, g.sy)) return;
     this.fx.collapseBurst(g.sx, g.sy, c.span);
     if (tiles >= 3) this.shake(g.sx, g.sy, tiles);
+  }
+
+  private end(e: Entity): void {
+    const c = this.active.get(e);
+    if (!c) return;
+    e.sprite?.clearMask();
+    this.fires.overlayOf(e)?.clearMask();
+    c.mask.destroy();
+    c.ground.destroy();
+    this.active.delete(e);
   }
 
   private spawnRubble(tx: number, ty: number, x: number, y: number, scale: number): void {
@@ -125,10 +143,12 @@ export class Collapses {
     const y = sprite.y + sinkTex * SCALE;
     const alpha = pose.alpha * (rising ? siteAlpha(rise) : 1);
     const tint = mix(0xffffff, DUST_TINT, pose.darken * 0.7);
+    if (sprite.mask !== c.mask) sprite.setMask(c.mask);
     sprite.setPosition(x, y).setRotation(pose.rotation).setAlpha(alpha).setTint(tint);
     sprite.setCrop(0, fh - shown, sprite.frame.width, Math.max(1, above - sinkTex));
     const overlay = this.fires.overlayOf(c.e);
     if (overlay) {
+      if (overlay.mask !== c.mask) overlay.setMask(c.mask);
       const k = overlay.frame.height / fh;
       overlay.setPosition(x, y).setRotation(pose.rotation).setAlpha(alpha);
       overlay.setCrop(0, (fh - shown) * k, overlay.frame.width, Math.max(1, (above - sinkTex) * k));
@@ -163,6 +183,33 @@ export class Collapses {
   destroy(): void {
     for (const u of this.unsubscribe) u();
     this.rubble.destroy();
-    this.active.clear();
+    for (const e of [...this.active.keys()]) this.end(e);
   }
+}
+
+/**
+ * Off-list geometry for a collapse mask: everything above the front
+ * ground edges of a w×h footprint at (fx, fy), so the sinking building
+ * disappears into the ground along its real foot line.
+ */
+function groundClip(scene: Phaser.Scene, fx: number, fy: number, w: number, h: number): Phaser.GameObjects.Graphics {
+  const left = tileToScreen({ tx: fx - 0.5, ty: fy + h - 0.5 });
+  const bottom = tileToScreen({ tx: fx + w - 0.5, ty: fy + h - 0.5 });
+  const right = tileToScreen({ tx: fx + w - 0.5, ty: fy - 0.5 });
+  const sky = Math.min(left.sy, right.sy) - CLIP_HEIGHT;
+  const g = scene.make.graphics({}, false);
+  g.fillStyle(0xffffff, 1);
+  g.fillPoints(
+    [
+      new Phaser.Math.Vector2(left.sx - CLIP_SIDE, left.sy),
+      new Phaser.Math.Vector2(left.sx, left.sy),
+      new Phaser.Math.Vector2(bottom.sx, bottom.sy),
+      new Phaser.Math.Vector2(right.sx, right.sy),
+      new Phaser.Math.Vector2(right.sx + CLIP_SIDE, right.sy),
+      new Phaser.Math.Vector2(right.sx + CLIP_SIDE, sky),
+      new Phaser.Math.Vector2(left.sx - CLIP_SIDE, sky),
+    ],
+    true,
+  );
+  return g;
 }
