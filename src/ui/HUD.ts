@@ -18,6 +18,14 @@ const AGE_NAME: Record<AgeId, string> = {
   3: hu.ages.enlightenment,
 };
 
+/** The toast of the HUD on screen, if any (showHudNotice). */
+let noticeSink: ((message: string) => void) | null = null;
+
+/** A toast on the in-game HUD from game-side code (save notices); dropped when no HUD is up. */
+export function showHudNotice(message: string): void {
+  noticeSink?.(message);
+}
+
 /**
  * In-game HUD as a DOM overlay above the Phaser canvas. Reads only the
  * Zustand UI store and sends intents through the store / event bus,
@@ -41,6 +49,7 @@ export class Hud {
   private minimap: Minimap | null = null;
   private lastToast = '';
   private lastToastAt = 0;
+  private readonly notice = (message: string): void => this.toast(message);
 
   constructor(textures: Phaser.Textures.TextureManager) {
     this.selection = new SelectionPanel(textures);
@@ -73,6 +82,7 @@ export class Hud {
     const bottom = el('div', { class: 'hud-bottom' }, minimapCard, this.selection.root, this.commands.root);
     this.root = el('div', { class: 'hud' }, top, this.wonderTimers.root, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
+    noticeSink = this.notice;
 
     this.render(uiStore.getState());
     this.unsubscribe = uiStore.subscribe((s) => this.render(s));
@@ -134,6 +144,7 @@ export class Hud {
   }
 
   destroy(): void {
+    if (noticeSink === this.notice) noticeSink = null;
     this.unsubscribe();
     this.unsubscribeAge();
     this.unsubscribeResearch();

@@ -26,6 +26,21 @@ describe('parseSave (Review Focus 2)', () => {
     expect(parseSave(copy()).ok).toBe(true);
   });
 
+  it('no human player → corrupt', () => {
+    const save = copy();
+    for (const p of save.players) (p as { isHuman: boolean }).isHuman = false;
+    // The human's id is no longer a non-human key holder; drop AI keys so only the human count is wrong.
+    save.ai = {};
+    expectReason(save, 'corrupt');
+  });
+
+  it('more than one human player → corrupt', () => {
+    const save = copy();
+    for (const p of save.players) (p as { isHuman: boolean }).isHuman = true;
+    save.ai = {};
+    expectReason(save, 'corrupt');
+  });
+
   it('truncated JSON → corrupt', () => expectReason('{"schemaVersion":1', 'corrupt'));
 
   it('null → corrupt', () => expectReason(null, 'corrupt'));

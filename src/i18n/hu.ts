@@ -249,6 +249,18 @@ export const hu = {
     outcomes: { winner: 'Győztes', defeated: 'Legyőzve', standing: 'Talpon' },
     ageLabel: (a: number) => `${a}. kor`,
   },
+  /** Saved games (CLAUDE.md §5.4). */
+  save: {
+    saved: 'Játék mentve',
+    autosaved: 'Automatikus mentés kész',
+    errors: {
+      unavailable: 'A mentés nem érhető el ebben a böngészőben (privát mód?)',
+      corrupt: 'Sérült mentés — nem tölthető be',
+      newer: 'Újabb játékverzióval készült mentés',
+      loadFailed: 'A mentés betöltése nem sikerült',
+      saveFailed: 'A mentés nem sikerült',
+    },
+  },
   /** AI personalities (shown with the AI's difficulty on the game-over table). */
   personalities: { rusher: 'Rohamozó', boomer: 'Gazdálkodó', turtle: 'Védekező' },
   loading: 'Betöltés…',

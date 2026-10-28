@@ -17,13 +17,14 @@ function bytesFit(text: string, length: number, max = 255): boolean {
   }
 }
 
-/** What zod cannot see: byte-array lengths, unique ids, and records keyed by real players. */
+/** What zod cannot see: byte-array lengths, unique ids, exactly one human, and records keyed by real players. */
 function consistent(save: SaveData): boolean {
   const size = save.map.width * save.map.height;
   if (!bytesFit(save.map.terrain, size) || !bytesFit(save.map.blocked, size, 1)) return false;
   if (!Object.values(save.fogOfWar).every((text) => bytesFit(text, size, MAX_FOG_STATE))) return false;
   const playerIds = new Set(save.players.map((p) => p.id));
   if (playerIds.size !== save.players.length) return false;
+  if (save.players.filter((p) => p.isHuman).length !== 1) return false;
   if (!Object.keys(save.fogOfWar).every((id) => playerIds.has(Number(id)))) return false;
   const aiIds = new Set(save.players.filter((p) => !p.isHuman).map((p) => p.id));
   if (!Object.keys(save.ai).every((id) => aiIds.has(Number(id)))) return false;

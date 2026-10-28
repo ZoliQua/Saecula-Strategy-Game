@@ -28,9 +28,14 @@ export class MatchArt {
     rebaseCivArt(scene, this.owners, new Set());
   }
 
-  /** The loading-card jobs (planArtLoad critical); starts the background queue with the rest. */
-  criticalJobs(humanCiv: CivId): ReadonlyArray<() => void> {
-    const plan = planArtLoad(humanCiv, this.owners, this.painters());
+  /**
+   * The loading-card jobs (planArtLoad critical); starts the background queue
+   * with the rest. `reached` (a loaded save) paints each civ's age-up art up to
+   * that age now and marks it queued, so a later ageChanged does not repeat it.
+   */
+  criticalJobs(humanCiv: CivId, reached?: ReadonlyMap<CivId, AgeId>): ReadonlyArray<() => void> {
+    for (const [civ, age] of reached ?? []) for (let a = 2; a <= age; a++) this.ageQueued.add(`${civ}:${a}`);
+    const plan = planArtLoad(humanCiv, this.owners, this.painters(), reached);
     this.background = new BackgroundArt(plan.background);
     return plan.critical;
   }

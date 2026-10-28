@@ -84,8 +84,16 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
  *    background queue, done seconds into the game — long before anyone
  *    can leave the Roman age. Age 3 is queued when the civ reaches age 2
  *    (ageUpArtJobs).
+ *  - A loaded save (`reached`: each civ's highest age among its players):
+ *    the age-up jobs of ages 2..reached of each civ are painted while
+ *    loading too, since the restored world can already show them.
  */
-export function planArtLoad(human: CivId, owners: ReadonlyMap<CivId, number>, paint: ArtPainters): ArtLoadPlan {
+export function planArtLoad(
+  human: CivId,
+  owners: ReadonlyMap<CivId, number>,
+  paint: ArtPainters,
+  reached?: ReadonlyMap<CivId, AgeId>,
+): ArtLoadPlan {
   const types = Object.keys(BUILDING_SPECS) as BuildingType[];
   const civs = [...owners.keys()];
   const critical: Array<() => void> = [];
@@ -104,6 +112,7 @@ export function planArtLoad(human: CivId, owners: ReadonlyMap<CivId, number>, pa
   // Age 3 follows each civ's first age-2 player (ageUpArtJobs): only ages its owners can show next.
   walls(2, background);
   background.push(...lateBuildings); // needed last (age 3)
+  for (const [civ, age] of reached ?? []) for (let a = 2; a <= age; a++) critical.push(...ageUpArtJobs(civ, a as AgeId, paint));
   return { critical, background };
 }
 

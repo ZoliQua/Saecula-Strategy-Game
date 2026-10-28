@@ -1,8 +1,12 @@
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
-import { defaultSetupConfig, matchCivs, withSetup, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
+import type { Difficulty, GameSetupConfig } from '../game/GameSetupConfig';
 import { decidedWinner, gameOverRows } from '../game/gameOverStats';
-import { createPlayers, type PlayerManager } from '../game/PlayerManager';
+import type { PlayerManager } from '../game/PlayerManager';
+import { browserSaveStore } from '../save/browserStore';
+import type { MatchState } from '../save/serializer';
+import { SaveStorage, type SlotId } from '../save/storage';
+import type { AgeId, CivId } from '../types';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
@@ -20,19 +24,15 @@ import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
 import { BuildPlacement } from './game/BuildPlacement';
 import { MatchArt } from './game/MatchArt';
-import {
-  type GeneratedGame,
-  spawnPresetWalls,
-  spawnResourceNodes,
-  spawnStartingEntities,
-  tryGenerateGameMap,
-} from './game/GameBootstrap';
+import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
-import type { SetupReturn } from './GameSetupScene';
 import { OrderIssuer } from './game/OrderIssuer';
 import { PointerInput } from './game/PointerInput';
 import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
+import { liveMatchState, MatchSave } from './game/MatchSave';
+import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
+import { prepareMatch, runnerFor, startFromSlot, type MatchStart, type MenuReturn } from './game/MatchStart';
 import type { GameOverData } from './GameOverScene';
 import { CameraController } from './systems/CameraController';
 
@@ -40,6 +40,8 @@ import { CameraController } from './systems/CameraController';
 const BAKE_SLICE_MS = 24;
 /** Share of the loading bar taken by the terrain bake (the rest: civ art, artLoadPlan). */
 const LOAD_SHARE_TERRAIN = 0.9;
+
+export type { LoadRequest };
 
 /** Scene lifecycle and wiring; logic lives in the helpers under ./game. */
 export class GameScene extends Phaser.Scene {
@@ -51,6 +53,9 @@ export class GameScene extends Phaser.Scene {
   private placement!: BuildPlacement;
   private victoryChecker!: VictoryChecker;
   private hudSync!: HudSync;
+  private setup!: GameSetupConfig;
+  private matchSave: MatchSave | null = null;
+  private readonly storage = new SaveStorage(browserSaveStore());
   private lighting!: LightManager;
   private gameElapsedMs = 0;
   /** Dev builds only (window.__timeScale): game time runs this much faster than real time. */
@@ -66,38 +71,31 @@ export class GameScene extends Phaser.Scene {
     steps: Generator<number, void>;
     loading: Loading;
     frames: number;
-    config: GameSetupConfig;
-    generated: GeneratedGame;
+    start: MatchStart;
   } | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
   }
 
-  create(data?: Partial<GameSetupConfig>): void {
+  create(data?: Partial<GameSetupConfig> | LoadRequest): void {
     this.cameras.main.setBackgroundColor('#090c12');
     resetUiStore();
-
-    const config = withSetup(defaultSetupConfig(), data ?? {});
-    const civs = matchCivs(config);
-    this.players = createPlayers(civs.human, civs.ais);
-    uiStore.getState().setCiv(civs.human);
-    const generated = tryGenerateGameMap(config);
-    if (!generated) {
-      // No valid map for this seed: back to the setup card, with the choices kept and a message.
-      const back: SetupReturn = { config, notice: hu.setup.mapFailed };
-      this.scene.start('MainMenuScene', back);
-      return;
-    }
+    const prepared = prepareMatch(data);
+    if (!prepared.ok) return this.backToMenu(prepared.back);
+    const { start, reached } = prepared.match;
+    this.setup = prepared.match.setup;
+    this.players = prepared.match.players;
+    uiStore.getState().setCiv(this.players.human()?.civ ?? DEFAULT_CIV);
     // Only once the match will run (the menu keeps player 1's colour): each civ's bases in its base owner's colour.
     const matchArt = new MatchArt(this, this.players.all());
     this.matchArt = matchArt;
-    this.mapData = generated.mapData;
+    this.mapData = start.kind === 'new' ? start.generated.mapData : start.restored.mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
     // The terrain bake (seconds on cliff maps) runs a slice per frame behind a loading card.
     const terrain = new TerrainBake(this, this.mapData);
-    this.bake = { terrain, steps: this.loadSteps(terrain), loading: new Loading(), frames: 0, config, generated };
+    this.bake = { terrain, steps: this.loadSteps(terrain, reached), loading: new Loading(), frames: 0, start };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.bake) {
         this.bake.loading.destroy();
@@ -117,9 +115,9 @@ export class GameScene extends Phaser.Scene {
    * civ art the first game frames can show (artLoadPlan; the rest is
    * painted during play). Civs not in the match are never painted here.
    */
-  private *loadSteps(terrain: TerrainBake): Generator<number, void> {
+  private *loadSteps(terrain: TerrainBake, reached?: ReadonlyMap<CivId, AgeId>): Generator<number, void> {
     for (const p of terrain.steps()) yield p * LOAD_SHARE_TERRAIN;
-    const critical = this.matchArt?.criticalJobs(this.players.human()?.civ ?? DEFAULT_CIV) ?? [];
+    const critical = this.matchArt?.criticalJobs(this.players.human()?.civ ?? DEFAULT_CIV, reached) ?? [];
     let done = 0;
     for (const job of critical) {
       job();
@@ -140,7 +138,7 @@ export class GameScene extends Phaser.Scene {
         this.events.off(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
         this.bake = null;
         b.loading.destroy();
-        this.startGame(b.terrain, b.config, b.generated);
+        this.startGame(b.terrain, this.setup, b.start);
         return;
       }
       b.loading.set(step.value);
@@ -148,9 +146,9 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private startGame(terrain: TerrainBake, config: GameSetupConfig, generated: GeneratedGame): void {
-    const { mapData, starts, walls } = generated;
-    const playerStart = starts[0] ?? { tx: 10, ty: 10 };
+  private startGame(terrain: TerrainBake, config: GameSetupConfig, start: MatchStart): void {
+    const mapData = this.mapData;
+    const playerStart = (start.kind === 'new' ? start.generated.starts[0] : undefined) ?? { tx: 10, ty: 10 };
     this.tileMap = new TileMap(this, mapData, terrain);
     this.lighting.shadows?.setRock(this.tileMap.rockFootprints());
 
@@ -167,22 +165,24 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.centerOn(startScreen.sx, startScreen.sy);
 
     const cameraController = new CameraController(this);
-    this.world = createEcsWorld();
+    const restored = start.kind === 'load' ? start.restored : null;
+    this.world = restored?.world ?? createEcsWorld();
     this.difficulty = config.difficulty;
-    this.runner = new SystemRunner(
-      this,
-      this.world,
-      mapData,
-      this.tileMap,
-      cameraController,
-      this.players,
-      { difficulty: config.difficulty, wonderVictory: config.victory === 'conquest_wonder', seed: config.seed },
-    );
+    // Depleted nodes revert their tile; subscribed before anything (runner, spawns) can remove one.
+    this.world.with('position', 'resourceNode').onEntityRemoved.subscribe((entity) => {
+      if (entity.position) this.tileMap.refreshTile(entity.position.tx, entity.position.ty);
+    });
+    const runner = runnerFor(start, config, (o) => new SystemRunner(this, this.world, mapData, this.tileMap, cameraController, this.players, o));
+    if (!runner) {
+      this.tileMap.destroy();
+      return this.backToMenu({ notice: hu.save.errors.loadFailed });
+    }
+    this.runner = runner;
     this.applyCameraGrade();
     this.wireCommands();
     let disposeDev = () => {};
     if (import.meta.env.DEV) {
-      // Dev-only tools (AI thoughts overlay, time scale); this import is dropped from production builds.
+      // Dev-only tools (AI thoughts overlay, time scale, saves); this import is dropped from production builds.
       let closed = false;
       void import('./game/devTools').then(({ mountDevTools }) => {
         if (closed) return;
@@ -192,6 +192,7 @@ export class GameScene extends Phaser.Scene {
             this.timeScale = scale;
           },
           this.players,
+          { saveNow: (slot) => this.saveTo(slot), loadSlot: (slot) => this.loadSlot(slot) },
         );
       });
       disposeDev = () => {
@@ -206,23 +207,22 @@ export class GameScene extends Phaser.Scene {
       this.commandUnsubscribe = null;
       this.runner.destroy();
       this.tileMap.destroy();
+      this.matchSave = null;
     });
 
-    const resourceNodes = this.world.with('position', 'resourceNode');
-    resourceNodes.onEntityRemoved.subscribe((entity) => {
-      if (entity.position) {
-        this.tileMap.refreshTile(entity.position.tx, entity.position.ty);
-      }
-    });
-    spawnResourceNodes(this.world, mapData);
-    spawnStartingEntities(this.world, this.players, mapData, starts);
-    spawnPresetWalls(this.world, this.players, mapData, walls);
+    if (start.kind === 'new') {
+      spawnResourceNodes(this.world, mapData);
+      spawnStartingEntities(this.world, this.players, mapData, start.generated.starts);
+      spawnPresetWalls(this.world, this.players, mapData, start.generated.walls);
+    }
 
     const wonderHoldMs = config.victory === 'conquest_wonder' ? WONDER_HOLD_MS : null;
     this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs);
     this.hudSync = new HudSync(this.world, this.players, wonderHoldMs);
-    this.gameElapsedMs = 0;
+    this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     this.gameOverTriggered = false;
+    if (restored) applyRestoredView(this, restored, this.lighting);
+    this.matchSave = new MatchSave(() => this.captureMatch(), this.storage);
 
     this.launchHud();
 
@@ -251,6 +251,12 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => input.unregister());
 
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
+  }
+
+  /** A match that cannot start: to the menu (a load from a running game leaves its HUD up; it goes too). */
+  private backToMenu(data: MenuReturn): void {
+    this.scene.stop('HUDScene');
+    this.scene.start('MainMenuScene', data);
   }
 
   /** Vignette + gentle saturation lift (WebGL only). */
@@ -335,6 +341,7 @@ export class GameScene extends Phaser.Scene {
     this.runner.update(time, delta);
     this.lighting.update(delta);
     this.placement.updateGhost();
+    this.matchSave?.update(delta);
 
     const prevSecond = Math.floor(this.gameElapsedMs / 1000);
     this.gameElapsedMs += delta;
@@ -344,6 +351,31 @@ export class GameScene extends Phaser.Scene {
     }
     this.checkVictory();
     this.matchArt?.update(realDelta, frameStart);
+  }
+
+  /** The live match for a save (serializeMatch). */
+  private captureMatch(): MatchState {
+    return liveMatchState({
+      setup: this.setup,
+      world: this.world,
+      players: this.players,
+      mapData: this.mapData,
+      fogs: this.runner.fogs(),
+      ais: this.runner.ais(),
+      gameTimeMs: this.gameElapsedMs,
+      camera: cameraView(this.cameras.main),
+      lightPhase: this.lighting.getPhase(),
+    });
+  }
+
+  /** Saves the running match to `slot` (the HUD shows the outcome). */
+  saveTo(slot: SlotId): ReturnType<MatchSave['saveTo']> {
+    return this.matchSave?.saveTo(slot) ?? Promise.resolve({ ok: false, reason: 'failed' });
+  }
+
+  /** Replaces the running match with the save in `slot` (startFromSlot). */
+  loadSlot(slot: SlotId): Promise<boolean> {
+    return startFromSlot(this, this.storage, slot);
   }
 
   private checkVictory(): void {

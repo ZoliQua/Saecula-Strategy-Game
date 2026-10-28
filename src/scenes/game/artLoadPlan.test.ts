@@ -113,6 +113,33 @@ describe('planArtLoad', () => {
   });
 });
 
+describe('planArtLoad for a loaded save (reached ages)', () => {
+  it('reached age 3 puts age-2 and age-3 jobs of that civ in critical; absent map keeps today’s plan', () => {
+    const owners = ownersOf(['hungarian', 'english']);
+    const run = (reached?: ReadonlyMap<CivId, 1 | 2 | 3>) => {
+      const log: string[] = [];
+      const plan = planArtLoad('hungarian', owners, recordingPainters(log), reached);
+      plan.critical.forEach((j) => j());
+      const critical = [...log];
+      plan.background.forEach((j) => j());
+      return { critical, background: log.slice(critical.length) };
+    };
+    const today = run();
+    expect(run(new Map())).toEqual(today);
+    const loaded = run(new Map([['english', 3], ['hungarian', 1]]));
+    const expected: string[] = [];
+    const paint = recordingPainters(expected);
+    for (const age of [2, 3] as const) ageUpArtJobs('english', age, paint).forEach((j) => j());
+    expect(loaded.critical).toEqual([...today.critical, ...expected]);
+    expect(loaded.critical).toContain('unit knight english');
+    expect(loaded.critical).toContain('unit musketeer english');
+    expect(loaded.critical.some((l) => l.startsWith('wall') && l.includes(' 3 english'))).toBe(true);
+    // Age 1 adds nothing; the background queue is today's.
+    expect(loaded.critical.some((l) => l.endsWith(' hungarian') && l.startsWith('unit'))).toBe(false);
+    expect(loaded.background).toEqual(today.background);
+  });
+});
+
 describe('planArtLoad background buildings', () => {
   it('queues the foundry and Wonder of an AI-only civ in the background (after the walls) instead of dropping them', () => {
     const { critical, background } = recordPlan('hungarian', ['hungarian', 'english']);

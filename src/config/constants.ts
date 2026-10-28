@@ -30,3 +30,8 @@ export const BACKGROUND_ART_EVERY_FRAMES = 2;
 export const BACKGROUND_ART_MAX_FRAME_WORK_MS = 5;
 /** Paced frames skipped as busy before one runs a job anyway (~1 s at 60 Hz with EVERY_FRAMES 2). */
 export const BACKGROUND_ART_FORCE_AFTER_FRAMES = 30;
+
+/** Autosave to the 'auto' slot every this much game time (CLAUDE.md §5.4: 5 minutes). */
+export const AUTOSAVE_INTERVAL_MS = 300_000;
+/** Manual save slots (save:1 … save:SAVE_SLOTS), besides save:auto. */
+export const SAVE_SLOTS = 5;

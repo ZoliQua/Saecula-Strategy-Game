@@ -21,6 +21,7 @@ const ARROW = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" strok
  */
 export class MainMenu {
   private readonly root: HTMLElement;
+  private readonly hero: HTMLElement;
   private readonly teardown: number;
 
   constructor(onNewGame: () => void) {
@@ -40,6 +41,19 @@ export class MainMenu {
       );
 
     const [line1 = '', line2 = ''] = hu.menu.headline.split('\n');
+    this.hero = el(
+      'main',
+      { class: 'menu-hero' },
+      el('div', { class: 'eyebrow e-up', style: 'animation-delay:.2s' }, hu.menu.eyebrow),
+      el(
+        'h1',
+        { class: 'menu-title' },
+        el('span', { class: 'row' }, el('span', { class: 'rise' }, line1)),
+        el('span', { class: 'row' }, el('span', { class: 'rise' }, line2)),
+      ),
+      el('p', { class: 'menu-tagline e-up', style: 'animation-delay:.62s' }, hu.menu.tagline),
+      el('div', { class: 'menu-actions' }, play, disabled(hu.menu.loadGame, 0.86), disabled(hu.menu.settings, 0.94)),
+    );
     this.root = el(
       'div',
       { class: 'screen menu enter' },
@@ -54,19 +68,7 @@ export class MainMenu {
           ...hu.menu.features(AVAILABLE_CIVS.length, CIV_IDS.length - AVAILABLE_CIVS.length).map((f, i) => el('span', { class: 'menu-feat e-down', style: `animation-delay:${0.14 + i * 0.06}s` }, f)),
         ),
       ),
-      el(
-        'main',
-        { class: 'menu-hero' },
-        el('div', { class: 'eyebrow e-up', style: 'animation-delay:.2s' }, hu.menu.eyebrow),
-        el(
-          'h1',
-          { class: 'menu-title' },
-          el('span', { class: 'row' }, el('span', { class: 'rise' }, line1)),
-          el('span', { class: 'row' }, el('span', { class: 'rise' }, line2)),
-        ),
-        el('p', { class: 'menu-tagline e-up', style: 'animation-delay:.62s' }, hu.menu.tagline),
-        el('div', { class: 'menu-actions' }, play, disabled(hu.menu.loadGame, 0.86), disabled(hu.menu.settings, 0.94)),
-      ),
+      this.hero,
       el(
         'footer',
         { class: 'menu-foot e-up', style: `animation-delay:${FOOT_DELAY_S}s` },
@@ -77,6 +79,12 @@ export class MainMenu {
     uiRoot().append(this.root);
     // Drop the entrance class once it has played so nothing re-animates.
     this.teardown = window.setTimeout(() => this.root.classList.remove('enter'), 2200);
+  }
+
+  /** A short notice under the menu buttons (e.g. a save that could not be loaded); it fades by itself. */
+  notice(message: string): void {
+    this.hero.querySelector('.menu-notice')?.remove();
+    this.hero.append(el('div', { class: 'menu-notice', role: 'status' }, message));
   }
 
   /** Steps the hero copy aside while the setup card is open. */

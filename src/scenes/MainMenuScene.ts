@@ -111,6 +111,7 @@ export class MainMenuScene extends Phaser.Scene {
     super({ key: 'MainMenuScene' });
   }
 
+  /** `notice` alone: a line shown on the menu; with `config`: back to the setup card with that message. */
   create(data?: Partial<SetupReturn>): void {
     this.cameras.main.setBackgroundColor('#090c12');
     const civs = menuDioramaCivs(menuVisits++);
@@ -194,11 +195,14 @@ export class MainMenuScene extends Phaser.Scene {
       this.menu?.setAway(true);
       this.scene.launch('GameSetupScene');
     });
-    // A start that failed (no valid map) comes straight back to the setup card.
+    // A start that failed (no valid map) comes straight back to the setup card;
+    // a notice alone (a save that could not be loaded) shows on the menu.
     if (data?.config && data.notice) {
       this.away = true;
       this.menu.setAway(true);
       this.scene.launch('GameSetupScene', { config: data.config, notice: data.notice });
+    } else if (data?.notice) {
+      this.menu.notice(data.notice);
     }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.menu?.destroy();
