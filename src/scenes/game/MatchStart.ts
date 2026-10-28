@@ -4,11 +4,12 @@ import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
 import type { RestoredMatch } from '../../save/deserializer';
 import type { SaveStorage, SlotId } from '../../save/storage';
-import type { AgeId, CivId } from '../../types';
+import type { CivId } from '../../types';
+import type { AgeSpan } from './artLoadPlan';
 import { showHudNotice } from '../../ui/HUD';
 import type { SetupReturn } from '../GameSetupScene';
 import { type GeneratedGame, tryGenerateGameMap } from './GameBootstrap';
-import { reachedAges, readErrorText, tryRestoreMatch, type LoadRequest } from './MatchRestore';
+import { civAgeSpans, readErrorText, tryRestoreMatch, type LoadRequest } from './MatchRestore';
 import type { SystemRunner, SystemRunnerOptions } from './SystemRunner';
 
 /** What a match starts from: a freshly generated map, or a loaded save. */
@@ -18,8 +19,8 @@ export interface PreparedMatch {
   readonly setup: GameSetupConfig;
   readonly players: PlayerManager;
   readonly start: MatchStart;
-  /** A loaded save: each civ's highest age, whose art is painted while loading. */
-  readonly reached?: ReadonlyMap<CivId, AgeId>;
+  /** A loaded save: the ages each civ's players are in, whose art is painted while loading. */
+  readonly spans?: ReadonlyMap<CivId, AgeSpan>;
 }
 
 /** The menu start data when a match cannot start (no map for the seed, or a save that cannot be rebuilt). */
@@ -35,7 +36,7 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
     const restored = tryRestoreMatch(data.load);
     if (!restored) return { ok: false, back: { notice: hu.save.errors.loadFailed } };
     const players = restored.players;
-    return { ok: true, match: { setup: restored.setup, players, start: { kind: 'load', restored }, reached: reachedAges(players) } };
+    return { ok: true, match: { setup: restored.setup, players, start: { kind: 'load', restored }, spans: civAgeSpans(players) } };
   }
   const setup = withSetup(defaultSetupConfig(), data ?? {});
   const civs = matchCivs(setup);

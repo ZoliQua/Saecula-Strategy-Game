@@ -3,7 +3,7 @@ import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { BUILDING_BALANCE } from '../../config/balance';
 import { COMMON_WALL_PIECES } from '../../iso/art/walls/commonWallPieces';
 import type { BuildingType, CivId } from '../../types';
-import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, prewarmUnitTypes, type ArtPainters } from './artLoadPlan';
+import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, prewarmUnitTypes, type AgeSpan, type ArtPainters } from './artLoadPlan';
 
 const ALL_TYPES = Object.keys(BUILDING_SPECS) as BuildingType[];
 const AGE1_TYPES = ALL_TYPES.filter((t) => BUILDING_BALANCE[t].age === 1);
@@ -113,55 +113,59 @@ describe('planArtLoad', () => {
   });
 });
 
-describe('planArtLoad for a loaded save (reached ages)', () => {
-  it('reached age 3 puts age-2 and age-3 jobs of that civ in critical; absent map keeps today’s plan', () => {
-    const owners = ownersOf(['hungarian', 'english']);
-    const run = (reached?: ReadonlyMap<CivId, 1 | 2 | 3>) => {
-      const log: string[] = [];
-      const plan = planArtLoad('hungarian', owners, recordingPainters(log), reached);
-      plan.critical.forEach((j) => j());
-      const critical = [...log];
-      plan.background.forEach((j) => j());
-      return { critical, background: log.slice(critical.length) };
-    };
-    const today = run();
-    expect(run(new Map())).toEqual(today);
-    const loaded = run(new Map([['english', 3], ['hungarian', 1]]));
-    const expected: string[] = [];
-    const paint = recordingPainters(expected);
-    for (const age of [2, 3] as const) ageUpArtJobs('english', age, paint).forEach((j) => j());
-    expect(loaded.critical).toEqual([...today.critical, ...expected]);
-    expect(loaded.critical).toContain('unit knight english');
-    expect(loaded.critical).toContain('unit musketeer english');
-    expect(loaded.critical.some((l) => l.startsWith('wall') && l.includes(' 3 english'))).toBe(true);
-    // Age 1 adds nothing: the Hungarian age-2 walls stay in the background queue.
-    expect(loaded.critical.some((l) => l.endsWith(' hungarian') && l.startsWith('unit'))).toBe(false);
-    // At age 3 the age-2 walls stay in the background (no player of the civ shows them).
-    expect(loaded.background).toEqual(today.background);
-  });
-});
+describe('planArtLoad for a loaded save (age spans)', () => {
+  const owners = ownersOf(['hungarian', 'english']);
+  const run = (spans?: ReadonlyMap<CivId, AgeSpan>) => {
+    const log: string[] = [];
+    const plan = planArtLoad('hungarian', owners, recordingPainters(log), spans);
+    plan.critical.forEach((j) => j());
+    const critical = [...log];
+    plan.background.forEach((j) => j());
+    return { critical, background: log.slice(critical.length) };
+  };
+  const span = (min: 1 | 2 | 3, max: 1 | 2 | 3): AgeSpan => ({ min, max });
+  const wallAges = (list: string[], civ: string) =>
+    [...new Set(list.filter((l) => l.startsWith('wall') && l.endsWith(` ${civ}`)).map((l) => Number(l.split(' ')[2])))].sort();
+  const units = (list: string[], civ: string) => list.filter((l) => l.startsWith('unit') && l.endsWith(` ${civ}`)).sort();
 
-describe('planArtLoad for a loaded save: age-2 walls', () => {
-  it('a civ reached at age 2 gets its age-2 wall pieces behind the loading card, not in the game', () => {
-    const owners = ownersOf(['hungarian', 'english']);
-    const run = (reached?: ReadonlyMap<CivId, 1 | 2 | 3>) => {
-      const log: string[] = [];
-      const plan = planArtLoad('hungarian', owners, recordingPainters(log), reached);
-      plan.critical.forEach((j) => j());
-      const critical = [...log];
-      plan.background.forEach((j) => j());
-      return { critical, background: log.slice(critical.length) };
-    };
-    const wall2 = (civ: string) => (l: string) => l.startsWith('wall') && l.endsWith(` 2 ${civ}`);
+  it('a civ entirely at age 3 queues no age-1/age-2 walls; its age-2/3 unit sheets and age-3 walls load', () => {
+    const { critical, background } = run(new Map([['hungarian', span(1, 1)], ['english', span(3, 3)]]));
+    expect(wallAges(critical, 'english')).toEqual([3]);
+    expect(wallAges(background, 'english')).toEqual([]);
+    expect(critical.filter((l) => l.startsWith('wall') && l.endsWith(' 3 english'))).toHaveLength(COMMON_WALL_PIECES.length);
+    expect(units(critical, 'english')).toEqual(
+      ['unit cannon english', 'unit cavalry english', 'unit crossbowman english', 'unit knight english', 'unit musketeer english', 'unit pikeman english'],
+    );
+  });
+
+  it('a mixed civ at ages 1 and 3 queues walls of ages 1..3 (all shown now) and no next age', () => {
+    const { critical, background } = run(new Map([['hungarian', span(1, 3)], ['english', span(1, 1)]]));
+    expect(wallAges(critical, 'hungarian')).toEqual([1, 2, 3]);
+    expect(wallAges(background, 'hungarian')).toEqual([]);
+  });
+
+  it('a civ at age 2 paints its age-2 walls while loading and its age-3 walls (next) in the background', () => {
+    const { critical, background } = run(new Map([['hungarian', span(1, 1)], ['english', span(2, 2)]]));
+    expect(wallAges(critical, 'english')).toEqual([2]);
+    expect(wallAges(background, 'english')).toEqual([3]);
+    expect(units(critical, 'english')).toEqual(['unit crossbowman english', 'unit knight english', 'unit pikeman english']);
+  });
+
+  it('a civ at age 1 keeps today’s walls (age 1 loading, age 2 in the background); buildings unchanged', () => {
     const today = run();
-    const loaded = run(new Map([['english', 2], ['hungarian', 1]]));
-    const englishWall2 = today.background.filter(wall2('english'));
-    expect(englishWall2).toHaveLength(COMMON_WALL_PIECES.length);
-    const ageUp: string[] = [];
-    ageUpArtJobs('english', 2, recordingPainters(ageUp)).forEach((j) => j());
-    expect(loaded.critical).toEqual([...today.critical, ...englishWall2, ...ageUp]);
-    expect(loaded.background).toEqual(today.background.filter((l) => !wall2('english')(l)));
-    expect(loaded.background.filter(wall2('hungarian'))).toHaveLength(COMMON_WALL_PIECES.length);
+    const { critical, background } = run(new Map([['hungarian', span(1, 1)], ['english', span(3, 3)]]));
+    expect(wallAges(critical, 'hungarian')).toEqual([1]);
+    expect(wallAges(background, 'hungarian')).toEqual([2]);
+    const buildings = (list: string[]) => list.filter((l) => l.startsWith('building'));
+    expect(buildings(critical)).toEqual(buildings(today.critical));
+    expect(buildings(background)).toEqual(buildings(today.background));
+  });
+
+  it('no spans (a new match) keeps today’s plan', () => {
+    const today = run();
+    expect(wallAges(today.critical, 'english')).toEqual([1]);
+    expect(wallAges(today.background, 'english')).toEqual([2]);
+    expect(today.critical.some((l) => l.startsWith('unit'))).toBe(false);
   });
 });
 

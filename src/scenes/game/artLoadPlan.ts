@@ -30,13 +30,18 @@ export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
   return civ === human ? [...UNIT_TYPES] : UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === 1);
 }
 
+/** The unit sheets of the types introduced in `age`. */
+function unitArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
+  return UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === age).map((t) => () => paint.unit(t, civ));
+}
+
 /**
  * Background jobs when the first player of `civ` reaches `age`: the unit
  * sheets of that age's types and the civ's common wall pieces of the
  * next age (the one its owners can show next).
  */
 export function ageUpArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
-  const jobs: Array<() => void> = UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === age).map((t) => () => paint.unit(t, civ));
+  const jobs = unitArtJobs(civ, age, paint);
   if (age < 3) {
     const next = (age + 1) as AgeId;
     for (const piece of COMMON_WALL_PIECES) jobs.push(() => paint.wall(piece, next, civ));
@@ -55,6 +60,19 @@ export function civBaseOwners(players: ReadonlyArray<{ readonly id: number; read
     if (!owners.has(p.civ)) owners.set(p.civ, p.id);
   }
   return owners;
+}
+
+/** The ages a civ's living players are in (a loaded save): lowest and highest. */
+export interface AgeSpan {
+  readonly min: AgeId;
+  readonly max: AgeId;
+}
+
+/** Ages whose common wall pieces a civ's owners show now or next (keepWallKeys): min..max+1, at most 3. */
+function shownWallAges({ min, max }: AgeSpan): AgeId[] {
+  const out: AgeId[] = [];
+  for (let a = min; a <= Math.min(max + 1, 3); a++) out.push(a as AgeId);
+  return out;
 }
 
 export interface ArtLoadPlan {
@@ -84,15 +102,17 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
  *    background queue, done seconds into the game — long before anyone
  *    can leave the Roman age. Age 3 is queued when the civ reaches age 2
  *    (ageUpArtJobs).
- *  - A loaded save (`reached`: each civ's highest age among its players):
- *    the age-up jobs of ages 2..reached of each civ are painted while
- *    loading too, since the restored world can already show them.
+ *  - A loaded save (`spans`: the ages each civ's living players are in):
+ *    the unit sheets of ages 2..max are painted while loading; wall
+ *    pieces only for the ages its owners show now (min..max, while
+ *    loading) or next (max + 1, in the background). No wall age below
+ *    min is painted: eviction would drop it again (texture budget).
  */
 export function planArtLoad(
   human: CivId,
   owners: ReadonlyMap<CivId, number>,
   paint: ArtPainters,
-  reached?: ReadonlyMap<CivId, AgeId>,
+  spans?: ReadonlyMap<CivId, AgeSpan>,
 ): ArtLoadPlan {
   const types = Object.keys(BUILDING_SPECS) as BuildingType[];
   const civs = [...owners.keys()];
@@ -105,16 +125,25 @@ export function planArtLoad(
       else if (BACKGROUND_BUILDINGS.includes(type)) lateBuildings.push(() => paint.building(type, civ, owner));
     }
   }
-  const walls = (age: AgeId, into: (civ: CivId) => Array<() => void>) => {
-    for (const civ of civs) for (const piece of COMMON_WALL_PIECES) into(civ).push(() => paint.wall(piece, age, civ));
+  const walls = (civ: CivId, age: AgeId, into: Array<() => void>) => {
+    for (const piece of COMMON_WALL_PIECES) into.push(() => paint.wall(piece, age, civ));
   };
-  walls(1, () => critical);
-  // Age 3 follows each civ's first age-2 player (ageUpArtJobs): only ages its owners can show next.
-  // A loaded civ at age 2 can show age-2 walls in the first frames: painted while loading. A civ
-  // already at age 3 keeps them in the background (eviction would drop them again if no player shows age 2).
-  walls(2, (civ) => (reached?.get(civ) === 2 ? critical : background));
-  background.push(...lateBuildings); // needed last (age 3)
-  for (const [civ, age] of reached ?? []) for (let a = 2; a <= age; a++) critical.push(...ageUpArtJobs(civ, a as AgeId, paint));
+  if (!spans) {
+    for (const civ of civs) walls(civ, 1, critical);
+    // Age 3 follows each civ's first age-2 player (ageUpArtJobs): only ages its owners can show next.
+    for (const civ of civs) walls(civ, 2, background);
+    background.push(...lateBuildings); // needed last (age 3)
+    return { critical, background };
+  }
+  const nextWalls: Array<() => void> = [];
+  for (const civ of civs) {
+    const span = spans.get(civ) ?? { min: 1, max: 1 };
+    for (const age of shownWallAges(span)) walls(civ, age, age <= span.max ? critical : nextWalls);
+  }
+  background.push(...nextWalls, ...lateBuildings);
+  for (const [civ, { max }] of spans) {
+    for (let a = 2; a <= max; a++) critical.push(...unitArtJobs(civ, a as AgeId, paint));
+  }
   return { critical, background };
 }
 

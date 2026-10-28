@@ -9,6 +9,7 @@ import type { MatchState } from '../../save/serializer';
 import type { ReadResult } from '../../save/storage';
 import { uiStore } from '../../ui/store';
 import type { AgeId, CivId } from '../../types';
+import type { AgeSpan } from './artLoadPlan';
 
 /** GameScene start data that continues a saved match instead of a new one. */
 export interface LoadRequest {
@@ -25,10 +26,14 @@ export function tryRestoreMatch(save: SaveData): RestoredMatch | null {
   }
 }
 
-/** Each civ's highest age among its players still in the game (MatchArt.criticalJobs). */
-export function reachedAges(players: PlayerManager): Map<CivId, AgeId> {
-  const out = new Map<CivId, AgeId>();
-  for (const p of players.all()) if (!p.defeated && p.age > (out.get(p.civ) ?? 0)) out.set(p.civ, p.age);
+/** The ages each civ's players still in the game are in: lowest and highest (MatchArt.criticalJobs). */
+export function civAgeSpans(players: PlayerManager): Map<CivId, AgeSpan> {
+  const out = new Map<CivId, AgeSpan>();
+  for (const p of players.all()) {
+    if (p.defeated) continue;
+    const s = out.get(p.civ);
+    out.set(p.civ, s ? { min: Math.min(s.min, p.age) as AgeId, max: Math.max(s.max, p.age) as AgeId } : { min: p.age, max: p.age });
+  }
   return out;
 }
 

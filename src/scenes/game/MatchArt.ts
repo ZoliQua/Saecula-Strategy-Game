@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { unitArt } from '../../iso/art/units/UnitArt';
 import { buildingTexture, rebaseCivArt, setBuildingBaseOwners, wallTexture } from '../../iso/buildingTextures';
 import type { AgeId, CivId } from '../../types';
-import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, type ArtPainters } from './artLoadPlan';
+import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, type AgeSpan, type ArtPainters } from './artLoadPlan';
 
 /**
  * A match's civ art wiring (texture memory and load budget, M5 Task 1):
@@ -30,12 +30,13 @@ export class MatchArt {
 
   /**
    * The loading-card jobs (planArtLoad critical); starts the background queue
-   * with the rest. `reached` (a loaded save) paints each civ's age-up art up to
-   * that age now and marks it queued, so a later ageChanged does not repeat it.
+   * with the rest. `spans` (a loaded save): each civ's art up to its highest
+   * age is planned now (artLoadPlan) and marked queued, so a later ageChanged
+   * to an age the civ already shows does not repeat it.
    */
-  criticalJobs(humanCiv: CivId, reached?: ReadonlyMap<CivId, AgeId>): ReadonlyArray<() => void> {
-    for (const [civ, age] of reached ?? []) for (let a = 2; a <= age; a++) this.ageQueued.add(`${civ}:${a}`);
-    const plan = planArtLoad(humanCiv, this.owners, this.painters(), reached);
+  criticalJobs(humanCiv: CivId, spans?: ReadonlyMap<CivId, AgeSpan>): ReadonlyArray<() => void> {
+    for (const [civ, { max }] of spans ?? []) for (let a = 2; a <= max; a++) this.ageQueued.add(`${civ}:${a}`);
+    const plan = planArtLoad(humanCiv, this.owners, this.painters(), spans);
     this.background = new BackgroundArt(plan.background);
     return plan.critical;
   }

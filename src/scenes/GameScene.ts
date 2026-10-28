@@ -6,7 +6,8 @@ import type { PlayerManager } from '../game/PlayerManager';
 import { browserSaveStore } from '../save/browserStore';
 import type { MatchState } from '../save/serializer';
 import { SaveStorage, type SlotId } from '../save/storage';
-import type { AgeId, CivId } from '../types';
+import type { CivId } from '../types';
+import type { AgeSpan } from './game/artLoadPlan';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
@@ -83,7 +84,7 @@ export class GameScene extends Phaser.Scene {
     resetUiStore();
     const prepared = prepareMatch(data);
     if (!prepared.ok) return this.backToMenu(prepared.back);
-    const { start, reached } = prepared.match;
+    const { start, spans } = prepared.match;
     this.setup = prepared.match.setup;
     this.players = prepared.match.players;
     uiStore.getState().setCiv(this.players.human()?.civ ?? DEFAULT_CIV);
@@ -95,7 +96,7 @@ export class GameScene extends Phaser.Scene {
     this.lighting = new LightManager(this, { phase: DAY_START_PHASE });
     // The terrain bake (seconds on cliff maps) runs a slice per frame behind a loading card.
     const terrain = new TerrainBake(this, this.mapData);
-    this.bake = { terrain, steps: this.loadSteps(terrain, reached), loading: new Loading(), frames: 0, start };
+    this.bake = { terrain, steps: this.loadSteps(terrain, spans), loading: new Loading(), frames: 0, start };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.bake) {
         this.bake.loading.destroy();
@@ -115,9 +116,9 @@ export class GameScene extends Phaser.Scene {
    * civ art the first game frames can show (artLoadPlan; the rest is
    * painted during play). Civs not in the match are never painted here.
    */
-  private *loadSteps(terrain: TerrainBake, reached?: ReadonlyMap<CivId, AgeId>): Generator<number, void> {
+  private *loadSteps(terrain: TerrainBake, spans?: ReadonlyMap<CivId, AgeSpan>): Generator<number, void> {
     for (const p of terrain.steps()) yield p * LOAD_SHARE_TERRAIN;
-    const critical = this.matchArt?.criticalJobs(this.players.human()?.civ ?? DEFAULT_CIV, reached) ?? [];
+    const critical = this.matchArt?.criticalJobs(this.players.human()?.civ ?? DEFAULT_CIV, spans) ?? [];
     let done = 0;
     for (const job of critical) {
       job();
