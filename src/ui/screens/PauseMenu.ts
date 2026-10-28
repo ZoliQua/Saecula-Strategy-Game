@@ -1,3 +1,4 @@
+import { audio } from '../../audio/AudioManager';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
 import { bindModalKeys, GLYPHS } from './modalKeys';
@@ -40,6 +41,7 @@ export class PauseMenu {
   private actionsCount = 0;
 
   constructor(handlers: PauseMenuHandlers) {
+    audio().playSFX('ui_panel_open');
     // Made in their on-screen order: the index sets each button's entrance stagger.
     const resume = this.action(GLYPHS.play, hu.pause.resume, 'btn-primary', () => handlers.onResume());
     const save = this.action(GLYPHS.save, hu.pause.save, 'btn-ghost', () => handlers.onSave());

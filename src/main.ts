@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { audio } from './audio/AudioManager';
 import { gameConfig } from './config/game';
 import { gameEvents } from './game/events';
 import { unitArtStats, unitArtTiming } from './iso/art/units/UnitArt';
@@ -8,6 +9,8 @@ const game = new Phaser.Game(gameConfig);
 if (import.meta.env.DEV) {
   // Dev-only: expose the game instance for preview / console debugging.
   (window as unknown as { __game: Phaser.Game }).__game = game;
+  // Dev-only: the audio manager's state (context, voices, played / dropped per key, bank bytes, gains).
+  (window as unknown as { __audioStats: () => unknown }).__audioStats = () => audio().stats();
   // Dev-only unit art review: __showUnits({ anim: 'walk', zoom: 2 }).
   // The showcase is loaded only here, so it never reaches production bundles.
   (window as unknown as { __showUnits: (opts?: object) => Promise<void> }).__showUnits = async (opts = {}) => {

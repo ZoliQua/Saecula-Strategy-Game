@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { audio, type AudioSink } from '../../audio/AudioManager';
+import type { Entity } from '../../ecs/components';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { TileCoord } from '../../iso/coordinates';
 import { tileEquals } from '../../iso/coordinates';
@@ -31,6 +33,9 @@ export class PointerInput {
     private readonly orders: OrderIssuer,
     /** An Esc with no placement or wall line to cancel (it opens the pause). */
     private readonly onIdleEscape: () => void,
+    private readonly sounds: AudioSink = audio(),
+    /** The human's player id (an own unit joining the selection plays the select sound). */
+    private readonly humanId = 1,
   ) {}
 
   getHoverTile(): TileCoord | null {
@@ -158,6 +163,7 @@ export class PointerInput {
     const dy = pointer.y - start.screenY;
     const didDrag = Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD_PX;
     this.clearDragRect();
+    const before = new Set<Entity>(this.selection.getAllSelected());
     if (didDrag) {
       const world = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
       const additive = pointer.event?.shiftKey ?? false;
@@ -169,12 +175,21 @@ export class PointerInput {
         1,
         additive,
       );
-      return;
+    } else {
+      // Simple click → select the tile under the cursor.
+      const tile = this.pick(pointer);
+      if (tile) this.selection.selectAtTile(tile.tx, tile.ty);
+      else this.selection.clearSelection();
     }
-    // Simple click → select the tile under the cursor.
-    const tile = this.pick(pointer);
-    if (tile) this.selection.selectAtTile(tile.tx, tile.ty);
-    else this.selection.clearSelection();
+    this.playSelectSound(before);
+  }
+
+  /** The select sound, when the selection gained one of the human's own units. */
+  private playSelectSound(before: ReadonlySet<Entity>): void {
+    const gained = this.selection
+      .getAllSelected()
+      .some((e) => !before.has(e) && e.unit !== undefined && e.owner?.playerId === this.humanId);
+    if (gained) this.sounds.playSFX('unit_select');
   }
 
   private updateDragRect(pointer: Phaser.Input.Pointer): void {

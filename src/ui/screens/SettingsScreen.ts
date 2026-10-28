@@ -1,3 +1,4 @@
+import { audio } from '../../audio/AudioManager';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
 import { bindingFromEvent, KEY_ACTIONS, type KeyAction } from '../keymap';
@@ -53,6 +54,7 @@ export class SettingsScreen {
   private capturing: KeyAction | null = null;
 
   constructor(private readonly onBack: () => void) {
+    audio().playSFX('ui_panel_open');
     this.muteIcon = el('span', { class: 'set-mute-icon' });
     this.muteBtn = el('button', { class: 'set-switch', type: 'button', role: 'switch', 'aria-checked': 'false', 'aria-label': hu.settings.mute }, el('i', {}));
     this.muteBtn.addEventListener('click', () => this.after(() => settingsStore.getState().setMuted(!settingsStore.getState().muted)));

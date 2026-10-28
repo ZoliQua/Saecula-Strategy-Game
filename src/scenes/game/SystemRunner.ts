@@ -3,6 +3,8 @@ import { DEFAULT_CIV } from '../../config/civs';
 import { UnitXRay } from '../../ecs/systems/occlusion/UnitXRay';
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
+import { audio } from '../../audio/AudioManager';
+import { AudioWatch } from '../../audio/AudioWatch';
 import { aiRngSeed, applyDifficulty, createStrategy, hasPersonality } from '../../ai/createStrategy';
 import { pickPersonality } from '../../ai/personality';
 import type { AIPlayerState } from '../../ai/strategyState';
@@ -40,6 +42,7 @@ import { PathBudget } from '../../map/pathBudget';
 import { createStatefulRng } from '../../map/random';
 import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/constants';
 import { keepWallKeys } from '../../iso/art/walls/commonWallPieces';
+import { screenToTile, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';
@@ -87,6 +90,9 @@ export class SystemRunner {
   private readonly buildingFx: BuildingFxSystem;
   private readonly cliffSort: CliffBuildingSort;
   private readonly xray: UnitXRay;
+  /** Game sounds from the ECS; `combatNear()` feeds the combat music. */
+  readonly audioWatch: AudioWatch;
+  private readonly camera: Phaser.Cameras.Scene2D.Camera;
   private aiPlayers: AIPlayer[] = [];
   /** Every player's fog by id: the human's (1) and each AI's. */
   private readonly fogById: Map<number, FogOfWarData>;
@@ -187,6 +193,9 @@ export class SystemRunner {
         );
       });
     });
+    this.camera = scene.cameras.main;
+    this.audioWatch = new AudioWatch(world, audio(), this.humanId, () => this.cameraTile());
+    this.updateListener();
     // Game start: the menu / preload art of civs not in this match goes now (design decision 7).
     this.render.releaseAbsentCivs(activeCivs(players));
   }
@@ -243,9 +252,24 @@ export class SystemRunner {
     this.healthBars.update();
     this.ambientFx.update(delta);
     this.combatFx.update();
+    this.updateListener();
+    this.audioWatch.update(time);
+  }
+
+  /** The tile under the camera centre (the audio listener). */
+  private cameraTile(): TileCoord {
+    const cam = this.camera;
+    return screenToTile({ sx: cam.scrollX + cam.width * cam.originX, sy: cam.scrollY + cam.height * cam.originY });
+  }
+
+  /** The audio listener: the camera centre, hearing only what the human currently sees (no fog leak). */
+  private updateListener(): void {
+    const fog = this.fogData;
+    audio().setListener(this.cameraTile(), (tx, ty) => fog.isVisible(tx, ty));
   }
 
   destroy(): void {
+    this.audioWatch.destroy();
     this.unsubscribeAge();
     this.evictTimer.remove();
     this.cliffSort.destroy();

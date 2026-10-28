@@ -1,3 +1,4 @@
+import { audio, type AudioSink } from '../../audio/AudioManager';
 import type { Entity } from '../../ecs/components';
 import { clearUnitOrders } from '../../ecs/orders';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
@@ -9,6 +10,7 @@ export class OrderIssuer {
   constructor(
     private readonly world: EcsWorld,
     private readonly selection: SelectionSystem,
+    private readonly sounds: AudioSink = audio(),
   ) {}
 
   issueOrders(tile: TileCoord): void {
@@ -17,6 +19,7 @@ export class OrderIssuer {
     const first = selectedAll[0]!;
     const enemy = this.findEnemyAt(tile.tx, tile.ty, first);
     const node = enemy ? null : this.findResourceNodeAt(tile.tx, tile.ty);
+    let ordered: 'unit_move' | 'unit_attack' | null = null;
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== 1) continue;
       // Any new right-click order overrides whatever the unit was
@@ -27,16 +30,21 @@ export class OrderIssuer {
         this.world.addComponent(entity, 'attackIntent', {
           targetId: enemy.id ?? 0,
         });
+        ordered = 'unit_attack';
         continue;
       }
       if (node && entity.gatherer) {
         this.world.addComponent(entity, 'gatherIntent', {
           nodeId: node.id ?? 0,
         });
+        ordered ??= 'unit_move';
         continue;
       }
       this.world.addComponent(entity, 'moveIntent', { target: tile });
+      ordered ??= 'unit_move';
     }
+    // The order's acknowledgement (UI feedback: not positional).
+    if (ordered) this.sounds.playSFX(ordered);
   }
 
   private findEnemyAt(tx: number, ty: number, actor: Entity): Entity | null {

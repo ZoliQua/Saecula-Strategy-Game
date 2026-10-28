@@ -74,7 +74,7 @@ export class CommandPanel {
 
   constructor(
     private readonly textures: Phaser.Textures.TextureManager,
-    private readonly toast: (msg: string) => void,
+    private readonly toast: (msg: string, tone: 'error') => void,
   ) {
     this.title = el('div', { class: 'panel-title' }, hu.hud.commands);
     this.grid = el('div', { class: 'cmd-grid' });
@@ -229,7 +229,7 @@ export class CommandPanel {
     btn.addEventListener('click', () => {
       const reason = this.blocker(uiStore.getState(), c);
       if (reason) {
-        this.toast(reason);
+        this.toast(reason, 'error');
         return;
       }
       c.run();

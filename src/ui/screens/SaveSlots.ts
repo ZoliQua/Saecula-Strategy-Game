@@ -1,3 +1,4 @@
+import { audio } from '../../audio/AudioManager';
 import { hu } from '../../i18n/hu';
 import type { SlotId } from '../../save/storage';
 import { el, uiRoot } from '../dom';
@@ -45,6 +46,7 @@ export class SaveSlots {
     /** `confirmLoad`: a load asks first (from the pause, where it replaces the running match). */
     private readonly options: { confirmLoad?: boolean } = {},
   ) {
+    audio().playSFX('ui_panel_open');
     this.list = el('div', { class: 'slots-list' });
     this.status = el('div', { class: 'slots-status', role: 'status', 'aria-live': 'polite' });
     const back = el(

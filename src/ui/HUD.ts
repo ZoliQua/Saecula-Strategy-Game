@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { audio } from '../audio/AudioManager';
 import { gameEvents } from '../game/events';
 import { hu } from '../i18n/hu';
 import type { AgeId } from '../types';
@@ -18,8 +19,12 @@ const AGE_NAME: Record<AgeId, string> = {
   3: hu.ages.enlightenment,
 };
 
-/** A toast's look: 'alert' (the warm red default) or 'ok' (amber, for a success such as a stored save). */
-export type ToastTone = 'alert' | 'ok';
+/**
+ * A toast's look: 'alert' (the warm red default), 'ok' (amber, for a
+ * success such as a stored save) or 'error' (the alert look plus the
+ * error sound: a refused command).
+ */
+export type ToastTone = 'alert' | 'ok' | 'error';
 
 /** The toast of the HUD on screen, if any (showHudNotice). */
 let noticeSink: ((message: string, tone: ToastTone) => void) | null = null;
@@ -56,7 +61,7 @@ export class Hud {
 
   constructor(textures: Phaser.Textures.TextureManager) {
     this.selection = new SelectionPanel(textures);
-    this.commands = new CommandPanel(textures, (m) => this.toast(m));
+    this.commands = new CommandPanel(textures, (m, tone) => this.toast(m, tone));
     this.ageChip = el('span', { class: 'age-chip' });
     this.clock = el('span', {}, '0:00');
     this.hint = el('div', { class: 'glass hint' });
@@ -94,7 +99,7 @@ export class Hud {
       if (playerId === 1 && (age === 2 || age === 3)) this.toast(hu.hud.ageReached[age]);
     });
     this.unsubscribeResearch = gameEvents.on('researchRejected', ({ playerId }) => {
-      if (playerId === 1) this.toast(hu.hud.researchElsewhere);
+      if (playerId === 1) this.toast(hu.hud.researchElsewhere, 'error');
     });
     const offCompleted = gameEvents.on('wonderCompleted', ({ playerId }) => {
       this.toast(playerId === 1 ? hu.hud.wonderOwn : hu.hud.wonderEnemy(playerId));
@@ -124,6 +129,7 @@ export class Hud {
     if (message === this.lastToast && now - this.lastToastAt < 1200) return;
     this.lastToast = message;
     this.lastToastAt = now;
+    if (tone === 'error') audio().playSFX('ui_error');
     const t = el('div', { class: tone === 'ok' ? 'toast ok' : 'toast' }, message);
     this.toasts.append(t);
     window.setTimeout(() => t.remove(), 2300);
