@@ -9,6 +9,7 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Task 14 re-recorded wall@1-3 (the Finnish walls replace the Hungarian
  * stub) and town_center@1, house@1 and blacksmith@1 (age-1 windows and
  * forge mouth lowered clear of the turf eave: the hardened glow test).
+ * The Task 14 polish round re-recorded wall@3 (the bastion's turf).
  */
 
 pinBuildings('finnish', {
@@ -49,7 +50,7 @@ pinBuildings('finnish', {
   'blacksmith@3': '19463f9c811c3810',
   'foundry@3': '94321aa7993b76a6',
   'tower@3': '6fcf3037f1a1ebf4',
-  'wall@3': '6ac8e7cd66f8f5a9',
+  'wall@3': 'a7399a99ce19ad9f',
   'wonder@3': 'f07d31d617fd93fc',
   'wonder~s1': '2234b0677e1e1830',
   'wonder~s2': '287b409c809d7509',

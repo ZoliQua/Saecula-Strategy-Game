@@ -16,14 +16,12 @@ const CROSS_EDGE = 0x1a1c22;
  * pale lime wood round a team field.
  */
 export const FINNISH_M = {
-  crossBlue: { color: CROSS_BLUE } as Material,
-  crossWhite: { color: CROSS_WHITE } as Material,
   crossEdge: { color: CROSS_EDGE } as Material,
   /** Heater shield: the Nordic cross on a white field inside a team rim, the field outlined dark. */
   crossShield: {
     color: 0xffffff,
     team: true,
-    charge: { field: CROSS_WHITE, cross: CROSS_BLUE, front: 0.66, panel: 1, bar: 0.15, armAt: 0.6, arm: 0.075, edge: CROSS_EDGE, edgeWidth: 0.1 },
+    charge: { field: CROSS_WHITE, cross: CROSS_BLUE, front: 0.62, panel: 1, bar: 0.18, armAt: 0.6, arm: 0.09, edge: CROSS_EDGE, edgeWidth: 0.1 },
   } as Material,
   /** Pale lime (linden) wood of the round shields' rims. */
   lime: { color: 0xcdb27c } as Material,

@@ -4,7 +4,8 @@ import { pinUnits } from '../../testing/pinnedArt.testkit';
  * Pixel-identity guard for the Finnish unit art (split pins, see
  * testing/pinnedArt.testkit.ts): pixels must never change; geometry may
  * be re-recorded when the sheet packing changes, with the reason in the
- * commit. Recorded in M5 Task 14.
+ * commit. Recorded in M5 Task 14; the polish round re-recorded the
+ * knight's pixels (a larger cross shield).
  */
 
 pinUnits('finnish', {
@@ -16,7 +17,7 @@ pinUnits('finnish', {
     crossbowman: 'ae0b07c31a7a5c28',
     musketeer: '4c14b47185b78b58',
     scout: 'cdb614e95af3fd9c',
-    knight: '3493cc70a92169ad',
+    knight: 'eed27304c3c41864',
     cavalry: '20c2b4bd198d3367',
     cannon: 'a32f4142a554f2d9',
   },

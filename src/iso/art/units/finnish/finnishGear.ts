@@ -92,7 +92,7 @@ export function limeShield(fig: Figure, hand: V3, T: Xform): void {
 /** Heater shield: the Nordic cross on a white field inside a team rim, the field outlined dark. */
 export function crossShield(fig: Figure, hand: V3, T: Xform): void {
   const { face, axes, c } = shieldFrame(hand, T, 2.5);
-  fig.ellipsoid(c, axes, [1.4, 6.4, 8.6], F.crossShield, { n: scale(T.z, -1), at: madd(c, T.z, 4.8) });
+  fig.ellipsoid(c, axes, [1.5, 7.0, 9.4], F.crossShield, { n: scale(T.z, -1), at: madd(c, T.z, 5.4) });
   fig.sphere(madd(c, face, 1.2), 0.9, M.darkSteel);
 }
 

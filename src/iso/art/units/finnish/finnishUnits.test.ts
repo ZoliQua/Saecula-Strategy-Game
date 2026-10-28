@@ -5,7 +5,9 @@ import { CIV_DEFS, CIV_IDS } from '../../../../config/civs';
 import type { AgeId, CivId, UnitType } from '../../../../types';
 import { ANIM_FRAMES, PAINTED_HEADINGS } from '../layout';
 import { BASE_UNIT_LOOKS, contactShadow, unitLook, type UnitLook } from '../looks';
+import { Figure } from '../figure';
 import { FrameRaster } from '../raster';
+import { IDENTITY } from '../rigMath';
 import { buildFigure } from '../rig';
 import { sheetGeometry } from '../sheet';
 import { FINNISH_M } from './finnishMaterials';
@@ -134,5 +136,61 @@ describe('Finnish unit looks', () => {
   it('casts the Finnish gun in its own iron', () => {
     const look = unitLook('cannon', 'finnish');
     expect(look.kind === 'cannon' && look.barrel).toBe(FINNISH_M.barrel);
+  });
+});
+
+describe('Nordic cross charge (rasterised)', () => {
+  // A 20-px disc facing the viewer, as the English charge test: local x (front) towards the view, y across, z up.
+  function paintDisc() {
+    const fig = new Figure({ x: [0, 0, 1], y: [1, 0, 0], z: [0, 1, 0], t: [0, 0, 0] }, 1);
+    fig.place(IDENTITY);
+    fig.ellipsoid([0, 0, 0], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3, 20, 20], FINNISH_M.crossShield);
+    return new FrameRaster(60, 60, 30, 30).paint(fig.prims, fig.mats.list, { rx: 0, ry: 0, alpha: 0 });
+  }
+  const at = (px: ReturnType<typeof paintDisc>, x: number, y: number) => {
+    const k = (y * 60 + x) * 4;
+    return { r: px.albedo[k] ?? 0, g: px.albedo[k + 1] ?? 0, b: px.albedo[k + 2] ?? 0, mask: px.mask[k + 3] ?? 0 };
+  };
+
+  it('paints the blue cross on the white field inside a team rim', () => {
+    const px = paintDisc();
+    const inside = at(px, 30, 44);
+    expect(inside.b).toBeGreaterThan(inside.r * 2);
+    const upright = at(px, 30, 38);
+    expect(upright.mask).toBe(0);
+    expect(upright.b).toBeGreaterThan(upright.r * 2);
+    const field = at(px, 38, 38);
+    expect(field.mask).toBe(0);
+    expect(Math.min(field.r, field.g, field.b)).toBeGreaterThan(150);
+    expect(at(px, 30, 48).mask).toBeGreaterThan(200);
+  });
+
+  it('frames the white field with dark edge pixels just outside it, before the team rim', () => {
+    const px = paintDisc();
+    // Field border at radius ≈ 15.7 px (front 0.62); the edge band lies outside it (below the centre), the team rim beyond.
+    for (const [x, y] of [[30, 46], [29, 46], [31, 46]] as const) {
+      const edge = at(px, x, y);
+      expect(edge.mask, `${x},${y}`).toBe(0);
+      expect(Math.max(edge.r, edge.g, edge.b), `${x},${y}`).toBeLessThan(90);
+    }
+  });
+
+  it('shows the white cross field on the knight in the painted frames', () => {
+    // White, non-team pixels over all headings: the charge reaches the knight's sheet.
+    const withCross = (type: UnitType) => {
+      let dark = 0;
+      for (let slot = 0; slot < PAINTED_HEADINGS.length; slot++) {
+        const px = idlePixels(type, 'finnish', slot);
+        for (let k = 0; k < px.coverage.length; k++) {
+          const r = px.albedo[k * 4] ?? 0;
+          const g = px.albedo[k * 4 + 1] ?? 0;
+          const b = px.albedo[k * 4 + 2] ?? 0;
+          const white = Math.min(r, g, b) > 200 && (px.mask[k * 4 + 3] ?? 0) === 0;
+          if (white) dark++;
+        }
+      }
+      return dark;
+    };
+    expect(withCross('knight')).toBeGreaterThan(20);
   });
 });

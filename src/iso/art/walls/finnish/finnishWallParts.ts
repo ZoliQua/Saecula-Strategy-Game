@@ -11,7 +11,7 @@ type Pt = readonly [number, number];
  * Details of the Finnish wall styles: faces of big rounded granite
  * boulders (grey and the pink-grey of rapakivi) in dark gaps, loose
  * boulders at the foot of a heap, and the ragged turf crest along an
- * arm's top edge.
+ * arm's top edge (with an optional dark sod edge).
  */
 
 /** Pink-grey of rapakivi granite, mixed in among the grey boulders. */
@@ -72,13 +72,18 @@ export function footBoulders(p: IsoPainter, arm: Arm, off: number, spacing: numb
   }
 }
 
-/** Ragged turf along an arm's crest: grass blades on its front top edge, `half` tiles out at height z. */
-export function turfCrest(p: IsoPainter, arm: Arm, half: number, z: number, turf: number): void {
+/**
+ * Ragged turf along an arm's crest: grass blades on its front top edge,
+ * `half` tiles out at height z; with `sod`, a dark sod edge under the
+ * grass line, so the crest reads against a meadow of the same green.
+ */
+export function turfCrest(p: IsoPainter, arm: Arm, half: number, z: number, turf: number, sod?: number): void {
   const a = frontEdge(arm, arm.a, half);
   const b = frontEdge(arm, arm.b, half);
   const pa = p.p(a[0], a[1], z);
   const pb = p.p(b[0], b[1], z);
   const ctx = p.ctx;
+  if (sod !== undefined) sodEdge(p, pa, pb, sod);
   ctx.strokeStyle = css(shade(turf, 1.12), 0.9);
   ctx.lineWidth = 2.2;
   ctx.lineCap = 'round';
@@ -87,4 +92,22 @@ export function turfCrest(p: IsoPainter, arm: Arm, half: number, z: number, turf
   ctx.lineTo(pb[0], pb[1]);
   ctx.stroke();
   tufts(p, pa, pb, turf, 1.05, 1.6);
+}
+
+/** A dark sod edge (soil under the turf) along a canvas segment, its lower lip lit. */
+export function sodEdge(p: IsoPainter, a: Pt, b: Pt, sod: number): void {
+  const ctx = p.ctx;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = css(sod);
+  ctx.lineWidth = 3.4;
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1] + 2.2);
+  ctx.lineTo(b[0], b[1] + 2.2);
+  ctx.stroke();
+  ctx.strokeStyle = css(shade(sod, 1.7), 0.7);
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1] + 4.2);
+  ctx.lineTo(b[0], b[1] + 4.2);
+  ctx.stroke();
 }

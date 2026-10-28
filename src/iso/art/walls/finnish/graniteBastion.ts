@@ -9,23 +9,26 @@ import { cordonFace, glacisFace, gun, quoins } from '../kits/starFort';
 import { armShadow, frustum, padShadow } from '../kits/wallParts';
 import { prism } from '../prism';
 import type { WallAgeStyle } from '../wallKit';
-import { turfCrest } from './finnishWallParts';
+import { sodEdge, turfCrest } from './finnishWallParts';
 
 /*
  * Age 3 Finnish wall (Felvilágosodás): a granite bastion trace in the
  * star-fort kit's outline (Suomenlinna, Hamina) — a turf glacis, a
  * battered scarp of dressed grey granite with long-and-short quoins and
  * a pale cordon — but no masonry parapet: the scarp carries a sloped
- * turf rampart, its crest ragged with grass, the skyline cue. Corner
+ * turf rampart of dark moss-green sods over a soil edge, its crest
+ * ragged with grass (darker than the meadow, so it reads), the skyline cue. Corner
  * and end bastions mount a gun beside a granite sentry box under a
  * shingled bell roof.
  */
 
 const G = FINNISH_GREYSTONE.palette;
 const SCARP = G.ashlar;
-const DRESSING = 0xc4c0b6;
-const TURF = 0x58772f;
-const GLACIS = 0x5f7d34;
+const DRESSING = 0xd2cec4;
+/** Dark, mossy rampart turf and its soil edge: set apart from the meadow's brighter green. */
+const TURF = 0x3f5a26;
+const SOD = 0x3a2a1a;
+const GLACIS = 0x55703a;
 /** Brown shingles of the sentry box's bell roof (the Gustavian roofs). */
 const SHINGLE = FINNISH_GUSTAVIAN.palette.roof;
 const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW | WALL_SE];
@@ -73,7 +76,7 @@ export const GRANITE_BASTION: WallAgeStyle = {
     prism(p, arm.a, arm.b, 0.29 * g, 7, 27, { color: SCARP, detail: 'stone', batter: 0.07 });
     prism(p, arm.a, arm.b, 0.235 * g, 27, 30, { color: DRESSING, top: DRESSING, face: (w, h) => cordonFace(p.ctx, w, h) });
     prism(p, arm.a, arm.b, 0.225 * g, 30, RUN_TURF_TOP, { color: TURF, top: shade(TURF, 1.05), batter: 0.09, face: (w, h, l) => rampartFace(p, w, h, l) });
-    turfCrest(p, arm, 0.135 * g, RUN_TURF_TOP, TURF);
+    turfCrest(p, arm, 0.135 * g, RUN_TURF_TOP, TURF, SOD);
   },
   post: (p, arms) => {
     padShadow(p, 0.44);
@@ -84,8 +87,12 @@ export const GRANITE_BASTION: WallAgeStyle = {
     // Grass along the bastion's two front crests.
     const t = 0.28;
     const front = p.p(1 - t, 1 - t, BASTION_TURF_TOP);
-    tufts(p, p.p(t, 1 - t, BASTION_TURF_TOP), front, TURF, 1.05, 1.6);
-    tufts(p, front, p.p(1 - t, t, BASTION_TURF_TOP), TURF, 0.8, 1.6);
+    const left = p.p(t, 1 - t, BASTION_TURF_TOP);
+    const right = p.p(1 - t, t, BASTION_TURF_TOP);
+    sodEdge(p, left, front, SOD);
+    sodEdge(p, front, right, SOD);
+    tufts(p, left, front, TURF, 1.05, 1.6);
+    tufts(p, front, right, TURF, 0.8, 1.6);
     if (STRAIGHT.includes(arms)) return;
     gun(p, BASTION_TURF_TOP);
     sentryBox(p, BASTION_TURF_TOP);
