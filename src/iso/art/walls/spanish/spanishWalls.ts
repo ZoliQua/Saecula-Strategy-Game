@@ -6,9 +6,9 @@ import { R } from '../../architecture/facade';
 import type { Ctx } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
-import { armShadow, drumStart, padShadow } from '../kits/wallParts';
+import { armShadow, drumStart, frontEdge, padShadow } from '../kits/wallParts';
 import { prism, type UV } from '../prism';
-import { stations, type Arm, type WallAgeStyle } from '../wallKit';
+import { stations, type WallAgeStyle } from '../wallKit';
 import { GARITA_BASTION } from './garitaBastion';
 import { almena, brickQuoins, rubbleFace, tapialFace } from './spanishWallParts';
 
@@ -91,21 +91,6 @@ const ALMENA = 0.19;
 const TOWER_ALMENA = 0.17;
 /** Roof of the square tapial tower, where the banner pole stands. */
 const TOWER_ROOF = 88;
-
-/**
- * A point on the arm's crest moved out to its front face (the side the
- * viewer sees), so the merlons stand flush with it; arms seen end-on
- * (NW–SE diagonals) keep them on the line.
- */
-function frontEdge(arm: Arm, c: UV, off: number): UV {
-  const len = Math.hypot(arm.b[0] - arm.a[0], arm.b[1] - arm.a[1]) || 1;
-  const nu = -(arm.b[1] - arm.a[1]) / len;
-  const nv = (arm.b[0] - arm.a[0]) / len;
-  const s = nu + nv;
-  if (Math.abs(s) < 1e-6) return c;
-  const k = (s > 0 ? 1 : -1) * off;
-  return [c[0] + nu * k, c[1] + nv * k];
-}
 
 /** A horseshoe light in an alfiz frame, centred at x, its sill at y (face-local). */
 function horseshoeLight(ctx: Ctx, x: number, y: number, w: number, h: number, light: number): void {

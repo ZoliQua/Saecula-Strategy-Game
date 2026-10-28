@@ -147,3 +147,18 @@ export function line(p: IsoPainter, a: Pt, b: Pt, color: string, width: number):
   p.ctx.lineTo(b[0], b[1]);
   p.ctx.stroke();
 }
+
+/**
+ * A point on the arm's crest moved out to its front face (the side the
+ * viewer sees), so the merlons stand flush with it; arms seen end-on
+ * (NW–SE diagonals) keep them on the line.
+ */
+export function frontEdge(arm: Arm, c: UV, off: number): UV {
+  const len = Math.hypot(arm.b[0] - arm.a[0], arm.b[1] - arm.a[1]) || 1;
+  const nu = -(arm.b[1] - arm.a[1]) / len;
+  const nv = (arm.b[0] - arm.a[0]) / len;
+  const s = nu + nv;
+  if (Math.abs(s) < 1e-6) return c;
+  const k = (s > 0 ? 1 : -1) * off;
+  return [c[0] + nu * k, c[1] + nv * k];
+}

@@ -43,9 +43,12 @@ export type WallStyleId =
   | 'vauban'
   | 'celtiberian'
   | 'tapial'
-  | 'garita_bastion';
+  | 'garita_bastion'
+  | 'servian'
+  | 'ghibelline'
+  | 'trace_italienne';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -128,10 +131,13 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'spanish',
     heraldry: { primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f },
   },
-  // Tricolour: green, white, red. Etruria / Comune / Rinascimento buildings; walls and units still Hungarian until Task 10.
+  // Tricolour: green, white, red. Etruria / Comune / Rinascimento buildings; Servian tufa wall, Ghibelline brick curtain and brick trace italienne; Italian unit liveries.
   italian: {
-    ...upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
+    available: true,
     architecture: { 1: 'etruria', 2: 'comune', 3: 'rinascimento' },
+    wallStyle: { 1: 'servian', 2: 'ghibelline', 3: 'trace_italienne' },
+    unitLook: 'italian',
+    heraldry: { primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e },
   },
   russian: upcoming({ primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e }),
   finnish: upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
