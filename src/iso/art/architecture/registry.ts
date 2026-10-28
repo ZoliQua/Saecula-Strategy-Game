@@ -8,6 +8,7 @@ import { GERMAN_BACKSTEIN, GERMAN_FACHWERK, GERMAN_LIMES } from './german/german
 import { kaiserdom } from './german/kaiserdom';
 import { limesTower } from './german/limesTower';
 import { portaNigra } from './german/portaNigra';
+import { wehrturm } from './german/wehrturm';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
 import { medievalArt } from './medieval';
 import { romanArt } from './roman';
@@ -48,7 +49,7 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   tudor: tudorArt,
   georgian: georgianArt,
   porta_nigra: (s) => ({ ...romanArt(s), town_center: portaNigra(s), tower: limesTower(s) }),
-  kaiserdom: (s) => ({ ...georgianArt(s), wonder: kaiserdom(s) }),
+  kaiserdom: (s) => ({ ...georgianArt(s), tower: wehrturm(s), wonder: kaiserdom(s) }),
 };
 
 /** Every style's painted set, by style id. */

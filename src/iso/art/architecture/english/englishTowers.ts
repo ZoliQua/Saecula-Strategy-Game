@@ -24,7 +24,7 @@ type Pt = readonly [number, number];
  */
 
 /** Platform contents: fire basket and the archer. */
-function lookout(p: IsoPainter, u0: number, u1: number, z: number, team: number, hat: Headgear): void {
+export function lookout(p: IsoPainter, u0: number, u1: number, z: number, team: number, hat: Headgear): void {
   brazier(p, u0 + 0.2, u1 - 0.18, z, 1.25, 1.35);
   archer(p, u1 - 0.26, u0 + 0.3, z, team, hat);
 }
@@ -180,7 +180,7 @@ export function normanTower(s: ArchStyle): BuildingArt {
 }
 
 /** Inner face of the far half of a round parapet (seen across the platform), with its coping. */
-function ringBack(p: IsoPainter, uc: number, vc: number, r: number, z: number, h: number, color: number): void {
+export function ringBack(p: IsoPainter, uc: number, vc: number, r: number, z: number, h: number, color: number): void {
   const n = 18;
   const at = (a: number, rr: number, zz: number) => p.p(uc + rr * Math.cos(a), vc + rr * Math.sin(a), zz);
   const outer: Pt[] = [];
@@ -196,51 +196,11 @@ function ringBack(p: IsoPainter, uc: number, vc: number, r: number, z: number, h
 }
 
 /** Round flat roof (gun platform floor) of radius r at height z. */
-function disc(p: IsoPainter, uc: number, vc: number, r: number, z: number, color: number): void {
+export function disc(p: IsoPainter, uc: number, vc: number, r: number, z: number, color: number): void {
   const pts: Pt[] = [];
   for (let k = 0; k < 24; k++) pts.push(p.p(uc + r * Math.cos((k / 24) * Math.PI * 2), vc + r * Math.sin((k / 24) * Math.PI * 2), z));
   p.fillPoly(pts, css(color));
   p.normals.fill(pts, N_UP);
-}
-
-/**
- * Age 3 with needle spires: a round town-wall tower (Wehrturm) — brick
- * drum on a stone footing with stone bands, a corbelled fighting gallery
- * whose posts carry a tall octagonal tiled helm over the archer.
- */
-function wehrturm(p: IsoPainter, s: ArchStyle, team: number): void {
-  const c = s.palette;
-  const z = TOWER_PLATFORM_Z[3];
-  p.footShadow();
-  drumWall(p, 0.5, 0.5, 0.46, 0, 16, c.ashlar, 'stone');
-  drumWall(p, 0.5, 0.5, 0.43, 16, 70, c.brick, 'brick');
-  drumWall(p, 0.5, 0.5, 0.44, 70, 74, c.ashlar, 'stone');
-  drumWall(p, 0.5, 0.5, 0.43, 74, z - 16, c.brick, 'brick');
-  // Corbel course and the overhanging gallery storey.
-  drumWall(p, 0.5, 0.5, 0.47, z - 16, z - 12, c.ashlar, 'stone');
-  drumWall(p, 0.5, 0.5, 0.48, z - 12, z, c.brick, 'brick');
-  const ctx = p.ctx;
-  const door = p.p(0.5 + 0.43 * Math.cos(1.25), 0.5 + 0.43 * Math.sin(1.25), 0);
-  ctx.fillStyle = css(c.ashlar);
-  ctx.fillRect(door[0] - 7, door[1] - 25, 14, 25);
-  ctx.fillStyle = css(c.doors.main);
-  ctx.fillRect(door[0] - 5, door[1] - 22, 10, 22);
-  for (const [a, h] of [[0.4, 52], [1.9, 98], [1.1, 110]] as const) {
-    const [wx, wy] = p.p(0.5 + 0.43 * Math.cos(a), 0.5 + 0.43 * Math.sin(a), h);
-    ctx.fillStyle = '#1a110c';
-    ctx.fillRect(wx - 1.3, wy - 11, 2.6, 11);
-  }
-  disc(p, 0.5, 0.5, 0.48, z, 0x6c6a64);
-  ringBack(p, 0.5, 0.5, 0.48, z, 8, c.brick);
-  lookout(p, 0.12, 0.88, z, team, 'tricorn');
-  drumWall(p, 0.5, 0.5, 0.48, z, z + 8, c.brick, 'brick');
-  for (let k = 0; k < 8; k++) {
-    const a = (k / 8) * Math.PI * 2 + Math.PI / 8;
-    if (Math.cos(a) + Math.sin(a) < -0.4) continue;
-    post(p, 0.5 + 0.44 * Math.cos(a), 0.5 + 0.44 * Math.sin(a), z + 8, z + 30, 2.2, c.timber);
-  }
-  needleSpire(p, 0.5, 0.5, 0.5, z + 30, 104, c.roof, 'tile');
-  p.flag(0.9, 0.62, z + 8, 26, team, true);
 }
 
 /** Age 3: round Martello tower — battered brick drum, stone cordon, raised door and ladder, gun platform. */
@@ -248,12 +208,8 @@ export function georgianTower(s: ArchStyle): BuildingArt {
   const c = s.palette;
   return {
     size: 1,
-    maxHeight: 210 + spireRoom(s, 120),
+    maxHeight: 210,
     paint: (p, team) => {
-      if (hasNeedleSpires(s)) {
-        wehrturm(p, s, team);
-        return;
-      }
       const z = TOWER_PLATFORM_Z[3];
       const ctx = p.ctx;
       p.footShadow();
