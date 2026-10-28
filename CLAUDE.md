@@ -728,6 +728,11 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
   nélkül) a legrosszabb elérhető esetben: 128×128 Szigetek, 6 játékos,
   6 különböző nép; minden további nép legfeljebb ~1 s betöltési többletet
   okoz.
+- **Állapot: kész (2026-10-28).** Mind a 8 nép játszható (`available: true`).
+  Mérve: 6 különböző nép 242,3 MB, a hat legnehezebb nép 247,5 MB, az M4
+  két népes eset 160,6 MB; képkocka-CPU p95 7,4 ms (96×96, 4 játékos,
+  4 nép); népenként +0,3–0,5 s betöltés; bundle 0,63 MB gzip. Őrzi a
+  `src/ai/strategies/eightCivs.sim.test.ts` és a `src/iso/art/allCivsArt.test.ts`.
 
 ### M6 — Polish és jövőbeli bővítések
 - Több AI nehézségi szint
@@ -842,4 +847,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-27. Zoli projekt, `IsoRTS` munkacím.*
+*Utolsó frissítés: 2026-10-28. Zoli projekt, `IsoRTS` munkacím.*
