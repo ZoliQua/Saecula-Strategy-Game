@@ -100,6 +100,7 @@ export class PauseMenu {
   leave(): void {
     this.root.classList.add('leaving');
     this.root.inert = true;
+    this.unbindKeys();
   }
 
   destroy(): void {

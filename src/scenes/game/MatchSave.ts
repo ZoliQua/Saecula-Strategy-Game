@@ -31,12 +31,13 @@ export class MatchSave {
     if (this.clock.tick(gameDeltaMs)) void this.write('auto', hu.save.autosaved);
   }
 
-  /** Saves the match to `slot` and shows the outcome. */
-  saveTo(slot: SlotId): Promise<SaveOutcome> {
-    return this.write(slot, hu.save.saved);
+  /** Saves the match to `slot` and shows the outcome on the HUD, unless `quiet` (the caller shows it itself). */
+  saveTo(slot: SlotId, options: { quiet?: boolean } = {}): Promise<SaveOutcome> {
+    return this.write(slot, options.quiet === true ? null : hu.save.saved);
   }
 
-  private async write(slot: SlotId, success: string): Promise<SaveOutcome> {
+  /** `success` null: no HUD notice either way. */
+  private async write(slot: SlotId, success: string | null): Promise<SaveOutcome> {
     let result: SaveOutcome;
     try {
       const save = serializeMatch(this.capture());
@@ -45,6 +46,7 @@ export class MatchSave {
       if (import.meta.env.DEV) console.warn('save failed', err);
       result = { ok: false, reason: 'failed' };
     }
+    if (success === null) return result;
     if (result.ok) showHudNotice(success, 'ok');
     else showHudNotice(result.reason === 'unavailable' ? hu.save.errors.unavailable : hu.save.errors.saveFailed);
     return result;

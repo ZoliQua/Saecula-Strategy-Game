@@ -75,6 +75,16 @@ describe('MatchSave', () => {
     warn.mockRestore();
   });
 
+  it('a quiet save (the pause card shows its own line) writes the slot without a HUD notice', async () => {
+    notices.length = 0;
+    const store = memoryStore();
+    const quiet = new MatchSave(() => state, new SaveStorage(store));
+    expect(await quiet.saveTo(4, { quiet: true })).toEqual({ ok: true });
+    expect(await new MatchSave(() => state, new SaveStorage(null)).saveTo(4, { quiet: true })).toEqual({ ok: false, reason: 'unavailable' });
+    expect(typeof store.data.get('save:4')).toBe('string');
+    expect(notices).toEqual([]);
+  });
+
   it('an unavailable store → { ok: false, reason: unavailable } and its notice', async () => {
     notices.length = 0;
     const result = await new MatchSave(() => state, new SaveStorage(null)).saveTo(1);

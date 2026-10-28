@@ -247,6 +247,8 @@ export class MainMenuScene extends Phaser.Scene {
         if (!started && this.slots === slots) slots.setRows(slotRows(await this.storage.list(), 'load'));
       },
       onBack: () => {
+        // A card already closing (Esc within its exit animation) must not close the next one.
+        if (this.slots !== slots) return;
         slots.leave();
         this.slots = null;
         this.away = false;

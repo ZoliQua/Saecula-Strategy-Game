@@ -259,6 +259,7 @@ export const hu = {
     autoSlot: 'Automatikus mentés',
     empty: 'Üres hely',
     overwrite: 'Felülírod ezt a mentést?',
+    loadConfirm: 'Betöltöd ezt a mentést? A nem mentett haladás elvész.',
     saved: 'Játék mentve',
     autosaved: 'Automatikus mentés kész',
     errors: {

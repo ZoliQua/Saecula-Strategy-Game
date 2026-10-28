@@ -240,7 +240,7 @@ export class GameScene extends Phaser.Scene {
       this.players.human()?.civ ?? DEFAULT_CIV,
     );
     pointer = new PointerInput(this, this.tileMap, this.runner.selection, this.placement, orders, () =>
-      openPause(this, (slot) => this.saveTo(slot), this.storage),
+      openPause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage),
     );
     pointer.register();
     const input = pointer;
@@ -364,9 +364,9 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** Saves the running match to `slot` (the HUD shows the outcome). */
-  saveTo(slot: SlotId): ReturnType<MatchSave['saveTo']> {
-    return this.matchSave?.saveTo(slot) ?? Promise.resolve({ ok: false, reason: 'failed' });
+  /** Saves the running match to `slot` (the HUD shows the outcome unless `quiet`: the pause card shows it). */
+  saveTo(slot: SlotId, options?: { quiet?: boolean }): ReturnType<MatchSave['saveTo']> {
+    return this.matchSave?.saveTo(slot, options) ?? Promise.resolve({ ok: false, reason: 'failed' });
   }
 
   /** Replaces the running match with the save in `slot` (startFromSlot). */

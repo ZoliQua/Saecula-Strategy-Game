@@ -75,10 +75,12 @@ export class PauseScene extends Phaser.Scene {
   private showSlots(mode: 'save' | 'load'): void {
     this.clearCard();
     const { storage } = this.pause;
-    const slots: SaveSlots = new SaveSlots(mode, [], {
-      onPick: (slot): Promise<void> => (mode === 'save' ? this.saveTo(slots, slot) : this.loadFrom(slots, slot)),
+    const handlers = {
+      onPick: (slot: SlotId): Promise<void> => (mode === 'save' ? this.saveTo(slots, slot) : this.loadFrom(slots, slot)),
       onBack: () => this.showMenu(),
-    });
+    };
+    // A load from the pause replaces the running match: it asks first.
+    const slots: SaveSlots = new SaveSlots(mode, [], handlers, { confirmLoad: mode === 'load' });
     this.slots = slots;
     void storage.list().then((summaries) => {
       if (this.slots === slots) slots.setRows(slotRows(summaries, mode));

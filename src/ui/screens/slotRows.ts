@@ -31,6 +31,15 @@ function describe(summary: SlotSummary): string {
 }
 
 /**
+ * Whether picking `row` asks first: in save mode, writing over any slot
+ * that holds something; in load mode only with `confirmLoad` (a load
+ * from the pause replaces the running match).
+ */
+export function needsConfirm(mode: 'save' | 'load', row: SlotRow, confirmLoad: boolean): boolean {
+  return mode === 'save' ? row.status !== 'empty' : confirmLoad;
+}
+
+/**
  * The slot list's rows (pure). Save mode lists the manual slots only;
  * anything but an unavailable store can be written. Load mode adds the
  * autosave, and only usable saves can be picked; the rest show why.

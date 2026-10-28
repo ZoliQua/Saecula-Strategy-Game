@@ -3,7 +3,7 @@ import type { SlotId } from '../../save/storage';
 import { el, uiRoot } from '../dom';
 import { icons } from '../icons';
 import { bindModalKeys, GLYPHS } from './modalKeys';
-import type { SlotRow } from './slotRows';
+import { needsConfirm, type SlotRow } from './slotRows';
 import '../hud.css';
 import '../screens.css';
 import '../pause.css';
@@ -42,6 +42,8 @@ export class SaveSlots {
     private readonly mode: 'save' | 'load',
     rows: readonly SlotRow[],
     private readonly handlers: SaveSlotsHandlers,
+    /** `confirmLoad`: a load asks first (from the pause, where it replaces the running match). */
+    private readonly options: { confirmLoad?: boolean } = {},
   ) {
     this.list = el('div', { class: 'slots-list' });
     this.status = el('div', { class: 'slots-status', role: 'status', 'aria-live': 'polite' });
@@ -90,6 +92,8 @@ export class SaveSlots {
   leave(): void {
     this.root.classList.add('leaving');
     this.root.inert = true;
+    // A leaving card no longer answers Esc (a new card may already be open).
+    this.unbindKeys();
   }
 
   destroy(): void {
@@ -134,21 +138,21 @@ export class SaveSlots {
   private confirmRow(row: SlotRow, i: number): HTMLElement {
     const yes = el('button', { class: 'btn btn-primary', type: 'button' }, hu.common.yes);
     yes.addEventListener('click', () => this.run(row.slot));
+    const question = this.mode === 'save' ? hu.save.overwrite : hu.save.loadConfirm;
     const no = el('button', { class: 'btn btn-ghost', type: 'button' }, hu.common.cancel);
     no.addEventListener('click', () => this.cancelConfirm());
     return el(
       'div',
       { class: 'slot-row slot-confirm', role: 'group', style: `--i:${i}`, 'data-slot': String(row.slot) },
       el('span', { class: 'slot-badge' }, row.slot === 'auto' ? '' : String(row.slot)),
-      el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, hu.save.overwrite), ...slotDetail(row)),
+      el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, question), ...slotDetail(row)),
       el('span', { class: 'slot-confirm-actions' }, no, yes),
     );
   }
 
   private pick(row: SlotRow): void {
     if (this.busy || row.disabled) return;
-    // Writing over a slot that holds something (even an unreadable save) asks first.
-    if (this.mode === 'save' && row.status !== 'empty') {
+    if (needsConfirm(this.mode, row, this.options.confirmLoad === true)) {
       this.pending = row.slot;
       this.render();
       return;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hu } from '../../i18n/hu';
 import type { SlotSummary } from '../../save/storage';
-import { slotRows } from './slotRows';
+import { needsConfirm, slotRows } from './slotRows';
 
 const CREATED = '2026-10-28T14:30:00.000Z';
 const filled = (slot: SlotSummary['slot']): SlotSummary => ({
@@ -49,5 +49,22 @@ describe('slotRows', () => {
     const [row] = slotRows([filled(1)], 'load');
     const date = new Intl.DateTimeFormat('hu-HU', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(CREATED));
     expect(row?.detail).toBe(`Angol · 2. kor · Szigetek · Nagy · 12:34 · ${date}`);
+    // The Hungarian form itself, not just "whatever the formatter gives".
+    expect(row?.detail).toMatch(/ · 2026\. okt\. 28\. \d{1,2}:\d{2}$/);
+  });
+});
+
+describe('needsConfirm', () => {
+  const [ok, empty, corrupt] = slotRows(summaries, 'save');
+  it('save mode asks before writing over anything but an empty slot', () => {
+    expect(ok && needsConfirm('save', ok, false)).toBe(true);
+    expect(corrupt && needsConfirm('save', corrupt, false)).toBe(true);
+    expect(empty && needsConfirm('save', empty, false)).toBe(false);
+  });
+
+  it('load mode asks only when loading would replace a running match (confirmLoad)', () => {
+    const [save] = slotRows(summaries, 'load');
+    expect(save && needsConfirm('load', save, true)).toBe(true);
+    expect(save && needsConfirm('load', save, false)).toBe(false);
   });
 });
