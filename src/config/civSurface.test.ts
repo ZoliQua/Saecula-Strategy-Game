@@ -8,7 +8,8 @@ import { CIV_IDS } from './civs';
  * adding a civ touches only the civ registry, the art registries, hu.ts
  * and the civ's own <civ>/ folders — never a shared painter or game
  * logic. This test reads every source file (tests and testkits aside)
- * and fails when a civ id shows up anywhere else.
+ * and fails when a civ id shows up anywhere else, or when a shared file
+ * (a kit, a family, a shared painter) imports from a civ folder.
  */
 
 const SRC = join(process.cwd(), 'src');
@@ -27,8 +28,14 @@ const ALLOWED = new Set([
   'iso/art/architecture/hungarianStyles.ts',
 ]);
 
-/** Shared painters that must not depend on any civ's art. */
+/** Shared painters the M5 review named; the import guard below covers every shared file, these must exist. */
 const CIV_FREE_PAINTERS = ['iso/art/units/gear.ts', 'iso/art/architecture/facade.ts'];
+
+/** Import paths of a source file that run through a folder named after a civ. */
+function civImports(text: string): string[] {
+  const specs = [...text.matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)].map((m) => m[1] ?? '');
+  return specs.filter((spec) => CIV_IDS.some((civ) => spec.split('/').includes(civ)));
+}
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];
@@ -79,11 +86,20 @@ describe('civ extension surface', () => {
     expect(offenders).toEqual([]);
   });
 
-  it.each(CIV_FREE_PAINTERS)('%s imports nothing from a civ folder', (painter) => {
-    const f = files.find((x) => x.file === painter);
-    expect(f, painter).toBeDefined();
-    const imports = [...(f?.text ?? '').matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1] ?? '');
-    expect(imports.filter((spec) => CIV_IDS.some((civ) => spec.split('/').includes(civ)))).toEqual([]);
+  it('shared files (kits, families, shared painters, units) import nothing from a civ folder; only the registries do', () => {
+    for (const painter of CIV_FREE_PAINTERS) expect(files.some((f) => f.file === painter), painter).toBe(true);
+    const offenders = files
+      .filter(({ file }) => !ALLOWED.has(file) && !inCivFolder(file))
+      .map(({ file, text }) => ({ file, specs: civImports(text) }))
+      .filter((o) => o.specs.length > 0)
+      .map((o) => `${o.file}: ${o.specs.join(', ')}`);
+    expect(offenders).toEqual([]);
+  });
+
+  it('spots civ folders in static and dynamic imports', () => {
+    expect(civImports(`import { X } from '../english/englishStyles';`)).toEqual(['../english/englishStyles']);
+    expect(civImports(`const m = await import('./german/kaiserdom');`)).toEqual(['./german/kaiserdom']);
+    expect(civImports(`import { kit } from '../kits/halfTimber';`)).toEqual([]);
   });
 
   it("accepts only a civ's own art folders, not any folder named after a civ", () => {
