@@ -65,9 +65,9 @@ export function chapelCrown(p: IsoPainter, c: Chapel, paint: boolean | null): nu
   return onionDome(p, c.u, c.v, c.r * 0.62, c.top, { ...look, drum: { h: c.drum, color: WHITE }, tall: 1.05 });
 }
 
-/** The central tower's octagon from z0 to the head of `top`, with two kokoshnik rings. */
-export function centralOctagon(p: IsoPainter, uc: number, vc: number, r: number, z0: number, top: number, done: boolean): void {
-  octPrism(p, uc, vc, r, z0, top, BRICK, 'stone', done ? brickFacet(p, true) : undefined);
+/** The central tower's octagon from z0 to the head of `top`, with two kokoshnik rings once `done`; its windows glow when `lit`. */
+export function centralOctagon(p: IsoPainter, uc: number, vc: number, r: number, z0: number, top: number, done: boolean, lit: boolean): void {
+  octPrism(p, uc, vc, r, z0, top, BRICK, 'stone', done ? brickFacet(p, lit) : undefined);
   if (!done) return;
   kokoshnikRing(p, uc, vc, r * 0.98, top, r * 30, WHITE);
   octPrism(p, uc, vc, r * 0.8, top + 2, top + 26, BRICK, 'stone', brickFacet(p, false));

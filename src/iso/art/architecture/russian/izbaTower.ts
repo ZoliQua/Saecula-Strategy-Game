@@ -7,7 +7,7 @@ import { post } from '../parts';
 import type { ArchStyle } from '../style';
 import { archer } from '../towerParts';
 import type { BuildingArt } from '../types';
-import { finialPole, footing, logBlock, logTown, oblam, type Block } from './izbaParts';
+import { finialPole, footing, logBlock, logTown, oblam, TOWER_ONION, type Block } from './izbaParts';
 
 /*
  * Russian watchtower: a log shaft under an overhanging fighting gallery
@@ -58,7 +58,7 @@ function paintTower(p: IsoPainter, s: ArchStyle, team: number, age: 1 | 2): void
   let top: number;
   if (k.tents) {
     top = tentRoof(p, 0.5, 0.5, 0.4, roofZ, 78, c.roofAlt, { material: 'tile', eave: 0.06, ribs: shade(c.roofAlt, 1.35), lights: true });
-    if (k.onions) top = onionDome(p, 0.5, 0.5, 0.075, top - 6, { color: c.metal, drum: { h: 8, color: c.ashlar } });
+    if (k.onions) top = onionDome(p, 0.5, 0.5, TOWER_ONION, top - 6, { color: c.metal, drum: { h: 8, color: c.ashlar } });
   } else {
     const prev = p.material;
     p.material = 'shingle';

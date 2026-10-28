@@ -66,12 +66,12 @@ function paintBasil(p: IsoPainter, s: ArchStyle, team: number | null, stage: num
   const sides = CHAPELS.filter((c) => Math.abs(depth(c) - 2 * C) < 0.01);
   const front = CHAPELS.filter((c) => depth(c) > 2 * C + 0.01).sort((a, b) => depth(a) - depth(b));
   const chapel = (c: Chapel) => {
-    chapelBody(p, c, Z0, chapelTop, stage >= 3);
+    chapelBody(p, c, Z0, chapelTop, done);
     if (stage >= 2) chapelCrown(p, c, stage === 2 ? null : done);
   };
   behind.forEach(chapel);
   sides.forEach(chapel);
-  centralOctagon(p, C, C, CORE_R, Z0, coreTop, stage >= 3);
+  centralOctagon(p, C, C, CORE_R, Z0, coreTop, stage >= 3, done);
   if (done) centralSpire(p, C, C, CORE_R * 0.78, coreTop + 26, 150);
   else if (stage === 3) scaffold(p, C - 0.4, C - 0.4, C + 0.4, C + 0.4, coreTop + 26, coreTop + 60);
   else scaffold(p, C - CORE_R, C - CORE_R, C + CORE_R, C + CORE_R, coreTop - 40, coreTop);

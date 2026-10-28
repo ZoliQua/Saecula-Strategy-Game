@@ -17,6 +17,13 @@ import type { ArchStyle, LogTownKits } from '../style';
 export type Block = readonly [u0: number, v0: number, u1: number, v1: number];
 type FaceDraw = (w: number, h: number) => void;
 
+/**
+ * Radius (tiles) of the single onions on age-2 tower tops: a bulb about
+ * 26 art px wide, above the ~25 px below which small domes vanish at
+ * zoom 1 (Task 6 m1).
+ */
+export const TOWER_ONION = 0.095;
+
 const FIRST_AGE: LogTownKits = { masonry: 'log', tents: false, onions: false, civic: 'hillfort' };
 
 /** The style's log-town reading; absent = the first-age reading (all logs, plank gables). */
@@ -137,7 +144,7 @@ export function towerTop(p: IsoPainter, s: ArchStyle, b: Block, z: number, opts:
   });
   const apex = tentRoof(p, uc, vc, r, z + 6 + octH, opts.tent ?? 64, s.palette.roofAlt, { material: 'tile', ribs: shade(s.palette.roofAlt, 1.35), lights: true });
   if (!k.onions || opts.onion === 0) return apex;
-  return onionDome(p, uc, vc, opts.onion ?? 0.05, apex - 4, { color: s.palette.metal });
+  return onionDome(p, uc, vc, opts.onion ?? TOWER_ONION, apex - 4, { color: s.palette.metal });
 }
 
 /** Thin pole with a small gilt-free knob on a hip apex (age-1 tower tops). */

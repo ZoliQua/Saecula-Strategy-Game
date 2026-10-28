@@ -5,7 +5,7 @@ import { archedOpening, baroqueWindow } from './facade';
 import { baroqueBlock, railFence } from './baroqueParts';
 import { forgeLight, forgeMouth, goldPile, lantern, logPile, plankStack, post, target } from './parts';
 import { hasOnionDomes, onionDome } from './kits/onionDome';
-import { octPrism, tentRoof } from './kits/tentRoof';
+import { octPrism, tentRoof, tentStand } from './kits/tentRoof';
 import { finial, helm } from './roofs';
 import type { ArchStyle } from './style';
 import { roofChimney, roofLift, styledGable, styledHip } from './styledRoofs';
@@ -220,7 +220,8 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         });
         p.material = 'tile';
         styledHip(p, s, 0.25, 0.25, 1.55, 1.25, 50, 38, c.roof, 0.1);
-        if (hasOnionDomes(s)) onionDome(p, 0.9, 0.75, 0.1, 50 + 38 * s.roof.pitch - 6, { color: c.metal, drum: { h: 14, color: c.plaster } });
+        // Onion styles shoot from a tent-roofed stand at the range's head; others keep the ridge finial.
+        if (hasOnionDomes(s)) tentStand(p, 1.75, 0.3, 2.2, 0.75, 30, 50, 66, c.board, c.roof, { material: 'copper', ribs: c.trim });
         else finial(p, 0.9, 0.75, 50 + 38 * s.roof.pitch, 14, false);
         lantern(p, 1.55, 1.0, 34, 1.72, 1.0);
         for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);

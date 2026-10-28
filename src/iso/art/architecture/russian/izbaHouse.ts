@@ -40,7 +40,7 @@ function paintIzba(p: IsoPainter, s: ArchStyle, team: number): void {
     // The terem tower behind the house (painted first: it stands behind).
     footing(p, s, TEREM, 26);
     logBlock(p, s, TEREM, 26, 96, (w, h) => izbaWindow(p, s, w / 2 - 3, -h + 14, 6, 8, 1, false), undefined, 0.05);
-    towerTop(p, s, TEREM, 96, { oct: 14, tent: 54, onion: 0.075 });
+    towerTop(p, s, TEREM, 96, { oct: 14, tent: 54 });
   }
   const low = k.masonry === 'whiteStone';
   const cellar = (w: number) => {

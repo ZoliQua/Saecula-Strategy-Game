@@ -1,7 +1,8 @@
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { ellipse } from '../../canvas';
-import { octPrism, tentRoof } from '../kits/tentRoof';
+import { octPrism, tentRoof, type OctDetail } from '../kits/tentRoof';
+import type { RoofMaterial } from '../../roofCover';
 import { post } from '../parts';
 import type { ArchStyle } from '../style';
 
@@ -76,15 +77,24 @@ function sails(p: IsoPainter, x: number, y: number, len: number, turn: number): 
   ctx.fill();
 }
 
-/** Tent-roofed octagonal windmill of apothem r on (uc, vc): log body, plank tent, sails facing the viewer. */
-export function tentMill(p: IsoPainter, s: ArchStyle, uc: number, vc: number, r: number, body: number, rise: number, team: number): void {
+/** How a windmill's body and tent are dressed; default: a log body under a plank tent. */
+export interface MillLook {
+  readonly body: number;
+  readonly detail: OctDetail;
+  readonly roof: number;
+  readonly material: RoofMaterial;
+}
+
+/** Tent-roofed octagonal windmill of apothem r on (uc, vc): body, tent, sails facing the viewer. */
+export function tentMill(p: IsoPainter, s: ArchStyle, uc: number, vc: number, r: number, body: number, rise: number, team: number, look?: MillLook): void {
   const c = s.palette;
+  const l = look ?? { body: c.darkWood, detail: 'logs', roof: c.roof, material: 'shingle' };
   p.box(uc - r - 0.04, vc - r - 0.04, uc + r + 0.04, vc + r + 0.04, 0, 8, { color: c.stone, detail: 'fieldstone' }, c.stone);
-  octPrism(p, uc, vc, r, 8, body, c.darkWood, 'logs', (w, _h, light) => {
+  octPrism(p, uc, vc, r, 8, body, l.body, l.detail, (w, _h, light) => {
     p.ctx.fillStyle = css(shade(c.doors.work, light));
     p.ctx.fillRect(w / 2 - 5, -20, 10, 20);
   });
-  const apex = tentRoof(p, uc, vc, r, body, rise, c.roof, { material: 'shingle', eave: 0.07 });
+  const apex = tentRoof(p, uc, vc, r, body, rise, l.roof, { material: l.material, eave: 0.07 });
   p.flag(uc, vc, apex, 18, team);
   const hub = p.p(uc + r * 0.9, vc + r * 0.9, body - 4);
   sails(p, hub[0], hub[1] + 2, 72, 0.42);
@@ -178,7 +188,7 @@ export function bloomery(p: IsoPainter, u: number, v: number, h: number): void {
   p.addSmoke(u, v, h);
 }
 
-/** Shaft headframe: four braced posts over a dark shaft, a pulley, and a steep tent roof on top. */
+/** Shaft headframe: four braced posts over a dark shaft, a pulley, and an octagonal tent roof (shatyor) on top. */
 export function tentHeadframe(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, h: number, rise: number): void {
   const c = s.palette;
   const ctx = p.ctx;
@@ -206,8 +216,77 @@ export function tentHeadframe(p: IsoPainter, s: ArchStyle, u0: number, v0: numbe
   ctx.stroke();
   post(p, u1, v1, 0, h, 2.6, c.timber);
   p.box(u0 - 0.03, v0 - 0.03, u1 + 0.03, v1 + 0.03, h, h + 6, { color: c.timber, detail: 'planks' }, c.timber);
-  const prev = p.material;
-  p.material = 'tile';
-  p.hipRoof(u0 - 0.03, v0 - 0.03, u1 + 0.03, v1 + 0.03, h + 6, rise, c.roofAlt, 0.06);
-  p.material = prev;
+  tentRoof(p, (u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / 2 + 0.03, h + 6, rise, c.roofAlt, { material: 'tile', eave: 0.04, ribs: shade(c.roofAlt, 1.35) });
+}
+
+/** Tall stack of seasoning logs, end grain to the viewer, on two sleepers. */
+export function logStack(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, h: number): void {
+  const c = s.palette;
+  p.box(u0, v0, u1, v1, 0, h, { color: c.darkWood, detail: 'logs' }, shade(c.darkWood, 0.9));
+  p.leftFace(u0, u1, v1, 0, (w, fh) => {
+    const ctx = p.ctx;
+    for (let y = 4; y < fh - 1; y += 8) {
+      for (let x = 4 + ((y / 8) % 2) * 3.5; x < w - 2; x += 7) {
+        ctx.fillStyle = '#d8b88a';
+        ellipse(ctx, x, -y, 3.1, 3.4);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(90,60,30,.7)';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+  }, h);
+  // Binding poles at the ends.
+  for (const u of [u0 + 0.03, u1 - 0.03]) post(p, u, v1 + 0.02, 0, h + 8, 1.6, c.timber);
+}
+
+/** Windlass headframe over an adit: two tall posts, a beam and a big solid winding wheel. */
+export function windlass(p: IsoPainter, s: ArchStyle, u: number, v0: number, v1: number, h: number): void {
+  const c = s.palette;
+  const ctx = p.ctx;
+  for (const v of [v0, v1]) post(p, u, v, 0, h, 2.8, c.timber);
+  const a = p.p(u, v0, h);
+  const b = p.p(u, v1, h);
+  ctx.strokeStyle = css(shade(c.timber, 0.9));
+  ctx.lineWidth = 3.4;
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1]);
+  ctx.lineTo(b[0], b[1]);
+  ctx.stroke();
+  const [x, y] = p.p(u, (v0 + v1) / 2, h - 14);
+  ctx.fillStyle = css(shade(c.timber, 0.75));
+  ellipse(ctx, x, y, 11, 13);
+  ctx.fill();
+  ctx.fillStyle = css(shade(c.timber, 1.15));
+  ellipse(ctx, x, y, 8, 10);
+  ctx.fill();
+  ctx.strokeStyle = css(shade(c.timber, 0.6));
+  ctx.lineWidth = 1.4;
+  for (let k = 0; k < 4; k++) {
+    const t = (k / 4) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(x - Math.cos(t) * 8, y - Math.sin(t) * 10);
+    ctx.lineTo(x + Math.cos(t) * 8, y + Math.sin(t) * 10);
+    ctx.stroke();
+  }
+  p.normalCylinder(x - 11, y - 13, 22, 26);
+  p.addVolumePoint(u, v0, h);
+  p.addVolumePoint(u, v1, h);
+}
+
+/** Tapering wattle-and-daub smoke hood (dymnik) from (u0..u1, v0..v1) at z0 to a narrow vent at z1, smoking. */
+export function smokeHood(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, z0: number, z1: number): void {
+  const steps = 4;
+  const uc = (u0 + u1) / 2;
+  const vc = (v0 + v1) / 2;
+  for (let i = 0; i < steps; i++) {
+    const k = 1 - (i / steps) * 0.55;
+    const hu = ((u1 - u0) / 2) * k;
+    const hv = ((v1 - v0) / 2) * k;
+    const za = z0 + ((z1 - z0) * i) / steps;
+    const zb = z0 + ((z1 - z0) * (i + 1)) / steps;
+    p.box(uc - hu, vc - hv, uc + hu, vc + hv, za, zb, { color: s.palette.plaster, detail: 'plaster' }, shade(s.palette.plaster, 0.8));
+  }
+  p.box(uc - 0.06, vc - 0.06, uc + 0.06, vc + 0.06, z1, z1 + 5, { color: 0x3a3530 }, 0x221e1a);
+  p.addSmoke(uc, vc, z1 + 5);
 }

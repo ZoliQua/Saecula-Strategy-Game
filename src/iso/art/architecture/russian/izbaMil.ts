@@ -1,6 +1,7 @@
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { crest, R } from '../facade';
+import { tentRoof, tentStand } from '../kits/tentRoof';
 import { post, strawButt, target } from '../parts';
 import type { ArchStyle } from '../style';
 import type { AgeArtSet, BuildingArt } from '../types';
@@ -65,7 +66,7 @@ function barracks(s: ArchStyle): BuildingArt {
       });
       if (stone) p.leftFace(GATE[0], GATE[2], GATE[3], 0, (w) => p.door(w / 2 - 8, 16, 26, c.doors.gate), stone);
       const g = oblam(p, s, GATE, 94, 16);
-      const top = towerTop(p, s, g, 110, { hip: 48, oct: 14, tent: 60, onion: 0.07 });
+      const top = towerTop(p, s, g, 110, { hip: 48, oct: 14, tent: 60 });
       p.flag(0.62, 2.2, top, 22, team, true);
       stakeRow(p, 1.05, 2.9, 2.9, 2.9, 0, 20, c.darkWood);
       stakeRow(p, 2.9, 1.4, 2.9, 2.84, 0, 20, c.darkWood);
@@ -87,13 +88,7 @@ function archery(s: ArchStyle): BuildingArt {
       p.ground(0.05, 0.05, 2.95, 2.95, 0x8fa26a);
       if (k.tents) {
         // Tent-roofed shooting stand on four posts.
-        const st: Block = [1.55, 0.35, 2.05, 0.85];
-        p.ground(st[0], st[1], st[2], st[3], 0x8a6a48, 4);
-        for (const [u, v] of [[st[0], st[1]], [st[2], st[1]], [st[0], st[3]], [st[2], st[3]]] as const) post(p, u, v, 0, 40, 2.4, c.timber);
-        const prev = p.material;
-        p.material = 'tile';
-        p.hipRoof(st[0], st[1], st[2], st[3], 40, 62, c.roofAlt, 0.07);
-        p.material = prev;
+        tentStand(p, 1.55, 0.35, 2.05, 0.85, 22, 44, 70, c.timber, c.roofAlt, { material: 'tile', ribs: shade(c.roofAlt, 1.35) });
       }
       // Shooting shed: back log wall, open front on posts.
       logBlock(p, s, [shed[0], shed[1], shed[2], shed[1] + 0.14], 0, 36, undefined, undefined, 0.06);
@@ -135,10 +130,7 @@ function stable(s: ArchStyle): BuildingArt {
           p.ctx.fillStyle = '#1e160e';
           p.ctx.fillRect(w / 2 - 4, -16, 8, 10);
         }, undefined, 0.04);
-        const prev = p.material;
-        p.material = 'tile';
-        p.hipRoof(lu[0], lu[1], lu[2], lu[3], 86, 46, c.roofAlt, 0.05);
-        p.material = prev;
+        tentRoof(p, 1.52, 0.63, 0.17, 86, 54, c.roofAlt, { material: 'tile', eave: 0.04, ribs: shade(c.roofAlt, 1.35) });
       }
       logBlock(p, s, wing, 0, 34, undefined, stalls(R));
       plankGable(p, s, wing, 34, 44, 'v', { window: false });
@@ -148,7 +140,7 @@ function stable(s: ArchStyle): BuildingArt {
       poleFence(p, 1.15, 2.88, 2.88, 2.88, 12);
       poleFence(p, 2.88, 1.15, 2.88, 2.88, 12);
       if (k.tents) {
-        // Yard gate: two posts, a beam and a little plank roof.
+        // Yard gate: two posts, a beam and a little hipped roof.
         for (const u of [1.62, 2.18]) post(p, u, 2.88, 0, 50, 3.4, c.timber);
         p.box(1.56, 2.74, 2.24, 2.98, 50, 58, { color: c.timber, detail: 'planks' }, c.timber);
         const prev = p.material;

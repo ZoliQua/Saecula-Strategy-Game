@@ -164,3 +164,55 @@ export function tentRoof(p: IsoPainter, uc: number, vc: number, r: number, z: nu
   p.addVolumePoint(uc, vc, z + rise);
   return z + rise;
 }
+
+/**
+ * Open lantern: an octagon of apothem r from z to z + h whose facing
+ * facets are open arches (dark, the sky behind), under a tent of `rise`
+ * (a lookout or hay-loft belfry). Returns the apex height.
+ */
+export function openLantern(p: IsoPainter, uc: number, vc: number, r: number, z: number, h: number, rise: number, wall: number, roof: number, ribs?: number): number {
+  octPrism(p, uc, vc, r, z, z + h, wall, 'plain', (w, fh, light) => {
+    const ctx = p.ctx;
+    const ow = w * 0.56;
+    ctx.fillStyle = css(shade(0x1c1612, light));
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - ow / 2, -3);
+    ctx.lineTo(w / 2 - ow / 2, -fh * 0.55);
+    ctx.arc(w / 2, -fh * 0.55, ow / 2, Math.PI, 0);
+    ctx.lineTo(w / 2 + ow / 2, -3);
+    ctx.closePath();
+    ctx.fill();
+  });
+  return tentRoof(p, uc, vc, r, z + h, rise, roof, { material: 'copper', eave: 0.04, ...(ribs === undefined ? {} : { ribs }) });
+}
+
+/**
+ * Tent-roofed stand on four posts over (u0..u1, v0..v1): a railed deck
+ * at `deck`, posts up to `h`, an octagonal tent of `rise` above.
+ * Returns the apex height.
+ */
+export function tentStand(p: IsoPainter, u0: number, v0: number, u1: number, v1: number, deck: number, h: number, rise: number, timber: number, roof: number, o: TentOpts = {}): number {
+  const ctx = p.ctx;
+  const post = (u: number, v: number) => {
+    const [x, y] = p.p(u, v, 0);
+    ctx.fillStyle = css(shade(timber, 1.05));
+    ctx.fillRect(x - 2.6, y - h, 2.6, h);
+    ctx.fillStyle = css(shade(timber, 0.7));
+    ctx.fillRect(x, y - h, 2.6, h);
+    p.normalCylinder(x - 2.6, y - h, 5.2, h);
+  };
+  for (const [u, v] of [[u0, v0], [u1, v0], [u0, v1]] as const) post(u, v);
+  p.box(u0, v0, u1, v1, deck - 4, deck, { color: timber, detail: 'planks' }, shade(timber, 1.15));
+  // Rail round the deck's two front sides.
+  ctx.strokeStyle = css(shade(timber, 1.2));
+  ctx.lineWidth = 1.6;
+  for (const [a, b] of [[p.p(u0, v1, deck + 10), p.p(u1, v1, deck + 10)], [p.p(u1, v1, deck + 10), p.p(u1, v0, deck + 10)]] as const) {
+    ctx.beginPath();
+    ctx.moveTo(a[0], a[1]);
+    ctx.lineTo(b[0], b[1]);
+    ctx.stroke();
+  }
+  post(u1, v1);
+  const r = Math.min(u1 - u0, v1 - v0) / 2;
+  return tentRoof(p, (u0 + u1) / 2, (v0 + v1) / 2, r, h, rise, roof, { eave: 0.05, ...o });
+}

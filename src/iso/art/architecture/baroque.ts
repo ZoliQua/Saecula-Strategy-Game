@@ -5,6 +5,7 @@ import { baroqueWorkArt } from './baroqueWork';
 import { baroqueBlock, pediment, railFence, sentryBox, volutedGable } from './baroqueParts';
 import { foundryArt } from './foundry';
 import { hasOnionDomes, onionDome } from './kits/onionDome';
+import { openLantern } from './kits/tentRoof';
 import { lantern } from './parts';
 import { dormerLeft, dormerRight, finial, helm, type HelmProfile } from './roofs';
 import type { ArchStyle } from './style';
@@ -122,9 +123,9 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         });
         p.material = 'tile';
         styledHip(p, s, 0.32, 0.3, 1.68, 1.62, 50, 44, c.roof, 0.1);
-        // Onion styles crown the hip with a gilt onion on a drum and fly the pennant from the yard.
+        // Onion styles crown the hip with a gilt onion on a drum (smaller than the barracks') and fly the pennant from the yard.
         if (hasOnionDomes(s)) {
-          onionDome(p, 1.0, 0.96, 0.14, 50 + 44 * s.roof.pitch - 6, { color: c.metal, drum: { h: 30, color: c.plaster }, kokoshnik: c.trim });
+          onionDome(p, 1.0, 0.96, 0.12, 50 + 44 * s.roof.pitch - 6, { color: c.metal, drum: { h: 24, color: c.plaster }, kokoshnik: c.trim });
           p.flag(0.2, 1.86, 0, 30, team);
         }
         // Without the street gable the house flies a pennant from its roof instead.
@@ -189,7 +190,8 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         const cupola = roofLift(s, 26 + 16);
         p.box(1.42, 1.07, 1.64, 1.29, 90 + cupola, 108 + cupola, { color: c.trim }, c.trim);
         p.leftFace(1.42, 1.64, 1.29, 90 + cupola, (w) => p.window(w / 2 - 3, -15, 6, 10, true), 18);
-        if (hasOnionDomes(s)) onionDome(p, 1.53, 1.18, 0.13, 108 + cupola, { color: c.metal, drum: { h: 12, color: c.trim } });
+        // Onion styles raise an open, tented hay-loft lookout on the cupola instead of its helm.
+        if (hasOnionDomes(s)) openLantern(p, 1.53, 1.18, 0.15, 108 + cupola, 26, 58, c.board, c.roof, c.trim);
         else {
           helm(p, 1.53, 1.18, 108 + cupola, CUPOLA_HELM, c.metal);
           finial(p, 1.53, 1.18, 137 + cupola, 12, false);

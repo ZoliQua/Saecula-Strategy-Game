@@ -2,17 +2,19 @@ import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { R } from '../facade';
 import { logBox } from '../kits/logWall';
+import { tentRoof } from '../kits/tentRoof';
 import { chimney, forgeLight, forgeMouth, goldPile, logPile, post } from '../parts';
 import type { ArchStyle } from '../style';
 import type { AgeArtSet, BuildingArt } from '../types';
 import { footing, izbaWindow, logBlock, logTown, plankGable, poleFence, stog, type Block } from './izbaParts';
-import { bloomery, rockMound, stripField, tentHeadframe, tentMill, trestle } from './izbaProps';
+import { bloomery, logStack, rockMound, smokeHood, stripField, tentHeadframe, tentMill, trestle, windlass } from './izbaProps';
 
 /*
- * Russian log-town workplaces. Age 1: a log granary over rye and flax
- * strips with haystacks on poles; a log shed with a sawing trestle and
- * log piles; an ore hut by a rocky mound with a clay bloomery; a log
- * smithy with a stone stack. Age 2 adds each trade's own tall cue: a
+ * Russian log-town workplaces. Age 1: a two-storey overhung log granary
+ * over rye and flax strips with haystacks on poles; a log shed with a
+ * sawing trestle and a tall seasoning log stack; an ore hut by a rocky
+ * mound with a windlass headframe and a clay bloomery; a log smithy
+ * venting through a tapering daub smoke hood. Age 2 adds each trade's own tall cue: a
  * tent-roofed windmill, an unfinished log crib (srub) with its gin
  * pole, a tent-roofed shaft headframe, and a brick stack under a
  * tented smoke hood.
@@ -27,7 +29,7 @@ function farm(s: ArchStyle): BuildingArt {
   const tents = logTown(s).tents;
   return {
     size: 2,
-    maxHeight: tents ? 220 : 120,
+    maxHeight: tents ? 220 : 150,
     paint: (p, team) => {
       p.ground(0.05, 0.05, 1.95, 1.95, 0x6e5a3a);
       stripField(p, 0.08, 0.95, 1.92, 1.92, 4);
@@ -36,8 +38,14 @@ function farm(s: ArchStyle): BuildingArt {
         p.footShadow();
         // Granary (ambar) on short stone pads.
         for (const [u, v] of [[BARN[0], BARN[3]], [BARN[2], BARN[3]], [BARN[2], BARN[1]]] as const) p.box(u - 0.04, v - 0.04, u + 0.04, v + 0.04, 0, 6, { color: s.palette.stone }, s.palette.stone);
-        logBlock(p, s, BARN, 6, 36, (w) => p.door(w * 0.55, 13, 22, s.palette.doors.work));
-        plankGable(p, s, BARN, 36, 40, 'u', { horse: false, window: false });
+        // Two-storey northern granary: the upper storey overhangs the lower.
+        logBlock(p, s, BARN, 6, 34, (w) => p.door(w * 0.55, 13, 22, s.palette.doors.work));
+        const up: Block = [BARN[0] - 0.06, BARN[1] - 0.06, BARN[2] + 0.06, BARN[3] + 0.06];
+        logBlock(p, s, up, 34, 60, (w) => {
+          p.ctx.fillStyle = '#1e160e';
+          p.ctx.fillRect(w * 0.45, -18, 9, 10);
+        });
+        plankGable(p, s, up, 60, 46, 'u', { horse: false, window: false });
         p.flag(1.9, 0.12, 0, 26, team);
       }
       stog(p, 1.35, 0.35, 13, 40);
@@ -95,7 +103,7 @@ function lumber(s: ArchStyle): BuildingArt {
       trestle(p, s, 1.45, 1.05, 1.55);
       logPile(p, 0.3, 1.75, 7, shade(c.darkWood, 0.9), 0xd9b07a);
       logPile(p, 1.0, 1.82, 5, shade(c.darkWood, 0.9), 0xd9b07a);
-      if (!tents) logPile(p, 1.35, 0.5, 6, shade(c.darkWood, 0.9), 0xd9b07a);
+      if (!tents) logStack(p, s, 1.22, 0.24, 1.78, 0.62, 56);
       p.flag(1.86, 1.86, 0, 26, team);
     },
   };
@@ -106,7 +114,7 @@ function mining(s: ArchStyle): BuildingArt {
   const c = s.palette;
   return {
     size: 2,
-    maxHeight: tents ? 150 : 110,
+    maxHeight: tents ? 150 : 120,
     paint: (p, team) => {
       p.footShadow();
       p.ground(0.1, 0.1, 1.9, 1.9, 0x837a68);
@@ -121,6 +129,7 @@ function mining(s: ArchStyle): BuildingArt {
         p.ctx.fillRect(x - 11, y - 22, 22, 22);
         p.ctx.fillStyle = '#120c08';
         p.ctx.fillRect(x - 8, y - 19, 16, 19);
+        windlass(p, s, 0.95, 0.82, 1.22, 72);
       }
       footing(p, s, HUT, 6);
       logBlock(p, s, HUT, 6, 36, (w) => p.door(w * 0.5, 12, 22, c.doors.work), (w, h) => izbaWindow(p, s, w * 0.35, -h + 12, 8, 9, R, false));
@@ -142,15 +151,14 @@ function smithy(s: ArchStyle): BuildingArt {
     paint: (p: IsoPainter, team: number) => {
       p.footShadow();
       p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
-      const stackTop = tents ? 132 : 104;
-      chimney(p, 0.86, 0.42, 1.12, 0.68, 0, stackTop, { color: tents ? c.brick : c.stone, detail: tents ? 'brick' : 'fieldstone' });
+      const stackTop = tents ? 132 : 112;
+      // Age 1 vents the forge through a broad tapering daub hood; age 2 through a brick stack.
+      if (tents) chimney(p, 0.86, 0.42, 1.12, 0.68, 0, stackTop, { color: c.brick, detail: 'brick' });
+      else smokeHood(p, s, 0.66, 0.26, 1.3, 0.86, 0, stackTop);
       if (tents) {
         // Tented smoke hood (dymnik) on four little posts over the stack.
         for (const [u, v] of [[0.84, 0.66], [1.14, 0.66], [1.14, 0.4]] as const) post(p, u, v, stackTop, stackTop + 9, 1.2, 0x3a3530);
-        const prev = p.material;
-        p.material = 'tile';
-        p.hipRoof(0.82, 0.38, 1.16, 0.72, stackTop + 9, 24, c.roofAlt, 0.03);
-        p.material = prev;
+        tentRoof(p, 0.99, 0.55, 0.17, stackTop + 9, 30, c.roofAlt, { material: 'tile', eave: 0.02 });
       }
       const top0 = footing(p, s, SMITHY, tents ? 20 : 6, undefined, (w) => forgeMouth(p, w * 0.3, 24, 18));
       logBlock(p, s, SMITHY, top0, top0 + 30, (w) => {

@@ -67,7 +67,7 @@ function paintKremlin(p: IsoPainter, s: ArchStyle, team: number): void {
   };
   p.leftFace(GATE[0] - 0.06, GATE[2] + 0.06, GATE[3] + 0.06, 98, loops, 14);
   p.rightFace(GATE[1] - 0.06, GATE[3] + 0.06, GATE[2] + 0.06, 98, loops, 14);
-  const top = towerTop(p, s, GATE, 112, { oct: 20, tent: 84, onion: 0.06 });
+  const top = towerTop(p, s, GATE, 112, { oct: 20, tent: 84 });
   p.flag(0.64, 2.24, top, 22, team, true);
   // The log terem in the yard.
   logBlock(p, s, TEREM, 0, 40, (w, h) => {

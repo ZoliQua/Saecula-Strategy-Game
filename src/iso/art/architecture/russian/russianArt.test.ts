@@ -164,7 +164,7 @@ describe('Russian architecture (log gorod, Muscovy, Petrine, St Basil)', () => {
     }
   });
 
-  it('every age reads differently from the one before (town centre, house, tower by shadow volume)', () => {
+  it('every age reads differently from the one before (town centre, house, tower, barracks by shadow volume)', () => {
     for (const type of ['town_center', 'house', 'tower', 'barracks'] as const) {
       const hashes = AGES.map((age) => hashPainting(() => paintBuilding(type, TEAM, age, CIV, false).volume));
       expect(new Set(hashes).size, type).toBe(3);
