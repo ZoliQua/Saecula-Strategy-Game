@@ -116,4 +116,16 @@ describe('French wall styles', () => {
     expect(pier).toBeGreaterThan(enPier + 10);
     expect(pier).toBeGreaterThan(run + 20);
   });
+
+  it('hangs each échauguette over a free salient whenever one is free (front last on bastions)', async () => {
+    const { echauguetteSalient } = await import('./vauban');
+    const { freeSalients, SALIENT_ARM } = await import('../kits/salients');
+    for (let arms = 0; arms < 256; arms++) {
+      const s = echauguetteSalient(arms);
+      if (freeSalients(arms, ['front', 'right', 'left']).length > 0) expect(arms & SALIENT_ARM[s], `arms ${arms}`).toBe(0);
+    }
+    // Both side corners carry diagonal arms: the front corner, beside the gun.
+    expect(echauguetteSalient(WALL_NE | WALL_SW | WALL_N)).toBe('front');
+    expect(echauguetteSalient(WALL_N | WALL_E)).toBe('right');
+  });
 });

@@ -29,6 +29,12 @@ export interface PorticusOpts {
   readonly pediment?: number;
 }
 
+/** u of column `i` of `n`, spread from end to end (a lone column stands in the middle). */
+export function porticusColumnU(u0: number, u1: number, i: number, n: number): number {
+  if (n <= 1) return (u0 + u1) / 2;
+  return u0 + 0.06 + ((u1 - u0 - 0.12) * i) / (n - 1);
+}
+
 /**
  * Porticus along the +v face (v = vWall) from u0 to u1, `depth` tiles
  * deep: the lean-to falls from zTop at the wall to zLow on the columns.
@@ -40,7 +46,7 @@ export function porticus(p: IsoPainter, s: ArchStyle, u0: number, u1: number, vW
   p.material = s.roof.material ?? 'slate';
   porchRoofLeft(p, u0, u1, vWall, depth, zTop, zLow, c.roofAlt);
   p.material = prev;
-  for (let i = 0; i < opts.columns; i++) column(p, u0 + 0.06 + ((u1 - u0 - 0.12) * i) / (opts.columns - 1), v, 0, zLow, 2.5, c.trim);
+  for (let i = 0; i < opts.columns; i++) column(p, porticusColumnU(u0, u1, i, opts.columns), v, 0, zLow, 2.5, c.trim);
   // Architrave over the columns.
   const a = p.p(u0, vWall + depth, zLow);
   const b = p.p(u1, vWall + depth, zLow);

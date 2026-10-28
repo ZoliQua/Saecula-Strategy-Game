@@ -1,4 +1,4 @@
-import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS } from '../../config/civs';
+import { AVAILABLE_CIVS, CIV_DEFS } from '../../config/civs';
 import { hu } from '../../i18n/hu';
 import type { CivId } from '../../types';
 import type { CivPreview } from '../civPreview';
@@ -12,11 +12,10 @@ export const hex = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 
 /**
  * The human's civ choice on the setup card: a 4×2 grid with a card per
- * civ — the playable ones show their lit age-1 town centre with
- * flickering windows, the rest a "hamarosan" chip. Each card carries its
- * civ's heraldic colours; the chosen civ's one-line description shows in
- * `caption` (the card's accessible description is its own line). A
- * radiogroup: arrows move between playable civs.
+ * playable civ, each showing its lit age-1 town centre with flickering
+ * windows. Each card carries its civ's heraldic colours; the chosen civ's
+ * one-line description shows in `caption` (the card's accessible
+ * description is its own line). A radiogroup: arrows move between civs.
  */
 export class CivPicker {
   readonly root: HTMLElement;
@@ -31,14 +30,11 @@ export class CivPicker {
   constructor(value: CivId, previews: (civ: CivId) => CivPreview | undefined, private readonly onChange: (civ: CivId) => void) {
     this.value = value;
     this.root = el('div', { class: 'civ-grid', role: 'radiogroup', 'aria-label': hu.setup.civ });
-    CIV_IDS.forEach((id, i) => {
-      const available = AVAILABLE_CIVS.includes(id);
-      const button = this.card(id, available ? previews(id) : undefined, available);
+    AVAILABLE_CIVS.forEach((id, i) => {
+      const button = this.card(id, previews(id));
       button.dataset['civ'] = id;
-      if (available) {
-        button.addEventListener('click', () => this.pick(id));
-        button.addEventListener('keydown', (e) => this.onKey(e, i));
-      }
+      button.addEventListener('click', () => this.pick(id));
+      button.addEventListener('keydown', (e) => this.onKey(e, i));
       this.buttons.push(button);
       this.root.append(button);
     });
@@ -55,7 +51,7 @@ export class CivPicker {
     for (const b of this.buttons) {
       const on = b.dataset['civ'] === value;
       b.setAttribute('aria-checked', String(on));
-      if (!b.disabled) b.tabIndex = on ? 0 : -1;
+      b.tabIndex = on ? 0 : -1;
     }
     this.captionName.textContent = hu.civs[value];
     this.captionDesc.textContent = hu.setup.civDesc[value];
@@ -77,33 +73,31 @@ export class CivPicker {
     requestAnimationFrame(() => stage.classList.add('ready'));
   }
 
-  private card(id: CivId, preview: CivPreview | undefined, available: boolean): HTMLButtonElement {
+  private card(id: CivId, preview: CivPreview | undefined): HTMLButtonElement {
     const { primary, secondary, accent } = CIV_DEFS[id].heraldry;
     const stage = el(
       'span',
       { class: `civ-stage${preview ? ' ready' : ''}${preview && !preview.art ? ' failed' : ''}`, 'aria-hidden': 'true' },
       el('i', { class: 'civ-pool' }),
       el('i', { class: 'civ-flag', style: `--h1:${hex(primary)};--h2:${hex(secondary)};--h3:${hex(accent)}` }),
-      available ? null : el('span', { class: 'soon' }, hu.setup.comingSoon),
     );
     if (preview?.art) stage.prepend(...previewImages(preview));
-    if (available) this.stages.set(id, stage);
+    this.stages.set(id, stage);
     // Named by the civ only; the one-liner is its description (not read as one run-on name).
     const nameId = `civ-name-${id}`;
     const descId = `civ-desc-${id}`;
     return el(
       'button',
       {
-        class: `civ-card${available ? '' : ' civ-soon'}`,
+        class: 'civ-card',
         type: 'button',
         role: 'radio',
-        disabled: !available,
         'aria-labelledby': nameId,
         'aria-describedby': descId,
       },
       stage,
       el('span', { class: 'civ-name', id: nameId }, hu.civs[id]),
-      el('span', { class: 'sr-only', id: descId }, available ? hu.setup.civDesc[id] : `${hu.setup.civDesc[id]} (${hu.setup.comingSoon})`),
+      el('span', { class: 'sr-only', id: descId }, hu.setup.civDesc[id]),
       el('i', { class: 'civ-check', html: CHECK, 'aria-hidden': 'true' }),
     );
   }
@@ -117,7 +111,7 @@ export class CivPicker {
     if (dir === 0) return;
     e.preventDefault();
     const j = nextEnabled(
-      this.buttons.map((b) => !b.disabled),
+      this.buttons.map(() => true),
       from,
       dir,
     );
