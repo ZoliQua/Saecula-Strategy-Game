@@ -64,6 +64,7 @@ describe('MusicPlayer', () => {
     }
     expect(budget).toBeGreaterThan(4);
     expect(budget).toBeLessThanOrEqual(MUSIC_MAX_VOICES);
+    expect(MUSIC_MAX_VOICES).toBe(16);
     // Only stolen notes in their short fade may sound beyond the budget.
     expect(sounding).toBeLessThanOrEqual(MUSIC_MAX_VOICES + 3);
   });

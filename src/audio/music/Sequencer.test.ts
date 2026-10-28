@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { NoteEvent, Piece } from './composer';
 import type { Voice } from './instruments';
 import { fakeAudio } from './fakeAudio.testkit';
-import { eventsInWindow, heldAt, Sequencer, VoicePool } from './Sequencer';
+import { eventsInWindow, heldAt, pickSteal, Sequencer, VoicePool } from './Sequencer';
 
 const note = (beat: number): NoteEvent => ({ beat, beats: 0.5, voice: 'lyre', midi: 62, velocity: 0.5 });
 
@@ -111,5 +111,47 @@ describe('Sequencer after a stall', () => {
     seq.update();
     expect(seq.played - before).toBe(1);
     expect(seq.sounding).toBe(1);
+  });
+});
+
+describe('pickSteal', () => {
+  const c = (outgoing: boolean, off: number, end: number) => ({ outgoing, off, end });
+
+  it('takes the outgoing piece\'s releasing note first (soonest end)', () => {
+    const list = [c(false, 1, 2), c(true, 9, 10), c(true, 4, 8), c(true, 3, 6)];
+    expect(pickSteal(list, 5)).toBe(3);
+  });
+
+  it('then the outgoing piece\'s oldest note, even one still held, before any incoming note', () => {
+    // Incoming notes are releasing, outgoing ones are held: an outgoing one still goes, the oldest (first added).
+    const list = [c(false, 1, 2), c(true, 9, 12), c(true, 8, 9), c(false, 2, 3)];
+    expect(pickSteal(list, 5)).toBe(1);
+  });
+
+  it('with no outgoing notes: a releasing note before a held one, then the soonest end', () => {
+    expect(pickSteal([c(false, 9, 12), c(false, 4, 11), c(false, 9, 10)], 5)).toBe(1);
+    expect(pickSteal([c(false, 9, 12), c(false, 8, 10)], 5)).toBe(1);
+  });
+});
+
+describe('VoicePool across a crossfade', () => {
+  it('never cuts an incoming note while the outgoing piece still has notes', () => {
+    const pool = new VoicePool(3);
+    const mk = (end: number, off: number) => {
+      const v = { end, off, released: null as number | null, release: (at: number) => ((v.released = at), (v.end = at + 0.15)) };
+      return v;
+    };
+    const out = { stopping: true };
+    const inc = { stopping: false };
+    const old = mk(30, 29);
+    const n1 = mk(2.4, 2.4);
+    const n2 = mk(2.6, 2.6);
+    pool.add(old as unknown as Voice, out);
+    pool.add(n1 as unknown as Voice, inc);
+    pool.add(n2 as unknown as Voice, inc);
+    pool.admit(2, 2.05);
+    expect(old.released).toBe(2.05);
+    expect(n1.released).toBeNull();
+    expect(n2.released).toBeNull();
   });
 });

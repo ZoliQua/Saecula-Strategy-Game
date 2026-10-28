@@ -63,46 +63,79 @@ export function heldAt(piece: Piece, fromBeat: number, beat: number, minLeft: nu
     .map((e) => ({ ...e, beat, beats: e.beat + e.beats - beat }));
 }
 
+/** Who scheduled a note: a piece that is stopping (fading out) gives way to the incoming one. */
+export interface VoiceOwner {
+  readonly stopping: boolean;
+}
+
+/** What the steal choice knows of a note. */
+export interface StealCandidate {
+  /** Its piece is the outgoing one (fading out). */
+  readonly outgoing: boolean;
+  /** Note-off time (after it only the release tail sounds). */
+  readonly off: number;
+  readonly end: number;
+}
+
+/**
+ * Which note makes room at `at` (index into `candidates`, oldest first):
+ * the outgoing piece's notes already in release (soonest end), then the
+ * outgoing piece's oldest; only when the outgoing piece has none, the
+ * incoming piece's releasing notes before held ones, soonest end first.
+ */
+export function pickSteal(candidates: readonly StealCandidate[], at: number): number {
+  let best = -1;
+  let bestRank = Number.POSITIVE_INFINITY;
+  let bestEnd = Number.POSITIVE_INFINITY;
+  candidates.forEach((c, i) => {
+    const releasing = c.off <= at;
+    // Ranks: 0 outgoing releasing, 1 outgoing held (oldest = first seen), 2 releasing, 3 held.
+    const rank = c.outgoing ? (releasing ? 0 : 1) : releasing ? 2 : 3;
+    const end = rank === 1 ? 0 : c.end;
+    if (rank < bestRank || (rank === bestRank && end < bestEnd)) {
+      best = i;
+      bestRank = rank;
+      bestEnd = end;
+    }
+  });
+  return best;
+}
+
+const NO_OWNER: VoiceOwner = { stopping: false };
+
 /**
  * The music's voice budget, shared by every sequencer (both buses of a
- * crossfade): at most `cap` notes. To make room, a note already past its
- * note-off goes first, then the one ending soonest.
+ * crossfade): at most `cap` notes. A note that has to make room is chosen
+ * by `pickSteal` (the fading piece gives way first).
  */
 export class VoicePool {
-  private voices: Voice[] = [];
+  private entries: Array<{ voice: Voice; owner: VoiceOwner }> = [];
   /** Notes cut short to make room. */
   stolen = 0;
 
   constructor(private readonly cap = MUSIC_MAX_VOICES) {}
 
   get size(): number {
-    return this.voices.length;
+    return this.entries.length;
   }
 
   /** Frees ended notes, then releases notes (fast, from `at`) until a new one fits. */
   admit(now: number, at: number): void {
-    this.voices = this.voices.filter((v) => v.end > now);
-    while (this.voices.length >= this.cap) {
-      let pick = 0;
-      for (let i = 1; i < this.voices.length; i++) if (better(this.voices[i], this.voices[pick], at)) pick = i;
-      const [v] = this.voices.splice(pick, 1);
-      v?.release(at);
+    this.entries = this.entries.filter((e) => e.voice.end > now);
+    while (this.entries.length >= this.cap) {
+      const pick = pickSteal(
+        this.entries.map((e) => ({ outgoing: e.owner.stopping, off: e.voice.off, end: e.voice.end })),
+        at,
+      );
+      const [e] = this.entries.splice(Math.max(0, pick), 1);
+      e?.voice.release(at);
       this.stolen++;
     }
   }
 
-  add(v: Voice): void {
-    this.voices.push(v);
+  add(voice: Voice, owner: VoiceOwner = NO_OWNER): void {
+    this.entries.push({ voice, owner });
   }
-}
-
-/** Whether `a` should be cut before `b`: releasing beats held, then the sooner end. */
-function better(a: Voice | undefined, b: Voice | undefined, at: number): boolean {
-  if (!a || !b) return false;
-  const ar = a.off <= at;
-  const br = b.off <= at;
-  if (ar !== br) return ar;
-  return a.end < b.end;
 }
 
 /**
@@ -112,7 +145,7 @@ function better(a: Voice | undefined, b: Voice | undefined, at: number): boolean
  * skipped and long held ones re-enter. `stop` ends the scheduling at a
  * time and releases whatever still sounds then.
  */
-export class Sequencer {
+export class Sequencer implements VoiceOwner {
   private piece: Piece | null = null;
   private startTime = 0;
   /** Beats scheduled so far (exclusive), from the piece start. */
@@ -138,6 +171,11 @@ export class Sequencer {
     this.startTime = atTime;
     this.scheduled = 0;
     this.stopAt = Number.POSITIVE_INFINITY;
+  }
+
+  /** The piece is stopping (fading out): its notes give way first at the voice cap. */
+  get stopping(): boolean {
+    return this.stopAt !== Number.POSITIVE_INFINITY;
   }
 
   stop(atTime: number): void {
@@ -199,7 +237,7 @@ export class Sequencer {
     // Scheduled during a fade-out: it lets go when the piece stops.
     if (this.stopAt !== Number.POSITIVE_INFINITY) voice.release(this.stopAt);
     this.voices.push(voice);
-    this.pool.add(voice);
+    this.pool.add(voice, this);
     this.played++;
   }
 

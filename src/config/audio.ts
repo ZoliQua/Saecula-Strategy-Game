@@ -85,8 +85,10 @@ export const MASTER_LIMITER = { thresholdDb: -12, kneeDb: 10, ratio: 6, attackS:
 
 /** How far ahead of the audio clock the sequencer schedules notes, in seconds. */
 export const MUSIC_LOOKAHEAD_S = 0.1;
-/** Most music notes sounding at once (release tails included); the composer stays under it, the sequencer enforces it. */
-export const MUSIC_MAX_VOICES = 12;
+/** Most music notes one piece is written for (release tails counted): the composer stays under it. */
+export const MUSIC_PIECE_VOICES = 12;
+/** Most music notes sounding at once over both buses (a crossfade overlaps two pieces); the sequencers share it. */
+export const MUSIC_MAX_VOICES = 16;
 /** Crossfade between calm pieces, into and out of combat, and to the menu, in ms. */
 export const MUSIC_CROSSFADE_MS = 3000;
 /** Fade into a victory / defeat stinger, in ms. */
@@ -113,8 +115,8 @@ export const MUSIC_MENU_BPM = 66;
 export const MUSIC_STINGER_SECONDS = { victory: 11.5, defeat: 11 } as const;
 /** Generated reverb (a convolver on a decaying-noise impulse): length, decay curve, return level, damping. */
 export const MUSIC_REVERB = { seconds: 2.6, decay: 3.4, wet: 0.4, dampHz: 4200 } as const;
-/** Gain of the bus each piece plays on: calm music sits near −23 dBFS RMS at the default volumes (master 80 %, music 60 %), under the SFX. */
-export const MUSIC_BUS_LEVEL = 4;
+/** Gain of the bus each piece plays on: calm music sits near −27 dBFS RMS at the default volumes (master 80 %, music 60 %), under the SFX (single effects play at −28 to −38). */
+export const MUSIC_BUS_LEVEL = 2.5;
 
 /**
  * The music instruments (VoiceId) by age — Roman: lyre, aulos, frameDrum;

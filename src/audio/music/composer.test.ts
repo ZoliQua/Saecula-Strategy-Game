@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MUSIC_MAX_VOICES, MUSIC_VOICES } from '../../config/audio';
+import { MUSIC_PIECE_VOICES, MUSIC_VOICES } from '../../config/audio';
 import type { AgeId } from '../../types';
 import { composePiece, modeOf, pieceSeconds, type MusicTrack, type Piece, type VoiceId } from './composer';
 import { allowedPitchClasses, isPitched } from './theory';
@@ -108,7 +108,7 @@ describe('composePiece', () => {
       for (const age of AGES) {
         for (const track of TRACKS) {
           const p = composePiece(track, age, seed);
-          expect(peakPolyphony(p), `${track}/${age}/${seed}`).toBeLessThanOrEqual(MUSIC_MAX_VOICES);
+          expect(peakPolyphony(p), `${track}/${age}/${seed}`).toBeLessThanOrEqual(MUSIC_PIECE_VOICES);
           for (let i = 1; i < p.events.length; i++) expect(p.events[i]!.beat).toBeGreaterThanOrEqual(p.events[i - 1]!.beat);
           for (const e of p.events) {
             expect(e.beat).toBeGreaterThanOrEqual(0);
