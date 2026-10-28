@@ -141,16 +141,28 @@ class Note {
   }
 }
 
+/** A release this close to the clock counts as "now" (a steal). */
+const RELEASE_NOW_S = 0.005;
+
 /**
  * Freezes a param's automation at `at` (cancelAndHold where supported) and
- * returns the time the release starts from. Without it (Firefox) the
- * current value is only known now, so the release starts now: holding a
- * value read now at a later time would jump a decayed note back up (a click).
+ * returns the time the release starts from. Without it (Firefox):
+ * - a release now (a steal) reads the current value and holds it now; a
+ *   value read now and held at a later time would jump a decayed note back
+ *   up (a click);
+ * - a release in the future (the end of a crossfade) only drops the
+ *   automation from `at` on; the caller's setTarget then starts from
+ *   whatever value the envelope has at `at`, so the note keeps sounding
+ *   (and fading with its bus) until then.
  */
 function holdAt(p: AudioParam, at: number, now: number): number {
   const hold = (p as AudioParam & { cancelAndHoldAtTime?: (t: number) => AudioParam }).cancelAndHoldAtTime;
   if (typeof hold === 'function') {
     hold.call(p, at);
+    return at;
+  }
+  if (at > now + RELEASE_NOW_S) {
+    p.cancelScheduledValues(at);
     return at;
   }
   const v = p.value;

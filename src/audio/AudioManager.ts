@@ -199,8 +199,8 @@ export class AudioManager implements AudioSink {
 
   /**
    * Crossfades the music to `track` (at `age`, composed from `seed`). A
-   * buffer registered under `music_<track>` plays looped instead. The
-   * music director calls this on its own; dropped before the unlock.
+   * buffer registered under `music_<track>` plays instead (looped for the
+   * menu and combat, once otherwise). The director calls this; dropped before the unlock.
    */
   playMusic(track: MusicTrack, fadeInMs: number, age?: AgeId, seed?: number): void {
     if (this.ready()) this.graph?.music.play(track, fadeInMs, age, seed);

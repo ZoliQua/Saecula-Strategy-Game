@@ -69,15 +69,39 @@ describe('MusicPlayer', () => {
     expect(sounding).toBeLessThanOrEqual(MUSIC_MAX_VOICES + 3);
   });
 
-  it('a switched-out piece is disposed once its fade and tails are over', () => {
+  it('a switched-out piece is disposed once its fade and tails are over: its channel nodes are unwired', () => {
     const { fake, player, run } = setup();
+    // The sequencer's per-instrument channel nodes are the gains and panners created after the bus gains.
+    const created: Array<{ kind: string; disconnected: number }> = [];
+    const wrap = <K extends 'createGain' | 'createStereoPanner'>(kind: K) => {
+      const make = fake.ctx[kind];
+      (fake.ctx as Record<string, unknown>)[kind] = () => {
+        const n = make() as { disconnect: () => void };
+        const rec = { kind, disconnected: 0 };
+        created.push(rec);
+        const d = n.disconnect;
+        n.disconnect = () => {
+          rec.disconnected++;
+          d();
+        };
+        return n;
+      };
+    };
     player.play('calm_a', MUSIC_CROSSFADE_MS, 2, 1);
+    wrap('createStereoPanner');
     run(0, 4);
+    const oldPanners = created.filter((c) => c.kind === 'createStereoPanner');
+    expect(oldPanners.length).toBeGreaterThan(0);
     player.play('combat', MUSIC_CROSSFADE_MS, 2, 1);
-    const before = fake.disconnects();
-    run(4, 12);
-    // The old sequencer's channel nodes (panners, sends, inputs) were unwired.
-    expect(fake.disconnects() - before).toBeGreaterThan(20);
+    created.length = 0;
+    run(4, 6);
+    // Mid-fade the old channels are still wired.
+    expect(oldPanners.every((c) => c.disconnected === 0)).toBe(true);
+    run(6, 14);
+    expect(oldPanners.every((c) => c.disconnected === 1)).toBe(true);
+    // The incoming piece's channels stay wired.
+    expect(created.filter((c) => c.kind === 'createStereoPanner').every((c) => c.disconnected === 0)).toBe(true);
+    void fake;
   });
 
   it('a registered stinger plays once; a registered combat track loops', () => {

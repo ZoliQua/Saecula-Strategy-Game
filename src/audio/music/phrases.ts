@@ -321,7 +321,6 @@ export class Score {
     this.events.push({ beat: at, beats, voice, midi: Math.round(midi), velocity: Math.round(v * 1000) / 1000 });
   }
 
-  /** A melody line on `voice`, `octave` octaves above the mode's tonic. */
   /**
    * A melody line on `voice`, `octave` octaves above the mode's tonic. A
    * step between the 6th and a raised 7th (an augmented second) takes the
