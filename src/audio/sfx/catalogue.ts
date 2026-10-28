@@ -38,7 +38,8 @@ export const SFX_KEYS = [
 
 export type SfxKey = (typeof SFX_KEYS)[number];
 /** Music keys arrive with the music system (Task 9); they share the bank's key space. */
-export type MusicKey = `music_${string}`;
+export type { MusicKey } from '../music/composer';
+import type { MusicKey } from '../music/composer';
 export type SoundKey = SfxKey | MusicKey;
 
 export interface SfxSpec {

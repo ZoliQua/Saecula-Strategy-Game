@@ -1,4 +1,3 @@
-import type { VoiceId } from '../audio/music/composer';
 import type { AgeId } from '../types';
 
 /**
@@ -92,6 +91,12 @@ export const MUSIC_MAX_VOICES = 12;
 export const MUSIC_CROSSFADE_MS = 3000;
 /** Fade into a victory / defeat stinger, in ms. */
 export const MUSIC_STINGER_FADE_MS = 1000;
+/** A piece entering after silence (nothing playing, or the last piece ended) comes in this fast, in ms: its downbeat is heard. */
+export const MUSIC_FAST_IN_MS = 150;
+/** A stinger reaches full level this fast, in ms (the outgoing music still fades over MUSIC_STINGER_FADE_MS). */
+export const MUSIC_STINGER_IN_MS = 100;
+/** After a stall (a hidden tab), a held drone / string / pad note with at least this long to go is re-entered, in seconds. */
+export const MUSIC_REENTER_MIN_S = 1;
 /** Combat music returns to calm this long after the last fight near the camera, in ms. */
 export const MUSIC_COMBAT_HOLD_MS = 10_000;
 /** Seed of the music director: each switch composes a new piece from it. */
@@ -108,17 +113,19 @@ export const MUSIC_MENU_BPM = 66;
 export const MUSIC_STINGER_SECONDS = { victory: 11.5, defeat: 11 } as const;
 /** Generated reverb (a convolver on a decaying-noise impulse): length, decay curve, return level, damping. */
 export const MUSIC_REVERB = { seconds: 2.6, decay: 3.4, wet: 0.4, dampHz: 4200 } as const;
-/** Level of the music under the sfx: the bus each piece plays on. */
-export const MUSIC_BUS_LEVEL = 0.9;
+/** Gain of the bus each piece plays on: calm music sits near −23 dBFS RMS at the default volumes (master 80 %, music 60 %), under the SFX. */
+export const MUSIC_BUS_LEVEL = 4;
 
 /**
- * Per instrument: note level, stereo position, release tail after the
+ * The music instruments (VoiceId) by age — Roman: lyre, aulos, frameDrum;
+ * medieval: drone, recorder, tabor, bell; early modern: harpsichord,
+ * strings, timpani, flute; menu: pad, harp. Per instrument: note level, stereo position, release tail after the
  * note's end (s) and reverb send. Melody voices sit in front, harmony
  * spread left and right, percussion low and dry.
  */
 export const MUSIC_VOICES = {
-  lyre: { level: 0.2, pan: -0.3, tailS: 0.4, send: 0.5 },
-  aulos: { level: 0.12, pan: 0.12, tailS: 0.25, send: 0.55 },
+  lyre: { level: 0.26, pan: -0.3, tailS: 0.4, send: 0.5 },
+  aulos: { level: 0.15, pan: 0.12, tailS: 0.25, send: 0.55 },
   frameDrum: { level: 0.3, pan: 0.2, tailS: 0.45, send: 0.25 },
   drone: { level: 0.07, pan: 0, tailS: 2, send: 0.6 },
   recorder: { level: 0.12, pan: 0.15, tailS: 0.18, send: 0.6 },
@@ -130,4 +137,4 @@ export const MUSIC_VOICES = {
   flute: { level: 0.15, pan: 0.1, tailS: 0.22, send: 0.55 },
   pad: { level: 0.06, pan: 0, tailS: 2.7, send: 0.7 },
   harp: { level: 0.15, pan: -0.15, tailS: 1.1, send: 0.6 },
-} as const satisfies Record<VoiceId, { level: number; pan: number; tailS: number; send: number }>;
+} as const satisfies Record<string, { level: number; pan: number; tailS: number; send: number }>;

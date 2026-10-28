@@ -1,8 +1,8 @@
-import { MUSIC_BUS_LEVEL, MUSIC_REVERB, MUSIC_SEED } from '../../config/audio';
+import { MUSIC_BUS_LEVEL, MUSIC_FAST_IN_MS, MUSIC_REVERB, MUSIC_SEED, MUSIC_STINGER_IN_MS } from '../../config/audio';
 import type { AgeId } from '../../types';
 import { composePiece, type MusicKey, type MusicTrack } from './composer';
 import { MusicDirector, type DirectorInput } from './MusicDirector';
-import { Sequencer } from './Sequencer';
+import { Sequencer, VoicePool } from './Sequencer';
 
 /** Where registered music buffers come from (the SFX bank: the OGG swap-in). */
 export interface MusicBuffers {
@@ -13,10 +13,14 @@ export interface MusicStats {
   readonly track: MusicTrack | null;
   readonly age: AgeId | null;
   readonly scene: DirectorInput['scene'] | null;
-  /** Music notes sounding now (both buses). */
+  /** Music notes sounding now (both buses, a stolen note's 0.15 s fade included). */
   readonly voices: number;
+  /** Notes in the shared voice budget (≤ MUSIC_MAX_VOICES). */
+  readonly budget: number;
   readonly played: number;
   readonly stolen: number;
+  /** Seed of the piece playing (game pieces mix in the match seed; the menu's is fixed). */
+  readonly seed: number | null;
   /** Main-thread time of the music per update (director, composing, scheduling), in ms. */
   readonly schedMs: { readonly frames: number; readonly avg: number; readonly max: number };
 }
@@ -25,8 +29,21 @@ interface Bus {
   readonly dry: GainNode;
   readonly wet: GainNode;
   seq: Sequencer | null;
-  /** A registered buffer playing looped, with its own gain (so it can be cut without a click). */
-  source: { readonly node: AudioBufferSourceNode; readonly gain: GainNode } | null;
+  /** A registered buffer playing, with its own gain (so it can be cut without a click); `endsAt` null when looping. */
+  source: { readonly node: AudioBufferSourceNode; readonly gain: GainNode; readonly endsAt: number | null } | null;
+}
+
+/** Tracks a registered buffer loops for (calm pieces and stingers play once). */
+const LOOPING: ReadonlySet<MusicTrack> = new Set<MusicTrack>(['menu', 'combat']);
+
+/**
+ * How long the incoming piece takes to reach full level: fast after
+ * silence (the outgoing piece already ended, or nothing played), so its
+ * downbeat is heard, and fast for a stinger; otherwise the crossfade.
+ */
+export function incomingFadeMs(outgoingSilent: boolean, track: MusicTrack, fadeMs: number): number {
+  if (track === 'victory' || track === 'defeat') return MUSIC_STINGER_IN_MS;
+  return outgoingSilent ? Math.min(fadeMs, MUSIC_FAST_IN_MS) : fadeMs;
 }
 
 /** Steps of the equal-power crossfade (linear segments: cancellable, click-free). */
@@ -36,8 +53,9 @@ const START_DELAY_S = 0.05;
 
 /**
  * The music: two buses that crossfade (equal power) when the director
- * switches track, each playing a composed piece through a Sequencer, or a
- * looped buffer registered under `music_<track>`. A shared generated
+ * switches track (a fast fade-in after silence), each playing a composed
+ * piece through a Sequencer, or a buffer registered under `music_<track>`
+ * (looped for the menu and combat). A shared generated
  * reverb gives every instrument a room.
  */
 export class MusicPlayer {
@@ -48,6 +66,11 @@ export class MusicPlayer {
   private track: MusicTrack | null = null;
   private age: AgeId | null = null;
   private readonly director = new MusicDirector(MUSIC_SEED);
+  /** One voice budget for both buses (a crossfade stays within the cap). */
+  private readonly pool = new VoicePool();
+  /** The match seed game pieces are composed from (with the director's per-switch seed). */
+  private matchSeed = 0;
+  private seed: number | null = null;
   /** Stopped sequencers whose last notes are still releasing. */
   private retiring: Sequencer[] = [];
   private scene: DirectorInput['scene'] | null = null;
@@ -55,7 +78,6 @@ export class MusicPlayer {
   /** Fighting near the camera since the last update (latched: the game feeds it after the step that reads it). */
   private combat = false;
   private played = 0;
-  private stolen = 0;
   private frames = 0;
   private totalMs = 0;
   private maxMs = 0;
@@ -80,8 +102,10 @@ export class MusicPlayer {
     this.ensureReverb();
   }
 
-  setScene(scene: DirectorInput['scene']): void {
+  /** Where the player is; a match passes its seed, so each match has its own pieces. */
+  setScene(scene: DirectorInput['scene'], matchSeed?: number): void {
     this.scene = scene;
+    if (matchSeed !== undefined) this.matchSeed = matchSeed >>> 0;
   }
 
   /** Per game frame: the human's age, and whether fighting is near the camera. */
@@ -98,6 +122,7 @@ export class MusicPlayer {
     const old = this.buses[this.active];
     const nextIndex: 0 | 1 = this.active === 0 ? 1 : 0;
     const next = this.buses[nextIndex];
+    const fadeIn = incomingFadeMs(this.silent(old, now), track, fadeMs) / 1000;
     // A bus still fading out from an earlier switch lets its notes go (fast release) before it is reused.
     this.silence(next, now);
     this.fadeTo(old, 0, now, fade);
@@ -108,7 +133,7 @@ export class MusicPlayer {
     if (buffer) {
       const node = ctx.createBufferSource();
       node.buffer = buffer;
-      node.loop = true;
+      node.loop = LOOPING.has(track);
       const gain = ctx.createGain();
       node.connect(gain).connect(next.dry);
       node.onended = () => {
@@ -116,30 +141,33 @@ export class MusicPlayer {
         gain.disconnect();
       };
       node.start(at);
-      next.source = { node, gain };
+      next.source = { node, gain, endsAt: node.loop ? null : at + buffer.duration };
     } else {
-      const seq = new Sequencer(ctx, next.dry, next.wet);
+      const seq = new Sequencer(ctx, next.dry, next.wet, this.pool);
       seq.play(composePiece(track, age, seed), at);
       next.seq = seq;
     }
-    this.fadeTo(next, MUSIC_BUS_LEVEL, now, fade);
+    this.fadeTo(next, MUSIC_BUS_LEVEL, now, Math.max(0.01, fadeIn));
     this.active = nextIndex;
     this.track = track;
-    this.age = age;
+    this.age = track === 'menu' ? null : age;
+    this.seed = seed;
   }
 
   /** Per real frame (after the audio unlock): the director's choice, then the lookahead scheduling. */
   update(nowMs: number): void {
     const t0 = performance.now();
     if (this.scene !== null) {
-      const end = this.buses[this.active].seq?.endTime() ?? null;
+      const bus = this.buses[this.active];
+      const end = bus.seq ? bus.seq.endTime() : (bus.source?.endsAt ?? null);
       const cmd = this.director.update(nowMs, {
         scene: this.scene,
         age: this.playerAge,
         combatNear: this.combat,
         pieceEndsAtMs: end === null ? null : nowMs + (end - this.ctx.currentTime) * 1000,
       });
-      if (cmd) this.play(cmd.track, cmd.crossfadeMs, cmd.age, cmd.seed);
+      // The menu theme is the same every visit; game pieces differ per match.
+      if (cmd) this.play(cmd.track, cmd.crossfadeMs, cmd.age, cmd.track === 'menu' ? MUSIC_SEED : (Math.imul(cmd.seed ^ this.matchSeed, 0x9e3779b1) ^ this.matchSeed) >>> 0);
     }
     this.combat = false;
     for (const bus of this.buses) {
@@ -162,19 +190,19 @@ export class MusicPlayer {
   stats(): MusicStats {
     let voices = 0;
     let played = this.played;
-    let stolen = this.stolen;
     for (const seq of [...this.buses.map((b) => b.seq), ...this.retiring]) {
       voices += seq?.sounding ?? 0;
       played += seq?.played ?? 0;
-      stolen += seq?.stolen ?? 0;
     }
     return {
       track: this.track,
       age: this.age,
       scene: this.scene,
       voices,
+      budget: this.pool.size,
       played,
-      stolen,
+      stolen: this.pool.stolen,
+      seed: this.seed,
       schedMs: { frames: this.frames, avg: this.frames ? this.totalMs / this.frames : 0, max: this.maxMs },
     };
   }
@@ -220,8 +248,15 @@ export class MusicPlayer {
 
   private dispose(seq: Sequencer): void {
     this.played += seq.played;
-    this.stolen += seq.stolen;
     seq.dispose();
+  }
+
+  /** Nothing audible on the bus now: nothing played, or its piece has ended. */
+  private silent(bus: Bus, now: number): boolean {
+    if (bus.source) return bus.source.endsAt !== null && now >= bus.source.endsAt;
+    if (!bus.seq) return true;
+    const end = bus.seq.endTime();
+    return bus.seq.finished() || (end !== null && now >= end);
   }
 
   /** A generated room (decaying, darkening stereo noise). */

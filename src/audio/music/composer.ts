@@ -1,4 +1,4 @@
-import { MUSIC_CALM_BPM, MUSIC_COMBAT_BPM_FACTOR, MUSIC_MENU_BPM, MUSIC_STINGER_SECONDS } from '../../config/audio';
+import { MUSIC_CALM_BPM, MUSIC_VOICES, MUSIC_COMBAT_BPM_FACTOR, MUSIC_MENU_BPM, MUSIC_STINGER_SECONDS } from '../../config/audio';
 import type { AgeId } from '../../types';
 import { arrange, type Arrangement, type PieceKind } from './arrangers';
 import { stinger } from './stingers';
@@ -16,24 +16,8 @@ import { rand, subSeed, type Mode, type ModeName, type Rand } from './theory';
 export type MusicTrack = 'menu' | 'calm_a' | 'calm_b' | 'combat' | 'victory' | 'defeat';
 export type MusicKey = `music_${MusicTrack}`;
 
-export type VoiceId =
-  // Age 1 (Roman)
-  | 'lyre'
-  | 'aulos'
-  | 'frameDrum'
-  // Age 2 (medieval)
-  | 'drone'
-  | 'recorder'
-  | 'tabor'
-  | 'bell'
-  // Age 3 (early modern)
-  | 'harpsichord'
-  | 'strings'
-  | 'timpani'
-  | 'flute'
-  // Menu
-  | 'pad'
-  | 'harp';
+/** An instrument (the keys of MUSIC_VOICES, listed there by age). */
+export type VoiceId = keyof typeof MUSIC_VOICES;
 
 export interface NoteEvent {
   readonly beat: number;

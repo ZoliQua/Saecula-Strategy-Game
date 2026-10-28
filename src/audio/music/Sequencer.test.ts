@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { NoteEvent, Piece } from './composer';
-import { eventsInWindow } from './Sequencer';
+import type { Voice } from './instruments';
+import { fakeAudio } from './fakeAudio.testkit';
+import { eventsInWindow, heldAt, Sequencer, VoicePool } from './Sequencer';
 
 const note = (beat: number): NoteEvent => ({ beat, beats: 0.5, voice: 'lyre', midi: 62, velocity: 0.5 });
 
@@ -32,5 +34,82 @@ describe('eventsInWindow', () => {
     expect(eventsInWindow(piece(true), 5, 5)).toEqual([]);
     expect(eventsInWindow(piece(true), 6, 2)).toEqual([]);
     expect(eventsInWindow({ ...piece(true), events: [] }, 0, 100)).toEqual([]);
+  });
+});
+
+describe('heldAt', () => {
+  it('returns the long notes that started in the skipped span and still sound, with their beats left', () => {
+    const drone: NoteEvent = { beat: 2, beats: 20, voice: 'drone', midi: 50, velocity: 0.6 };
+    const p: Piece = { ...piece(false), beats: 32, events: [note(0), drone, note(3)] };
+    // Skipped beats 1..10: the drone (beats 2..22) is still held at 10, the short note is not.
+    expect(heldAt(p, 1, 10, 2)).toEqual([{ ...drone, beat: 10, beats: 12 }]);
+    // Too little left: nothing.
+    expect(heldAt(p, 1, 21, 2)).toEqual([]);
+    // Started before the skipped span (already scheduled): not re-entered.
+    expect(heldAt(p, 3, 10, 2)).toEqual([]);
+  });
+
+  it('only sustained instruments are re-entered (a lyre is not plucked again)', () => {
+    const lyre: NoteEvent = { beat: 2, beats: 20, voice: 'lyre', midi: 50, velocity: 0.6 };
+    expect(heldAt({ ...piece(false), beats: 32, events: [lyre] }, 1, 10, 2)).toEqual([]);
+  });
+});
+
+describe('VoicePool', () => {
+  const voice = (end: number, off = end) => {
+    const v = { end, off, released: null as number | null, release: (at: number) => ((v.released = at), (v.end = at + 0.25)) };
+    return v;
+  };
+
+  it('caps every bus together and lets the voice ending first go (a tail before a held note)', () => {
+    const pool = new VoicePool(3);
+    const held = voice(20, 18);
+    const tail = voice(5.2, 5);
+    const short = voice(6, 6);
+    for (const v of [held, tail, short]) {
+      pool.admit(5.1, 5.1);
+      pool.add(v as unknown as Voice);
+    }
+    pool.admit(5.1, 5.15);
+    expect(tail.released).toBe(5.15);
+    expect(held.released).toBeNull();
+    expect(pool.size).toBe(2);
+    expect(pool.stolen).toBe(1);
+  });
+
+  it('prefers a voice already past its note-off over one still held', () => {
+    const pool = new VoicePool(2);
+    const held = voice(7, 6.9);
+    const releasing = voice(8, 4);
+    pool.add(held as unknown as Voice);
+    pool.add(releasing as unknown as Voice);
+    pool.admit(5, 5);
+    expect(releasing.released).toBe(5);
+    expect(held.released).toBeNull();
+  });
+
+  it('ended voices free their place without a steal', () => {
+    const pool = new VoicePool(1);
+    pool.add(voice(1) as unknown as Voice);
+    pool.admit(2, 2);
+    expect(pool.stolen).toBe(0);
+    expect(pool.size).toBe(0);
+  });
+});
+
+describe('Sequencer after a stall', () => {
+  it('skips the missed notes but brings a held drone back in, without a burst', () => {
+    const fake = fakeAudio();
+    const seq = new Sequencer(fake.audio, fake.ctx.destination as unknown as AudioNode);
+    const drone: NoteEvent = { beat: 1, beats: 30, voice: 'drone', midi: 50, velocity: 0.6 };
+    const missed = [2, 3, 4, 5].map((b) => ({ ...note(b), voice: 'lyre' as const }));
+    seq.play({ track: 'calm_a', age: 2, bpm: 60, beats: 40, loop: false, events: [note(0), drone, ...missed] }, 0);
+    seq.update();
+    const before = seq.played;
+    // The tab was hidden from 0.1 s to 8 s: the drone (1–31 s) and the lyre notes (2–5 s) were missed.
+    fake.advance(8);
+    seq.update();
+    expect(seq.played - before).toBe(1);
+    expect(seq.sounding).toBe(1);
   });
 });

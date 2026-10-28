@@ -48,4 +48,13 @@ describe('SfxBank', () => {
     expect(bank.get('ui_click')).toBe(mine);
     expect(bank.size).toBe(SFX_KEYS.length);
   });
+
+  it('registered music buffers do not count in the SFX bytes', () => {
+    const ctx = fakeContext(8000);
+    const bank = new SfxBank(ctx as unknown as BaseAudioContext, 50);
+    bank.register('music_menu', { length: 1000, numberOfChannels: 2 } as unknown as AudioBuffer);
+    expect(bank.bytes).toBe(0);
+    bank.register('ui_click', { length: 1000, numberOfChannels: 1 } as unknown as AudioBuffer);
+    expect(bank.bytes).toBe(4000);
+  });
 });

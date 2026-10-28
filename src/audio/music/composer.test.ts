@@ -152,4 +152,20 @@ describe('composePiece', () => {
       }
     }
   });
+
+  it('minor melodies never step by an augmented second (6th to raised 7th)', () => {
+    for (const seed of SEEDS) {
+      for (const track of TRACKS.filter((t) => t !== 'menu')) {
+        const mode = modeOf(track, 3, seed);
+        if (mode.name !== 'aeolian') continue;
+        const notes = composePiece(track, 3, seed).events.filter((e) => e.voice === 'flute');
+        const pc = (m: number) => (((m - mode.tonic) % 12) + 12) % 12;
+        for (let i = 1; i < notes.length; i++) {
+          const pair = [pc(notes[i - 1]!.midi), pc(notes[i]!.midi)].sort((x, y) => x - y);
+          const step = Math.abs(notes[i]!.midi - notes[i - 1]!.midi);
+          expect(step === 3 && pair[0] === 8 && pair[1] === 11, `${track}/${seed} at ${notes[i]!.beat}`).toBe(false);
+        }
+      }
+    }
+  });
 });

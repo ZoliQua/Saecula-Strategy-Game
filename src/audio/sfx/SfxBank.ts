@@ -47,10 +47,10 @@ export class SfxBank {
     return this.buffers.size;
   }
 
-  /** Bytes held by every buffer (Float32 samples). */
+  /** Bytes held by the sound-effect buffers (Float32 samples); registered music is not counted. */
   get bytes(): number {
     let total = 0;
-    for (const b of this.buffers.values()) total += b.length * b.numberOfChannels * 4;
+    for (const [key, b] of this.buffers) if (!key.startsWith('music_')) total += b.length * b.numberOfChannels * 4;
     return total;
   }
 

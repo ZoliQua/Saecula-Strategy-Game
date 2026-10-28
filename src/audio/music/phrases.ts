@@ -120,6 +120,7 @@ function pitchLine(
   const out: number[] = [];
   let prev = from ?? nearest(chordTones(slots[0]?.chord ?? 0, lo, hi), contour.start);
   let resolve = 0;
+  let prevChord = slots[0]?.chord ?? 0;
   slots.forEach((s, i) => {
     const last = i === slots.length - 1;
     let deg: number;
@@ -131,7 +132,8 @@ function pitchLine(
       const target = contourAt(contour, slots.length < 2 ? 0 : i / (slots.length - 1));
       const towardFinal = final !== null && i === slots.length - 2;
       let cands: number[] = s.strong ? chordTones(s.chord, Math.max(lo, prev - 4), Math.min(hi, prev + 4)) : [prev - 1, prev + 1, prev - 2, prev + 2, prev];
-      if (resolve !== 0) cands = [prev + resolve];
+      // A leap resolves by step (or by a third where the step would be an augmented second).
+      if (resolve !== 0) cands = augmentedSecond(mode, prev, prevChord, prev + resolve, s.chord) ? [prev + resolve, prev + 2 * resolve] : [prev + resolve];
       cands = cands.filter((c) => c >= lo && c <= hi);
       if (cands.length === 0) cands = [Math.min(hi, Math.max(lo, prev))];
       let best = cands[0] ?? prev;
@@ -144,6 +146,7 @@ function pitchLine(
         if (c === out[out.length - 2] && out[out.length - 3] === prev) score += 1.5;
         if (!s.strong && Math.abs(c - prev) === 2 && !isChordTone(c, s.chord)) score += 1.2;
         if (semitones(mode, c, prev, s.chord) === 6) score += 4;
+        if (augmentedSecond(mode, prev, prevChord, c, s.chord)) score += 8;
         if (towardFinal && final !== null) score += 1.5 * Math.max(0, Math.abs(c - final) - 1);
         if (score < bestScore) {
           bestScore = score;
@@ -156,8 +159,14 @@ function pitchLine(
     resolve = Math.abs(leap) >= 3 && !last ? -Math.sign(leap) : 0;
     out.push(deg);
     prev = deg;
+    prevChord = s.chord;
   });
   return out;
+}
+
+/** Whether a step between two degrees (each over its chord) is an augmented second (minor: 6th to raised 7th). */
+function augmentedSecond(mode: Mode, a: number, aChord: number, b: number, bChord: number): boolean {
+  return Math.abs(a - b) === 1 && Math.abs(degreeToMidi(mode, a, aChord) - degreeToMidi(mode, b, bChord)) === 3;
 }
 
 /** Strong positions: a downbeat, the middle of a 4/4 bar, or a long note. */
@@ -313,9 +322,25 @@ export class Score {
   }
 
   /** A melody line on `voice`, `octave` octaves above the mode's tonic. */
+  /**
+   * A melody line on `voice`, `octave` octaves above the mode's tonic. A
+   * step between the 6th and a raised 7th (an augmented second) takes the
+   * natural 7th instead, as melodic minor does.
+   */
   line(line: readonly LineNote[], voice: VoiceId, mode: Mode, octave: number, gain = 1): void {
+    let prev: { degree: number; midi: number; index: number } | null = null;
     for (const n of line) {
-      this.add(n.beat, n.beats * 0.95, voice, degreeToMidi(mode, n.degree + 7 * octave, n.chord), n.velocity * gain);
+      const degree = n.degree + 7 * octave;
+      let midi = degreeToMidi(mode, degree, n.chord);
+      if (prev && Math.abs(degree - prev.degree) === 1 && Math.abs(midi - prev.midi) === 3) {
+        const natural = degreeToMidi(mode, degree);
+        const earlier = this.events[prev.index];
+        if (natural !== midi) midi = natural;
+        else if (earlier) this.events[prev.index] = { ...earlier, midi: degreeToMidi(mode, prev.degree) };
+      }
+      const index = this.events.length;
+      this.add(n.beat, n.beats * 0.95, voice, midi, n.velocity * gain);
+      prev = this.events.length > index ? { degree, midi, index } : null;
     }
   }
 

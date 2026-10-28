@@ -12,6 +12,8 @@ import type { VoiceId } from './composer';
 export interface Voice {
   /** Audio-clock time its sources stop. */
   readonly end: number;
+  /** Audio-clock time of its note-off (after it, only the release tail sounds). */
+  readonly off: number;
   /** Fades the note out from `at` and stops it shortly after (a piece stopping). */
   release(at: number): void;
 }
@@ -96,7 +98,7 @@ class Note {
   }
 
   /** Starts every source at `t`, stops them at `end`, unwires on the last end. */
-  done(t: number, end: number): Voice {
+  done(t: number, end: number, off: number): Voice {
     const sources = this.sources;
     const nodes = this.nodes;
     let ended = 0;
@@ -116,12 +118,12 @@ class Note {
       get end() {
         return stopAt;
       },
+      off,
       release: (at: number) => {
         if (at >= stopAt) return;
-        const from = Math.max(at, this.ctx.currentTime);
-        holdAt(amp, from);
-        amp.setTargetAtTime(0, from, 0.04);
-        stopAt = Math.max(from + 0.25, t + 0.01);
+        const from = holdAt(amp, Math.max(at, this.ctx.currentTime), this.ctx.currentTime);
+        amp.setTargetAtTime(0, from, 0.03);
+        stopAt = Math.max(from + 0.15, t + 0.01);
         for (const s of sources) {
           try {
             s.stop(stopAt);
@@ -139,16 +141,22 @@ class Note {
   }
 }
 
-/** Freezes a param's automation at `at` (cancelAndHold where supported). */
-function holdAt(p: AudioParam, at: number): void {
+/**
+ * Freezes a param's automation at `at` (cancelAndHold where supported) and
+ * returns the time the release starts from. Without it (Firefox) the
+ * current value is only known now, so the release starts now: holding a
+ * value read now at a later time would jump a decayed note back up (a click).
+ */
+function holdAt(p: AudioParam, at: number, now: number): number {
   const hold = (p as AudioParam & { cancelAndHoldAtTime?: (t: number) => AudioParam }).cancelAndHoldAtTime;
   if (typeof hold === 'function') {
     hold.call(p, at);
-  } else {
-    const v = p.value;
-    p.cancelScheduledValues(at);
-    p.setValueAtTime(v, at);
+    return at;
   }
+  const v = p.value;
+  p.cancelScheduledValues(now);
+  p.setValueAtTime(v, now);
+  return now;
 }
 
 /** Attack from silence, then a natural decay (time constant `decay`), damped at `off`. */
@@ -192,7 +200,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       lp.connect(n.amp);
       const decay = voice === 'harp' ? 0.9 : harpsichord ? 0.45 : 0.6;
       pluck(g, t, level, harpsichord ? 0.002 : 0.004, decay, off, harpsichord ? 0.03 : 0.09);
-      return n.done(t, off + tail);
+      return n.done(t, off + tail, off);
     }
     case 'aulos':
     case 'drone':
@@ -210,7 +218,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       const attack = voice === 'aulos' ? 0.06 : voice === 'strings' ? 0.35 : voice === 'drone' ? 1.2 : 1.4;
       const rel = voice === 'aulos' ? 0.05 : voice === 'strings' ? 0.15 : voice === 'drone' ? 0.45 : 0.6;
       sustain(g, t, level, attack, off, rel);
-      return n.done(t, off + tail);
+      return n.done(t, off + tail, off);
     }
     case 'recorder':
     case 'flute': {
@@ -230,7 +238,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       breathGain.gain.setTargetAtTime(flute ? 0.035 : 0, t + 0.012, 0.03);
       if (dur > 0.35) n.vibrato([body.frequency, over.frequency], t, flute ? 0.35 : 0.3, 5, f * 0.004);
       sustain(g, t, level, flute ? 0.07 : 0.035, off, flute ? 0.05 : 0.035);
-      return n.done(t, off + tail);
+      return n.done(t, off + tail, off);
     }
     case 'bell': {
       const carrier = n.osc('sine', f);
@@ -240,7 +248,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       mod.connect(index).connect(carrier.frequency);
       carrier.connect(n.amp);
       pluck(g, t, level, 0.005, 0.75, t + tail, 0.3);
-      return n.done(t, t + tail + 0.6);
+      return n.done(t, t + tail + 0.6, t);
     }
     case 'timpani': {
       const body = n.osc('sine', f * 1.05);
@@ -256,7 +264,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       partial.connect(partialGain).connect(n.amp);
       thump.connect(lp).connect(thumpGain).connect(n.amp);
       pluck(g, t, level, 0.004, 0.45, t + tail, 0.2);
-      return n.done(t, t + tail + 0.5);
+      return n.done(t, t + tail + 0.5, t);
     }
     case 'frameDrum':
     case 'tabor': {
@@ -273,7 +281,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
         body.connect(n.amp);
       }
       pluck(g, t, level * (low ? 1 : 0.6), 0.003, low ? (frame ? 0.14 : 0.08) : 0.04, t + tail, 0.05);
-      return n.done(t, t + tail + 0.1);
+      return n.done(t, t + tail + 0.1, t);
     }
   }
 }

@@ -198,7 +198,7 @@ export class SystemRunner {
     });
     this.camera = scene.cameras.main;
     this.audioWatch = new AudioWatch(world, audio(), this.humanId, () => this.cameraTile());
-    audio().setMusicScene('game');
+    audio().setMusicScene('game', options.seed);
     this.updateListener();
     // Game start: the menu / preload art of civs not in this match goes now (design decision 7).
     this.render.releaseAbsentCivs(activeCivs(players));

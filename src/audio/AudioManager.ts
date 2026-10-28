@@ -206,9 +206,9 @@ export class AudioManager implements AudioSink {
     if (this.ready()) this.graph?.music.play(track, fadeInMs, age, seed);
   }
 
-  /** Where the player is (the music director picks the track from it). */
-  setMusicScene(scene: DirectorInput['scene']): void {
-    this.graph?.music.setScene(scene);
+  /** Where the player is (the music director picks the track from it); a match passes its seed. */
+  setMusicScene(scene: DirectorInput['scene'], matchSeed?: number): void {
+    this.graph?.music.setScene(scene, matchSeed);
   }
 
   /** Per game frame: the human's age and whether fighting is near the camera. */
