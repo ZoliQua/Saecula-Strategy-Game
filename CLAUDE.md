@@ -780,6 +780,13 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
   multiplayer, egyedi egységek és népbónuszok.
 - Keret (10.): ≤ 256 MB textúra-memória (distinct6, heavy6), ≤ 226 MB a
   twoCivM4 esetben, 60 FPS 96×96-on 4 játékossal, < 2 MB gzip csomag.
+- **Állapot (2026-10-29):** kész — mentés és betöltés (automatikus mentéssel),
+  szünet menü, beállítások, procedurális hang és zene, Csoda-győzelem, Mesteri
+  AI és személyiségek. Mérve: 6 különböző nép 240,9 MB, a hat legnehezebb nép
+  245,4 MB, az M4 két népes eset 158,5 MB, a betöltött 6 népes mentés
+  (1,2,3,1,2,3. kor) csúcsa 252,5 MB; képkocka-CPU p95 6,5 ms hanggal (96×96,
+  4 játékos); legfeljebb 292 entitás (6 játékos); bundle 0,71 MB gzip; egy
+  128×128-as, 6 játékosos mentés 0,44 MB JSON, mentés ~6–11 ms, betöltés ~8 s.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -887,4 +894,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-28. Zoli projekt, `IsoRTS` munkacím.*
+*Utolsó frissítés: 2026-10-29. Zoli projekt, `IsoRTS` munkacím.*
