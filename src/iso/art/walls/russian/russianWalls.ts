@@ -5,15 +5,16 @@ import { logBox } from '../../architecture/kits/logWall';
 import { octPrism, tentRoof } from '../../architecture/kits/tentRoof';
 import type { IsoPainter } from '../../isoPainter';
 import { R } from '../../architecture/facade';
+import { post } from '../../architecture/parts';
 import { shade } from '../../palette';
 import { reachBody, turfFace } from '../kits/bankPalisade';
 import { armShadow, frontEdge, frustum, padShadow } from '../kits/wallParts';
 import { prism } from '../prism';
 import { stations, type WallAgeStyle } from '../wallKit';
 import { KREMLIN, KREMLIN_TENT } from './kremlinWall';
+import { clampPost, facesViewer, galleryRoof, logEndColumn, loopholes } from './russianWallParts';
 
 export { KREMLIN_WALK } from './kremlinWall';
-import { clampPost, facesViewer, galleryRoof, logEndColumn, loopholes } from './russianWallParts';
 
 /*
  * Russian walls (M5), one character per age, matched to the Russian
@@ -93,13 +94,30 @@ const ASPEN = 0x8a857a;
 
 const SHAFT: Block = [0.2, 0.2, 0.8, 0.8];
 const SHAFT_TOP = 70;
+/** The tower's storeys above the shaft: the oblam gallery, the low shoulders, the log octagon, the open lookout. */
+const OBLAM_H = 12;
+const OCT_Z0 = SHAFT_TOP + OBLAM_H + 4;
+const OCT_Z1 = OCT_Z0 + 16;
+/** The open lookout (smotrovaya vyshka): four posts with sky between them, under the tent. */
+const TENT_Z = OCT_Z1 + 30;
 const OCT_R = 0.25;
+/** Lookout posts, back to front (the front post is painted last). */
+const LOOKOUT_POSTS = [[0.33, 0.33], [0.67, 0.33], [0.33, 0.67], [0.67, 0.67]] as const;
+
+/** Small dark knob on the tent's apex, under the banner pole. */
+function apexKnob(p: IsoPainter, z: number): void {
+  const [x, y] = p.p(0.5, 0.5, z);
+  p.ctx.fillStyle = '#3a2c1e';
+  p.ctx.beginPath();
+  p.ctx.arc(x, y - 1.5, 2.6, 0, Math.PI * 2);
+  p.ctx.fill();
+}
 
 /** Age 2 (Középkor): log cribs with a roofed fighting gallery; log towers, an octagon and a tall shingled tent. */
 const GORODNYA: WallAgeStyle = {
   readback: true,
   postHalf: 0.3,
-  postTop: SHAFT_TOP + 12 + 4 + 16 + TENT_RISE[2],
+  postTop: TENT_Z + TENT_RISE[2],
   shadow: (p, arm) => armShadow(p, arm, 0.26 * arm.girth),
   arm: (p, arm) => {
     const g = arm.girth;
@@ -119,14 +137,18 @@ const GORODNYA: WallAgeStyle = {
     logBox(p, SHAFT[0], SHAFT[1], SHAFT[2], SHAFT[3], 8, SHAFT_TOP, CRIB, 0.07);
     p.leftFace(SHAFT[0], SHAFT[2], SHAFT[3], 8, blockhouseFace(p, 1), SHAFT_TOP - 8);
     p.rightFace(SHAFT[1], SHAFT[3], SHAFT[2], 8, blockhouseFace(p, R), SHAFT_TOP - 8);
-    const g = oblam(p, RUSSIAN_MUSCOVY, SHAFT, SHAFT_TOP, 12, 0.06);
-    const z = SHAFT_TOP + 12;
+    const g = oblam(p, RUSSIAN_MUSCOVY, SHAFT, SHAFT_TOP, OBLAM_H, 0.06);
+    const z = SHAFT_TOP + OBLAM_H;
     const prev = p.material;
     p.material = 'shingle';
     p.hipRoof(g[0], g[1], g[2], g[3], z, 10, ASPEN, 0.03);
     p.material = prev;
-    octPrism(p, 0.5, 0.5, OCT_R, z + 4, z + 20, CRIB, 'logs', (w, _h, light) => loopholes(p.ctx, w, -3, 7, w, light));
-    tentRoof(p, 0.5, 0.5, OCT_R, z + 20, TENT_RISE[2], ASPEN, { material: 'shingle', eave: 0.05, ribs: shade(ASPEN, 0.7) });
+    octPrism(p, 0.5, 0.5, OCT_R, OCT_Z0, OCT_Z1, CRIB, 'logs', (w, _h, light) => loopholes(p.ctx, w, -3, 7, w, light));
+    // The lookout's plank deck on the octagon, then its posts: the sky shows between them.
+    p.ground(0.3, 0.3, 0.7, 0.7, shade(M.timber, 0.8), OCT_Z1);
+    for (const [u, v] of LOOKOUT_POSTS) post(p, u, v, OCT_Z1, TENT_Z + 2, 2.2, M.timber);
+    const apex = tentRoof(p, 0.5, 0.5, OCT_R, TENT_Z, TENT_RISE[2], ASPEN, { material: 'shingle', eave: 0.05, ribs: shade(ASPEN, 0.7) });
+    apexKnob(p, apex);
   },
 };
 

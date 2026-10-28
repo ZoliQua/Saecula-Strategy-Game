@@ -9,9 +9,10 @@ const R = RUSSIAN_M;
  * Russian unit looks (M5), overriding the base look type by type. Same
  * rigs, poses and stats; white, blue and red liveries and one
  * silhouette cue per age: the tall pointed shelom with its mail
- * aventail on the druzhina (age 1), the tall needle-spiked shishak and
- * the crimson-rimmed teardrop shield with the St Andrew's saltire on
- * the knight and the pikeman (age 2), and the Streltsy's fur-trimmed
+ * aventail on the druzhina (age 1), the tall needle-spiked shishak on
+ * the pikeman, the crossbowman and the knight, the knight's
+ * crimson-rimmed teardrop shield with the St Andrew's saltire (age 2;
+ * the swordsman carries it too), and the Streltsy's fur-trimmed
  * kolpak, a long kaftan and the berdysh on the back (age 3). Team
  * colour stays on the shirts, kaftans, kolpaks and the shield field, so
  * ownership reads first; the legs are near-black wool, the civ's blue

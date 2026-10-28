@@ -280,6 +280,7 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
 /** Hoist on a store's gable at (u, v, z): a beam out along +v with a bracket, a rope and a hanging bundle of logs. */
 function gableHoist(p: IsoPainter, u: number, v: number, z: number, timber: number): void {
   const ctx = p.ctx;
+  ctx.save();
   const [ax, ay] = p.p(u, v - 0.08, z);
   const [bx, by] = p.p(u, v + 0.34, z);
   ctx.lineCap = 'butt';
@@ -308,5 +309,6 @@ function gableHoist(p: IsoPainter, u: number, v: number, z: number, timber: numb
     ctx.fillStyle = '#e0b880';
     ctx.fillRect(bx + 4 + dx, by + dy, 1.6, 3.6);
   }
+  ctx.restore();
   p.addVolumePoint(u, v + 0.34, z);
 }

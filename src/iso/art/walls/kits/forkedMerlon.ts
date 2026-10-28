@@ -13,7 +13,7 @@ type Pt = readonly [number, number];
  * wall arms also run on the diagonals.
  */
 
-/** Swallowtail merlon proportions on the Ghibelline curtain: big, so the fork reads at zoom 1. */
+/** Proportions of a forked swallowtail merlon on a wall run (each civ sizes its own so the fork reads at zoom 1). */
 export interface MerlonSize {
   /** Width along the run (tiles). */
   readonly width: number;

@@ -6,7 +6,9 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * later civs' kit and family changes cannot silently change Russian.
  * Task 12 re-recorded wall@1-3 (the Russian wall pieces, which had
  * pinned the Hungarian stub) and lumber_camp@3 (a gable hoist replaces
- * the tented lantern, Task 11 re-review N1). Fix round 1 re-recorded
+ * the tented lantern, Task 11 re-review N1); its polish round
+ * re-recorded wall@2 (open lookout under the tents) and lumber_camp@3
+ * (the hoist saves and restores its line state). Fix round 1 re-recorded
  * the age-1 workplaces (granary,
  * log stack, windlass, smoke hood), the age-2 tents and tower onions
  * (town centre, house, mining camp, barracks, range, stable, smithy,
@@ -39,12 +41,12 @@ pinBuildings('russian', {
   'blacksmith@2': '4f669a5eca206764',
   'foundry@2': '27f213dcfd001957',
   'tower@2': '4c7074ca529db966',
-  'wall@2': 'd45c0ed83b2482d5',
+  'wall@2': '10ec2061ef003f80',
   'wonder@2': '424622ed67deeefd',
   'town_center@3': '4b4663c4035eb921',
   'house@3': 'bdd7aa00a8b4b23b',
   'farm@3': '1a47aca6624baa32',
-  'lumber_camp@3': 'ebcc64a56223acdc',
+  'lumber_camp@3': 'f8c8280871fab2bf',
   'mining_camp@3': '495207282fb63e96',
   'barracks@3': '3661983c30edd8af',
   'archery_range@3': 'f127274d1baaf2df',
