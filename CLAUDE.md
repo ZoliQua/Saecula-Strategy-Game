@@ -64,6 +64,7 @@ Ha a MVP stabil, ezek kerülhetnek be később (külön feature branch-ben):
 | **Zustand** | `^4.5` | UI state (HUD, menük) — NEM játékállapot |
 | **pathfinding** | `^0.4.18` | A* implementáció kezdéshez |
 | **localforage** | `^1.10` | IndexedDB wrapper mentésekhez |
+| **zod** | `^3.23` | Mentés és beállítások futásidejű validációja (7.2) |
 
 ### 2.2 Dev stack
 
@@ -444,6 +445,9 @@ IsoRTS/
     │   ├── constants.ts         ← TILE_WIDTH, MAX_PLAYERS, stb.
     │   ├── balance.ts           ← stat konstansok (egyetlen forrás)
     │   ├── civs.ts              ← nép-regiszter (CIV_DEFS: elérhetőség, kor-stílusok, címer)
+    │   ├── aiMaster.ts          ← Mesteri AI hangolása
+    │   ├── aiPersonality.ts     ← AI-személyiségek
+    │   ├── audio.ts             ← hang- és zene-konstansok
     │   └── visual.ts            ← világítás, napszak, árnyék (csak megjelenés)
     ├── scenes/
     │   ├── BootScene.ts
@@ -506,6 +510,10 @@ IsoRTS/
     │   ├── deserializer.ts      ← JSON → ECS
     │   ├── storage.ts           ← localforage wrapper
     │   └── migrations/          ← verzió-migrációk
+    ├── audio/
+    │   ├── AudioManager.ts      ← hangkezelő: zene, SFX, hangerő-csatornák, pozicionális hang
+    │   ├── sfx/                 ← procedurális hangeffektek (szintézis, katalógus, hangkorlát)
+    │   └── music/               ← generatív, koronkénti zene (zeneszerző, sorrendező, rendező)
     ├── i18n/
     │   └── hu.ts                ← magyar szövegek
     └── types/
@@ -741,11 +749,37 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
   `src/ai/strategies/eightCivs.sim.test.ts` és a `src/iso/art/allCivsArt.test.ts`.
 
 ### M6 — Polish és jövőbeli bővítések
-- Több AI nehézségi szint
-- Mentés/betöltés teljes funkcionalitással
-- Audio (zene, SFX)
-- Csoda-győzelem
-- Beállítások (hangerő, billentyű-mapping)
+- Mentés/betöltés (5.4): `src/save/` (séma, szerializáló, visszatöltő,
+  tároló, migrációk), `schemaVersion` 1, zod-validáció; 5 kézi hely
+  (`save:1`…`save:5`) és automatikus mentés 5 játékpercenként
+  (`save:auto`). A mentés az ECS-en kívüli állapotot is tartalmazza
+  (játékosok, köd, kamera, óra, napszak, az AI-k belső állapota és
+  véletlengenerátora); textúrát soha. Sérült vagy újabb verziójú mentés
+  magyar hibaüzenetet ad, sosem omlik össze.
+- Szünet menü (Esc, `PauseScene`): folytatás, mentés, betöltés,
+  beállítások, kilépés a főmenübe; a játékidő áll.
+- Audio, procedurálisan, külső fájl nélkül (`src/audio/`): `AudioManager`
+  (PROGRAM_TERV 12.4), SFX-katalógus (12.3), pozicionális hang (10 tile-on
+  túl és ködben néma), egyidejű hangok korlátja, generatív koronkénti zene
+  (menü, két nyugodt hangulat 3 s áttűnéssel, harci zene a kamera közelében
+  zajló harcra, 10 s után vissza, győzelmi és vereség-zárás). Hang csak az
+  első felhasználói mozdulat után. A hangkulcsok fájlnév-szerűek: később
+  CC0 OGG cserélheti őket a hívók módosítása nélkül.
+- Beállítások (főmenüből és a szünetből): fő-, zene-, SFX- és
+  értesítés-hangerő 0–100 %, némítás, a kamera-billentyűk átállítása (az
+  Esc és a nyilak fixek), alapértelmezés visszaállítása; `localStorage`.
+- Csoda-győzelem (4.8 #2): a kész Csodát 10 percig megtartó játékos nyer.
+  Beállítás: „Hódítás” / „Hódítás vagy Csoda” (alapértelmezett). A HUD
+  minden álló Csoda visszaszámlálóját mutatja; az AI (Közepestől) épít
+  Csodát, és az ellenséges Csodát elsőként támadja.
+- AI: új „Mesteri” szint a Nehéz fölött (jobb gazdasági időzítés, korábbi
+  korváltás, vegyes sereg, többirányú támadás, csalás nélkül) és
+  AI-személyiségek (rohamozó / gazdálkodó / védekező), a magból
+  választva; a játék végi statisztika mutatja őket.
+- Nem része: időgyőzelem, oktató mód, további nyelvek, kampány,
+  multiplayer, egyedi egységek és népbónuszok.
+- Keret (10.): ≤ 256 MB textúra-memória (distinct6, heavy6), ≤ 226 MB a
+  twoCivM4 esetben, 60 FPS 96×96-on 4 játékossal, < 2 MB gzip csomag.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
