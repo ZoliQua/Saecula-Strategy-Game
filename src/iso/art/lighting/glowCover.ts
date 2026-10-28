@@ -30,9 +30,12 @@ function inside([x, y]: Pt, pts: readonly Pt[]): boolean {
  * so a lit window that a later opaque face paints over is hidden, yet its
  * dusk glow would float on that face. GlowCover records the opaque faces
  * an IsoPainter fills after its first glow and drops the glows they hide
- * (visible()). Faces are taken in canvas px: a fill inside a face
- * transform (face-local) is not mapped, so it never drops a glow (the
- * context is only read, never called, so the draw log stays as it was). The window pixels
+ * (visible()). Faces are taken as given, without the context's face
+ * transform: a face-local fill (y ≤ 0, above its face's origin) is
+ * tested in the wrong space and so in practice never covers a glow; the
+ * allCivsGlows test checks every drop against the transform-aware
+ * checker. The context is only read, never called, so the draw log stays
+ * as it was. The window pixels
  * stay: the later face hides them anyway, so the albedo is unchanged.
  * Opt-in per style (ArchStyle.dropHiddenGlows), so styles without it
  * keep every glow exactly as before.

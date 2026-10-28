@@ -145,6 +145,31 @@ describe('no lit window glows behind a later solid', () => {
     }
   });
 
+  it.each(CIV_IDS.filter((civ) => civ !== 'hungarian' && civ !== 'english'))('%s: GlowCover drops only glows the checker finds hidden (no visible window goes dark)', (civ) => {
+    const civStyles = AGES.map((age) => styles.ARCH_STYLES[CIV_DEFS[civ].architecture[age]] as { dropHiddenGlows?: boolean });
+    const key = (g: unknown): string => {
+      const { x, y } = g as { x: number; y: number };
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    };
+    for (const [name, paint] of paintings(civ)) {
+      const shown = new Set(paint().glows.map(key));
+      for (const st of civStyles) st.dropHiddenGlows = false;
+      let all: readonly unknown[];
+      let hidden: ReturnType<typeof occludedGlows>;
+      try {
+        all = paint().glows;
+        hidden = occludedGlows(paint);
+      } finally {
+        for (const st of civStyles) st.dropHiddenGlows = true;
+      }
+      const hiddenAt = new Map(hidden.map((h) => [key(h), h]));
+      for (const g of all.filter((glow) => !shown.has(key(glow)))) {
+        const h = hiddenAt.get(key(g));
+        expect(h !== undefined && (h.centre || h.coverage >= 0.5), `${civ} ${name} dropped a visible glow at ${key(g)}`).toBe(true);
+      }
+    }
+  });
+
   it('lists no ceiling for a painting that hides no glow (they only shrink)', () => {
     const stale = Object.entries({ ...PRE_M5_CEILINGS, ...GRAZED_CEILINGS }).filter(([name, ceiling]) => {
       const [civ, key] = name.split(' ') as [CivId, string];
