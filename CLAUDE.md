@@ -702,24 +702,30 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
   regiszterben (a közös `gear.ts` nem importál népet), a nép-előnézetből
   csak a data URL marad, és egy teszt őrzi, hogy népazonosító csak a
   megengedett fájlokban szerepel.
-- Új nép felvételének ellenőrzőlistája (megosztott festőt nem érint):
-  1. `src/config/civs.ts`: az id-uniók (`ArchStyleId`, `WallStyleId`,
-     `UnitLookId`) és a nép `CIV_DEFS` sora (`available: true` csak akkor,
-     ha a nép teljesen kész).
-  2. `src/iso/art/architecture/<nép>/`: stílusok, festők, Csoda,
-     címer-töltet; egy-egy sor a `registry.ts`-ben és a `charges.ts`-ben;
-     saját festőcsaládnál egy `ArchFamily` tag a `style.ts`-ben. A legalább
+- Új nép felvételének ellenőrzőlistája (megosztott festőt csak opcionális
+  kapcsolóval érint: egy közös család új, alapból kikapcsolt `StyleKits`
+  mezőt kaphat, ha a magyar, az angol és a korábbi népek rögzítései
+  változatlanok maradnak):
+  1. `src/types/index.ts`: a `CivId` unió; `src/config/civs.ts`: az
+     id-uniók (`ArchStyleId`, `WallStyleId`, `UnitLookId`) és a nép
+     `CIV_DEFS` sora (`available: true` csak akkor, ha a nép teljesen kész).
+  2. `src/iso/art/architecture/<nép>/`: stílusok (`dropHiddenGlows: true`),
+     festők, Csoda, címer-töltet; egy-egy sor a `registry.ts`-ben és a
+     `charges.ts`-ben; saját festőcsaládnál egy `ArchFamily` tag és a család
+     készlet-interfésze (pl. `CourtyardKits`) a `style.ts`-ben. A legalább
      két nép által használt festő a `architecture/kits/` mappába kerül.
   3. `src/iso/art/walls/<nép>/`: falstílusok; egy sor a `wallStyles.ts`-ben.
   4. `src/iso/art/units/<nép>/`: kinézet, felszerelés, anyagok; egy-egy sor
-     a `looks.ts`-ben és a `gearRegistry.ts`-ben.
+     a `looks.ts`-ben és a `gearRegistry.ts`-ben, és a nép felszerelés- és
+     töltet-táblái a `src/iso/art/registryIds.test.ts` forráslistáiban.
   5. `src/i18n/hu.ts`: a nép neve és egysoros leírása.
   6. Rögzítő tesztek (draw-log hash) a nép mappáiban épületre, falra és
      egységre (`pinBuildings` / `pinWalls` / `pinUnits`,
      `src/iso/art/testing/pinnedArt.testkit.ts`); a magyar, az angol és a
      korábbi népek rögzítései változatlanok maradnak. A
      `src/config/civSurface.test.ts` őrzi, hogy népazonosító csak a fenti
-     fájlokban szerepel.
+     fájlokban szerepel, az `allCivsGlows.test.ts`, hogy nincs takart
+     ablakfény.
 - Ágak: a belépő feladatok a `feat/M5-eight-civs` ágon; népenként külön ág
   (`feat/M5-<nép>`), mindig az előző nép ágának végéről (egymásra épülő
   ágak); a zárófeladat a `feat/M5-eight-civs` ágon fut, a finn ágra
@@ -731,7 +737,7 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
 - **Állapot: kész (2026-10-28).** Mind a 8 nép játszható (`available: true`).
   Mérve: 6 különböző nép 242,3 MB, a hat legnehezebb nép 247,5 MB, az M4
   két népes eset 160,6 MB; képkocka-CPU p95 7,4 ms (96×96, 4 játékos,
-  4 nép); népenként +0,3–0,5 s betöltés; bundle 0,63 MB gzip. Őrzi a
+  4 nép); népenként +0,3–0,5 s betöltés; bundle 0,64 MB gzip. Őrzi a
   `src/ai/strategies/eightCivs.sim.test.ts` és a `src/iso/art/allCivsArt.test.ts`.
 
 ### M6 — Polish és jövőbeli bővítések
