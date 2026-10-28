@@ -54,6 +54,7 @@ export const SPANISH_HISPANIA: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'castle',
   seedSalt: 45053,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { courtyard: { walls: 'whitewash', portal: 'voussoir', tileBands: false, merlons: false, towers: 'none', espadanas: false, civic: 'keep', balconies: false, water: 'impluvium', field: 'olives' } },
 };
@@ -91,6 +92,7 @@ export const SPANISH_MUDEJAR: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'castle',
   seedSalt: 49157,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { courtyard: { walls: 'toledan', portal: 'alfiz', tileBands: true, merlons: true, towers: 'brick', espadanas: false, civic: 'keep', balconies: false, water: 'well', field: 'huerta' } },
 };
@@ -129,6 +131,7 @@ export const SPANISH_COLONIAL: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: true, pilasters: true, dormers: false, boardedGables: false },
   charge: 'castle',
   seedSalt: 53249,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { courtyard: { walls: 'whitewash', portal: 'plateresque', tileBands: false, merlons: false, towers: 'mirador', espadanas: true, civic: 'cabildo', balconies: true, water: 'fountain', field: 'vines' } },
 };

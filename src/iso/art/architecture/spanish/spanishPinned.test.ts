@@ -10,6 +10,9 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * farm@3, lumber_camp@3 and mining_camp@3 (no palomar beside the ridge
  * espadaña), and wall@1-3 (the wall building type now paints the Spanish
  * wall pieces).
+ * M5 final review I1: the styles drop hidden window glows (dropHiddenGlows,
+ * lighting/glowCover.ts), so every painting with a window glowing behind a
+ * later solid was re-recorded (its glow list shrank; draw log unchanged).
  */
 
 pinBuildings('spanish', {
@@ -22,33 +25,33 @@ pinBuildings('spanish', {
   'archery_range@1': '7962814fecdacfef',
   'stable@1': '7b4cde7d4259ddb5',
   'blacksmith@1': '145e9825eb70b375',
-  'foundry@1': 'ca064aec20c50567',
+  'foundry@1': '6f106a516680ecb5',
   'tower@1': '9d17e00240275ae4',
   'wall@1': '164ea0742297a6b0',
   'wonder@1': '3b8e295d09cc8ca6',
-  'town_center@2': '024566c74a42f6e1',
+  'town_center@2': '71b383aa1a50ec08',
   'house@2': 'e58314726c2803c3',
   'farm@2': '8bd6d06ff506c3c5',
   'lumber_camp@2': '962f692d6b1596e2',
   'mining_camp@2': 'd07a796445ced81b',
-  'barracks@2': '38e3b586ce670c26',
+  'barracks@2': '98ddebad5c242429',
   'archery_range@2': 'c65b923354b1d5d8',
   'stable@2': 'bcd0b3ff628ad13f',
   'blacksmith@2': 'f875010e5face825',
-  'foundry@2': 'a859d6c34cf9ea8d',
-  'tower@2': 'b353577c951fe87c',
+  'foundry@2': '2525ae6dbdaf91b1',
+  'tower@2': '14ffaa2e329e4d1c',
   'wall@2': '0f56ef1cf68d9850',
   'wonder@2': '4bf7d89a7e25e474',
   'town_center@3': 'b6bfd651869123d8',
-  'house@3': '4d79650e8001f794',
+  'house@3': '7f49402815cb4cf5',
   'farm@3': '2cfa8277e61ada05',
   'lumber_camp@3': 'c86660316190a40c',
   'mining_camp@3': 'a6acd6e6014f1cbc',
-  'barracks@3': '14a1e62f2774d2ec',
+  'barracks@3': '6998cc5aadaaa65e',
   'archery_range@3': 'c3b267832f47640d',
   'stable@3': '5ba8589e226111d9',
   'blacksmith@3': '548a62d22899c8f9',
-  'foundry@3': 'e6f6df5d409c6c59',
+  'foundry@3': '2217cef24b4e0155',
   'tower@3': 'd80b2d2b2af86cb0',
   'wall@3': '129d9d24d1660548',
   'wonder@3': '490562cfdf4d0f99',

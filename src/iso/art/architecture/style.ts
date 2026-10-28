@@ -289,6 +289,12 @@ export interface ArchStyle {
   readonly headroom: number;
   /** Kit substitutions (StyleKits); absent = none. */
   readonly kits?: StyleKits;
+  /**
+   * Lit windows whose centre a later opaque face covers lose their dusk
+   * glow (lighting/glowCover.ts). Set by every M5 style; absent keeps every
+   * glow, so the Hungarian and English art stays pin-identical.
+   */
+  readonly dropHiddenGlows?: boolean;
 }
 
 /** Main roof colour of a building type in a style. */

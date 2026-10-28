@@ -12,6 +12,9 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * re-recorded wall@1-3 (the wall building type now paints the Italian
  * wall pieces); its polish round re-recorded wall@1-2 (yellower tufa,
  * deeper forks with dark notch copings).
+ * M5 final review I1: the styles drop hidden window glows (dropHiddenGlows,
+ * lighting/glowCover.ts), so every painting with a window glowing behind a
+ * later solid was re-recorded (its glow list shrank; draw log unchanged).
  */
 
 pinBuildings('italian', {
@@ -24,12 +27,12 @@ pinBuildings('italian', {
   'archery_range@1': 'a405e56de4b100d2',
   'stable@1': 'a60fbb31b66f8ef5',
   'blacksmith@1': 'c674e332db064f6b',
-  'foundry@1': '1ff192129ac42e46',
+  'foundry@1': '30a5043124ae7a46',
   'tower@1': '8881cb132185446d',
   'wall@1': '002e65643a7e3d93',
-  'wonder@1': '8c766082b0317bba',
+  'wonder@1': 'ebeb05d4538d3702',
   'town_center@2': 'a0fefe4ac02afef3',
-  'house@2': '92e4764cb3403d55',
+  'house@2': '69302541ab702d3c',
   'farm@2': 'c3bec801f76bc648',
   'lumber_camp@2': 'dd34822b3198278e',
   'mining_camp@2': '151c91e95f0d37db',
@@ -37,10 +40,10 @@ pinBuildings('italian', {
   'archery_range@2': 'dd9aba98f34a003f',
   'stable@2': '41d555f50276a307',
   'blacksmith@2': 'a89eb06ddae6010f',
-  'foundry@2': '96f0321a8f1598a8',
+  'foundry@2': '85fe52276a15e261',
   'tower@2': 'bc3bcc22f1aa7bd6',
   'wall@2': '0cc00a668f969c7f',
-  'wonder@2': 'f5013135469213d1',
+  'wonder@2': 'bc280bd7290a4c89',
   'town_center@3': '2bb517dfaf0b2e9e',
   'house@3': 'd8b0ccd798a76d79',
   'farm@3': '8fd5109ab7ddb341',
@@ -50,11 +53,11 @@ pinBuildings('italian', {
   'archery_range@3': '648d13906e894521',
   'stable@3': '46f482d612aeea50',
   'blacksmith@3': '8e0317fd72cb0fec',
-  'foundry@3': '6d1ab2a3e0769ec6',
+  'foundry@3': 'f7f789bf881ff108',
   'tower@3': 'cf76be26d0fc32d1',
   'wall@3': '392320f410f35d14',
-  'wonder@3': 'cf6a8ad5afb37444',
+  'wonder@3': 'cc3f2e2823dac95f',
   'wonder~s1': '9eb399007134361e',
   'wonder~s2': '6dad5b306e538156',
-  'wonder~s3': '1d0bb2c65385df3e',
+  'wonder~s3': '405eec886008786f',
 });

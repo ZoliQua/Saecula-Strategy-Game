@@ -55,6 +55,7 @@ export const ITALIAN_ETRURIA: ArchStyle = {
   ornaments: PLAIN,
   charge: 'tricolore',
   seedSalt: 57347,
+  dropHiddenGlows: true,
   headroom: 0,
 };
 
@@ -94,6 +95,7 @@ export const ITALIAN_COMUNE: ArchStyle = {
   ornaments: PLAIN,
   charge: 'tricolore',
   seedSalt: 61441,
+  dropHiddenGlows: true,
   headroom: 0,
 };
 
@@ -135,5 +137,6 @@ export const ITALIAN_RINASCIMENTO: ArchStyle = {
   ornaments: PLAIN,
   charge: 'tricolore',
   seedSalt: 65537,
+  dropHiddenGlows: true,
   headroom: 0,
 };

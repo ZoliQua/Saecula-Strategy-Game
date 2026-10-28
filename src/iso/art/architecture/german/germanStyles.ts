@@ -48,6 +48,7 @@ export const GERMAN_LIMES: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: true, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'eagle',
   seedSalt: 20483,
+  dropHiddenGlows: true,
   headroom: 40,
   kits: { framing: 'alemannic', framedUpper: true },
 };
@@ -83,6 +84,7 @@ export const GERMAN_FACHWERK: ArchStyle = {
   ornaments: { chimneys: false, halfTimber: true, quoins: false, pilasters: false, dormers: true, boardedGables: false },
   charge: 'eagle',
   seedSalt: 24593,
+  dropHiddenGlows: true,
   headroom: 50,
   kits: { framing: 'alemannic', jetties: false, steppedGables: 'wall', needleSpires: true },
 };
@@ -120,6 +122,7 @@ export const GERMAN_BACKSTEIN: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: true, boardedGables: false },
   charge: 'eagle',
   seedSalt: 28687,
+  dropHiddenGlows: true,
   headroom: 40,
   kits: { steppedGables: 'brick', needleSpires: true },
 };

@@ -61,6 +61,7 @@ export const FRENCH_GALLO_ROMAN: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: true, dormers: false, boardedGables: false },
   charge: 'fleur_de_lis',
   seedSalt: 32771,
+  dropHiddenGlows: true,
   headroom: 50,
   kits: { porticus: true },
 };
@@ -98,6 +99,7 @@ export const FRENCH_GOTHIC: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: true, boardedGables: false },
   charge: 'fleur_de_lis',
   seedSalt: 36353,
+  dropHiddenGlows: true,
   headroom: 80,
   kits: { pepperpots: true },
 };
@@ -137,5 +139,6 @@ export const FRENCH_CLASSICISME: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: true, pilasters: true, dormers: true, boardedGables: false, streetGables: false },
   charge: 'fleur_de_lis',
   seedSalt: 40961,
+  dropHiddenGlows: true,
   headroom: 90,
 };

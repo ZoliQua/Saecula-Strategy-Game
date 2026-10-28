@@ -52,6 +52,7 @@ export const RUSSIAN_GORD: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'saltire',
   seedSalt: 69633,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { logTown: { masonry: 'log', tents: false, onions: false, civic: 'hillfort' } },
 };
@@ -90,6 +91,7 @@ export const RUSSIAN_MUSCOVY: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'saltire',
   seedSalt: 73729,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { logTown: { masonry: 'whiteStone', tents: true, onions: true, civic: 'kremlin' } },
 };
@@ -133,6 +135,7 @@ export const RUSSIAN_PETRINE: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: true, pilasters: true, dormers: false, boardedGables: false, streetGables: false },
   charge: 'saltire',
   seedSalt: 77825,
+  dropHiddenGlows: true,
   headroom: 80,
   kits: { onionDomes: true },
 };

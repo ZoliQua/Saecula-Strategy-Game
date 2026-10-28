@@ -54,6 +54,7 @@ export const FINNISH_FINNIC: ArchStyle = {
   ornaments: { chimneys: false, halfTimber: false, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'nordic_cross',
   seedSalt: 81921,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { nordic: { walls: 'logs', roofs: 'turf', civic: 'longhouse', belfry: 'lookout', works: 'homestead' } },
 };
@@ -91,6 +92,7 @@ export const FINNISH_GREYSTONE: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'nordic_cross',
   seedSalt: 86017,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { nordic: { walls: 'logs', roofs: 'shingle', civic: 'castle', belfry: 'kellotapuli', works: 'village' } },
 };
@@ -132,6 +134,7 @@ export const FINNISH_GUSTAVIAN: ArchStyle = {
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: true, dormers: false, boardedGables: false },
   charge: 'nordic_cross',
   seedSalt: 90113,
+  dropHiddenGlows: true,
   headroom: 0,
   kits: { nordic: { walls: 'boards', roofs: 'gambrel', civic: 'manor', belfry: 'lantern', works: 'bruk' } },
 };

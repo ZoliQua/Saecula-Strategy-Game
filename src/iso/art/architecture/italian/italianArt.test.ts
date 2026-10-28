@@ -138,7 +138,8 @@ describe('Italian architecture (Etruria, Comune, Rinascimento, Duomo)', () => {
     for (let i = 1; i < stages.length; i++) expect(top(stages[i]!)).toBeGreaterThan(top(stages[i - 1]!));
     expect(top(done)).toBeGreaterThanOrEqual(top(stages[stages.length - 1]!));
     expect(new Set([...stages, done].map((a) => hashPainting(() => a.volume))).size).toBe(WONDER_STAGES + 1);
-    expect(done.glows.length).toBeGreaterThan(10);
+    // Lit at dusk: 10 windows that show (the 3 behind later roofs and marble walls drop their glow, final review I1).
+    expect(done.glows.length).toBeGreaterThanOrEqual(10);
   });
 
   // Glows are lit windows that show: windows behind later blocks, porch roofs or parapets record none (Task 3 I3, Task 5 I1).

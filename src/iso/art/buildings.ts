@@ -5,6 +5,7 @@ import type { ArchStyle } from './architecture/style';
 import type { BuildingArt, WonderArt } from './architecture/types';
 import { ellipse } from './canvas';
 import { IsoPainter } from './isoPainter';
+import { GlowCover } from './lighting/glowCover';
 import type { LitArt } from './lighting/normalLayer';
 import { paintWallPieceInto, wallMaxHeight } from './walls/paintWall';
 import { wallStyleFor } from './walls/wallStyles';
@@ -55,6 +56,14 @@ export function buildingSeed(type: BuildingType, age: AgeId, style: ArchStyle): 
   return type.length * 977 + (age - 1) * 131 + style.seedSalt;
 }
 
+/** A painter for a size × size building in `style`: its window look, and its hidden-glow culling. */
+function stylePainter(size: number, maxHeight: number, seed: number, style: ArchStyle): IsoPainter {
+  const p = new IsoPainter(size, size, maxHeight, seed);
+  p.windowLook = style.palette.window;
+  if (style.dropHiddenGlows) p.glowCover = new GlowCover();
+  return p;
+}
+
 /**
  * Paints a building in a civ's age style for a team colour (albedo,
  * normals, shadow volume, glows, light / smoke anchors). Team variants
@@ -64,8 +73,7 @@ export function buildingSeed(type: BuildingType, age: AgeId, style: ArchStyle): 
 export function paintBuilding(type: BuildingType, team: number, age: AgeId, civ: CivId, withNormals = true): LitArt {
   const art = artFor(type, age, civ);
   const style = ARCH_STYLES[styleIdFor(type, age, civ)];
-  const p = new IsoPainter(art.size, art.size, art.maxHeight, buildingSeed(type, age, style));
-  p.windowLook = style.palette.window;
+  const p = stylePainter(art.size, art.maxHeight, buildingSeed(type, age, style), style);
   art.paint(p, team);
   return p.result(withNormals);
 }
@@ -74,8 +82,7 @@ export function paintBuilding(type: BuildingType, team: number, age: AgeId, civ:
 export function paintWonderStage(stage: number, civ: CivId): LitArt {
   const art = wonderArtFor(civ);
   const style = ARCH_STYLES[styleIdFor('wonder', 3, civ)];
-  const p = new IsoPainter(art.size, art.size, art.maxHeight, 5077 + stage * 13 + style.seedSalt);
-  p.windowLook = style.palette.window;
+  const p = stylePainter(art.size, art.maxHeight, 5077 + stage * 13 + style.seedSalt, style);
   art.paintStage(p, stage);
   return p.result();
 }

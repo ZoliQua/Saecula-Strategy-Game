@@ -1,6 +1,7 @@
 import { TILE_HEIGHT, TILE_WIDTH } from '../../config/constants';
 import { ART_SCALE, BUILDING_BOTTOM_PAD, makeCanvas, poly, type Ctx } from './canvas';
 import type { AnchoredLight } from './lighting/buildingLights';
+import { GlowCover } from './lighting/glowCover';
 import { baked, NormalLayer, type GlowPoint, type LitArt } from './lighting/normalLayer';
 import type { VolumePoint } from './lighting/shadowGeometry';
 import { N_LEFT, N_RIGHT, N_UP, slopeNormal, SCREEN_PER_WORLD_HEIGHT, type Vec3 } from './lighting/viewSpace';
@@ -50,6 +51,8 @@ export class IsoPainter {
   material: RoofMaterial = 'tile';
   /** Frame and glazing of the following windows. */
   windowLook: WindowLook = WARM_WINDOW;
+  /** Set before painting to drop the glows later opaque faces cover (lighting/glowCover.ts). */
+  glowCover: GlowCover | null = null;
 
   /**
    * `readback`: paint on CPU-backed canvases, so result()'s normal
@@ -81,7 +84,7 @@ export class IsoPainter {
       canvas: this.canvas,
       normal: withNormals ? this.normals.finish(this.canvas) : null,
       volume: this.volume,
-      glows: this.glows,
+      glows: this.glowCover ? this.glowCover.visible(this.glows) : this.glows,
       lights: this.lights,
       smoke: this.smoke,
     };
@@ -136,6 +139,7 @@ export class IsoPainter {
   }
 
   fillPoly(pts: Pt[], color: string | CanvasGradient): void {
+    this.glowCover?.face(this.ctx, pts, color, this.glows.length);
     poly(this.ctx, pts);
     this.ctx.fillStyle = color;
     this.ctx.fill();

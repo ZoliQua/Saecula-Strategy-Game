@@ -14,6 +14,9 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * (town centre, house, mining camp, barracks, range, stable, smithy,
  * tower), the age-3 house, farm, range and stable, and Wonder stage 3
  * (unlit while scaffolded).
+ * M5 final review I1: the styles drop hidden window glows (dropHiddenGlows,
+ * lighting/glowCover.ts), so every painting with a window glowing behind a
+ * later solid was re-recorded (its glow list shrank; draw log unchanged).
  */
 
 pinBuildings('russian', {
@@ -26,10 +29,10 @@ pinBuildings('russian', {
   'archery_range@1': '52c66cc189295492',
   'stable@1': '6d63106f024f3b01',
   'blacksmith@1': '85eaa36687e76c50',
-  'foundry@1': '963bbca83d2988f3',
+  'foundry@1': 'd6d5af3b363fe566',
   'tower@1': 'f3e4bb6b0272761d',
   'wall@1': '2d1686d6c8952036',
-  'wonder@1': '424622ed67deeefd',
+  'wonder@1': 'eedccd06acab7ef3',
   'town_center@2': '090ba717c413f509',
   'house@2': 'c60afda2bc8a6b96',
   'farm@2': '24a98e8dc2f26046',
@@ -39,10 +42,10 @@ pinBuildings('russian', {
   'archery_range@2': '7a83a9f4e28fed15',
   'stable@2': '971fbcdae5a333f0',
   'blacksmith@2': '4f669a5eca206764',
-  'foundry@2': '27f213dcfd001957',
+  'foundry@2': '7c4a72d09803fbac',
   'tower@2': '4c7074ca529db966',
   'wall@2': '10ec2061ef003f80',
-  'wonder@2': '424622ed67deeefd',
+  'wonder@2': 'eedccd06acab7ef3',
   'town_center@3': '4b4663c4035eb921',
   'house@3': 'bdd7aa00a8b4b23b',
   'farm@3': '1a47aca6624baa32',
@@ -52,10 +55,10 @@ pinBuildings('russian', {
   'archery_range@3': 'f127274d1baaf2df',
   'stable@3': '06be5638975390af',
   'blacksmith@3': '623373f00fc3d97d',
-  'foundry@3': 'aa166ec468e26856',
+  'foundry@3': '342482faf0f3a517',
   'tower@3': '36529b00268a1bc5',
   'wall@3': '4dec66af47c92e43',
-  'wonder@3': '424622ed67deeefd',
+  'wonder@3': 'eedccd06acab7ef3',
   'wonder~s1': '6819aaac25fddc96',
   'wonder~s2': 'c89cd827754d428c',
   'wonder~s3': '1faa69ddf25ee869',
