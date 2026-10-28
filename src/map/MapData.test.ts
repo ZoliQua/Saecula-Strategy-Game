@@ -73,4 +73,23 @@ describe('MapData', () => {
     const raw = map.getRawTiles();
     expect(raw[3]).toBe(TERRAIN.gold_mine);
   });
+
+  it('fromRaw round-trips tiles and blocked', () => {
+    const map = new MapData(6, 4);
+    map.setTile(2, 1, TERRAIN.forest);
+    map.setTile(5, 3, TERRAIN.water);
+    map.setBlocked(1, 2, true);
+    const copy = MapData.fromRaw(6, 4, new Uint8Array(map.getRawTiles()), new Uint8Array(map.getRawBlocked()));
+    expect(copy.width).toBe(6);
+    expect(copy.height).toBe(4);
+    expect([...copy.getRawTiles()]).toEqual([...map.getRawTiles()]);
+    expect([...copy.getRawBlocked()]).toEqual([...map.getRawBlocked()]);
+    expect(copy.isBlocked(1, 2)).toBe(true);
+    expect(copy.getTile(2, 1)).toBe(TERRAIN.forest);
+  });
+
+  it('fromRaw rejects arrays of the wrong length', () => {
+    expect(() => MapData.fromRaw(4, 4, new Uint8Array(15), new Uint8Array(16))).toThrow(RangeError);
+    expect(() => MapData.fromRaw(4, 4, new Uint8Array(16), new Uint8Array(3))).toThrow(RangeError);
+  });
 });

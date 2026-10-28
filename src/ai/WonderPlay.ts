@@ -30,6 +30,11 @@ export class WonderPlay {
     private readonly act: WonderActions,
   ) {}
 
+  /** The cached site answer (re-checked every AI_COMMON.wonderSiteRetryMs). */
+  get siteCheck(): WonderSiteCheck {
+    return this.site;
+  }
+
   /**
    * Playing for a Wonder not placed yet (wantsWonder: its cost can still be gathered) with a site for it
    * near the town centre: military and tech spending leave its cost saved.

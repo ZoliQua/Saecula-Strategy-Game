@@ -7,6 +7,7 @@ import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting }
 import { chebyshev, nearest } from './decisions/gathering';
 import { nextExploreTarget } from './decisions/scouting';
 import type { KnownBuilding, WorldView } from './perception';
+import { copyKnown, copyTile, type ArmyState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
 const isBusy = (u: Entity) => u.attackIntent !== undefined || u.moveIntent !== undefined || (u.movable?.path.length ?? 0) > 0;
@@ -29,6 +30,21 @@ export class ArmyControl {
     private readonly rng: () => number,
     private readonly isReserved: (u: Entity) => boolean = () => false,
   ) {}
+
+  snapshot(): ArmyState {
+    return {
+      wave: [...this.wave],
+      waveTarget: this.waveTarget && copyKnown(this.waveTarget),
+      exploreGoal: this.exploreGoal && copyTile(this.exploreGoal),
+    };
+  }
+
+  restore(state: ArmyState): void {
+    this.wave.clear();
+    for (const id of state.wave) this.wave.add(id);
+    this.waveTarget = state.waveTarget && copyKnown(state.waveTarget);
+    this.exploreGoal = state.exploreGoal && copyTile(state.exploreGoal);
+  }
 
   get attacking(): boolean {
     return this.wave.size > 0;

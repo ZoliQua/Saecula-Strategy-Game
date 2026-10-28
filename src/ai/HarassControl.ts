@@ -7,6 +7,7 @@ import { groupCentre } from './decisions/combat';
 import { chebyshev, nearest } from './decisions/gathering';
 import { pickHarassTarget, raidOutnumbered, type HarassTarget } from './decisions/harass';
 import type { WorldView } from './perception';
+import { copyTile, loadedTime, savedTime, type HarassState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
 type HarassTuning = HardTuning['harass'];
@@ -28,6 +29,23 @@ export class HarassControl {
     private readonly log: ThoughtLog,
     private readonly tune: HarassTuning,
   ) {}
+
+  snapshot(): HarassState {
+    return {
+      raid: [...this.raid],
+      target: this.target && { position: copyTile(this.target.position), villagers: this.target.villagers },
+      raidsSent: this.raidsSent,
+      endedAtMs: savedTime(this.endedAtMs),
+    };
+  }
+
+  restore(state: HarassState): void {
+    this.raid.clear();
+    for (const id of state.raid) this.raid.add(id);
+    this.target = state.target && { position: copyTile(state.target.position), villagers: state.target.villagers };
+    this.raidsSent = state.raidsSent;
+    this.endedAtMs = loadedTime(state.endedAtMs);
+  }
 
   get active(): boolean {
     return this.raid.size > 0;

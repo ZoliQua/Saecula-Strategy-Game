@@ -23,6 +23,7 @@ import {
   unstaffedSite,
 } from '../economyBuildings';
 import type { WorldView } from '../perception';
+import { expectKind, loadedTime, savedTime, type MediumFields, type StrategyState } from '../strategyState';
 import { WonderPlay } from '../WonderPlay';
 import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
@@ -37,7 +38,7 @@ import { BaseStrategy } from './BaseStrategy';
 export class MediumStrategy extends BaseStrategy {
   readonly name: string = 'medium';
   protected readonly army: ArmyControl;
-  protected readonly firstAttackAtMs: number;
+  protected firstAttackAtMs: number;
   private lastScoutMs = -Infinity;
   protected pressureSent = false;
   /** When the pressure raid left, until the main wave first goes (then null). */
@@ -57,6 +58,28 @@ export class MediumStrategy extends BaseStrategy {
       startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a),
       assignBuilders: (c, v, site, n) => this.assignBuilders(c, v, site, n),
     });
+  }
+
+  snapshot(): StrategyState {
+    return { kind: 'medium', ...this.mediumFields() };
+  }
+
+  restore(state: StrategyState): void {
+    this.restoreMedium(expectKind(state, 'medium'));
+  }
+
+  /** Medium's saved fields; Hard and Mesteri add theirs. */
+  protected mediumFields(): MediumFields {
+    const { firstAttackAtMs, pressureSent, raidOutSinceMs } = this;
+    return { base: this.baseState(), army: this.army.snapshot(), wonderSite: this.wonder.siteCheck.snapshot(), firstAttackAtMs, lastScoutMs: savedTime(this.lastScoutMs), pressureSent, raidOutSinceMs };
+  }
+
+  protected restoreMedium(s: MediumFields): void {
+    this.restoreBase(s.base);
+    this.army.restore(s.army);
+    this.wonder.siteCheck.restore(s.wonderSite);
+    ({ firstAttackAtMs: this.firstAttackAtMs, pressureSent: this.pressureSent, raidOutSinceMs: this.raidOutSinceMs } = s);
+    this.lastScoutMs = loadedTime(s.lastScoutMs);
   }
 
   /** Units another controller (Hard's raids) owns; the army and pressure squad leave them alone. */

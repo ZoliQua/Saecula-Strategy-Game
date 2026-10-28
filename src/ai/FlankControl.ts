@@ -4,6 +4,7 @@ import { clearUnitOrders } from '../ecs/orders';
 import type { AIContext } from './AIPlayer';
 import { pickEngageTarget } from './decisions/combat';
 import type { KnownBuilding, WorldView } from './perception';
+import { copyKnown, type FlankState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
 const isBusy = (u: Entity) => u.attackIntent !== undefined || u.moveIntent !== undefined || (u.movable?.path.length ?? 0) > 0;
@@ -26,6 +27,24 @@ export class FlankControl {
     private readonly log: ThoughtLog,
     readonly tune: FlankTuning,
   ) {}
+
+  snapshot(): FlankState {
+    return {
+      members: [...this.flank],
+      reorders: [...this.reorders],
+      target: this.goal && copyKnown(this.goal),
+      count: this.launched,
+    };
+  }
+
+  restore(state: FlankState): void {
+    this.flank.clear();
+    for (const id of state.members) this.flank.add(id);
+    this.reorders.clear();
+    for (const [id, n] of state.reorders) this.reorders.set(id, n);
+    this.goal = state.target && copyKnown(state.target);
+    this.launched = state.count;
+  }
 
   /** True while a flank is out. */
   get active(): boolean {

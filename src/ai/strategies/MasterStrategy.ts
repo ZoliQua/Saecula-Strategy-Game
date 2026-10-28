@@ -5,6 +5,7 @@ import { pickFlankTarget } from '../decisions/combat';
 import { chebyshev } from '../decisions/gathering';
 import { FlankControl } from '../FlankControl';
 import type { WorldView } from '../perception';
+import { expectKind, type StrategyState } from '../strategyState';
 import { HardStrategy } from './HardStrategy';
 
 /**
@@ -26,6 +27,16 @@ export class MasterStrategy extends HardStrategy {
   ) {
     super(rng, master);
     this.flank = new FlankControl(this.log, master.flank);
+  }
+
+  override snapshot(): StrategyState {
+    return { kind: 'master', ...this.hardFields(), flank: this.flank.snapshot() };
+  }
+
+  override restore(state: StrategyState): void {
+    const s = expectKind(state, 'master');
+    this.restoreHard(s);
+    this.flank.restore(s.flank);
   }
 
   /** Flanks sent so far. */

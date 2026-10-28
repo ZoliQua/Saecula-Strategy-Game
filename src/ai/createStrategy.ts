@@ -31,6 +31,14 @@ export function createStrategy(
   }
 }
 
+/**
+ * Seed of the live AI's own RNG (M6 decision 2): derived from the match
+ * seed like the sims do, so a seed replays its AIs and the RNG state can be saved.
+ */
+export function aiRngSeed(matchSeed: number, playerId: number): number {
+  return (matchSeed * 31 + playerId) >>> 0;
+}
+
 /** Whether an AI of `difficulty` gets a personality (Medium, Hard and Mesteri; never Easy). */
 export function hasPersonality(difficulty: Difficulty): boolean {
   return difficulty !== 'easy';

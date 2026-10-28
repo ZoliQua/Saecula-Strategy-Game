@@ -16,6 +16,7 @@ import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { generateMap, type MapTemplate } from '../../map/generator';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
+import type { StatefulRng } from '../../map/random';
 import { PathBudget } from '../../map/pathBudget';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
@@ -32,6 +33,8 @@ export interface HeadlessMatchOptions {
   readonly aiCount: number;
   /** One strategy per AI player (ids 2..). */
   readonly strategy: (playerId: number) => AIStrategy;
+  /** The StatefulRng each AI's strategy draws from (snapshot tests; sims use their own createRng). */
+  readonly rng?: (playerId: number) => StatefulRng;
   /** Whom each AI attacks (default: the passive human, player 1). */
   readonly enemyOf?: (playerId: number) => number;
   /** Difficulty handicap per AI player (default: none). */
@@ -80,7 +83,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   spawnPresetWalls(world, players, map, generated.walls);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
-    return new AIPlayer(p, options.strategy(p.id));
+    const rng = options.rng?.(p.id);
+    return new AIPlayer(p, options.strategy(p.id), rng ? { rng } : {});
   });
   const human = players.human();
   const humanAi = options.humanStrategy && human ? new AIPlayer(human, options.humanStrategy) : null;

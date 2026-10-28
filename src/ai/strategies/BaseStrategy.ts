@@ -17,6 +17,7 @@ import type { AIContext, AIStrategy } from '../AIPlayer';
 import { canPlaceAt, findPlacement } from '../decisions/placement';
 import { aiTrainAccount, canAfford, NO_RESERVE } from '../economy';
 import { Perception, type WorldView } from '../perception';
+import type { BaseState, StrategyState } from '../strategyState';
 import { ThoughtLog, type AIThoughts } from '../thoughts';
 
 /**
@@ -56,6 +57,20 @@ export abstract class BaseStrategy implements AIStrategy {
 
   thoughts(): AIThoughts {
     return this.log.snapshot(this.name);
+  }
+
+  abstract snapshot(): StrategyState;
+  abstract restore(state: StrategyState): void;
+
+  /** The cycle timers and perception (the ThoughtLog is a dev overlay: not saved). */
+  protected baseState(): BaseState {
+    return { nextUpkeepMs: this.nextUpkeepMs, nextDecisionMs: this.nextDecisionMs, perception: this.perception.snapshot() };
+  }
+
+  protected restoreBase(state: BaseState): void {
+    this.nextUpkeepMs = state.nextUpkeepMs;
+    this.nextDecisionMs = state.nextDecisionMs;
+    this.perception.restore(state.perception);
   }
 
   /** Full decision: build order, training, research, attacks. */

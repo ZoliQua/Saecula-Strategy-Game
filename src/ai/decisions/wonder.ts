@@ -5,6 +5,7 @@ import type { Resources } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { canAfford } from '../economy';
 import type { WorldView } from '../perception';
+import { loadedTime, savedTime, type WonderSiteState } from '../strategyState';
 
 /** Resources still left in the nodes the AI can work, per gathered-out resource (food: farms regrow). */
 export interface WorkableStock {
@@ -65,6 +66,15 @@ export class WonderSiteCheck {
   private found = true;
 
   constructor(private readonly retryMs: number) {}
+
+  snapshot(): WonderSiteState {
+    return { nextSearchMs: savedTime(this.nextSearchMs), found: this.found };
+  }
+
+  restore(state: WonderSiteState): void {
+    this.nextSearchMs = loadedTime(state.nextSearchMs);
+    this.found = state.found;
+  }
 
   available(nowMs: number, find: () => boolean): boolean {
     if (nowMs >= this.nextSearchMs) {

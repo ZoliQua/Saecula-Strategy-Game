@@ -4,6 +4,7 @@ import type { TileCoord } from '../iso/coordinates';
 import { FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
 import type { BuildingType, ResourceType, UnitType } from '../types';
 import type { AIContext } from './AIPlayer';
+import { copyKnown, copyTile, type PerceptionState } from './strategyState';
 
 /** An enemy building the AI has seen; kept until it sees the spot again without it. */
 export interface KnownBuilding {
@@ -80,9 +81,27 @@ const isHostile = (ownerId: number, me: number) => ownerId !== me && ownerId !==
  */
 export class Perception {
   private readonly memory = new Map<number, KnownBuilding>();
-  private readonly sightings: Partial<Record<UnitType, number>> = {};
+  private sightings: Partial<Record<UnitType, number>> = {};
   private readonly villagerMemory = new Map<number, VillagerSighting>();
   private lastMs: number | null = null;
+
+  snapshot(): PerceptionState {
+    return {
+      memory: [...this.memory.values()].map(copyKnown),
+      sightings: { ...this.sightings },
+      villagerMemory: [...this.villagerMemory.values()].map((v) => ({ ...v, position: copyTile(v.position) })),
+      lastMs: this.lastMs,
+    };
+  }
+
+  restore(state: PerceptionState): void {
+    this.memory.clear();
+    for (const b of state.memory) this.memory.set(b.id, copyKnown(b));
+    this.sightings = { ...state.sightings };
+    this.villagerMemory.clear();
+    for (const v of state.villagerMemory) this.villagerMemory.set(v.id, { ...v, position: copyTile(v.position) });
+    this.lastMs = state.lastMs;
+  }
 
   update(ctx: AIContext): WorldView {
     const me = ctx.player.id;

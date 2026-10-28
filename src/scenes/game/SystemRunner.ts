@@ -3,7 +3,7 @@ import { DEFAULT_CIV } from '../../config/civs';
 import { UnitXRay } from '../../ecs/systems/occlusion/UnitXRay';
 import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
-import { applyDifficulty, createStrategy, hasPersonality } from '../../ai/createStrategy';
+import { aiRngSeed, applyDifficulty, createStrategy, hasPersonality } from '../../ai/createStrategy';
 import { pickPersonality } from '../../ai/personality';
 import type { AIThoughts } from '../../ai/thoughts';
 import { AgeUpFxSystem } from '../../ecs/systems/AgeUpFxSystem';
@@ -36,6 +36,7 @@ import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { PathBudget } from '../../map/pathBudget';
+import { createStatefulRng } from '../../map/random';
 import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/constants';
 import { keepWallKeys } from '../../iso/art/walls/commonWallPieces';
 import type { MapData } from '../../map/MapData';
@@ -81,6 +82,8 @@ export class SystemRunner {
   private readonly cliffSort: CliffBuildingSort;
   private readonly xray: UnitXRay;
   private aiPlayers: AIPlayer[] = [];
+  /** Every player's fog by id: the human's (1) and each AI's. */
+  private readonly fogById: Map<number, FogOfWarData>;
   private readonly humanId: number | undefined;
   private readonly unsubscribeAge: () => void;
   private readonly evictTimer: Phaser.Time.TimerEvent;
@@ -124,14 +127,16 @@ export class SystemRunner {
     this.healthBars = new HealthBarSystem(scene, world);
     this.fogData = new FogOfWarData(mapData.width, mapData.height);
     // Each AI sees through its own fog (perception, towers); scans are staggered across frames.
-    const fogs = new Map<number, FogOfWarData>([[1, this.fogData]]);
+    const fogs = (this.fogById = new Map<number, FogOfWarData>([[1, this.fogData]]));
     this.aiPlayers = players.ais().map((p, i, all) => {
       const fog = new FogOfWarData(mapData.width, mapData.height);
       fogs.set(p.id, fog);
       applyDifficulty(p, difficulty);
       if (hasPersonality(difficulty)) p.personality = pickPersonality(options.seed, p.id);
-      const strategy = createStrategy(difficulty, Math.random, p.personality);
-      return new AIPlayer(p, strategy, { fog, fogPhaseMs: (AI_COMMON.fogScanMs * i) / all.length });
+      // Seeded per AI (M6 decision 2): a seed replays its AIs and the RNG state can be saved.
+      const rng = createStatefulRng(aiRngSeed(options.seed, p.id));
+      const strategy = createStrategy(difficulty, rng.next, p.personality);
+      return new AIPlayer(p, strategy, { fog, fogPhaseMs: (AI_COMMON.fogScanMs * i) / all.length, rng });
     });
     this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null);
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1);
@@ -170,6 +175,16 @@ export class SystemRunner {
     });
     // Game start: the menu / preload art of civs not in this match goes now (design decision 7).
     this.render.releaseAbsentCivs(activeCivs(players));
+  }
+
+  /** The AI players, in tick order (saved games snapshot and restore them). */
+  ais(): readonly AIPlayer[] {
+    return this.aiPlayers;
+  }
+
+  /** Every player's fog of war by player id (saved games). */
+  fogs(): ReadonlyMap<number, FogOfWarData> {
+    return this.fogById;
   }
 
   /** What each AI is thinking, for the dev-only overlay. */

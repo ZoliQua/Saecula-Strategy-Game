@@ -49,6 +49,15 @@ export class FogOfWarData {
     this.states[ty * this.width + tx] = FOG_VISIBLE;
   }
 
+  /** Replaces every tile state with saved `states` (copied) and bumps `revision`. */
+  load(states: Uint8Array): void {
+    if (states.length !== this.states.length) {
+      throw new RangeError(`Fog states (${states.length}) do not match ${this.width}x${this.height}`);
+    }
+    this.states.set(states);
+    this.revision++;
+  }
+
   /** Expose raw buffer for save-file serialisation. */
   raw(): Readonly<Uint8Array> {
     return this.states;

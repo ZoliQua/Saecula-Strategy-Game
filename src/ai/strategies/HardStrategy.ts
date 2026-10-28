@@ -18,6 +18,7 @@ import {
 import { baseAnchor } from '../economyBuildings';
 import { HarassControl } from '../HarassControl';
 import type { WorldView } from '../perception';
+import { copyTile, expectKind, loadedTime, savedTime, type HardFields, type StrategyState } from '../strategyState';
 import { MediumStrategy } from './MediumStrategy';
 
 /**
@@ -49,6 +50,39 @@ export class HardStrategy extends MediumStrategy {
     super(rng, tune);
     this.hard = tune;
     this.harass = new HarassControl(this.log, tune.harass);
+  }
+
+  override snapshot(): StrategyState {
+    return { kind: 'hard', ...this.hardFields() };
+  }
+
+  override restore(state: StrategyState): void {
+    this.restoreHard(expectKind(state, 'hard'));
+  }
+
+  /** Hard's saved fields on top of Medium's; Mesteri adds its flank. */
+  protected hardFields(): HardFields {
+    return {
+      ...this.mediumFields(),
+      stance: { ...this.stance },
+      aggression: this.aggression,
+      sensedAtMs: this.sensedAtMs,
+      threatFrom: this.threatFrom && copyTile(this.threatFrom),
+      wallLinesLaid: this.wallLinesLaid,
+      rebalancedAtMs: savedTime(this.rebalancedAtMs),
+      harass: this.harass.snapshot(),
+    };
+  }
+
+  protected restoreHard(s: HardFields): void {
+    this.restoreMedium(s);
+    this.stance = { ...s.stance };
+    this.aggression = s.aggression;
+    this.sensedAtMs = s.sensedAtMs;
+    this.threatFrom = s.threatFrom && copyTile(s.threatFrom);
+    this.wallLinesLaid = s.wallLinesLaid;
+    this.rebalancedAtMs = loadedTime(s.rebalancedAtMs);
+    this.harass.restore(s.harass);
   }
 
   /** Current stance (for tests and the overlay). */

@@ -21,6 +21,21 @@ export class MapData {
     if (fill !== 0) this.tiles.fill(fill);
   }
 
+  /**
+   * A map from saved raw arrays (`getRawTiles` / `getRawBlocked`), copied.
+   * Throws RangeError when an array does not hold `width * height` tiles.
+   */
+  static fromRaw(width: number, height: number, tiles: Uint8Array, blocked: Uint8Array): MapData {
+    const size = width * height;
+    if (tiles.length !== size || blocked.length !== size) {
+      throw new RangeError(`Raw map arrays (${tiles.length}, ${blocked.length}) do not match ${width}x${height}`);
+    }
+    const map = new MapData(width, height, TERRAIN.grass);
+    map.tiles.set(tiles);
+    map.blocked.set(blocked);
+    return map;
+  }
+
   getTile(tx: number, ty: number): TerrainId {
     if (!isInsideMap({ tx, ty }, this.width, this.height)) {
       throw new RangeError(
@@ -67,6 +82,11 @@ export class MapData {
   /** Raw backing array, intended for renderers and save serialisation. */
   getRawTiles(): Readonly<Uint8Array> {
     return this.tiles;
+  }
+
+  /** Raw blocked mask (1 = a building or wall stands there), for save serialisation. */
+  getRawBlocked(): Readonly<Uint8Array> {
+    return this.blocked;
   }
 
   forEachTile(

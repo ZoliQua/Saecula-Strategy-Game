@@ -6,6 +6,7 @@ import { attackReady } from '../decisions/combat';
 import { canAfford, snapshotEconomy } from '../economy';
 import { baseAnchor } from '../economyBuildings';
 import type { WorldView } from '../perception';
+import { expectKind, type StrategyState } from '../strategyState';
 import { assignIdleVillagers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
@@ -21,8 +22,8 @@ export class EasyStrategy extends BaseStrategy {
   readonly name = 'easy';
   private readonly army: ArmyControl;
   /** Game time from which age-ups are attempted; Infinity when this game never ages up. */
-  private readonly ageUpFromMs: number;
-  private readonly firstAttackAtMs: number;
+  private ageUpFromMs: number;
+  private firstAttackAtMs: number;
 
   /** `rng` returns [0, 1); injectable so tests are deterministic. */
   constructor(rng: () => number = Math.random) {
@@ -32,6 +33,24 @@ export class EasyStrategy extends BaseStrategy {
     this.ageUpFromMs = ages ? delay : Infinity;
     this.firstAttackAtMs = this.roll(AI_EASY.firstAttackMs);
     this.army = new ArmyControl(this.log, rng);
+  }
+
+  snapshot(): StrategyState {
+    return {
+      kind: 'easy',
+      base: this.baseState(),
+      army: this.army.snapshot(),
+      ageUpFromMs: this.ageUpFromMs === Infinity ? null : this.ageUpFromMs,
+      firstAttackAtMs: this.firstAttackAtMs,
+    };
+  }
+
+  restore(state: StrategyState): void {
+    const s = expectKind(state, 'easy');
+    this.restoreBase(s.base);
+    this.army.restore(s.army);
+    this.ageUpFromMs = s.ageUpFromMs ?? Infinity;
+    this.firstAttackAtMs = s.firstAttackAtMs;
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
