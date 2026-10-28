@@ -83,8 +83,12 @@ export function brickTower(p: IsoPainter, s: ArchStyle, b: Block, z0: number, z1
   return z1 + 3 + rise;
 }
 
-/** Domed garita (sentry box) at (u, v) standing at z: an ochre corbel, a drum with a slit, the dome and its finial. */
-export function garita(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number, r = 0.11): void {
+/**
+ * Domed garita (sentry box) at (u, v) standing at z: an ochre corbel, a
+ * drum with a slit, the dome and its finial. Returns the finial's tip
+ * height (art px), for a caller's shadow volume.
+ */
+export function garita(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number, r = 0.11): number {
   const wall = s.palette.plaster;
   helm(p, u, v, z - 10, [[0, r * 0.27], [4, r * 0.64], [8, r * 0.9], [10, r]], s.palette.plasterDeep, false);
   helm(p, u, v, z, [[0, r], [r * 145, r]], wall, false);
@@ -94,6 +98,8 @@ export function garita(p: IsoPainter, s: ArchStyle, u: number, v: number, z: num
   const top = z + r * 145;
   helm(p, u, v, top, [[0, r * 1.18], [2, r * 1.18], [6, r], [10, r * 0.64], [12, r * 0.27], [13, 0.005]], wall, false);
   finial(p, u, v, top + 13, 7, false);
+  // Dome (13 px) plus finial (7 px).
+  return top + 20;
 }
 
 /** Whitewashed mirador on block b from z0 to z1: quoins, a balconied light, a balustraded top with a garita on the front corner. */

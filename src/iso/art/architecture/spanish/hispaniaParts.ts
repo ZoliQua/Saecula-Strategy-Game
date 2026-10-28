@@ -142,13 +142,18 @@ export function hallRoof(p: IsoPainter, s: ArchStyle, b: Block, z: number, rise 
   return z + rise * s.roof.pitch;
 }
 
+/** Whether the style crowns its hipped ridges with espadañas (ridgeBells paints one). */
+export function hasRidgeEspadana(s: ArchStyle): boolean {
+  return kitsOf(s).espadanas && s.roof.form === 'hip';
+}
+
 /**
  * Espadaña crowning a hipped block's ridge (Colonial reading only): a
  * bell gable across the middle of the ridge, so it stands on the
  * building's skyline. Nothing on terraces or where the age has none.
  */
 export function ridgeBells(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, eave: number, rise: number, height: number, bells: 1 | 3 = 1): void {
-  if (!kitsOf(s).espadanas || s.roof.form !== 'hip') return;
+  if (!hasRidgeEspadana(s)) return;
   const um = (u0 + u1) / 2;
   const half = Math.min(0.32, (u1 - u0) * 0.3) * (bells === 3 ? 1.5 : 1);
   espadana(p, s, um - half, um + half, (v0 + v1) / 2, eave + rise * s.roof.pitch - 4, height, bells);

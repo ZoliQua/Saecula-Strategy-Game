@@ -12,7 +12,6 @@ const IMPERIAL_RED = 0xb3202a;
 
 export const GERMAN_M = {
   eagle: { color: EAGLE_BLACK } as Material,
-  goldField: { color: IMPERIAL_GOLD, metal: 0.25 } as Material,
   red: { color: IMPERIAL_RED } as Material,
   /** Undyed wool (villagers' hose, Germanic trousers). */
   loden: { color: 0x7d7058 } as Material,

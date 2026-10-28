@@ -32,13 +32,16 @@ const TURF = 0x5a7a34;
 /** Split oak of the Limes palisade, darker and redder than the English oak. */
 const OAK = 0x684731;
 
+/** Height (art px) of the Limes watchtower's roof apex: the post's top, where its hip roof ends. */
+const LIMES_TOWER_TOP = 120;
+
 /** Age 1 (Római kor): Limes palisade on its bank; square timber-framed watchtowers on sandstone footings. */
 const LIMES_PALISADE: WallAgeStyle = {
   readback: true,
   postBody: 0.24,
   armStart: reachBody(0.24),
   postHalf: 0.3,
-  postTop: 120,
+  postTop: LIMES_TOWER_TOP,
   shadow: bankPalisadeShadow,
   arm: (p, arm) => bankPalisadeArm(p, arm, { bank: BANK, turf: TURF, timber: OAK }),
   post: (p) => {
@@ -62,7 +65,7 @@ const LIMES_PALISADE: WallAgeStyle = {
     const cap = z + 30;
     for (const [u, v] of [[0.17, 0.17], [0.83, 0.17], [0.17, 0.83], [0.83, 0.83]] as const) timberPost(p, u, v, z + 13, cap, 2.2, L.timber);
     p.material = 'shingle';
-    p.hipRoof(0.1, 0.1, 0.9, 0.9, cap, 120 - cap, L.roof, 0.04);
+    p.hipRoof(0.1, 0.1, 0.9, 0.9, cap, LIMES_TOWER_TOP - cap, L.roof, 0.04);
   },
 };
 

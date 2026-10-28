@@ -7,7 +7,7 @@ import type { ArchStyle } from '../style';
 import type { AgeArtSet, BuildingArt } from '../types';
 import { kitsOf, wallOf } from './courtyardKits';
 import { portal, windowAt } from './hispaniaOrnament';
-import { block, hip, ridgeBells, roofOver, type Block } from './hispaniaParts';
+import { block, hasRidgeEspadana, hip, ridgeBells, roofOver, type Block } from './hispaniaParts';
 import { gateway, huerta, noria, palomar, threshingFloor, vineyard, yardWalls } from './hispaniaYard';
 
 /*
@@ -32,7 +32,7 @@ function oliveGrove(p: IsoPainter, u0: number, v0: number, u1: number, v1: numbe
  * merge into one lump at zoom 1).
  */
 function skyline(p: IsoPainter, s: ArchStyle, b: Block, dovecote: Block, z: number): void {
-  if (kitsOf(s).espadanas && s.roof.form === 'hip') ridgeBells(p, s, b, z, 18, 34);
+  if (hasRidgeEspadana(s)) ridgeBells(p, s, b, z, 18, 34);
   else palomar(p, s, dovecote, z);
 }
 

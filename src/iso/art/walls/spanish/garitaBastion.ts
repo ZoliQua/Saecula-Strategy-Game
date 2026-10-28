@@ -40,8 +40,7 @@ function garitas(p: IsoPainter, arms: number): void {
   const spots = (free.length > 0 ? free : (['front'] as const)).map((s) => salientAt(s, 0.2, 0.8));
   spots.sort((x, y) => x[0] + x[1] - (y[0] + y[1]));
   for (const [u, v] of spots) {
-    garita(p, SPANISH_COLONIAL, u, v, GARITA_Z, GARITA_R);
-    p.addVolumePoint(u, v, GARITA_Z + GARITA_R * 145 + 20);
+    p.addVolumePoint(u, v, garita(p, SPANISH_COLONIAL, u, v, GARITA_Z, GARITA_R));
   }
 }
 
