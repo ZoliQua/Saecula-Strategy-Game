@@ -1,3 +1,4 @@
+import { BATTLE_SFX_LIMITS, SFX_SUB_FLOOR_HZ } from '../../config/audio';
 import type { SynthLayer, SynthRecipe } from './synth';
 
 /**
@@ -95,6 +96,13 @@ const sfx = (recipe: SynthLayer[], gain: number, maxVoices: number, minIntervalM
   recipe: { layers: recipe },
 });
 
+/** A battle sound: its caps come from BATTLE_SFX_LIMITS. */
+const battle = (recipe: SynthLayer[], gain: number, limits: { maxVoices: number; minIntervalMs: number }): SfxSpec =>
+  sfx(recipe, gain, limits.maxVoices, limits.minIntervalMs);
+
+/** Sub-bass guard for noise rumbles: nothing below the floor reaches the limiter. */
+const SUB_CUT = { type: 'highpass', freq: SFX_SUB_FLOOR_HZ * 0.9, q: 0.7 } as const;
+
 const notice = (recipe: SynthLayer[], gain: number): SfxSpec => ({
   channel: 'notifications',
   maxVoices: 1,
@@ -182,15 +190,14 @@ export const SFX_CATALOGUE: Readonly<Record<SfxKey, SfxSpec>> = {
     80,
   ),
   // A dull body fall: a low thud and a muffled dust burst.
-  unit_die: sfx(
+  unit_die: battle(
     [
       { wave: 'noise', freq: [700, 180], ...hit(3, 240, 300), gain: 0.55 },
       { wave: 'sine', freq: [150, 55], ...hit(3, 260, 320), gain: 0.55 },
       { wave: 'triangle', freq: [240, 120], ...hit(5, 150, 180), filter: { type: 'lowpass', freq: 600, q: 0.7 }, gain: 0.2 },
     ],
     0.45,
-    4,
-    60,
+    BATTLE_SFX_LIMITS.unit_die,
   ),
   // Two mallet knocks on timber.
   building_start: sfx(
@@ -220,8 +227,8 @@ export const SFX_CATALOGUE: Readonly<Record<SfxKey, SfxSpec>> = {
   // A collapse: a long low rumble with falling debris.
   building_destroyed: sfx(
     [
-      { wave: 'noise', freq: [2400, 250], attackMs: 6, decayMs: 750, sustain: 0, releaseMs: 200, durationMs: 1050, gain: 0.7 },
-      { wave: 'sine', freq: [75, 38], ...hit(5, 850, 950), gain: 0.55 },
+      { wave: 'noise', freq: [2400, 250], attackMs: 6, decayMs: 750, sustain: 0, releaseMs: 200, durationMs: 1050, filter: SUB_CUT, gain: 0.7 },
+      { wave: 'sine', freq: [85, SFX_SUB_FLOOR_HZ], ...hit(5, 850, 950), gain: 0.4 },
       { wave: 'noise', freq: [2600, 900], ...hit(4, 300, 380), filter: { type: 'bandpass', freq: 1100, q: 1.2 }, gain: 0.35, delayMs: 90 },
       { wave: 'noise', freq: [2000, 800], ...hit(4, 220, 280), filter: { type: 'bandpass', freq: 800, q: 1.5 }, gain: 0.3, delayMs: 330 },
     ],
@@ -243,9 +250,9 @@ export const SFX_CATALOGUE: Readonly<Record<SfxKey, SfxSpec>> = {
   // A pick on ore: a short metallic clink.
   gather_gold: sfx(
     [
-      { wave: 'sine', freq: [2100, 2050], ...hit(2, 150, 190), fm: { ratio: 1.41, depth: 1.1 }, filter: { type: 'lowpass', freq: 6000, q: 0.7 }, gain: 0.28 },
-      { wave: 'sine', freq: [3150, 3150], ...hit(2, 70, 90), gain: 0.1 },
-      { wave: 'noise', freq: [9000, 6000], ...hit(2, 14, 22), filter: { type: 'highpass', freq: 3000, q: 0.7 }, gain: 0.25 },
+      { wave: 'sine', freq: [1500, 1470], ...hit(2, 150, 190), fm: { ratio: 1.41, depth: 0.9 }, filter: { type: 'lowpass', freq: 3800, q: 0.7 }, gain: 0.3 },
+      { wave: 'sine', freq: [2250, 2250], ...hit(2, 70, 90), gain: 0.08 },
+      { wave: 'noise', freq: [5000, 3500], ...hit(2, 14, 22), filter: { type: 'bandpass', freq: 2600, q: 1 }, gain: 0.2 },
     ],
     0.35,
     3,
@@ -289,57 +296,52 @@ export const SFX_CATALOGUE: Readonly<Record<SfxKey, SfxSpec>> = {
     0.65,
   ),
   // A short metallic FM ping on a noise burst, with a little body thump.
-  sword_hit: sfx(
+  sword_hit: battle(
     [
       { wave: 'sine', freq: [1850, 1750], ...hit(2, 95, 140), fm: { ratio: 2.76, depth: 1.4 }, filter: { type: 'lowpass', freq: 5500, q: 0.7 }, gain: 0.26 },
       { wave: 'noise', freq: [6000, 2500], ...hit(2, 40, 60), filter: { type: 'bandpass', freq: 3000, q: 0.8 }, gain: 0.5 },
       { wave: 'sine', freq: [170, 95], ...hit(2, 50, 65), gain: 0.3 },
     ],
     0.45,
-    6,
-    35,
+    BATTLE_SFX_LIMITS.sword_hit,
   ),
   // A band-passed whoosh with a soft string twang.
-  arrow_shot: sfx(
+  arrow_shot: battle(
     [
       { wave: 'noise', freq: [3200, 1200], attackMs: 14, decayMs: 150, sustain: 0, releaseMs: 30, durationMs: 200, filter: { type: 'bandpass', freq: 1800, q: 1.2 }, gain: 0.85 },
       { wave: 'triangle', freq: [190, 160], ...hit(2, 70, 90), filter: { type: 'lowpass', freq: 1200, q: 0.7 }, gain: 0.2 },
     ],
     0.35,
-    5,
-    40,
+    BATTLE_SFX_LIMITS.arrow_shot,
   ),
   // A powder crack on a low thump, with a short muffled tail.
-  musket_shot: sfx(
+  musket_shot: battle(
     [
       { wave: 'noise', freq: [8000, 1500], ...hit(2, 90, 140), filter: { type: 'lowpass', freq: 5000, q: 0.7 }, gain: 0.75 },
-      { wave: 'sine', freq: [130, 50], ...hit(2, 180, 240), gain: 0.55 },
+      { wave: 'sine', freq: [130, 60], ...hit(2, 180, 240), gain: 0.5 },
       { wave: 'noise', freq: [900, 300], ...hit(10, 280, 360), gain: 0.3, delayMs: 20 },
     ],
     0.45,
-    4,
-    50,
+    BATTLE_SFX_LIMITS.musket_shot,
   ),
   // The cannon: a deeper crack and a longer, rolling boom.
-  cannon_shot: sfx(
+  cannon_shot: battle(
     [
       { wave: 'noise', freq: [4500, 400], ...hit(3, 480, 560), filter: { type: 'lowpass', freq: 4000, q: 0.7 }, gain: 0.7 },
-      { wave: 'sine', freq: [80, 34], ...hit(3, 620, 720), gain: 0.75 },
-      { wave: 'noise', freq: [350, 150], ...hit(30, 700, 900), gain: 0.4, delayMs: 60 },
+      { wave: 'sine', freq: [90, SFX_SUB_FLOOR_HZ], ...hit(3, 620, 720), gain: 0.5 },
+      { wave: 'noise', freq: [350, 150], ...hit(30, 700, 900), filter: SUB_CUT, gain: 0.45, delayMs: 60 },
     ],
     0.6,
-    3,
-    90,
+    BATTLE_SFX_LIMITS.cannon_shot,
   ),
   // A cannonball landing: a blast with scattering debris.
-  cannon_impact: sfx(
+  cannon_impact: battle(
     [
       { wave: 'noise', freq: [3200, 250], ...hit(3, 600, 700), filter: { type: 'lowpass', freq: 3500, q: 0.7 }, gain: 0.75 },
-      { wave: 'sine', freq: [95, 36], ...hit(3, 520, 620), gain: 0.65 },
+      { wave: 'sine', freq: [100, SFX_SUB_FLOOR_HZ], ...hit(3, 520, 620), gain: 0.45 },
       { wave: 'noise', freq: [2600, 1000], ...hit(4, 260, 330), filter: { type: 'bandpass', freq: 1500, q: 1 }, gain: 0.3, delayMs: 50 },
     ],
     0.6,
-    3,
-    90,
+    BATTLE_SFX_LIMITS.cannon_impact,
   ),
 };

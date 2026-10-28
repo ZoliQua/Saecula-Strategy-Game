@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SFX_MAX_BYTES } from '../../config/audio';
 import { SFX_CATALOGUE, SFX_KEYS } from './catalogue';
-import { renderSfx, type SynthRecipe } from './synth';
+import { renderSfx, SfxRenderer, type SynthRecipe } from './synth';
 
 const rms = (s: Float32Array): number => Math.sqrt(s.reduce((a, v) => a + v * v, 0) / s.length);
 const peak = (s: Float32Array): number => s.reduce((a, v) => Math.max(a, Math.abs(v)), 0);
@@ -54,5 +54,19 @@ describe('renderSfx', () => {
       layers: [{ wave: 'noise', freq: [4000, 4000], attackMs: 2, decayMs: 50, sustain: 0, releaseMs: 10, durationMs: 80, gain: 0.5 }],
     };
     expect(renderSfx(noise, 8000, 1)).not.toEqual(renderSfx(noise, 8000, 2));
+  });
+});
+
+describe('SfxRenderer', () => {
+  it('a chunked render is identical to renderSfx for every recipe', () => {
+    for (const key of SFX_KEYS) {
+      const whole = renderSfx(SFX_CATALOGUE[key].recipe, 48_000, 11);
+      const r = new SfxRenderer(SFX_CATALOGUE[key].recipe, 48_000, 11, 1237);
+      let steps = 0;
+      while (!r.step()) steps++;
+      expect(r.samples, key).toEqual(whole);
+      expect(r.step()).toBe(true);
+      if (whole.length > 1237 * 2) expect(steps, key).toBeGreaterThan(1);
+    }
   });
 });

@@ -153,7 +153,14 @@ function envelope(i: number, n: number, a: number, d: number, sustain: number, r
   return env;
 }
 
-function renderLayer(out: Float32Array, layer: SynthLayer, sampleRate: number, rand: () => number): void {
+/** Renders one layer into `out`, yielding after every `chunk` samples (a resumable render). */
+function* renderLayer(
+  out: Float32Array,
+  layer: SynthLayer,
+  sampleRate: number,
+  rand: () => number,
+  chunk: number,
+): Generator<void, void> {
   const ms = sampleRate / 1000;
   const start = Math.round((layer.delayMs ?? 0) * ms);
   const n = Math.min(Math.round(layer.durationMs * ms), out.length - start);
@@ -190,21 +197,55 @@ function renderLayer(out: Float32Array, layer: SynthLayer, sampleRate: number, r
     if (filter) s = filter.process(s);
     out[start + i]! += s;
     f *= glide;
+    if ((i + 1) % chunk === 0) yield;
   }
 }
 
 /**
- * Renders `recipe` to mono samples at `sampleRate`. Deterministic for a
- * seed; at most SFX_MAX_SECONDS long; the sample peak never exceeds
- * SFX_PEAK (a louder render is scaled down), and both ends fade to
- * silence so playback never clicks.
+ * A resumable `renderSfx`: `step()` renders about `chunkSamples` samples
+ * per call, so a long sound spreads over frames. The samples are exactly
+ * those of `renderSfx` (same arithmetic, same order).
  */
-export function renderSfx(recipe: SynthRecipe, sampleRate: number, seed: number): Float32Array<ArrayBuffer> {
-  const endMs = recipe.layers.reduce((m, l) => Math.max(m, (l.delayMs ?? 0) + l.durationMs), 0);
-  const length = Math.max(1, Math.min(Math.floor(SFX_MAX_SECONDS * sampleRate), Math.ceil((endMs * sampleRate) / 1000)));
-  const out = new Float32Array(length);
-  const rand = mulberry32(seed);
-  for (const layer of recipe.layers) renderLayer(out, layer, sampleRate, rand);
+export class SfxRenderer {
+  private readonly out: Float32Array<ArrayBuffer>;
+  private readonly steps: Generator<void, void>;
+  private done = false;
+
+  constructor(
+    recipe: SynthRecipe,
+    private readonly sampleRate: number,
+    seed: number,
+    chunkSamples = Number.POSITIVE_INFINITY,
+  ) {
+    const endMs = recipe.layers.reduce((m, l) => Math.max(m, (l.delayMs ?? 0) + l.durationMs), 0);
+    const length = Math.max(1, Math.min(Math.floor(SFX_MAX_SECONDS * sampleRate), Math.ceil((endMs * sampleRate) / 1000)));
+    this.out = new Float32Array(length);
+    const rand = mulberry32(seed);
+    const out = this.out;
+    const chunk = Math.max(1, chunkSamples);
+    this.steps = (function* () {
+      for (const layer of recipe.layers) yield* renderLayer(out, layer, sampleRate, rand, chunk);
+    })();
+  }
+
+  /** Renders the next chunk; true once the whole sound is rendered and finished. */
+  step(): boolean {
+    if (this.done) return true;
+    if (!this.steps.next().done) return false;
+    finish(this.out, this.sampleRate);
+    this.done = true;
+    return true;
+  }
+
+  /** The finished samples (call after `step()` returned true). */
+  get samples(): Float32Array<ArrayBuffer> {
+    return this.out;
+  }
+}
+
+/** Edge fades and the peak limit, once every layer is in. */
+function finish(out: Float32Array, sampleRate: number): void {
+  const length = out.length;
   // Edge fades: filter ringing or a cut layer never leaves a step at either end.
   const fade = Math.min(Math.floor(length / 2), Math.ceil((SFX_MIN_EDGE_MS * sampleRate) / 1000));
   for (let i = 0; i < fade; i++) {
@@ -219,5 +260,18 @@ export function renderSfx(recipe: SynthRecipe, sampleRate: number, seed: number)
     const scale = (SFX_PEAK * 0.999) / peak;
     for (let i = 0; i < length; i++) out[i]! *= scale;
   }
-  return out;
+}
+
+/**
+ * Renders `recipe` to mono samples at `sampleRate`. Deterministic for a
+ * seed; at most SFX_MAX_SECONDS long; the sample peak never exceeds
+ * SFX_PEAK (a louder render is scaled down), and both ends fade to
+ * silence so playback never clicks.
+ */
+export function renderSfx(recipe: SynthRecipe, sampleRate: number, seed: number): Float32Array<ArrayBuffer> {
+  const r = new SfxRenderer(recipe, sampleRate, seed);
+  while (!r.step()) {
+    // One step renders everything with an infinite chunk.
+  }
+  return r.samples;
 }

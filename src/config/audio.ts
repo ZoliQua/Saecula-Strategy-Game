@@ -16,8 +16,26 @@ export const SFX_PEAK = 0.98;
 export const SFX_MIN_EDGE_MS = 2;
 /** Seed of the SFX bank renders (renderSfx is deterministic per seed). */
 export const SFX_RENDER_SEED = 0x5f3759df;
-/** Main-thread time per frame the SFX bank may spend rendering, in ms (at least one sound per frame). */
+/** Main-thread time per frame the SFX bank may spend rendering, in ms (at least one chunk per frame). */
 export const SFX_RENDER_BUDGET_MS = 3;
+/** Samples a resumable SFX render advances per step (≈ 0.1 ms each at 48 kHz in a browser). */
+export const SFX_RENDER_CHUNK_SAMPLES = 2048;
+
+/**
+ * Battle sound density: per-key voice caps and repeat intervals for the
+ * sounds a big fight requests every frame (≈ 10 starts per second each
+ * at most), so a battle reads as a fight, not a clatter.
+ */
+export const BATTLE_SFX_LIMITS = {
+  sword_hit: { maxVoices: 4, minIntervalMs: 90 },
+  arrow_shot: { maxVoices: 3, minIntervalMs: 100 },
+  musket_shot: { maxVoices: 3, minIntervalMs: 90 },
+  cannon_shot: { maxVoices: 2, minIntervalMs: 150 },
+  cannon_impact: { maxVoices: 2, minIntervalMs: 150 },
+  unit_die: { maxVoices: 3, minIntervalMs: 90 },
+} as const;
+/** Lowest pitch of a sound's sine body, in Hz: lower is inaudible on laptops and only pumps the limiter. */
+export const SFX_SUB_FLOOR_HZ = 50;
 
 /** Positional SFX: full gain within this many tiles of the camera-centre tile (Decision 8). */
 export const SFX_FULL_GAIN_TILES = 2;
@@ -45,6 +63,8 @@ export const GATHER_SOUND_INTERVAL_MS = 1500;
 export const MUSIC_DUCK_FACTOR = 0.5;
 /** Time constant of gain changes (settings, duck), in seconds: smooth, no zipper noise. */
 export const GAIN_SMOOTHING_S = 0.03;
+/** A button click this soon after a UI cue (error, panel open) of the same click plays no extra tick, in ms. */
+export const UI_CUE_CLICK_SUPPRESS_MS = 60;
 /** Fade of a voice stolen at a cap, in seconds. */
 export const STEAL_FADE_S = 0.03;
 /** Fixed trim on the master bus before the limiter (headroom for big fights). */

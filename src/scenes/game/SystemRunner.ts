@@ -270,6 +270,8 @@ export class SystemRunner {
 
   destroy(): void {
     this.audioWatch.destroy();
+    // The match is over: the listener's fog and camera closure go with it.
+    audio().clearListener();
     this.unsubscribeAge();
     this.evictTimer.remove();
     this.cliffSort.destroy();

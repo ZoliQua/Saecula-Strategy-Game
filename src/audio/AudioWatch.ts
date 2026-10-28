@@ -30,6 +30,17 @@ const GATHER_SOUND: Readonly<Record<ResourceType, SfxKey>> = {
 
 type Shot = NonNullable<Entity['projectile']>;
 
+/** The ECS queries the watch reads, built once. */
+function queries(world: EcsWorld) {
+  return {
+    shots: world.with('projectile'),
+    dying: world.with('dying'),
+    sites: world.with('underConstruction', 'position'),
+    health: world.with('health', 'position'),
+    gatherers: world.with('gatherer', 'position'),
+  };
+}
+
 /** Where a sound of `e` comes from: its tile, or a building's footprint centre. */
 function soundTile(e: Entity & { position: TileCoord }): TileCoord {
   const f = e.building?.footprint;
@@ -53,20 +64,20 @@ export class AudioWatch {
   /** Shots that landed since the last update: their targets, and the cannon blasts. */
   private readonly shotTargets = new Set<number>();
   private readonly blasts: { x: number; y: number; r: number }[] = [];
+  private readonly health: ReturnType<typeof queries>['health'];
+  private readonly gatherers: ReturnType<typeof queries>['gatherers'];
   private lastAttackNotice = -Infinity;
   private near = false;
 
   constructor(
-    private readonly world: EcsWorld,
+    world: EcsWorld,
     private readonly sink: AudioSink,
     private readonly humanId: number | undefined,
     private readonly camera: () => TileCoord,
   ) {
-    const shots = world.with('projectile');
-    const dying = world.with('dying');
-    const sites = world.with('underConstruction', 'position');
-    const health = world.with('health', 'position');
-    const gatherers = world.with('gatherer', 'position');
+    const { shots, dying, sites, health, gatherers } = queries(world);
+    this.health = health;
+    this.gatherers = gatherers;
     this.unsubscribe.push(
       shots.onEntityAdded.subscribe((e) => this.onFired(e.projectile)),
       shots.onEntityRemoved.subscribe((e) => this.onLanded(e.projectile)),
@@ -103,14 +114,14 @@ export class AudioWatch {
   update(realNowMs: number): void {
     const cam = this.camera();
     this.near = false;
-    for (const e of this.world.with('health', 'position')) {
+    for (const e of this.health) {
       const prev = this.hp.get(e);
       const cur = e.health.current;
       this.hp.set(e, cur);
       if (prev === undefined || cur >= prev) continue;
       this.onHurt(e, cam, realNowMs);
     }
-    for (const e of this.world.with('gatherer', 'position')) {
+    for (const e of this.gatherers) {
       const prev = this.carrying.get(e);
       const { carrying, carryingType } = e.gatherer;
       this.carrying.set(e, carrying);

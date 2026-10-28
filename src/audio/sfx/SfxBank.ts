@@ -1,25 +1,35 @@
-import { SFX_RENDER_SEED } from '../../config/audio';
+import { SFX_RENDER_CHUNK_SAMPLES, SFX_RENDER_SEED } from '../../config/audio';
 import { SFX_CATALOGUE, SFX_KEYS, type SfxKey, type SoundKey } from './catalogue';
-import { renderSfx } from './synth';
+import { SfxRenderer } from './synth';
 
 /**
- * The decoded sound buffers by key. The catalogue renders a few sounds per
- * frame (`update`, called only after the audio unlock), so loading never
- * stalls. `register` puts an external buffer (a decoded CC0 OGG) under a
- * key; a registered key is never overwritten by a render.
+ * The decoded sound buffers by key. The catalogue renders in small chunks
+ * within a per-frame budget (`update`, called only after the audio
+ * unlock), so even a long sound never stalls a frame. `register` puts an
+ * external buffer (a decoded CC0 OGG) under a key; a registered key is
+ * never overwritten by a render.
  */
 export class SfxBank {
   private readonly buffers = new Map<SoundKey, AudioBuffer>();
   private readonly pending: SfxKey[] = [...SFX_KEYS];
+  private current: { key: SfxKey; renderer: SfxRenderer } | null = null;
 
-  constructor(private readonly ctx: BaseAudioContext) {}
+  constructor(
+    private readonly ctx: BaseAudioContext,
+    private readonly chunkSamples = SFX_RENDER_CHUNK_SAMPLES,
+  ) {}
 
-  /** Renders catalogue sounds for up to `budgetMs` (at least one per call while any is pending). */
+  /** Renders for up to `budgetMs` (at least one chunk per call while anything is pending). */
   update(budgetMs: number): void {
     const until = performance.now() + budgetMs;
-    while (this.pending.length > 0) {
-      const key = this.pending.shift()!;
-      if (!this.buffers.has(key)) this.renderKey(key);
+    for (;;) {
+      const job = this.current ?? this.nextJob();
+      if (!job) return;
+      this.current = job;
+      if (job.renderer.step()) {
+        this.current = null;
+        if (!this.buffers.has(job.key)) this.store(job.key, job.renderer.samples);
+      }
       if (performance.now() >= until) return;
     }
   }
@@ -44,10 +54,17 @@ export class SfxBank {
     return total;
   }
 
-  private renderKey(key: SfxKey): void {
-    const rate = this.ctx.sampleRate;
-    const samples = renderSfx(SFX_CATALOGUE[key].recipe, rate, SFX_RENDER_SEED);
-    const buffer = this.ctx.createBuffer(1, samples.length, rate);
+  /** The next catalogue key still to render (registered keys are skipped). */
+  private nextJob(): { key: SfxKey; renderer: SfxRenderer } | null {
+    for (let key = this.pending.shift(); key !== undefined; key = this.pending.shift()) {
+      if (this.buffers.has(key)) continue;
+      return { key, renderer: new SfxRenderer(SFX_CATALOGUE[key].recipe, this.ctx.sampleRate, SFX_RENDER_SEED, this.chunkSamples) };
+    }
+    return null;
+  }
+
+  private store(key: SfxKey, samples: Float32Array<ArrayBuffer>): void {
+    const buffer = this.ctx.createBuffer(1, samples.length, this.ctx.sampleRate);
     buffer.copyToChannel(samples, 0);
     this.buffers.set(key, buffer);
   }

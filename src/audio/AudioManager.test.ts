@@ -2,23 +2,43 @@ import { describe, expect, it } from 'vitest';
 import { createSettingsStore } from '../ui/settings';
 import { AudioManager, type AudioHost } from './AudioManager';
 import { channelGain } from './mix';
-import { SFX_KEYS } from './sfx/catalogue';
+import { SFX_CATALOGUE, SFX_KEYS } from './sfx/catalogue';
 
 interface FakeParam {
   value: number;
+  /** The last scheduled ramp: [target, time]. */
+  ramp: [number, number] | null;
   setTargetAtTime(v: number): void;
+  cancelScheduledValues(): void;
+  setValueAtTime(v: number): void;
+  linearRampToValueAtTime(v: number, t: number): void;
 }
 const param = (value: number): FakeParam => ({
   value,
+  ramp: null,
   setTargetAtTime(v: number) {
     this.value = v;
   },
+  cancelScheduledValues() {},
+  setValueAtTime(v: number) {
+    this.value = v;
+  },
+  linearRampToValueAtTime(v: number, t: number) {
+    this.ramp = [v, t];
+  },
 });
-const node = <T extends object>(extra: T) => Object.assign(extra, { connect: <N>(n: N) => n, disconnect: () => {} });
+let disconnects = 0;
+const node = <T extends object>(extra: T) =>
+  Object.assign(extra, {
+    connect: <N>(n: N) => n,
+    disconnect: () => {
+      disconnects++;
+    },
+  });
 
 /** A context that records every node it creates; enough of BaseAudioContext for the manager. */
 function fakeContext() {
-  const sources: { started: number; buffer: unknown; onended: (() => void) | null }[] = [];
+  const sources: { started: number; stoppedAt: number | null; buffer: unknown; onended: (() => void) | null }[] = [];
   const gains: FakeParam[] = [];
   const ctx = {
     state: 'suspended' as AudioContextState,
@@ -43,13 +63,16 @@ function fakeContext() {
     createBufferSource: () => {
       const s = {
         started: 0,
+        stoppedAt: null as number | null,
         buffer: null as unknown,
         onended: null as (() => void) | null,
         playbackRate: param(1),
         start() {
           s.started++;
         },
-        stop() {},
+        stop(at: number) {
+          s.stoppedAt = at;
+        },
       };
       sources.push(s);
       return node(s);
@@ -198,5 +221,67 @@ describe('AudioManager', () => {
     expect(s.active).toBe(s.played.sword_hit);
     for (const src of h.sources) src.onended?.();
     expect(m.stats().active).toBe(0);
+  });
+
+  it('an ended voice disconnects its nodes; a stolen one ramps linearly to 0 before it stops', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    m.setListener({ tx: 0, ty: 0 }, () => true);
+    disconnects = 0;
+    m.playSFX('cannon_shot', 1, { tx: 3, ty: 0 });
+    h.sources[0]!.onended?.();
+    // Source, amp and panner (the sound is panned).
+    expect(disconnects).toBe(3);
+    // Fill cannon_shot's voices quietly, then a louder one steals the oldest.
+    clock += 1000;
+    const cap = SFX_CATALOGUE.cannon_shot.maxVoices;
+    for (let i = 0; i < cap; i++) {
+      clock += 200;
+      m.playSFX('cannon_shot', 0.2, { tx: 0, ty: 0 });
+    }
+    clock += 200;
+    disconnects = 0;
+    m.playSFX('cannon_shot', 1, { tx: 0, ty: 0 });
+    const stolen = h.sources[1]!;
+    expect(stolen.stoppedAt).toBeCloseTo(0.035);
+    expect(m.stats().active).toBe(cap);
+    expect(disconnects).toBe(0);
+    stolen.onended?.();
+    expect(disconnects).toBe(2);
+    expect(h.gains.some((g) => g.ramp !== null && g.ramp[0] === 0 && Math.abs(g.ramp[1] - 0.03) < 1e-9)).toBe(true);
+  });
+
+  it('a click right after a UI cue of the same click stays silent', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    clock += 1000;
+    m.playSFX('ui_error');
+    m.playSFX('ui_click');
+    expect(m.stats().played.ui_click).toBeUndefined();
+    clock += 500;
+    m.playSFX('ui_click');
+    expect(m.stats().played.ui_click).toBe(1);
+  });
+
+  it('clearListener drops positional sounds; a closed context counts as none', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    m.setListener({ tx: 0, ty: 0 }, () => true);
+    m.clearListener();
+    m.playSFX('unit_die', 1, { tx: 0, ty: 0 });
+    expect(h.sources).toHaveLength(0);
+    expect(m.hasContext()).toBe(true);
+    h.ctx.state = 'closed';
+    expect(m.hasContext()).toBe(false);
+  });
+
+  it('destroy runs the added disposers once', () => {
+    const h = fakeHost(false);
+    const m = new AudioManager(h.host, { settings: createSettingsStore(null), now });
+    let n = 0;
+    m.addDisposer(() => n++);
+    m.destroy();
+    m.destroy();
+    expect(n).toBe(1);
   });
 });

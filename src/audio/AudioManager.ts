@@ -10,6 +10,7 @@ import {
   SFX_PITCH_VARIATION,
   SFX_RENDER_BUDGET_MS,
   STEAL_FADE_S,
+  UI_CUE_CLICK_SUPPRESS_MS,
 } from '../config/audio';
 import { gameEvents } from '../game/events';
 import type { TileCoord } from '../iso/coordinates';
@@ -40,7 +41,11 @@ export interface AudioStats {
   readonly dropped: Readonly<Partial<Record<SfxKey, number>>>;
   readonly bankBytes: number;
   readonly bankReady: number;
-  /** Current linear gain per channel (settings, mute, duck). */
+  /**
+   * Current linear gain per channel (settings, mute, duck). `master` is the
+   * master slider's own value; it is folded into the other three channels'
+   * nodes (channelGain), while the master bus node runs at MASTER_BUS_TRIM.
+   */
   readonly gains: Readonly<Record<VolumeChannel, number>>;
   readonly ducked: boolean;
 }
@@ -61,8 +66,12 @@ interface Graph {
 interface Playing {
   readonly source: AudioBufferSourceNode;
   readonly amp: GainNode;
+  readonly panner: StereoPannerNode | null;
   readonly endsAt: number;
 }
+
+/** UI cues that already answer a click: the generic click tick is skipped right after one. */
+const UI_CUES: ReadonlySet<SfxKey> = new Set<SfxKey>(['ui_error', 'ui_panel_open']);
 
 /**
  * The game's audio (PROGRAM_TERV §12.4) on Phaser's AudioContext
@@ -86,6 +95,9 @@ export class AudioManager implements AudioSink {
   private ducked = false;
   /** Cheap per-play variation (an LCG; renders stay deterministic). */
   private jitter = 0x2545f491;
+  /** When a UI cue (error, panel) last played: a click right after it stays silent (no double sound). */
+  private lastUiCueAt = Number.NEGATIVE_INFINITY;
+  private readonly disposers: Array<() => void> = [];
 
   constructor(
     private readonly host: AudioHost,
@@ -104,6 +116,7 @@ export class AudioManager implements AudioSink {
     const g = this.graph;
     if (!g || !this.ready()) return;
     const spec = SFX_CATALOGUE[key];
+    if (key === 'ui_click' && this.now() - this.lastUiCueAt < UI_CUE_CLICK_SUPPRESS_MS) return this.drop(key);
     let gain = spec.gain * volume;
     let pan = 0;
     if (position) {
@@ -125,17 +138,20 @@ export class AudioManager implements AudioSink {
     const amp = g.ctx.createGain();
     amp.gain.value = gain * (1 + this.vary(SFX_GAIN_VARIATION));
     source.connect(amp);
+    let panner: StereoPannerNode | null = null;
     if (pan !== 0 && typeof g.ctx.createStereoPanner === 'function') {
-      const panner = g.ctx.createStereoPanner();
+      panner = g.ctx.createStereoPanner();
       panner.pan.value = pan;
       amp.connect(panner).connect(g.channels[spec.channel]);
     } else {
       amp.connect(g.channels[spec.channel]);
     }
+    const voice: Playing = { source, amp, panner, endsAt: g.ctx.currentTime + buffer.duration / rate + 0.05 };
     source.onended = () => this.finish(id);
     source.start();
-    this.playing.set(id, { source, amp, endsAt: g.ctx.currentTime + buffer.duration / rate + 0.05 });
+    this.playing.set(id, voice);
     this.played[key] = (this.played[key] ?? 0) + 1;
+    if (UI_CUES.has(key)) this.lastUiCueAt = this.now();
   }
 
   setMasterVolume(v: number): void {
@@ -165,6 +181,11 @@ export class AudioManager implements AudioSink {
   /** The camera-centre tile, and which tiles the player can hear (currently sees). */
   setListener(center: TileCoord, audible: (tx: number, ty: number) => boolean): void {
     this.listener = { center, audible };
+  }
+
+  /** No listener (the match ended): positional sounds are dropped and the old fog is released. */
+  clearListener(): void {
+    this.listener = null;
   }
 
   /** Music at ×MUSIC_DUCK_FACTOR (the pause menu). */
@@ -199,14 +220,20 @@ export class AudioManager implements AudioSink {
     };
   }
 
-  /** Whether a WebAudio context backs this manager. */
+  /** Whether a live WebAudio context backs this manager (a closed one, e.g. after a dev HMR, does not count). */
   hasContext(): boolean {
-    return this.graph !== null;
+    return this.graph !== null && this.graph.ctx.state !== 'closed';
   }
 
-  /** Stops following the settings store (the manager is replaced). */
+  /** Runs `dispose` when the manager is destroyed (the game hooks initAudio adds). */
+  addDisposer(dispose: () => void): void {
+    this.disposers.push(dispose);
+  }
+
+  /** Stops following the settings store and the game (the manager is replaced). */
   destroy(): void {
     this.unsubscribe();
+    for (const dispose of this.disposers.splice(0)) dispose();
   }
 
   private ready(): boolean {
@@ -265,26 +292,41 @@ export class AudioManager implements AudioSink {
     return (this.jitter / 4294967296 - 0.5) * 2 * share;
   }
 
+  /** The voice ended: free it and unwire its nodes. */
   private finish(id: number): void {
-    if (!this.playing.delete(id)) return;
+    const p = this.playing.get(id);
+    if (!p) return;
+    this.playing.delete(id);
     this.graph?.limiter.release(id);
+    disconnect(p);
   }
 
-  /** A voice the limiter stole: a quick fade, then stop (no click). */
+  /** A voice the limiter stole: a linear fade to silence, then stop and unwire (no click). */
   private stop(id: number): void {
     const p = this.playing.get(id);
     this.playing.delete(id);
     const ctx = this.graph?.ctx;
     if (!p || !ctx) return;
-    p.source.onended = null;
+    p.source.onended = () => disconnect(p);
     const t = ctx.currentTime;
-    p.amp.gain.setTargetAtTime(0, t, STEAL_FADE_S / 4);
+    const gain = p.amp.gain;
+    gain.cancelScheduledValues(t);
+    gain.setValueAtTime(gain.value, t);
+    gain.linearRampToValueAtTime(0, t + STEAL_FADE_S);
     try {
-      p.source.stop(t + STEAL_FADE_S);
+      p.source.stop(t + STEAL_FADE_S + 0.005);
     } catch {
       // Already stopped.
+      disconnect(p);
     }
   }
+}
+
+function disconnect(p: Playing): void {
+  p.source.onended = null;
+  p.source.disconnect();
+  p.amp.disconnect();
+  p.panner?.disconnect();
 }
 
 /** No WebAudio (or Phaser fell back to HTML5 / no audio): a silent manager. */
@@ -328,7 +370,9 @@ export function initAudio(game: Phaser.Game): AudioManager {
   existing?.destroy();
   const manager = new AudioManager(phaserHost(game.sound));
   holder[AUDIO_KEY] = manager;
-  game.events.on('step', (_time: number, delta: number) => manager.update(delta));
-  gameEvents.on('pauseChanged', ({ paused }) => manager.setDucked(paused));
+  const step = (_time: number, delta: number): void => manager.update(delta);
+  game.events.on('step', step);
+  manager.addDisposer(() => game.events.off('step', step));
+  manager.addDisposer(gameEvents.on('pauseChanged', ({ paused }) => manager.setDucked(paused)));
   return manager;
 }
