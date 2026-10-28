@@ -1,5 +1,6 @@
 import type { Ctx } from '../../canvas';
 import type { IsoPainter, WallStyle } from '../../isoPainter';
+import { needleSpire } from '../../architecture/kits/needleSpire';
 import { css, shade } from '../../palette';
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../../game/wallNeighbours';
 import { prism } from '../prism';
@@ -25,8 +26,10 @@ export interface StarFortMaterials {
   readonly coping: number;
   readonly glacis: number;
   readonly glacisTop: number;
-  /** The guérite's cap. */
+  /** The guérite's cap colour. */
   readonly sentryRoof: number;
+  /** The guérite's cap: a low lead hip (default) or a tall tiled needle. */
+  readonly sentryCap?: 'hip' | 'needle';
 }
 
 const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW | WALL_SE];
@@ -83,7 +86,8 @@ function guerite(p: IsoPainter, z: number, m: StarFortMaterials): void {
   };
   p.leftFace(u0, u1, v1, z, slit, 11);
   p.rightFace(v0, v1, u1, z, slit, 11);
-  p.hipRoof(u0, v0, u1, v1, z + 11, 9, m.sentryRoof, 0.03);
+  if (m.sentryCap === 'needle') needleSpire(p, (u0 + u1) / 2, (v0 + v1) / 2, 0.1, z + 11, 26, m.sentryRoof, 'tile');
+  else p.hipRoof(u0, v0, u1, v1, z + 11, 9, m.sentryRoof, 0.03);
 }
 
 /** A field gun on the bastion's terreplein, its muzzle over the salient. */

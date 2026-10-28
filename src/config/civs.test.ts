@@ -8,9 +8,16 @@ describe('civ registry', () => {
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes Hungarian and English available, the other six not', () => {
-    expect(AVAILABLE_CIVS).toEqual(['hungarian', 'english']);
-    for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(id === 'hungarian' || id === 'english');
+  it('makes Hungarian, English and German available, the other five not', () => {
+    const done = ['hungarian', 'english', 'german'];
+    expect(AVAILABLE_CIVS).toEqual(done);
+    for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(done.includes(id));
+  });
+
+  it('gives German its own architecture, walls and unit look in every age', () => {
+    expect(CIV_DEFS.german.architecture).toEqual({ 1: 'limes', 2: 'fachwerk', 3: 'backstein' });
+    expect(CIV_DEFS.german.wallStyle).toEqual({ 1: 'limes_palisade', 2: 'backstein_curtain', 3: 'sandstone_fort' });
+    expect(CIV_DEFS.german.unitLook).toBe('german');
   });
 
   it('gives English its own architecture, walls and unit look in every age', () => {
@@ -48,9 +55,6 @@ describe('dev all-civs stub (?civs=all)', () => {
     // Civs without art yet stay stubs: Hungarian art under their own keys.
     expect(civs.CIV_DEFS.french.available).toBe(false);
     expect(civs.CIV_DEFS.french.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
-    // A civ whose architecture is drawn but not finished shows it, still unavailable outside the dev stub.
-    expect(civs.CIV_DEFS.german.available).toBe(false);
-    expect(civs.CIV_DEFS.german.architecture).toEqual({ 1: 'limes', 2: 'fachwerk', 3: 'backstein' });
   });
 
   it('ignores other query strings', async () => {
@@ -58,13 +62,18 @@ describe('dev all-civs stub (?civs=all)', () => {
     vi.resetModules();
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(false);
-    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english']);
+    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english', 'german']);
   });
 });
 
 describe('menuDioramaCivs', () => {
-  it('pairs the menu civ with the other playable civ today', () => {
-    for (const visit of [0, 1, 2, 7]) expect(menuDioramaCivs(visit)).toEqual([MENU_CIV, 'english']);
+  it('pairs the menu civ with the other playable civs today, one per visit', () => {
+    expect([0, 1, 2, 3].map((visit) => menuDioramaCivs(visit))).toEqual([
+      [MENU_CIV, 'english'],
+      [MENU_CIV, 'german'],
+      [MENU_CIV, 'english'],
+      [MENU_CIV, 'german'],
+    ]);
   });
 
   it('cycles through every other civ of the pool, visit by visit, and never shows the menu civ twice', () => {

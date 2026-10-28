@@ -475,6 +475,7 @@ IsoRTS/
     │   │   │   ├── english/     ← angol egységviselet (Szent György-kereszt, sallet, hosszúíj)
     │   │   │   └── <nép>/       ← a többi nép viselete (german, french, spanish, italian, russian, finnish)
     │   │   ├── walls/           ← falstílusok koronként
+    │   │   │   ├── kits/        ← népek közös fal-készletei (sáncos cölöpfal, csillagerőd, alapformák)
     │   │   │   ├── english/     ← angol falak (cölöpsánc, normann kőfal, tégla csillagerőd)
     │   │   │   └── <nép>/       ← a többi nép falai (german, french, spanish, italian, russian, finnish)
     │   │   └── lighting/        ← világítási szerződés (normal map-ek, fény, árnyék)

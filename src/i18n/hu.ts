@@ -51,7 +51,7 @@ export const hu = {
     civDesc: {
       hungarian: 'Kő és fa, félköríves boltívek',
       english: 'Szürke terméskő, meredek nádtetők',
-      german: 'Fachwerk, vörös tégla, csúcsos tornyok',
+      german: 'Fachwerk, lépcsős oromzatok, toronysisakok',
       french: 'Gótikus, világos kő, karcsú tornyok',
       spanish: 'Fehér vakolat, cseréptetők',
       italian: 'Reneszánsz árkádok, terrakotta',

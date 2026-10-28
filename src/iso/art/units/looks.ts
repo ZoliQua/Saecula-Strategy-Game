@@ -1,6 +1,7 @@
 import { CIV_DEFS, type UnitLookId } from '../../../config/civs';
 import type { CivId, UnitType } from '../../../types';
 import { ENGLISH_LOOKS } from './english/englishLooks';
+import { GERMAN_LOOKS } from './german/germanLooks';
 import type { HorseLook } from './horse';
 import type { HumanLook } from './humanoid';
 import { M, type Material } from './materials';
@@ -163,6 +164,7 @@ export const BASE_UNIT_LOOKS: Readonly<Record<UnitType, UnitLook>> = {
 const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitType, UnitLook>>>>> = {
   hungarian: {},
   english: ENGLISH_LOOKS,
+  german: GERMAN_LOOKS,
 };
 
 /** The look a civ's units of a type wear (civ registry unitLook → override, else the base look). */

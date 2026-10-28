@@ -109,13 +109,13 @@ export function exceedsRecommendedAi(config: GameSetupConfig): boolean {
 /**
  * The civ of each AI (players 2..aiCount + 1, in order). 'mixed' deals
  * the available civs so each appears at least once when there are enough
- * AIs, fills the rest at random and shuffles; `rng` makes it repeatable.
+ * AIs (distinct civs while the pool lasts), fills the rest at random and
+ * shuffles; `rng` makes it repeatable. `pool` defaults to the playable civs.
  */
-export function assignCivs(config: GameSetupConfig, rng: () => number): CivId[] {
+export function assignCivs(config: GameSetupConfig, rng: () => number, pool: readonly CivId[] = AVAILABLE_CIVS): CivId[] {
   const n = config.aiCount;
   const fixed = config.aiCivs;
   if (fixed !== 'mixed') return Array.from({ length: n }, () => fixed);
-  const pool = AVAILABLE_CIVS;
   const pick = (): CivId => pool[Math.floor(rng() * pool.length)] ?? DEFAULT_CIV;
   const civs: CivId[] = shuffle([...pool], rng).slice(0, n);
   while (civs.length < n) civs.push(pick());

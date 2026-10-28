@@ -19,9 +19,18 @@ export type ArchStyleId =
   | 'fachwerk'
   | 'backstein';
 /** Wall painter style (art/walls/wallStyles.ts). */
-export type WallStyleId = 'palisade' | 'curtain' | 'bastion' | 'bank_palisade' | 'norman_curtain' | 'star_fort';
+export type WallStyleId =
+  | 'palisade'
+  | 'curtain'
+  | 'bastion'
+  | 'bank_palisade'
+  | 'norman_curtain'
+  | 'star_fort'
+  | 'limes_palisade'
+  | 'backstein_curtain'
+  | 'sandstone_fort';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english';
+export type UnitLookId = 'hungarian' | 'english' | 'german';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -80,10 +89,13 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'english',
     heraldry: { primary: 0xf2efe6, secondary: 0xc8202e, accent: 0x1f2f5a },
   },
-  // Black eagle on gold, red. Limes / Fachwerk / Backstein buildings; walls and units still Hungarian until its (b) task.
+  // Black eagle on gold, red. Limes / Fachwerk / Backstein buildings; Limes palisade, Backstein curtain and red sandstone star fort; German unit liveries.
   german: {
-    ...upcoming({ primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a }),
+    available: true,
     architecture: { 1: 'limes', 2: 'fachwerk', 3: 'backstein' },
+    wallStyle: { 1: 'limes_palisade', 2: 'backstein_curtain', 3: 'sandstone_fort' },
+    unitLook: 'german',
+    heraldry: { primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a },
   },
   french: upcoming({ primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 }),
   spanish: upcoming({ primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f }),

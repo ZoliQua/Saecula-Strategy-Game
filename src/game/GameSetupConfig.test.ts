@@ -100,8 +100,8 @@ describe('GameSetupConfig', () => {
 });
 
 describe('AI_CIV_CHOICES', () => {
-  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol)', () => {
-    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english']);
+  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol / Német)', () => {
+    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german']);
   });
 
   it('every choice survives withSetup unchanged', () => {
@@ -120,12 +120,25 @@ describe('assignCivs', () => {
     expect(assignCivs(config(2, 'hungarian'), createRng(1))).toEqual(['hungarian', 'hungarian']);
   });
 
-  it('mixed: one civ per AI, each available civ at least once with two or more AIs', () => {
+  it('mixed: one civ per AI, distinct while the pool lasts, each available civ once there are enough AIs', () => {
+    const pool = ['hungarian', 'english', 'german'];
     for (let seed = 1; seed <= 200; seed++) {
       for (let ais = 2; ais <= 5; ais++) {
         const civs = assignCivs(config(ais, 'mixed', seed), createRng(seed));
         expect(civs).toHaveLength(ais);
-        expect(new Set(civs)).toEqual(new Set(['hungarian', 'english']));
+        expect(new Set(civs).size).toBe(Math.min(ais, pool.length));
+        for (const civ of civs) expect(pool).toContain(civ);
+      }
+    }
+  });
+
+  it('mixed: 5 AIs over a pool of 6 or more civs get 5 distinct civs', () => {
+    const pool = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish'] as const;
+    for (const size of [6, 7, 8]) {
+      for (let seed = 1; seed <= 100; seed++) {
+        const civs = assignCivs(config(5, 'mixed', seed), createRng(seed), pool.slice(0, size));
+        expect(new Set(civs).size).toBe(5);
+        for (const civ of civs) expect(pool.slice(0, size)).toContain(civ);
       }
     }
   });
@@ -137,7 +150,7 @@ describe('assignCivs', () => {
       expect(civs).toHaveLength(1);
       seen.add(civs[0]!);
     }
-    expect(seen).toEqual(new Set(['hungarian', 'english']));
+    expect(seen).toEqual(new Set(['hungarian', 'english', 'german']));
   });
 
   it('is deterministic per seed', () => {
