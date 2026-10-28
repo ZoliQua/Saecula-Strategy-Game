@@ -4,8 +4,9 @@ import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
 import type { RestoredMatch } from '../../save/deserializer';
 import type { SaveStorage, SlotId } from '../../save/storage';
-import type { CivId } from '../../types';
-import type { AgeSpan } from './artLoadPlan';
+import { DEFAULT_CIV } from '../../config/civs';
+import type { LoadArt } from './MatchArt';
+import { restoredBuildingArt } from './restoredArt';
 import { showHudNotice } from '../../ui/HUD';
 import type { SetupReturn } from '../GameSetupScene';
 import { type GeneratedGame, tryGenerateGameMap } from './GameBootstrap';
@@ -19,8 +20,8 @@ export interface PreparedMatch {
   readonly setup: GameSetupConfig;
   readonly players: PlayerManager;
   readonly start: MatchStart;
-  /** A loaded save: the ages each civ's players are in, whose art is painted while loading. */
-  readonly spans?: ReadonlyMap<CivId, AgeSpan>;
+  /** A loaded save: the art painted while loading (each civ's age span, the restored buildings' textures). */
+  readonly art?: LoadArt;
 }
 
 /** The menu start data when a match cannot start (no map for the seed, or a save that cannot be rebuilt). */
@@ -36,7 +37,13 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
     const restored = tryRestoreMatch(data.load);
     if (!restored) return { ok: false, back: { notice: hu.save.errors.loadFailed } };
     const players = restored.players;
-    return { ok: true, match: { setup: restored.setup, players, start: { kind: 'load', restored }, spans: civAgeSpans(players) } };
+    const buildings = restoredBuildingArt(
+      restored.world.entities,
+      (id) => players.get(id)?.age ?? 1,
+      (id) => players.get(id)?.civ ?? DEFAULT_CIV,
+    );
+    const art: LoadArt = { spans: civAgeSpans(players), buildings };
+    return { ok: true, match: { setup: restored.setup, players, start: { kind: 'load', restored }, art } };
   }
   const setup = withSetup(defaultSetupConfig(), data ?? {});
   const civs = matchCivs(setup);

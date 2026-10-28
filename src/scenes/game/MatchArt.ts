@@ -1,8 +1,15 @@
 import type Phaser from 'phaser';
 import { unitArt } from '../../iso/art/units/UnitArt';
-import { buildingTexture, rebaseCivArt, setBuildingBaseOwners, wallTexture } from '../../iso/buildingTextures';
+import { buildingTexture, rebaseCivArt, setBuildingBaseOwners, wallTexture, wonderStageTexture } from '../../iso/buildingTextures';
 import type { AgeId, CivId } from '../../types';
 import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, type AgeSpan, type ArtPainters } from './artLoadPlan';
+import type { RestoredBuildingArt } from './restoredArt';
+
+/** What a loaded save adds to the loading-card art: each civ's age span and the restored buildings' textures. */
+export interface LoadArt {
+  readonly spans: ReadonlyMap<CivId, AgeSpan>;
+  readonly buildings: readonly RestoredBuildingArt[];
+}
 
 /**
  * A match's civ art wiring (texture memory and load budget, M5 Task 1):
@@ -32,13 +39,19 @@ export class MatchArt {
    * The loading-card jobs (planArtLoad critical); starts the background queue
    * with the rest. `spans` (a loaded save): each civ's art up to its highest
    * age is planned now (artLoadPlan) and marked queued, so a later ageChanged
-   * to an age the civ already shows does not repeat it.
+   * to an age the civ already shows does not repeat it. Its `buildings`
+   * (restoredBuildingArt) are painted last, so the first frames hit the cache.
    */
-  criticalJobs(humanCiv: CivId, spans?: ReadonlyMap<CivId, AgeSpan>): ReadonlyArray<() => void> {
+  criticalJobs(humanCiv: CivId, load?: LoadArt): ReadonlyArray<() => void> {
+    const spans = load?.spans;
     for (const [civ, { max }] of spans ?? []) for (let a = 2; a <= max; a++) this.ageQueued.add(`${civ}:${a}`);
     const plan = planArtLoad(humanCiv, this.owners, this.painters(), spans);
     this.background = new BackgroundArt(plan.background);
-    return plan.critical;
+    const restored = (load?.buildings ?? []).map((art) => () => {
+      if (art.kind === 'building') buildingTexture(this.scene, art.type, art.age, art.owner, art.civ);
+      else wonderStageTexture(this.scene, art.stage, art.civ);
+    });
+    return [...plan.critical, ...restored];
   }
 
   /** The first age-up of a civ to `age` queues that age's unit sheets and the next age's wall pieces (once per civ and age). */
