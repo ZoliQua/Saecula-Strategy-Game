@@ -4,8 +4,9 @@ import type { ArchStyle } from '../style';
 /*
  * The French age styles (M5, CLAUDE.md §4.2 "Gótikus, világos kő,
  * karcsú tornyok"): pale limestone and blue slate in every age.
- * - Age 1 rides the Roman family under hipped slate roofs, with a
- *   Maison Carrée temple-forum town centre and a round Gallo-Roman tower.
+ * - Age 1 rides the Roman family under steep hipped slate roofs and
+ *   colonnaded porticus fronts (kits/porticus.ts), with a Maison Carrée
+ *   temple-forum town centre, a domus and a round Gallo-Roman tower.
  * - Age 2 is the bespoke Loire Gothic family: the medieval layouts with
  *   pepperpot turrets (kits/pepperpot.ts) and lancets, a château keep
  *   with four turrets and a round machicolated tower.
@@ -33,8 +34,9 @@ export const FRENCH_GALLO_ROMAN: ArchStyle = {
     timber: 0x76563a,
     darkWood: 0x5a4231,
     board: 0x6e5239,
-    brick: 0xb26a4c,
-    rawBrick: 0xb26a4c,
+    // Smithy and furnace walls in pale coursed limestone, not brick.
+    brick: 0xcfc4ad,
+    rawBrick: 0xcfc4ad,
     stack: 0xa89e8c,
     planks: 0x6e5239,
     doors: { main: 0x4a3322, gate: 0x45301f, work: 0x3e2c1e },
@@ -54,11 +56,13 @@ export const FRENCH_GALLO_ROMAN: ArchStyle = {
       blacksmith: 0x4b525b,
     },
   },
-  roof: { pitch: 1.2, eave: 1, form: 'hip', material: 'slate' },
+  // Steeper than the brief's ≈ 1.2 (controller ruling, Task 5 fix round 1): the hips read as Gallic slate, not as generic pyramids.
+  roof: { pitch: 1.45, eave: 1, form: 'hip', material: 'slate' },
   ornaments: { chimneys: true, halfTimber: false, quoins: false, pilasters: true, dormers: false, boardedGables: false },
   charge: 'fleur_de_lis',
   seedSalt: 32771,
-  headroom: 30,
+  headroom: 50,
+  kits: { porticus: true },
 };
 
 /** Leaded lancets: pointed heads, warm firelight at night. */
@@ -125,10 +129,12 @@ export const FRENCH_CLASSICISME: ArchStyle = {
     metal: 0x5d6670,
     shutter: 0x6d7f8c,
     window: CROISEE_WINDOW,
+    // The royal guard's blue-and-white sentry box.
+    sentry: { field: 0x2c4a8a, chevron: 0xefe9da },
     roofs: {},
   },
   roof: { pitch: 1.75, eave: 1, form: 'pavilion', material: 'slate' },
-  ornaments: { chimneys: true, halfTimber: false, quoins: true, pilasters: true, dormers: true, boardedGables: false },
+  ornaments: { chimneys: true, halfTimber: false, quoins: true, pilasters: true, dormers: true, boardedGables: false, streetGables: false },
   charge: 'fleur_de_lis',
   seedSalt: 40961,
   headroom: 90,

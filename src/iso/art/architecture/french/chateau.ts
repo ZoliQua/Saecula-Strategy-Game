@@ -32,7 +32,8 @@ function keepFace(p: IsoPainter, s: ArchStyle, w: number, h: number, light: numb
     ctx.fillStyle = 'rgba(40,30,20,.2)';
     ctx.fillRect(0, -y, w, 1.2);
   }
-  const bays = [0.22, 0.5, 0.78];
+  // Clear of the corner turrets, which stand in front of the face ends.
+  const bays = [0.32, 0.5, 0.68];
   for (const [i, x] of bays.entries()) {
     const portal = front && i === 1;
     if (!portal) p.window(w * x - 3.5, -32, 7, 18, true);

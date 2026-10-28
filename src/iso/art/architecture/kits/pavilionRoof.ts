@@ -55,13 +55,21 @@ function oculusDormer(p: IsoPainter, s: ArchStyle, w: number, h: number, light: 
   p.window(w / 2 - ow / 2, -h * 0.5 - oh / 2, ow, oh, true);
 }
 
+/** Which visible slopes carry dormers (a slope hidden behind a later block gets none, so no glow). */
+export interface DormerSides {
+  readonly v: boolean;
+  readonly u: boolean;
+}
+
+const BOTH: DormerSides = { v: true, u: true };
+
 /**
  * Pavilion roof over u0..u1 × v0..v1 from `eave` to `eave + rise`
  * (rise already at the style's pitch), eaves overhanging by `o` tiles.
  * Paints back slopes, the leaded flat, the front slopes, cresting and
  * finials, then dormers. Returns the canvas point of the flat's centre.
  */
-export function pavilionRoof(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, eave: number, rise: number, color: number, o: number): Pt {
+export function pavilionRoof(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, eave: number, rise: number, color: number, o: number, sides: DormerSides = BOTH): Pt {
   const t = Math.min(u1 - u0, v1 - v0) * SLOPE_RUN + o;
   const top = eave + rise;
   const A = p.p(u0 - o, v0 - o, eave);
@@ -106,7 +114,7 @@ export function pavilionRoof(p: IsoPainter, s: ArchStyle, u0: number, v0: number
   crestingRail(p, c, b);
   for (const q of [a, b, d]) epi(p, q[0], q[1] - 1, 2.6);
   epi(p, c[0], c[1] - 1, 3);
-  if (s.ornaments.dormers) dormers(p, s, u0, v0, u1, v1, eave, rise, t, o);
+  if (s.ornaments.dormers) dormers(p, s, u0, v0, u1, v1, eave, rise, t, o, sides);
   return p.p((ua + ub) / 2, (va + vb) / 2, top);
 }
 
@@ -128,14 +136,14 @@ function crestingRail(p: IsoPainter, a: Pt, b: Pt): void {
 }
 
 /** Oeil-de-boeuf dormers on the +v and +u slopes, a third of the way up, one per ~0.6 tile of eave. */
-function dormers(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, eave: number, rise: number, t: number, o: number): void {
+function dormers(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number, v1: number, eave: number, rise: number, t: number, o: number, sides: DormerSides): void {
   const f = 0.3;
   const z = eave + rise * f;
   const size = (span: number) => Math.min(13, 6 + span * 4);
   const run = (span: number) => Math.max(1, Math.round((span - 2 * t) / 0.55));
   const du = u1 - u0;
   const dv = v1 - v0;
-  if (du - 2 * t > 0.15) {
+  if (sides.v && du - 2 * t > 0.15) {
     const vd = v1 + o - t * f;
     const n = run(du);
     for (let i = 0; i < n; i++) {
@@ -146,7 +154,7 @@ function dormers(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number
       p.leftFace(uc - w, uc + w, vd, z, (fw, fh) => oculusDormer(p, s, fw, fh, 1), h);
     }
   }
-  if (dv - 2 * t > 0.15) {
+  if (sides.u && dv - 2 * t > 0.15) {
     const ud = u1 + o - t * f;
     const n = run(dv);
     for (let i = 0; i < n; i++) {

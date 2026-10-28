@@ -117,10 +117,16 @@ describe('French architecture (Gallo-Roman, Gothic, Classicisme, Versailles)', (
     expect(done.glows.length).toBeGreaterThan(10);
   });
 
-  it('the finished palace glows no more than 1.3x the English cathedral (no glows on windows hidden behind later blocks)', () => {
-    const fr = paintBuilding('wonder', TEAM, 3, 'french', false).glows.length;
-    const en = paintBuilding('wonder', TEAM, 3, 'english', false).glows.length;
-    expect(fr).toBeLessThanOrEqual(Math.round(en * 1.3));
+  // Glows are lit windows that show: windows behind later blocks or under porch roofs record none (Task 3 I3, Task 5 I1).
+  it.each(AGES)('no type glows more than 1.3x the busiest HU/EN/DE building of its type in age %s', (age) => {
+    const over: string[] = [];
+    for (const type of TYPES.filter((t) => t !== 'wall')) {
+      const fr = paintBuilding(type, TEAM, age, 'french', false).glows.length;
+      const ref = Math.max(...(['hungarian', 'english', 'german'] as const).map((civ) => paintBuilding(type, TEAM, age, civ, false).glows.length));
+      const cap = Math.max(3, Math.round(ref * 1.3));
+      if (fr > cap) over.push(`${type}: ${fr} > ${cap}`);
+    }
+    expect(over).toEqual([]);
   });
 
   it('is not the Hungarian, English or German art in any age (every type)', () => {

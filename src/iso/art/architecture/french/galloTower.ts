@@ -14,6 +14,8 @@ import type { BuildingArt } from '../types';
  */
 
 const R0 = 0.4;
+/** Red Roman brick of the lacing courses (the style's brick is pale limestone). */
+const ROMAN_BRICK = 0xb26a4c;
 
 /** Merlons on the half of the ring facing (front) or away from (back) the viewer. */
 function merlons(p: IsoPainter, z: number, stone: number, half: 'back' | 'front'): void {
@@ -38,11 +40,11 @@ function paintGalloTower(p: IsoPainter, s: ArchStyle, team: number): void {
   // Petit appareil in limestone, laced every few feet with three courses of brick.
   for (let z0 = 12; z0 < z - 6; z0 += 26) {
     drumWall(p, 0.5, 0.5, R0, z0, Math.min(z - 6, z0 + 20), stone, 'ashlar');
-    if (z0 + 20 < z - 6) drumWall(p, 0.5, 0.5, R0 + 0.004, z0 + 20, Math.min(z - 6, z0 + 26), c.brick, 'brick');
+    if (z0 + 20 < z - 6) drumWall(p, 0.5, 0.5, R0 + 0.004, z0 + 20, Math.min(z - 6, z0 + 26), ROMAN_BRICK, 'brick');
   }
   for (const [a, h] of [[0.45, 40], [1.55, 40], [1.0, 90]] as const) {
     const [x, y] = p.p(0.5 + R0 * Math.cos(a), 0.5 + R0 * Math.sin(a), h);
-    ctx.fillStyle = css(c.brick);
+    ctx.fillStyle = css(ROMAN_BRICK);
     ctx.beginPath();
     ctx.arc(x, y - 14, 6.5, Math.PI, 0);
     ctx.lineTo(x + 6.5, y);

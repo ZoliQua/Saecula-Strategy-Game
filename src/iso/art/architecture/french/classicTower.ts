@@ -44,7 +44,7 @@ function paintClassicTower(p: IsoPainter, s: ArchStyle, team: number): void {
   p.box(0.08, 0.08, 0.92, 0.92, z + 34, z + 40, { color: shade(c.trim, 0.96) }, c.trim);
   const prev = p.material;
   p.material = 'slate';
-  pavilionRoof(p, s, 0.08, 0.08, 0.92, 0.92, z + 40, 50, c.roof, 0.04);
+  pavilionRoof(p, s, 0.08, 0.08, 0.92, 0.92, z + 40, 50, c.roof, 0.04, { v: false, u: false });
   p.material = prev;
   p.flag(0.5, 0.5, z + 92, 20, team, true);
 }

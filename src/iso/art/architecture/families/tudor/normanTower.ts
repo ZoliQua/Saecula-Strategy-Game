@@ -10,7 +10,6 @@ import { hangingBanner } from '../familyParts';
 
 /** Grey Kentish ragstone of the Norman tower (and the English Norman walls) unless a style sets towerStone. */
 export const NORMAN_RAGSTONE = 0x9a9c99;
-const RAGSTONE = NORMAN_RAGSTONE;
 
 /*
  * Tudor-family tower: a square Norman tower with clasping buttresses, a
@@ -26,7 +25,7 @@ export function normanTower(s: ArchStyle): BuildingArt {
     maxHeight: 220 + spireRoom(s, 40),
     paint: (p, team) => {
       const z = TOWER_PLATFORM_Z[2];
-      const stone = c.towerStone ?? RAGSTONE;
+      const stone = c.towerStone ?? NORMAN_RAGSTONE;
       const wall: WallStyle = { color: stone, detail: 'stone' };
       const ctx = p.ctx;
       p.footShadow();

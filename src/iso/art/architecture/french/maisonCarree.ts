@@ -114,12 +114,22 @@ function porticus(p: IsoPainter, s: ArchStyle): void {
   const c = s.palette;
   const wall = { color: c.plaster, detail: 'plaster' as const };
   p.box(0.12, 0.12, 2.88, 0.34, 0, 46, wall);
+  // Shop doorways only where the temple does not stand in front of the wall (no hidden glows).
   p.leftFace(0.34, 2.88, 0.34, 0, (w) => {
-    for (let x = 18; x < w - 10; x += 34) p.window(x, -30, 11, 26, true);
+    for (let x = 18; x < w - 10; x += 34) {
+      const u = 0.34 + (x + 5.5) / 64;
+      if (u > 0.75 && u < 2.42) continue;
+      p.window(x, -30, 11, 26, true);
+    }
   }, 46);
   p.box(0.12, 0.34, 0.34, 2.88, 0, 46, wall);
   p.rightFace(0.34, 2.88, 0.34, 0, (w) => {
-    for (let x = 22; x < w - 10; x += 34) p.window(x, -30, 11, 26, true);
+    for (let x = 22; x < w - 10; x += 34) {
+      // x runs from the front (v = 2.88) to the back; the temple hides the back part.
+      const v = 2.88 - (x + 5.5) / 64;
+      if (v < 1.95) continue;
+      p.window(x, -30, 11, 26, true);
+    }
   }, 46);
   p.material = 'slate';
   porchRoofLeft(p, 0.34, 2.88, 0.34, 0.36, 46, 36, c.roofAlt);

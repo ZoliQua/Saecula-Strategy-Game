@@ -54,6 +54,8 @@ export interface ArchPalette {
   readonly shutter: number;
   /** Window frame and glazing (IsoPainter.window). */
   readonly window: WindowLook;
+  /** Sentry boxes' field and chevron colours (the baroque barracks); default Habsburg yellow and black. */
+  readonly sentry?: { readonly field: number; readonly chevron: number };
   /** Masonry of free-standing towers where a family has its own default (the English Norman tower's ragstone). */
   readonly towerStone?: number;
   /** Per-type main roof colour where it is not `roof` (the Roman set's varied roofs). */
@@ -98,6 +100,8 @@ export interface Ornaments {
   readonly dormers: boolean;
   /** Boarded sun-ray gables (napsugaras oromzat). */
   readonly boardedGables: boolean;
+  /** Curved (voluted) street gable on the baroque house; default true. */
+  readonly streetGables?: boolean;
 }
 
 /**
@@ -120,6 +124,8 @@ export interface StyleKits {
   readonly needleSpires?: boolean;
   /** The Roman family's plastered blocks get a framed upper storey over a stone ground storey. */
   readonly framedUpper?: boolean;
+  /** Colonnaded porches with a pedimented middle on the Roman family's barracks, stable and range fronts (kits/porticus.ts). */
+  readonly porticus?: boolean;
   /** Round turrets with conical slate caps in the families' turret spots (kits/pepperpot.ts). */
   readonly pepperpots?: boolean;
 }

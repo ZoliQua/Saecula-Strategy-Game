@@ -2,6 +2,7 @@ import { ellipse } from '../canvas';
 import { css, shade } from '../palette';
 import { R } from './facade';
 import { framedGable, styleFraming } from './kits/halfTimber';
+import { hasPorticus, porticus } from './kits/porticus';
 import { column, forgeLight, goldPile, logPile, target, torch } from './parts';
 import { roofOf, type ArchStyle } from './style';
 import { roofChimney, styledGable, styledHip } from './styledRoofs';
@@ -49,6 +50,8 @@ export function romanArt(s: ArchStyle): AgeArtSet {
   const framed = s.kits?.framedUpper === true;
   /** Framed gable fill for a gable on the right ('u' ridge) or left ('v' ridge) face, with framedUpper. */
   const gableFrame = (p: IsoPainter, axis: 'u' | 'v') => (framed ? framedGable(p.ctx, s, axis === 'u' ? R : 1) : undefined);
+  /** Styles with kits.porticus front the barracks, stable and range with a colonnade (below their windows). */
+  const portico = hasPorticus(s);
   return {
     town_center: {
       size: 3,
@@ -215,6 +218,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
           }
         }, 54);
         styledGable(p, s, 0.3, 0.3, 2.7, 1.9, 54, 40, roofOf(s, 'barracks'), c.plaster, 'u', 0.12, gableFrame(p, 'u'));
+        if (portico) porticus(p, s, 0.36, 2.64, 1.9, 0.3, 30, 24, { columns: 7, pediment: team });
         torch(p, 2.7, 1.45, 42, 2.95, 1.45);
         torch(p, 2.7, 0.78, 42, 2.95, 0.78);
         // Training yard: dummies + weapon rack.
@@ -239,6 +243,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.ground(0.05, 0.05, 2.95, 2.95, 0x93a46a);
         p.box(0.25, 0.25, 1.5, 1.2, 0, 40, { color: c.timber, detail: 'planks' });
         styledGable(p, s, 0.25, 0.25, 1.5, 1.2, 40, 30, roofOf(s, 'archery_range'), framed ? c.plaster : c.timber, 'u', 0.12, gableFrame(p, 'u'));
+        if (portico) porticus(p, s, 0.3, 1.45, 1.2, 0.3, 32, 25, { columns: 4 });
         for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);
         p.flag(0.4, 2.6, 0, 36, team, true);
       },
@@ -254,6 +259,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
           for (let i = 0; i < 4; i++) p.door(10 + i * 38, 18, 26, c.doors.gate);
         }, 46);
         styledGable(p, s, 0.3, 0.3, 2.7, 2.0, 46, 42, roofOf(s, 'stable'), framed ? c.plaster : c.board, 'u', 0.12, gableFrame(p, 'u'));
+        if (portico) porticus(p, s, 0.36, 2.64, 2.0, 0.22, 34, 27, { columns: 6 });
         // Hay bales.
         for (const u of [0.6, 1.0]) p.box(u, 2.25, u + 0.35, 2.6, 0, 14, { color: 0xd9b55a }, 0xe8c873);
         p.flag(2.8, 2.8, 0, 36, team);

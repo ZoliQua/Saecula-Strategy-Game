@@ -1,8 +1,7 @@
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { cornice, R } from '../facade';
-import { column } from '../parts';
-import { porchRoofLeft } from '../roofs';
+import { porticus } from '../kits/porticus';
 import { roofOf, type ArchStyle } from '../style';
 import { roofChimney, styledHip } from '../styledRoofs';
 import type { BuildingArt } from '../types';
@@ -10,7 +9,7 @@ import type { BuildingArt } from '../types';
 /*
  * French age-1 house: a Gallo-Roman town house (domus) — a limewashed
  * limestone block under a steep hipped slate roof, a colonnaded porch
- * (porticus) along the street front, the door in the owner's colour,
+ * (kits/porticus.ts) with a pediment along the street front, the door in the owner's colour,
  * small shuttered lights and a walled kitchen garden at the side.
  */
 
@@ -30,7 +29,7 @@ function paintHouse(p: IsoPainter, s: ArchStyle, team: number): void {
     ctx.fillStyle = css(shade(c.trim, 1.02));
     ctx.fillRect(w / 2 - 9, -30, 18, 30);
     p.door(w / 2 - 7, 14, 27, shade(team, 0.8));
-    for (const x of [0.16, 0.76]) p.window(w * x, -27, 8, 11, true);
+    // No windows on this front: the porticus lean-to covers it (no hidden glows).
   }, wall - 8);
   p.rightFace(0.29, 1.26, 1.36, 8, (w, h) => {
     cornice(ctx, w, h - 5, c.trim, R, 4);
@@ -38,10 +37,8 @@ function paintHouse(p: IsoPainter, s: ArchStyle, team: number): void {
   }, wall - 8);
   roofChimney(p, s, 0.55, 0.5, 0.72, 0.67, wall - 8, wall + 52, 40, { color: c.stone, detail: 'stone' });
   styledHip(p, s, 0.34, 0.29, 1.36, 1.26, wall, 40, roofOf(s, 'house'), 0.1);
-  // Porticus on four columns along the street front.
-  p.material = 'slate';
-  for (const u of [0.42, 0.72, 0.98, 1.28]) column(p, u, 1.6, 0, 30, 2.4, c.trim);
-  porchRoofLeft(p, 0.3, 1.4, 1.27, 0.38, 38, 30, c.roofAlt);
+  // Porticus along the street front with a pediment and the crest over the door.
+  porticus(p, s, 0.3, 1.4, 1.27, 0.38, 42, 34, { columns: 4, pediment: team });
   p.box(1.42, 1.3, 1.48, 1.82, 0, 14, { color: c.plaster, detail: 'plaster' }, c.trim);
   p.box(0.3, 1.78, 0.9, 1.84, 0, 8, { color: c.plaster }, c.trim);
 }

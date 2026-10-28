@@ -5,7 +5,7 @@ import { archedOpening, baroqueWindow, clockFace, cornice } from '../facade';
 import { lantern } from '../parts';
 import { finial, helm, type HelmProfile } from '../roofs';
 import type { ArchStyle } from '../style';
-import { styledHip } from '../styledRoofs';
+import { pavilionRoof } from '../kits/pavilionRoof';
 import type { BuildingArt } from '../types';
 
 /*
@@ -30,9 +30,14 @@ const CENTRE_H = 102;
 /** Lead campanile dome over an open lantern. */
 const CAMPANILE: HelmProfile = [[0, 0.13], [4, 0.13], [10, 0.11], [15, 0.07], [18, 0.03], [20, 0.01]];
 
-/** Two storeys of tall windows per bay: arched below the string course, segmental above. */
-function storeys(p: IsoPainter, s: ArchStyle, w: number, h: number, light: number, bays: number, door = false): void {
+/**
+ * Two storeys of tall windows per bay: arched below the string course,
+ * segmental above. A face hidden behind a later block (`glazed` false)
+ * keeps its string course but no windows, so it records no glows.
+ */
+function storeys(p: IsoPainter, s: ArchStyle, w: number, h: number, light: number, bays: number, door = false, glazed = true): void {
   cornice(p.ctx, w, 36, s.palette.trim, light, 4);
+  if (!glazed) return;
   for (let i = 0; i < bays; i++) {
     const x = (w / bays) * (i + 0.5);
     if (!(door && i === Math.floor(bays / 2))) p.window(x - 4.5, -30, 9, 20, true);
@@ -40,13 +45,36 @@ function storeys(p: IsoPainter, s: ArchStyle, w: number, h: number, light: numbe
   }
 }
 
-function block(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, h: number, bays: number, door = false): void {
+/** Which faces of a block show (the rest lie behind later blocks: no glazing, no dormers). */
+interface Shows {
+  readonly v: boolean;
+  readonly u: boolean;
+}
+
+function block(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, h: number, bays: number, shows: Shows): void {
   baroqueBlock(p, s, u0, v0, u1, v1, 0, h, {
     bays,
-    left: (w, hh, l) => storeys(p, s, w, hh, l, bays, door),
-    right: (w, hh, l) => storeys(p, s, w, hh, l, Math.max(2, bays - 1)),
+    left: (w, hh, l) => storeys(p, s, w, hh, l, bays, false, shows.v),
+    right: (w, hh, l) => storeys(p, s, w, hh, l, Math.max(2, bays - 1), false, shows.u),
   });
 }
+
+/** A pavilion roof whose dormers sit only on the slopes that show. */
+function roof(p: IsoPainter, s: ArchStyle, [u0, v0, u1, v1]: Block, eave: number, rise: number, shows: Shows): void {
+  const prev = p.material;
+  p.material = 'slate';
+  pavilionRoof(p, s, u0, v0, u1, v1, eave, rise * s.roof.pitch, s.palette.roof, 0.06, shows);
+  p.material = prev;
+}
+
+/*
+ * What shows: the corps lies behind both wings and the centre; the left
+ * wing's +u face lies behind the centre and the centre's +u face behind
+ * the right wing. Only the fronts (+v) and the right wing's +u face show.
+ */
+const HIDDEN: Shows = { v: false, u: false };
+const FRONT: Shows = { v: true, u: false };
+const BOTH: Shows = { v: true, u: true };
 
 function paintHotel(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
@@ -64,10 +92,10 @@ function paintHotel(p: IsoPainter, s: ArchStyle, team: number): void {
     ctx.lineTo(b[0], b[1]);
     ctx.stroke();
   }
-  block(p, s, CORPS, CORPS_H, 6);
-  styledHip(p, s, ...CORPS, CORPS_H, 36, c.roof, 0.06);
-  block(p, s, LEFT, WING_H, 2);
-  styledHip(p, s, ...LEFT, WING_H, 48, c.roof, 0.06);
+  block(p, s, CORPS, CORPS_H, 6, HIDDEN);
+  roof(p, s, CORPS, CORPS_H, 36, HIDDEN);
+  block(p, s, LEFT, WING_H, 2, FRONT);
+  roof(p, s, LEFT, WING_H, 48, FRONT);
   // Central pavilion: portal, balcony window, pediment with the crest, the clock in the roof.
   const [cu0, cv0, cu1, cv1] = CENTRE;
   baroqueBlock(p, s, cu0, cv0, cu1, cv1, 0, CENTRE_H, {
@@ -81,10 +109,10 @@ function paintHotel(p: IsoPainter, s: ArchStyle, team: number): void {
       ctx.fillRect(w / 2 - 12, -h + 46, 24, 1.6);
       for (let x = w / 2 - 11; x <= w / 2 + 11; x += 3) ctx.fillRect(x, -h + 40, 0.9, 6);
     },
-    right: (w, h, l) => storeys(p, s, w, h, l, 3),
+    right: (w, h, l) => storeys(p, s, w, h, l, 3, false, false),
   });
   pediment(p, s, cu0 + 0.04, cu1 - 0.04, cv1, CENTRE_H, 26, team);
-  styledHip(p, s, cu0, cv0, cu1, cv1, CENTRE_H, 58, c.roof, 0.06);
+  roof(p, s, CENTRE, CENTRE_H, 58, FRONT);
   const flat = CENTRE_H + 58 * k;
   const [mu, mv] = [(cu0 + cu1) / 2, (cv0 + cv1) / 2];
   // Campanile: open lantern on the flat, lead dome, gilt finial and the pennant.
@@ -102,8 +130,8 @@ function paintHotel(p: IsoPainter, s: ArchStyle, team: number): void {
   helm(p, mu, mv, flat + 18, CAMPANILE, c.metal);
   finial(p, mu, mv, flat + 38, 14, false);
   p.flag(mu + 0.06, mv + 0.06, flat + 50, 18, team, true);
-  block(p, s, RIGHT, WING_H, 2);
-  styledHip(p, s, ...RIGHT, WING_H, 48, c.roof, 0.06);
+  block(p, s, RIGHT, WING_H, 2, BOTH);
+  roof(p, s, RIGHT, WING_H, 48, BOTH);
   // Lanterns at the portal, a pair of team banners on the end pavilions.
   lantern(p, cu0 + 0.05, cv1 + 0.02, 30, cu0, cv1 + 0.3);
   lantern(p, cu1 - 0.05, cv1 + 0.02, 30, cu1, cv1 + 0.3);

@@ -1,9 +1,9 @@
 import type { IsoPainter } from '../isoPainter';
+import { css } from '../palette';
 import { archedOpening, baroqueWindow, clockFace, cornice } from './facade';
 import { baroqueWorkArt } from './baroqueWork';
 import { baroqueBlock, pediment, railFence, sentryBox, volutedGable } from './baroqueParts';
 import { foundryArt } from './foundry';
-import { hasPavilionRoofs } from './kits/pavilionRoof';
 import { lantern } from './parts';
 import { dormerLeft, dormerRight, finial, helm, type HelmProfile } from './roofs';
 import type { ArchStyle } from './style';
@@ -121,8 +121,8 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         });
         p.material = 'tile';
         styledHip(p, s, 0.32, 0.3, 1.68, 1.62, 50, 44, c.roof, 0.1);
-        // Pavilion styles carry oeil-de-boeuf dormers instead of the street gable, and a pennant on the crest.
-        if (hasPavilionRoofs(s)) p.flag(1.0, 0.96, 50 + 44 * s.roof.pitch, 18, team);
+        // Without the street gable the house flies a pennant from its roof instead.
+        if (s.ornaments.streetGables === false) p.flag(1.0, 0.96, 50 + 44 * s.roof.pitch, 18, team);
         else volutedGable(p, s, 0.44, 1.56, 1.62, 50, 42);
         lantern(p, 1.68, 0.7, 34, 1.86, 0.7);
         railFence(p, 0.14, 1.92, 0.9, 1.92, 11);
@@ -149,8 +149,8 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         pediment(p, s, 1.15, 1.85, 1.85, 80, 36, team);
         lantern(p, 2.7, 0.75, 40, 2.9, 0.75);
         lantern(p, 2.7, 1.4, 40, 2.9, 1.4);
-        // Pavilion (French) styles paint the royal guard's blue-and-white box.
-        if (hasPavilionRoofs(s)) sentryBox(p, 2.76, 1.5, 0x2c4a8a, '#efe9da');
+        const sentry = c.sentry;
+        if (sentry) sentryBox(p, 2.76, 1.5, sentry.field, css(sentry.chevron));
         else sentryBox(p, 2.76, 1.5);
         p.flag(1.0, 2.45, 0, 62, team, true);
         railFence(p, 0.12, 2.92, 2.92, 2.92, 12);
