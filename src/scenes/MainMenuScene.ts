@@ -18,6 +18,11 @@ import { TileMap } from '../map/TileMap';
 import { directionFromDelta, type BuildingType, type CivId, type Direction, type UnitType } from '../types';
 import { paintNextCivPreview } from '../ui/civPreview';
 import { MainMenu, MENU_ENTRANCE_MS } from '../ui/screens/MainMenu';
+import { SaveSlots } from '../ui/screens/SaveSlots';
+import { slotRows } from '../ui/screens/slotRows';
+import { browserSaveStore } from '../save/browserStore';
+import { SaveStorage } from '../save/storage';
+import { startFromSlot } from './game/MatchStart';
 import type { SetupReturn } from './GameSetupScene';
 
 const MENU_MAP_SIZE = 48;
@@ -88,6 +93,8 @@ interface Walker {
 }
 
 const WALK_MS = 4200;
+/** The load list's exit animation (pause.css `.leaving`). */
+const SLOTS_LEAVE_MS = 180;
 
 /**
  * Main menu: a live diorama of the world (swaying trees, drifting
@@ -106,6 +113,9 @@ export class MainMenuScene extends Phaser.Scene {
   private previewsDone = false;
   /** The setup card is open (it paints any missing preview itself, after its entrance). */
   private away = false;
+  /** The load list ("Betöltés"), while open. */
+  private slots: SaveSlots | null = null;
+  private readonly storage = new SaveStorage(browserSaveStore());
 
   constructor() {
     super({ key: 'MainMenuScene' });
@@ -190,11 +200,14 @@ export class MainMenuScene extends Phaser.Scene {
       this.cameras.main.postFX.addVignette(0.6, 0.5, 0.95, 0.3);
     }
 
-    this.menu = new MainMenu(() => {
-      this.away = true;
-      this.menu?.setAway(true);
-      this.scene.launch('GameSetupScene');
-    });
+    this.menu = new MainMenu(
+      () => {
+        this.away = true;
+        this.menu?.setAway(true);
+        this.scene.launch('GameSetupScene');
+      },
+      () => this.openLoadList(),
+    );
     // A start that failed (no valid map) comes straight back to the setup card;
     // a notice alone (a save that could not be loaded) shows on the menu.
     if (data?.config && data.notice) {
@@ -207,6 +220,8 @@ export class MainMenuScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.menu?.destroy();
       this.menu = null;
+      this.slots?.destroy();
+      this.slots = null;
       this.tileMap?.destroy();
       this.tileMap = null;
       this.lighting?.destroy();
@@ -219,6 +234,30 @@ export class MainMenuScene extends Phaser.Scene {
   showMenu(): void {
     this.away = false;
     this.menu?.setAway(false);
+  }
+
+  /** The load list over the diorama; picking a save starts GameScene on it (startFromSlot). */
+  private openLoadList(): void {
+    if (this.slots) return;
+    this.away = true;
+    this.menu?.setAway(true);
+    const slots: SaveSlots = new SaveSlots('load', [], {
+      onPick: async (slot): Promise<void> => {
+        const started = await startFromSlot(this, this.storage, slot, (message) => slots.notice(message, 'error'));
+        if (!started && this.slots === slots) slots.setRows(slotRows(await this.storage.list(), 'load'));
+      },
+      onBack: () => {
+        slots.leave();
+        this.slots = null;
+        this.away = false;
+        this.menu?.setAway(false);
+        window.setTimeout(() => slots.destroy(), SLOTS_LEAVE_MS);
+      },
+    });
+    this.slots = slots;
+    void this.storage.list().then((summaries) => {
+      if (this.slots === slots) slots.setRows(slotRows(summaries, 'load'));
+    });
   }
 
   /** Fades the diorama out, then runs `done` (used when the game starts). */

@@ -24,7 +24,7 @@ export class MainMenu {
   private readonly hero: HTMLElement;
   private readonly teardown: number;
 
-  constructor(onNewGame: () => void) {
+  constructor(onNewGame: () => void, onLoadGame: () => void) {
     const play = el(
       'button',
       { class: 'btn btn-primary e-up', type: 'button', style: 'animation-delay:.78s' },
@@ -32,6 +32,13 @@ export class MainMenu {
       el('span', { class: 'arrow', html: ARROW }),
     );
     play.addEventListener('click', onNewGame);
+    const load = el(
+      'button',
+      { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:.86s' },
+      el('span', {}, hu.menu.loadGame),
+      el('span', { class: 'arrow', html: ARROW }),
+    );
+    load.addEventListener('click', onLoadGame);
     const disabled = (label: string, delay: number) =>
       el(
         'button',
@@ -52,7 +59,7 @@ export class MainMenu {
         el('span', { class: 'row' }, el('span', { class: 'rise' }, line2)),
       ),
       el('p', { class: 'menu-tagline e-up', style: 'animation-delay:.62s' }, hu.menu.tagline),
-      el('div', { class: 'menu-actions' }, play, disabled(hu.menu.loadGame, 0.86), disabled(hu.menu.settings, 0.94)),
+      el('div', { class: 'menu-actions' }, play, load, disabled(hu.menu.settings, 0.94)),
     );
     this.root = el(
       'div',
@@ -87,7 +94,7 @@ export class MainMenu {
     this.hero.append(el('div', { class: 'menu-notice', role: 'status' }, message));
   }
 
-  /** Steps the hero copy aside while the setup card is open. */
+  /** Steps the hero copy aside while the setup card (or the load list) is open. */
   setAway(away: boolean): void {
     this.root.classList.toggle('away', away);
   }

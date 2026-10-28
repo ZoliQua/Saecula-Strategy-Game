@@ -18,12 +18,15 @@ const AGE_NAME: Record<AgeId, string> = {
   3: hu.ages.enlightenment,
 };
 
+/** A toast's look: 'alert' (the warm red default) or 'ok' (amber, for a success such as a stored save). */
+export type ToastTone = 'alert' | 'ok';
+
 /** The toast of the HUD on screen, if any (showHudNotice). */
-let noticeSink: ((message: string) => void) | null = null;
+let noticeSink: ((message: string, tone: ToastTone) => void) | null = null;
 
 /** A toast on the in-game HUD from game-side code (save notices); dropped when no HUD is up. */
-export function showHudNotice(message: string): void {
-  noticeSink?.(message);
+export function showHudNotice(message: string, tone: ToastTone = 'alert'): void {
+  noticeSink?.(message, tone);
 }
 
 /**
@@ -49,7 +52,7 @@ export class Hud {
   private minimap: Minimap | null = null;
   private lastToast = '';
   private lastToastAt = 0;
-  private readonly notice = (message: string): void => this.toast(message);
+  private readonly notice = (message: string, tone: ToastTone): void => this.toast(message, tone);
 
   constructor(textures: Phaser.Textures.TextureManager) {
     this.selection = new SelectionPanel(textures);
@@ -116,12 +119,12 @@ export class Hud {
     this.minimap?.update(deltaMs);
   }
 
-  toast(message: string): void {
+  toast(message: string, tone: ToastTone = 'alert'): void {
     const now = performance.now();
     if (message === this.lastToast && now - this.lastToastAt < 1200) return;
     this.lastToast = message;
     this.lastToastAt = now;
-    const t = el('div', { class: 'toast' }, message);
+    const t = el('div', { class: tone === 'ok' ? 'toast ok' : 'toast' }, message);
     this.toasts.append(t);
     window.setTimeout(() => t.remove(), 2300);
   }

@@ -45,7 +45,8 @@ export class MatchSave {
       if (import.meta.env.DEV) console.warn('save failed', err);
       result = { ok: false, reason: 'failed' };
     }
-    showHudNotice(result.ok ? success : result.reason === 'unavailable' ? hu.save.errors.unavailable : hu.save.errors.saveFailed);
+    if (result.ok) showHudNotice(success, 'ok');
+    else showHudNotice(result.reason === 'unavailable' ? hu.save.errors.unavailable : hu.save.errors.saveFailed);
     return result;
   }
 }

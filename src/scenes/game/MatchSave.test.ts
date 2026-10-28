@@ -7,7 +7,13 @@ import { SaveStorage, type KeyValueStore } from '../../save/storage';
 import { MatchSave } from './MatchSave';
 
 const notices: string[] = [];
-vi.mock('../../ui/HUD', () => ({ showHudNotice: (m: string) => notices.push(m) }));
+const tones: Array<string | undefined> = [];
+vi.mock('../../ui/HUD', () => ({
+  showHudNotice: (m: string, tone?: string) => {
+    notices.push(m);
+    tones.push(tone);
+  },
+}));
 
 /** A live-like MatchState from a short headless match (the human's fog is not needed here). */
 let state: MatchState;
@@ -43,11 +49,14 @@ function memoryStore(): KeyValueStore & { data: Map<string, unknown> } {
 describe('MatchSave', () => {
   it('saves to the slot and shows the saved notice', async () => {
     notices.length = 0;
+    tones.length = 0;
     const store = memoryStore();
     const result = await new MatchSave(() => state, new SaveStorage(store)).saveTo(2);
     expect(result).toEqual({ ok: true });
     expect(typeof store.data.get('save:2')).toBe('string');
     expect(notices).toEqual([hu.save.saved]);
+    // A stored save is a success: the amber toast, not the red alert.
+    expect(tones).toEqual(['ok']);
   });
 
   it('serializeMatch throws → the slot keeps its previous content, { ok: false, reason: failed }', async () => {
@@ -71,6 +80,7 @@ describe('MatchSave', () => {
     const result = await new MatchSave(() => state, new SaveStorage(null)).saveTo(1);
     expect(result).toEqual({ ok: false, reason: 'unavailable' });
     expect(notices).toEqual([hu.save.errors.unavailable]);
+    expect(tones.at(-1)).toBeUndefined();
   });
 
   it('autosaves to the auto slot on absolute 5-minute marks of game time', async () => {

@@ -5,6 +5,7 @@ import { GameOverScene } from '../scenes/GameOverScene';
 import { GameScene } from '../scenes/GameScene';
 import { HUDScene } from '../scenes/HUDScene';
 import { MainMenuScene } from '../scenes/MainMenuScene';
+import { PauseScene } from '../scenes/PauseScene';
 import { PreloadScene } from '../scenes/PreloadScene';
 import { ISO_LIGHT_PIPELINE, IsoLightPipeline } from '../iso/art/lighting/IsoLightPipeline';
 import { GAME_HEIGHT, GAME_WIDTH } from './constants';
@@ -41,6 +42,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     GameSetupScene,
     GameScene,
     HUDScene,
+    PauseScene,
     GameOverScene,
   ],
 };

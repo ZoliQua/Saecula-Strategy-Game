@@ -65,6 +65,10 @@
   -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
 }
 .btn-ghost[disabled] { cursor: default; color: var(--ink-3); }
+.menu-actions .btn-ghost:not([disabled]):hover { background: rgba(245, 168, 87, 0.12); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.42); }
+.btn-load .arrow { display: grid; place-items: center; color: var(--ink-3); transition: transform 0.25s var(--ease), color 0.2s; }
+.btn-load:hover .arrow { color: var(--amber-2); transform: translateX(3px); }
+.menu-actions .btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .btn .soon { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 
 .menu-foot {

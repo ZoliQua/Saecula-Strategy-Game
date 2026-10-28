@@ -29,6 +29,8 @@ export class PointerInput {
     private readonly selection: SelectionSystem,
     private readonly placement: BuildPlacement,
     private readonly orders: OrderIssuer,
+    /** An Esc with no placement or wall line to cancel (it opens the pause). */
+    private readonly onIdleEscape: () => void,
   ) {}
 
   getHoverTile(): TileCoord | null {
@@ -53,9 +55,15 @@ export class PointerInput {
     input.keyboard?.off('keydown-ESC', this.onEscape, this);
   }
 
-  private onEscape(): void {
+  /** A first Esc cancels a placement or a wall line; only an Esc with nothing to cancel opens the pause. */
+  private onEscape(event?: KeyboardEvent): void {
+    // A glass card on top (the pause, a slot list) already handled this Esc.
+    if (event?.defaultPrevented) return;
+    const opensPause = event?.repeat !== true;
+    const busy = uiStore.getState().placementBuilding !== null || this.placement.isDraggingWallLine();
     this.placement.cancelWallLine();
     uiStore.getState().setPlacementBuilding(null);
+    if (!busy && opensPause) this.onIdleEscape();
   }
 
   private pick(pointer: Phaser.Input.Pointer): TileCoord | null {

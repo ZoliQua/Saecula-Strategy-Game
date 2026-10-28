@@ -54,16 +54,22 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
 }
 
 /**
- * Replaces the running match with the save in `slot` (GameScene restarts
- * on it). A slot that cannot be used shows why on the HUD and keeps the
- * match. Resolves whether the load started.
+ * Replaces the running match (or the menu, from `scene`) with the save in
+ * `slot` (GameScene starts on it). A slot that cannot be used shows why
+ * through `onError` (default: the HUD) and keeps the current scene.
+ * Resolves whether the load started.
  */
-export async function startFromSlot(scene: Phaser.Scene, storage: SaveStorage, slot: SlotId): Promise<boolean> {
+export async function startFromSlot(
+  scene: Phaser.Scene,
+  storage: SaveStorage,
+  slot: SlotId,
+  onError: (message: string) => void = showHudNotice,
+): Promise<boolean> {
   const result = await storage.read(slot);
   // The player may have left the match (menu, game over) while the slot was read.
   if (!scene.scene.isActive() && !scene.scene.isPaused()) return false;
   if (!result.ok) {
-    showHudNotice(readErrorText(result.reason));
+    onError(readErrorText(result.reason));
     return false;
   }
   // The new match launches its own HUD; the old one must not sit over the loading card.

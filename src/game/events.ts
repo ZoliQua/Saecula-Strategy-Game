@@ -14,6 +14,8 @@ export interface GameEvents {
   wonderCompleted: { playerId: number; entityId: number };
   /** A Wonder with a running clock was destroyed (or removed); its clock stopped. */
   wonderLost: { playerId: number; entityId: number };
+  /** The pause menu opened or closed (PauseScene). The music ducks on it (Task 9); nothing in play listens. */
+  pauseChanged: { paused: boolean };
 }
 
 type Listener<K extends keyof GameEvents> = (payload: GameEvents[K]) => void;
@@ -24,6 +26,7 @@ const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   researchRejected: new Set(),
   wonderCompleted: new Set(),
   wonderLost: new Set(),
+  pauseChanged: new Set(),
 };
 
 export const gameEvents = {

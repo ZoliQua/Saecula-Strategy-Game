@@ -27,6 +27,7 @@ import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './g
 import { hu } from '../i18n/hu';
 import { OrderIssuer } from './game/OrderIssuer';
 import { PointerInput } from './game/PointerInput';
+import { openPause } from './game/PauseWiring';
 import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
 import { liveMatchState, MatchSave } from './game/MatchSave';
@@ -238,12 +239,8 @@ export class GameScene extends Phaser.Scene {
       this.players.human()?.id ?? 1,
       this.players.human()?.civ ?? DEFAULT_CIV,
     );
-    pointer = new PointerInput(
-      this,
-      this.tileMap,
-      this.runner.selection,
-      this.placement,
-      orders,
+    pointer = new PointerInput(this, this.tileMap, this.runner.selection, this.placement, orders, () =>
+      openPause(this, (slot) => this.saveTo(slot), this.storage),
     );
     pointer.register();
     const input = pointer;

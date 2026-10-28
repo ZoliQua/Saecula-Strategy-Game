@@ -251,6 +251,14 @@ export const hu = {
   },
   /** Saved games (CLAUDE.md §5.4). */
   save: {
+    title: 'Mentés',
+    loadTitle: 'Betöltés',
+    /** Kicker over the slot list. */
+    kicker: 'Mentett játékok',
+    slotName: (n: number) => `${n}. hely`,
+    autoSlot: 'Automatikus mentés',
+    empty: 'Üres hely',
+    overwrite: 'Felülírod ezt a mentést?',
     saved: 'Játék mentve',
     autosaved: 'Automatikus mentés kész',
     errors: {
@@ -260,6 +268,23 @@ export const hu = {
       loadFailed: 'A mentés betöltése nem sikerült',
       saveFailed: 'A mentés nem sikerült',
     },
+  },
+  /** The pause menu (Esc). */
+  pause: {
+    title: 'Szünet',
+    /** Kicker over the title. */
+    kicker: 'A játék áll',
+    resume: 'Folytatás',
+    save: 'Mentés',
+    load: 'Betöltés',
+    settings: 'Beállítások',
+    quit: 'Kilépés a főmenübe',
+    quitConfirm: 'Biztosan kilépsz? A nem mentett haladás elvész.',
+  },
+  common: {
+    yes: 'Igen',
+    cancel: 'Mégse',
+    back: 'Vissza',
   },
   /** AI personalities (shown with the AI's difficulty on the game-over table). */
   personalities: { rusher: 'Rohamozó', boomer: 'Gazdálkodó', turtle: 'Védekező' },
