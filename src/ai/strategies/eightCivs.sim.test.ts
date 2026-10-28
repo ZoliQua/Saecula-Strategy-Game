@@ -9,6 +9,8 @@ import { HardStrategy } from './HardStrategy';
 import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
+/** Wall-clock cap per six-player match (about 12.5 s each when the machine is idle). */
+const SIM_TIMEOUT_MS = 90_000;
 
 /**
  * M5 closing smoke without a browser (CLAUDE.md §9 M5): two 6-player
@@ -81,6 +83,8 @@ function play(seed: number, slots: readonly Slot[]): RunResult {
   const live = () => match.world.entities.filter((e) => e.unit || e.building || e.projectile).length;
   const age3At = new Map<number, number>();
   const cannonOwners = new Set<number>();
+  // Sampled during the run, like cannonOwners: a foundry razed before the end still counts.
+  const foundryOwners = new Set<number>();
   let maxEntities = 0;
   let cannonballs = false;
   let lateAt = Infinity;
@@ -90,6 +94,7 @@ function play(seed: number, slots: readonly Slot[]): RunResult {
     for (const e of match.world.entities) {
       if (e.projectile?.kind === 'cannonball') cannonballs = true;
       if (e.unit?.unitType === 'cannon') cannonOwners.add(e.owner?.playerId ?? 0);
+      if (e.building?.type === 'foundry' && !e.underConstruction) foundryOwners.add(e.owner?.playerId ?? 0);
     }
     if (!late && strong.every((id) => age3At.has(id))) {
       late = true;
@@ -97,9 +102,6 @@ function play(seed: number, slots: readonly Slot[]): RunResult {
     }
     return late && t >= lateAt + 6 * MIN;
   });
-  const foundryOwners = new Set(
-    match.world.entities.filter((e) => e.building?.type === 'foundry' && !e.underConstruction).map((e) => e.owner?.playerId ?? 0),
-  );
   return {
     civs: match.players.all().map((p) => p.civ),
     age3At,
@@ -139,7 +141,7 @@ describe('eight-civ headless matches (96×96 meadow, 6 players each)', () => {
       { civ: 'russian', difficulty: 'easy', early: [4, 2], late: [4, 2] },
     ];
     expectRun(play(3, slots), slots);
-  });
+  }, SIM_TIMEOUT_MS);
 
   it('run B: English Medium vs Finnish Hard and four Easy (Hungarian, German, French, Spanish)', () => {
     // 1 raids 3, 2 raids 4; then 1 and 2 duel.
@@ -152,5 +154,5 @@ describe('eight-civ headless matches (96×96 meadow, 6 players each)', () => {
       { civ: 'spanish', difficulty: 'easy', early: [2, 1], late: [2, 1] },
     ];
     expectRun(play(3, slots), slots);
-  });
+  }, SIM_TIMEOUT_MS);
 });

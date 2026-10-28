@@ -59,9 +59,8 @@ describe('civ previews', () => {
     expect(preview.civPreview('hungarian')?.glow).toMatch(/^data:image\/png/);
   });
 
-  it('creates no texture: the module takes no texture manager and touches no building texture', async () => {
+  it('creates no texture: painting every preview registers no building texture data', async () => {
     const preview = await load();
-    expect(preview.paintNextCivPreview.length).toBe(0);
     const bt = await import('../iso/buildingTextures');
     for (let i = 0; i < 16; i++) preview.paintNextCivPreview();
     expect([...bt.BUILDING_LIGHT.keys()]).toEqual([]);

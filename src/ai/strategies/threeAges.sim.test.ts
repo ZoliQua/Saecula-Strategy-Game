@@ -6,6 +6,8 @@ import { HardStrategy } from './HardStrategy';
 import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
+/** Wall-clock cap per headless match (a few seconds each when the machine is idle). */
+const SIM_TIMEOUT_MS = 60_000;
 
 /**
  * M3 smoke (§M3.14) without a browser: the human slot is driven by a
@@ -79,7 +81,7 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
     // Both sides save up and pay for cannons from mined gold (AI_COMMON.savesForUnits).
     expect(cannons.get(1)!.size, 'Medium (human slot) cannons').toBeGreaterThan(0);
     expect(cannons.get(2)!.size, 'Hard cannons').toBeGreaterThan(0);
-  });
+  }, SIM_TIMEOUT_MS);
 });
 
 /**
@@ -101,5 +103,5 @@ describe.each([
       return cannons.size >= 3;
     });
     expect(cannons.size).toBeGreaterThanOrEqual(3);
-  });
+  }, SIM_TIMEOUT_MS);
 });
