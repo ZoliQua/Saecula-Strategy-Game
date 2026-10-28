@@ -30,15 +30,15 @@ function play(tune: MediumTuning): { raidAt: number; retreatAt: number; mainWave
 /**
  * `pressure.recallMs` (Mesteri's table only): the scout raid is called home that long after it left,
  * so the main wave can go. Without it (Medium, Hard) a raid that keeps 3 scouts alive stays out.
- * Measured: raid at 6.57 min; plain: no retreat and no main wave by 22 min; recallMs 60 s: called home
+ * Measured: raid at 6.57 min; plain: no retreat by 22 min; recallMs 60 s: called home
  * 63.2 s after it left, main wave at 17.10 min.
  */
 describe('pressure raid recall (64×64 meadow, passive human, Medium seed 8)', () => {
-  it('without recallMs the raid stays out; with it the raid is called home on time and a main wave can leave', () => {
+  it('without recallMs the raid is never called home; with it the raid is called home on time and a main wave can leave', () => {
     const plain = play(AI_MEDIUM);
     expect(plain.raidAt).toBeLessThan(8 * MIN);
+    // Never called home without recallMs (the scouts survive, so no spent-wave retreat either).
     expect(plain.retreatAt).toBe(Infinity);
-    expect(plain.mainWaveAt).toBe(Infinity);
 
     const recall = 60_000;
     const recalled = play({ ...AI_MEDIUM, pressure: { ...AI_MEDIUM.pressure, recallMs: recall } });

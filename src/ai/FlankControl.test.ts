@@ -99,4 +99,40 @@ describe('FlankControl', () => {
     expect(flank.has(walker)).toBe(true);
     expect(walker.moveIntent?.target).toEqual(target.position);
   });
+
+  it('idle rounds between fights do not add up: a fight or a walked path resets the count', () => {
+    const { ctx, world, army, farm, perception, flank } = setup();
+    const view = perception.update(ctx);
+    const target = view.knownEnemyBuildings.find((b) => b.id === farm.id)!;
+    ctx.fog.dimVisibleToExplored();
+    const u = army[0]!;
+    flank.launch(ctx, view, [u], target);
+    const idleRounds = () => {
+      for (let i = 0; i < AI_COMMON.flankReorders; i++) {
+        ctx.world.removeComponent(u, 'moveIntent');
+        flank.update(ctx, perception.update(ctx));
+      }
+    };
+    idleRounds();
+    // A fight on the way (an enemy in sight next to the unit), won: the unit stands idle again.
+    const at = u.position!;
+    ctx.fog.markVisible(at.tx + 1, at.ty);
+    const enemy = createUnit(world, { type: 'swordsman', tile: { tx: at.tx + 1, ty: at.ty }, playerId: 1 });
+    flank.update(ctx, perception.update(ctx));
+    expect(u.attackIntent?.targetId).toBe(enemy.id);
+    world.remove(enemy);
+    ctx.world.removeComponent(u, 'attackIntent');
+    idleRounds();
+    expect(flank.has(u)).toBe(true);
+    // A walked path resets it too.
+    u.movable!.path = [{ tx: at.tx, ty: at.ty + 1 }];
+    flank.update(ctx, perception.update(ctx));
+    u.movable!.path = [];
+    idleRounds();
+    expect(flank.has(u)).toBe(true);
+    // Only one more failed path past the limit releases it.
+    ctx.world.removeComponent(u, 'moveIntent');
+    flank.update(ctx, perception.update(ctx));
+    expect(flank.has(u)).toBe(false);
+  });
 });

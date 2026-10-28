@@ -80,10 +80,13 @@ export class FlankControl {
     for (const id of this.flank) {
       const u = view.byId.get(id);
       if (!u?.position) continue;
+      // A path being walked, or a fight: the march works, so only consecutive failed paths count.
+      if ((u.movable?.path.length ?? 0) > 0 || u.attackIntent) this.reorders.delete(id);
       const current = u.attackIntent ? view.byId.get(u.attackIntent.targetId) : undefined;
       if (current && !current.dying && !current.building) continue;
       const engage = pickEngageTarget(u.position, enemyUnits, [], AI_COMMON.engageRadius);
       if (engage?.id !== undefined) {
+        this.reorders.delete(id);
         clearUnitOrders(ctx.world, u);
         ctx.world.addComponent(u, 'attackIntent', { targetId: engage.id });
       } else if (goalInSight) {
@@ -92,7 +95,7 @@ export class FlankControl {
         ctx.world.addComponent(u, 'attackIntent', { targetId: goal.id });
       } else if (!isBusy(u) || u.attackIntent) {
         // Walk to where the target was seen (an attack order on a building out of sight could be stale).
-        // Idle again and again without a fight: no path there, so the unit leaves the flank.
+        // Idle again and again, with no path walked or fight in between: no path there, so it leaves the flank.
         if (!u.attackIntent && this.countReorder(id) > AI_COMMON.flankReorders) {
           this.flank.delete(id);
           this.reorders.delete(id);
