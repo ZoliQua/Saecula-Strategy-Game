@@ -47,6 +47,8 @@ export function romanArt(s: ArchStyle): AgeArtSet {
   const c = s.palette;
   const tall = (h: number) => h + s.headroom;
   const framed = s.kits?.framedUpper === true;
+  /** Framed gable fill for a gable on the right ('u' ridge) or left ('v' ridge) face, with framedUpper. */
+  const gableFrame = (p: IsoPainter, axis: 'u' | 'v') => (framed ? framedGable(p.ctx, s, axis === 'u' ? R : 1) : undefined);
   return {
     town_center: {
       size: 3,
@@ -156,7 +158,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x8a7a5a);
         p.box(0.25, 0.25, 1.15, 1.6, 0, 38, { color: c.darkWood, detail: 'logs' });
-        styledGable(p, s, 0.25, 0.25, 1.15, 1.6, 38, 32, roofOf(s, 'lumber_camp'), c.darkWood, 'v');
+        styledGable(p, s, 0.25, 0.25, 1.15, 1.6, 38, 32, roofOf(s, 'lumber_camp'), framed ? c.plaster : c.darkWood, 'v', 0.12, gableFrame(p, 'v'));
         logPile(p, 1.25, 1.75, 9);
         p.flag(1.8, 0.4, 0, 30, team);
         // Chopping stump with axe.
@@ -175,7 +177,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x8b8070);
         p.box(0.25, 0.25, 1.4, 1.2, 0, 36, { color: c.stone, detail: 'stone' });
-        styledGable(p, s, 0.25, 0.25, 1.4, 1.2, 36, 30, roofOf(s, 'mining_camp'), c.stone, 'u');
+        styledGable(p, s, 0.25, 0.25, 1.4, 1.2, 36, 30, roofOf(s, 'mining_camp'), framed ? c.plaster : c.stone, 'u', 0.12, gableFrame(p, 'u'));
         // Mine cart.
         p.box(0.9, 1.35, 1.5, 1.75, 6, 22, { color: 0x6b4a2a, detail: 'planks' });
         goldPile(p, 1.25, 1.55);
@@ -212,7 +214,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
             p.ctx.fillRect(bx, -50, 10, 2.5);
           }
         }, 54);
-        styledGable(p, s, 0.3, 0.3, 2.7, 1.9, 54, 40, roofOf(s, 'barracks'), c.plaster, 'u');
+        styledGable(p, s, 0.3, 0.3, 2.7, 1.9, 54, 40, roofOf(s, 'barracks'), c.plaster, 'u', 0.12, gableFrame(p, 'u'));
         torch(p, 2.7, 1.45, 42, 2.95, 1.45);
         torch(p, 2.7, 0.78, 42, 2.95, 0.78);
         // Training yard: dummies + weapon rack.
@@ -236,7 +238,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.footShadow();
         p.ground(0.05, 0.05, 2.95, 2.95, 0x93a46a);
         p.box(0.25, 0.25, 1.5, 1.2, 0, 40, { color: c.timber, detail: 'planks' });
-        styledGable(p, s, 0.25, 0.25, 1.5, 1.2, 40, 30, roofOf(s, 'archery_range'), c.timber, 'u');
+        styledGable(p, s, 0.25, 0.25, 1.5, 1.2, 40, 30, roofOf(s, 'archery_range'), framed ? c.plaster : c.timber, 'u', 0.12, gableFrame(p, 'u'));
         for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);
         p.flag(0.4, 2.6, 0, 36, team, true);
       },
@@ -251,7 +253,7 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.leftFace(0.3, 2.7, 2.0, 0, () => {
           for (let i = 0; i < 4; i++) p.door(10 + i * 38, 18, 26, c.doors.gate);
         }, 46);
-        styledGable(p, s, 0.3, 0.3, 2.7, 2.0, 46, 42, roofOf(s, 'stable'), c.board, 'u');
+        styledGable(p, s, 0.3, 0.3, 2.7, 2.0, 46, 42, roofOf(s, 'stable'), framed ? c.plaster : c.board, 'u', 0.12, gableFrame(p, 'u'));
         // Hay bales.
         for (const u of [0.6, 1.0]) p.box(u, 2.25, u + 0.35, 2.6, 0, 14, { color: 0xd9b55a }, 0xe8c873);
         p.flag(2.8, 2.8, 0, 36, team);
@@ -275,7 +277,8 @@ export function romanArt(s: ArchStyle): AgeArtSet {
           ctx.fillStyle = g;
           ctx.fillRect(26, -34, 40, 34);
         }, 38);
-        styledHip(p, s, 0.3, 0.3, 1.7, 1.5, 38, 30, roofOf(s, 'blacksmith'));
+        if (framed) styledGable(p, s, 0.3, 0.3, 1.7, 1.5, 38, 30, roofOf(s, 'blacksmith'), c.plaster, 'u', 0.12, gableFrame(p, 'u'));
+        else styledHip(p, s, 0.3, 0.3, 1.7, 1.5, 38, 30, roofOf(s, 'blacksmith'));
         forgeLight(p, 1.08, 1.55);
         const [x, y] = p.p(1.3, 1.75, 0);
         p.ctx.fillStyle = '#3a3a40';

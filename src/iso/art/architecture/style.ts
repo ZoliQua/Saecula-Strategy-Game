@@ -72,8 +72,12 @@ export interface RoofProfile {
   readonly pitch: number;
   /** Multiplies every main-roof eave overhang (1 = the family's own). */
   readonly eave: number;
-  /** 'native' keeps each painter's hip / gable / mansard; 'hip' or 'gable' forces that form. */
-  readonly form: 'native' | 'hip' | 'gable';
+  /**
+   * 'native' keeps each painter's hip / gable / mansard; 'hip' or 'gable'
+   * forces that form; 'halfHip' turns the family's gables into half-hips
+   * (Krüppelwalm, kits/halfHip.ts) and keeps its hips.
+   */
+  readonly form: 'native' | 'hip' | 'gable' | 'halfHip';
   /** Cover painted on main roofs; undefined keeps each painter's own material. */
   readonly material?: RoofMaterial;
 }
@@ -140,7 +144,7 @@ export type ArchFamily =
   | 'romano_british'
   | 'tudor'
   | 'georgian'
-  /** Roman layouts with a Porta Nigra twin-tower gate as town centre (German age 1). */
+  /** Roman layouts with a Porta Nigra twin-tower gate as town centre and a Limes watchtower (German age 1). */
   | 'porta_nigra'
   /** Georgian layouts with the Speyer Kaiserdom as Wonder (German age 3). */
   | 'kaiserdom';

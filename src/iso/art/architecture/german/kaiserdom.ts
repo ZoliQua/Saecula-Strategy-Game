@@ -32,7 +32,7 @@ const AISLE_WALL = 62;
 const RISE = 46;
 const EAST_TOP = 196;
 const WEST_TOP = 238;
-const HELM_GABLE = 26;
+const HELM_GABLE = 36;
 const HELM = 70;
 const CROSSING_TOP = 176;
 const WESTBAU = 140;
@@ -84,8 +84,9 @@ function aisleRoof(p: IsoPainter, k: DomLook, [u0, v0, u1, v1]: Block, right: bo
 }
 
 /** A tower of the two pairs: square shaft with arcaded belfry storeys, then (finished) a rhomboid helm. */
-function tower(p: IsoPainter, k: DomLook, b: Block, top: number, helm: boolean, empty: boolean): void {
-  domBlock(p, k, b, BASE, top - 56, { rows: [[60, 16]], empty, bay: 13 });
+function tower(p: IsoPainter, k: DomLook, b: Block, top: number, helm: boolean, empty: boolean, east = false): void {
+  // An east tower's lower shaft stands behind the transept: no windows on its +v face.
+  domBlock(p, k, b, BASE, top - 56, { rows: [[60, 16]], ...(east ? { leftRows: [] } : {}), empty, bay: 13 });
   const [u0, v0, u1, v1] = b;
   p.box(u0, v0, u1, v1, top - 56, top, { color: k.stone, detail: 'stone' });
   const belfry = (light: number) => (w: number) => {
@@ -173,10 +174,11 @@ function paintDom(p: IsoPainter, s: ArchStyle, team: number, stage: number): voi
     crane(p, 3.4, 3.4, 150, 2.0, 1.0, 64);
     return;
   }
-  tower(p, k, E_TOWER_L, EAST_TOP, stage >= 3, empty);
-  domBlock(p, k, CHOIR, BASE, WALL, { ...TALL, empty });
+  tower(p, k, E_TOWER_L, EAST_TOP, stage >= 3, empty, true);
+  // The choir's +v face is hidden behind the transept.
+  domBlock(p, k, CHOIR, BASE, WALL, { ...TALL, leftRows: [], empty });
   domRoof(p, k, CHOIR, WALL, 'v');
-  tower(p, k, E_TOWER_R, EAST_TOP, stage >= 3, empty);
+  tower(p, k, E_TOWER_R, EAST_TOP, stage >= 3, empty, true);
   if (stage === 2) {
     for (const b of [E_TOWER_L, E_TOWER_R]) scaffold(p, ...b, EAST_TOP - 60, EAST_TOP);
     domBlock(p, k, TRANSEPT, BASE, 70, { open: true, rows: [[46, 30]], empty });
@@ -186,14 +188,16 @@ function paintDom(p: IsoPainter, s: ArchStyle, team: number, stage: number): voi
     crane(p, 3.5, 3.0, 190, 2.0, 1.85, 90);
     return;
   }
-  domBlock(p, k, TRANSEPT, BASE, WALL, { ...TALL, empty });
+  // The transept's +v face is hidden behind the nave and aisles between its arms.
+  domBlock(p, k, TRANSEPT, BASE, WALL, { ...TALL, leftHidden: [0.17, 0.83], empty });
   domRoof(p, k, TRANSEPT, WALL, 'u');
   octagon(p, k, 2.0, 1.85, 0.42, WALL + 10, CROSSING_TOP, done);
-  domBlock(p, k, AISLE_L, BASE, AISLE_WALL, { rows: [[20, 24]], empty });
+  // Aisles and nave end behind the west towers and the Westbau: no windows on their +v faces.
+  domBlock(p, k, AISLE_L, BASE, AISLE_WALL, { rows: [[20, 24]], leftRows: [], empty });
   aisleRoof(p, k, AISLE_L, false);
-  domBlock(p, k, NAVE, BASE, NAVE_WALL, { rows: [[AISLE_WALL + 4, 30]], empty, gallery: true });
+  domBlock(p, k, NAVE, BASE, NAVE_WALL, { rows: [[AISLE_WALL + 4, 30]], leftRows: [], empty, gallery: true });
   domRoof(p, k, NAVE, NAVE_WALL, 'v');
-  domBlock(p, k, AISLE_R, BASE, AISLE_WALL, { rows: [[20, 24]], empty });
+  domBlock(p, k, AISLE_R, BASE, AISLE_WALL, { rows: [[20, 24]], leftRows: [], empty });
   aisleRoof(p, k, AISLE_R, true);
   const westTop = done ? WEST_TOP : WEST_TOP - 70;
   tower(p, k, W_TOWER_L, westTop, done, empty);

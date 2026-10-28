@@ -77,7 +77,7 @@ export function portaNigra(s: ArchStyle): BuildingArt {
   const c = s.palette;
   return {
     size: 3,
-    maxHeight: 250,
+    maxHeight: 250 + s.headroom,
     paint: (p, team) => {
       p.footShadow();
       p.ground(0.05, 0.05, 2.95, 2.95, 0xa89a82);

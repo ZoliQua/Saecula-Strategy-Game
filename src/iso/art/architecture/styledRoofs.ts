@@ -1,4 +1,5 @@
 import type { IsoPainter, WallStyle } from '../isoPainter';
+import { halfHipRoof } from './kits/halfHip';
 import { steppedGableRoof, stepsGable } from './kits/steppedGable';
 import { chimney } from './parts';
 import { mansardRoof } from './roofs';
@@ -10,13 +11,17 @@ type GableDetail = (width: number, rise: number) => void;
 /*
  * Main roofs in a style's roof profile (style.roof): rises scale with
  * `pitch`, overhangs with `eave`, `form` may force hip or gable, and
- * `material` replaces the painter's cover. Styles with stepped gables
+ * `material` replaces the painter's cover; 'halfHip' clips every main gable
+ * with a small hip. Styles with stepped gables
  * (kits.steppedGables) close every main gable in coped steps. With the native profile
  * (pitch 1, eave 1, form 'native', no material) each call paints
  * exactly the IsoPainter / roofs.ts roof it wraps. Anything standing
  * on or through a main roof (chimneys, cupolas, dormers, vents) takes
  * its height from roofLift / onRoof so it moves with the pitch.
  */
+
+/** Gables lower than this (art px, pitched) stay plain gables under a half-hip style: sheds and lean-tos. */
+const HALF_HIP_MIN_RISE = 24;
 
 /** Paints with the style's roof material, then restores the painter's own (no leak into later roofs). */
 function withCover<T>(p: IsoPainter, s: ArchStyle, paint: () => T): T {
@@ -81,6 +86,7 @@ export function styledGable(
   withCover(p, s, () => {
     if (s.roof.form === 'hip') p.hipRoof(u0, v0, u1, v1, eave, r, color, o);
     else if (stepsGable(s, r, axis === 'u' ? v1 - v0 : u1 - u0)) steppedGableRoof(p, s, u0, v0, u1, v1, eave, r, color, wall, axis, detail);
+    else if (s.roof.form === 'halfHip' && r >= HALF_HIP_MIN_RISE) halfHipRoof(p, u0, v0, u1, v1, eave, r, color, wall, axis, o, detail);
     else p.gableRoof(u0, v0, u1, v1, eave, r, color, wall, axis, o, detail);
   });
 }
@@ -124,14 +130,14 @@ export function styledMansard(
   upperRise: number,
   color: number,
 ): Pt {
-  if (s.roof.form !== 'native') return styledHip(p, s, u0, v0, u1, v1, eave, lowerRise + upperRise, color, 0.08);
+  if (s.roof.form !== 'native' && s.roof.form !== 'halfHip') return styledHip(p, s, u0, v0, u1, v1, eave, lowerRise + upperRise, color, 0.08);
   const k = s.roof.pitch;
   return withCover(p, s, () => mansardRoof(p, u0, v0, u1, v1, eave, lowerRise * k, inset, upperRise * k, color, color, 0.08 * s.roof.eave, s.palette.trim));
 }
 
 /** Whether dormers sit on this style's mansards (only on native mansards). */
 export function hasDormers(s: ArchStyle): boolean {
-  return s.ornaments.dormers && s.roof.form === 'native';
+  return s.ornaments.dormers && (s.roof.form === 'native' || s.roof.form === 'halfHip');
 }
 
 /** The gable fill when the style paints boarded gables, else none. */

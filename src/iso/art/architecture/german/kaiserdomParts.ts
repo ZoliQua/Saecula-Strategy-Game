@@ -35,6 +35,12 @@ export interface DomWallOpts {
   readonly open?: boolean;
   /** Bay width (art px) between pilaster strips. */
   readonly bay?: number;
+  /** Window rows of the left (+v) face where they differ from `rows` ([] where a later block hides the face). */
+  readonly leftRows?: ReadonlyArray<readonly [number, number]>;
+  /** Span of the left face (fractions of its width) hidden behind later blocks: no windows there, so no glows. */
+  readonly leftHidden?: readonly [number, number];
+  /** Window span of a face that `domFace` skips (fractions of its width); set per face by domBlock. */
+  readonly hidden?: readonly [number, number];
 }
 
 /** A Romanesque wall face (face-local): yellow bands, pilaster strips, round-arched windows, crowning band. */
@@ -54,6 +60,8 @@ export function domFace(p: IsoPainter, k: DomLook, w: number, h: number, light: 
   for (const [sill, wh] of o.rows ?? []) {
     if (sill + wh > h - 6) continue;
     for (let i = 0; i < n; i++) {
+      const f = (i + 0.5) / n;
+      if (o.hidden && f > o.hidden[0] && f < o.hidden[1]) continue;
       const ww = Math.min(7, pitch * 0.34);
       const x = pitch * (i + 0.5) - ww / 2;
       const y = -sill - wh;
@@ -82,10 +90,15 @@ export function domFace(p: IsoPainter, k: DomLook, w: number, h: number, light: 
   weathering(p, w, h, 0.18);
 }
 
-/** A walled block (u0..u1 × v0..v1) from z0 to z1 with dressed visible faces. */
+/**
+ * A walled block (u0..u1 × v0..v1) from z0 to z1 with dressed visible
+ * faces. Windows glow at dusk, so faces that later blocks paint over
+ * get no glazed rows there (leftRows / leftHidden).
+ */
 export function domBlock(p: IsoPainter, k: DomLook, [u0, v0, u1, v1]: Block, z0: number, z1: number, o: DomWallOpts = {}): void {
   p.box(u0, v0, u1, v1, z0, z1, { color: k.stone, detail: 'stone' });
-  p.leftFace(u0, u1, v1, z0, (w, h) => domFace(p, k, w, h, 1, o), z1 - z0);
+  const left: DomWallOpts = { ...o, rows: o.leftRows ?? o.rows ?? [], ...(o.leftHidden ? { hidden: o.leftHidden } : {}) };
+  p.leftFace(u0, u1, v1, z0, (w, h) => domFace(p, k, w, h, 1, left), z1 - z0);
   p.rightFace(v0, v1, u1, z0, (w, h) => domFace(p, k, w, h, R, o), z1 - z0);
 }
 
@@ -180,6 +193,16 @@ export function rhombHelm(p: IsoPainter, k: DomLook, [u0, v0, u1, v1]: Block, z:
     p.roofSlope(pts, k.helm, light, p.slope(du * 0.7, dv * 0.7, run, rise - g / 2), (t) => (t < 0.5 ? [lerp(top, a, t * 2), lerp(top, b, t * 2)] : [lerp(a, c, t * 2 - 1), lerp(b, c, t * 2 - 1)]));
   }
   p.material = prev;
+  // Pale stone copings on the visible gable rakes: the gables read through the copper.
+  const ctx = p.ctx;
+  ctx.strokeStyle = css(shade(k.band, 1.1));
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  for (const pts of [[p.p(u0, v1, z), gl, p.p(u1, v1, z)], [p.p(u1, v1, z), gr, p.p(u1, v0, z)]]) {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+  }
   p.recordRoof(u0, v0, u1, v1, z, [p.p(um, vm, 0)], z + rise);
   return apex;
 }

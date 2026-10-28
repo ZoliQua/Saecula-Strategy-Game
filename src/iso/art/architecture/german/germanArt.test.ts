@@ -117,6 +117,12 @@ describe('German architecture (Limes, Fachwerk, Backstein, Kaiserdom)', () => {
     expect(done.glows.length).toBeGreaterThan(10);
   });
 
+  it('the finished Kaiserdom glows no more than the English cathedral does (no glows on windows hidden behind later blocks)', () => {
+    const de = paintBuilding('wonder', TEAM, 3, 'german', false).glows.length;
+    const en = paintBuilding('wonder', TEAM, 3, 'english', false).glows.length;
+    expect(de).toBeLessThanOrEqual(Math.round(en * 1.3));
+  });
+
   it('is not the Hungarian or the English art in any age (town centre and house)', () => {
     for (const age of AGES) {
       for (const type of ['town_center', 'house'] as const) {

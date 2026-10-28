@@ -12,7 +12,7 @@ import type { ArchStyle } from '../style';
 /** Small bullseye panes in dark frames; warm firelight at night. */
 const BULLSEYE_WINDOW: WindowLook = { frame: 0x2a1d16, glassTop: 0xffe0a0, glassBottom: 0xc8873a, bars: 0x2a1d16 };
 
-/** Age 1 (Római kor): Limes — red Trier sandstone, framed upper storeys, steep shingle; Porta Nigra town centre. */
+/** Age 1 (Római kor): Limes — red Trier sandstone, framed upper storeys, steep half-hipped shingle; Porta Nigra town centre, Limes watchtower. */
 export const GERMAN_LIMES: ArchStyle = {
   id: 'limes',
   family: 'porta_nigra',
@@ -44,7 +44,7 @@ export const GERMAN_LIMES: ArchStyle = {
       blacksmith: 0x4d4842,
     },
   },
-  roof: { pitch: 1.35, eave: 1, form: 'native', material: 'shingle' },
+  roof: { pitch: 1.35, eave: 1, form: 'halfHip', material: 'shingle' },
   ornaments: { chimneys: true, halfTimber: true, quoins: false, pilasters: false, dormers: false, boardedGables: false },
   charge: 'eagle',
   seedSalt: 20483,
