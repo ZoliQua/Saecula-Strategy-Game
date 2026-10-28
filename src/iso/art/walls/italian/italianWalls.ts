@@ -29,8 +29,11 @@ import { TRACE_ITALIENNE } from './traceItalienne';
 const E = ITALIAN_ETRURIA.palette;
 const C = ITALIAN_COMUNE.palette;
 
-/** Yellow-grey tufa (cappellaccio) of the Servian wall, travertine of its coping and cornices. */
-const TUFA = 0xc8b688;
+/**
+ * Yellow-grey tufa (cappellaccio) of the Servian wall, travertine of its coping and cornices.
+ * Low in red, so the orange dusk light keeps it a warm stone, not a pink brick.
+ */
+const TUFA = 0xc6bd86;
 const TRAVERTINE = E.ashlar;
 const SERVIAN_TOP = 44;
 const SERVIAN_HALF = 0.17;
@@ -92,9 +95,11 @@ const WALK = shade(BRICK, 0.72);
 export const GHIBELLINE_WALK = 50;
 const GHIB_HALF = 0.17;
 /** The forked merlons of the run: sized so the V notch reads on the skyline at zoom 1. */
-export const MERLON: MerlonSize = { width: 0.23, thick: 0.08, body: 10, horn: 12 };
-/** Merlon copings: brick a shade lighter (a pale travertine top reads as a row of spikes from afar). */
+export const MERLON: MerlonSize = { width: 0.26, thick: 0.08, body: 9, horn: 14 };
+/** Tower-crown copings: brick a shade lighter (a pale travertine top reads as a row of spikes from afar). */
 const MERLON_CAP = shade(BRICK, 1.12);
+/** The run merlons' notch copings: dark, so each V reads as a dark wedge between paired horns (not a stepped peak). */
+const NOTCH = shade(BRICK, 0.38);
 /** The tower's corbelled platform and its crown. */
 const TOWER_PLATFORM = 96;
 const SHAFT = [0.22, 0.22, 0.78, 0.78] as const;
@@ -124,7 +129,7 @@ const GHIBELLINE: WallAgeStyle = {
     const d = dir(arm);
     const m = { ...MERLON, thick: MERLON.thick * g };
     for (const c of stations(arm, 0.32, 0.06)) {
-      forkedMerlon(p, frontEdge(arm, c, GHIB_HALF * g - m.thick / 2), d, GHIBELLINE_WALK, m, BRICK, MERLON_CAP);
+      forkedMerlon(p, frontEdge(arm, c, GHIB_HALF * g - m.thick / 2), d, GHIBELLINE_WALK, m, BRICK, NOTCH);
     }
   },
   post: (p) => {

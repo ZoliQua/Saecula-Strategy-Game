@@ -3,11 +3,12 @@ import { pinWalls } from '../../testing/pinnedArt.testkit';
 /*
  * Pixel-identity guard for the Italian wall pieces: every common piece plus
  * junctions, crosses and diagonal joins of every age (see
- * testing/pinnedArt.testkit.ts). Recorded in M5 Task 10.
+ * testing/pinnedArt.testkit.ts). Recorded in M5 Task 10; the polish round
+ * re-recorded ages 1 (yellower tufa) and 2 (deeper forks, dark notch copings).
  */
 
 pinWalls('italian', {
-  1: '153b1e17529e03cf',
-  2: '732a350cedb5191b',
+  1: 'b322c4fedc736024',
+  2: 'b3316a449814eddb',
   3: '1a7f46c391bf9f4a',
 });

@@ -117,8 +117,9 @@ describe('Italian wall styles', () => {
     }
   });
 
-  it('the forked merlon is cut by a V notch at least 8 px deep', () => {
-    expect(italian.MERLON.horn).toBeGreaterThanOrEqual(8);
+  it('the forked merlon is cut by a V notch at least 12 px deep, deeper than its solid body', () => {
+    expect(italian.MERLON.horn).toBeGreaterThanOrEqual(12);
+    expect(italian.MERLON.horn).toBeGreaterThan(italian.MERLON.body);
     expect(italian.MERLON.width).toBeGreaterThanOrEqual(0.18);
   });
 

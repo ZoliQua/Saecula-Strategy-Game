@@ -10,7 +10,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * age-3 barracks' armoury tower). Fix round 2 re-recorded mining_camp@1
  * (furnace clear of the ore house, its right face unlit). Task 10
  * re-recorded wall@1-3 (the wall building type now paints the Italian
- * wall pieces).
+ * wall pieces); its polish round re-recorded wall@1-2 (yellower tufa,
+ * deeper forks with dark notch copings).
  */
 
 pinBuildings('italian', {
@@ -25,7 +26,7 @@ pinBuildings('italian', {
   'blacksmith@1': 'c674e332db064f6b',
   'foundry@1': '1ff192129ac42e46',
   'tower@1': '8881cb132185446d',
-  'wall@1': '6d27e3aa88461183',
+  'wall@1': '002e65643a7e3d93',
   'wonder@1': '8c766082b0317bba',
   'town_center@2': 'a0fefe4ac02afef3',
   'house@2': '92e4764cb3403d55',
@@ -38,7 +39,7 @@ pinBuildings('italian', {
   'blacksmith@2': 'a89eb06ddae6010f',
   'foundry@2': '96f0321a8f1598a8',
   'tower@2': 'bc3bcc22f1aa7bd6',
-  'wall@2': 'd6d351a9ae1f4e3c',
+  'wall@2': '0cc00a668f969c7f',
   'wonder@2': 'f5013135469213d1',
   'town_center@3': '2bb517dfaf0b2e9e',
   'house@3': 'd8b0ccd798a76d79',
