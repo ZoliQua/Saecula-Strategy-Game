@@ -69,7 +69,7 @@ describe('GameSetupConfig', () => {
 
   it('falls back to a mixed AI line-up for an unavailable AI civ', () => {
     expect(withSetup(defaultSetupConfig(1), { aiCivs: 'english' }).aiCivs).toBe('english');
-    expect(withSetup(defaultSetupConfig(1), { aiCivs: 'russian' }).aiCivs).toBe('mixed');
+    expect(withSetup(defaultSetupConfig(1), { aiCivs: 'finnish' }).aiCivs).toBe('mixed');
     const bogus = 'martian' as unknown as GameSetupConfig['aiCivs'];
     expect(withSetup(defaultSetupConfig(1), { aiCivs: bogus }).aiCivs).toBe('mixed');
   });
@@ -100,8 +100,8 @@ describe('GameSetupConfig', () => {
 });
 
 describe('AI_CIV_CHOICES', () => {
-  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol / Német / Francia / Spanyol / Olasz)', () => {
-    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish', 'italian']);
+  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol / Német / Francia / Spanyol / Olasz / Orosz)', () => {
+    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian']);
   });
 
   it('every choice survives withSetup unchanged', () => {
@@ -121,7 +121,7 @@ describe('assignCivs', () => {
   });
 
   it('mixed: one civ per AI, distinct while the pool lasts, each available civ once there are enough AIs', () => {
-    const pool = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian'];
+    const pool = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian'];
     for (let seed = 1; seed <= 200; seed++) {
       for (let ais = 2; ais <= 5; ais++) {
         const civs = assignCivs(config(ais, 'mixed', seed), createRng(seed));
@@ -150,7 +150,7 @@ describe('assignCivs', () => {
       expect(civs).toHaveLength(1);
       seen.add(civs[0]!);
     }
-    expect(seen).toEqual(new Set(['hungarian', 'english', 'german', 'french', 'spanish', 'italian']));
+    expect(seen).toEqual(new Set(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian']));
   });
 
   it('is deterministic per seed', () => {

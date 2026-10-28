@@ -49,9 +49,12 @@ export type WallStyleId =
   | 'garita_bastion'
   | 'servian'
   | 'ghibelline'
-  | 'trace_italienne';
+  | 'trace_italienne'
+  | 'rus_palisade'
+  | 'gorodnya'
+  | 'kremlin';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -142,10 +145,13 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'italian',
     heraldry: { primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e },
   },
-  // St Andrew's saltire: white, blue, red. Log gorod / Muscovite / Petrine buildings (walls and units still the Hungarian stub).
+  // St Andrew's saltire: white, blue, red. Log gorod / Muscovite / Petrine buildings; log wall on a rampart, gorodnya cribs with tented log towers and a whitewashed kremlin; Russian unit liveries.
   russian: {
-    ...upcoming({ primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e }),
+    available: true,
     architecture: { 1: 'rus_gord', 2: 'muscovy', 3: 'petrine' },
+    wallStyle: { 1: 'rus_palisade', 2: 'gorodnya', 3: 'kremlin' },
+    unitLook: 'russian',
+    heraldry: { primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e },
   },
   finnish: upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
 };

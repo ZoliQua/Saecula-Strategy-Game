@@ -5,7 +5,7 @@ import { archedOpening, baroqueWindow } from './facade';
 import { baroqueBlock, railFence } from './baroqueParts';
 import { forgeLight, forgeMouth, goldPile, lantern, logPile, plankStack, post, target } from './parts';
 import { hasOnionDomes, onionDome } from './kits/onionDome';
-import { octPrism, tentRoof, tentStand } from './kits/tentRoof';
+import { tentRoof, tentStand } from './kits/tentRoof';
 import { finial, helm } from './roofs';
 import type { ArchStyle } from './style';
 import { roofChimney, roofLift, styledGable, styledHip } from './styledRoofs';
@@ -111,12 +111,8 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         }, 36);
         p.material = 'tile';
         styledGable(p, s, 0.22, 0.22, 1.0, 1.3, 44, 42, c.roof, c.board, 'v', 0.12);
-        // Onion styles put a tented timber lantern on the store's roof.
-        if (hasOnionDomes(s)) {
-          const z = 44 + 42 * s.roof.pitch - 10;
-          octPrism(p, 0.61, 0.76, 0.12, z, z + 18, c.board, 'logs');
-          tentRoof(p, 0.61, 0.76, 0.12, z + 18, 40, c.roof, { material: 'copper', ribs: c.trim });
-        }
+        // Onion styles put a timber hoist on the store's gable: a beam out over the yard, a log bundle on its rope.
+        if (hasOnionDomes(s)) gableHoist(p, 0.61, 1.3, 44 + 42 * s.roof.pitch - 14, c.timber);
         lantern(p, 0.94, 1.3, 32, 0.94, 1.5);
         // Open saw shed with a frame saw.
         for (const [u, v] of [[1.1, 0.3], [1.72, 0.3], [1.1, 0.92], [1.72, 0.92]] as const) post(p, u, v, 0, 40, 2.4, c.timber);
@@ -279,4 +275,38 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
       },
     },
   };
+}
+
+/** Hoist on a store's gable at (u, v, z): a beam out along +v with a bracket, a rope and a hanging bundle of logs. */
+function gableHoist(p: IsoPainter, u: number, v: number, z: number, timber: number): void {
+  const ctx = p.ctx;
+  const [ax, ay] = p.p(u, v - 0.08, z);
+  const [bx, by] = p.p(u, v + 0.34, z);
+  ctx.lineCap = 'butt';
+  ctx.strokeStyle = css(timber);
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(bx, by);
+  ctx.stroke();
+  // Diagonal bracket under the beam.
+  const [cx, cy] = p.p(u, v + 0.02, z - 16);
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo((ax + bx * 2) / 3, (ay + by * 2) / 3);
+  ctx.stroke();
+  ctx.strokeStyle = '#d8c8a0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(bx - 2, by);
+  ctx.lineTo(bx - 2, by + 18);
+  ctx.stroke();
+  for (const [dy, dx] of [[19, 0], [23, 1.5], [23, -2.5]] as const) {
+    ctx.fillStyle = '#6b4426';
+    ctx.fillRect(bx - 9 + dx, by + dy, 14, 3.6);
+    ctx.fillStyle = '#e0b880';
+    ctx.fillRect(bx + 4 + dx, by + dy, 1.6, 3.6);
+  }
+  p.addVolumePoint(u, v + 0.34, z);
 }

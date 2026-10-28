@@ -119,6 +119,7 @@ describe('civ previews', () => {
     expect(preview.paintNextCivPreview(textures)).toBe('french');
     expect(preview.paintNextCivPreview(textures)).toBe('spanish');
     expect(preview.paintNextCivPreview(textures)).toBe('italian');
+    expect(preview.paintNextCivPreview(textures)).toBe('russian');
     expect(preview.paintNextCivPreview(textures)).toBeNull();
     expect(map.size).toBe(0);
   });
@@ -152,6 +153,8 @@ describe('civ previews', () => {
     expect(warn).toHaveBeenCalledTimes(5);
     expect(preview.paintNextCivPreview(textures)).toBe('italian');
     expect(warn).toHaveBeenCalledTimes(6);
+    expect(preview.paintNextCivPreview(textures)).toBe('russian');
+    expect(warn).toHaveBeenCalledTimes(7);
     expect(preview.paintNextCivPreview(textures)).toBeNull();
     warn.mockRestore();
   });

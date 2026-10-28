@@ -4,6 +4,7 @@ import { ENGLISH_LOOKS } from './english/englishLooks';
 import { FRENCH_LOOKS } from './french/frenchLooks';
 import { GERMAN_LOOKS } from './german/germanLooks';
 import { ITALIAN_LOOKS } from './italian/italianLooks';
+import { RUSSIAN_LOOKS } from './russian/russianLooks';
 import { SPANISH_LOOKS } from './spanish/spanishLooks';
 import type { HorseLook } from './horse';
 import type { HumanLook } from './humanoid';
@@ -171,6 +172,7 @@ const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitTy
   french: FRENCH_LOOKS,
   spanish: SPANISH_LOOKS,
   italian: ITALIAN_LOOKS,
+  russian: RUSSIAN_LOOKS,
 };
 
 /** The look a civ's units of a type wear (civ registry unitLook → override, else the base look). */

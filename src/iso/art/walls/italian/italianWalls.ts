@@ -10,7 +10,8 @@ import { css, shade } from '../../palette';
 import { armShadow, frontEdge, padShadow } from '../kits/wallParts';
 import { prism, type UV } from '../prism';
 import { stations, type Arm, type WallAgeStyle } from '../wallKit';
-import { ashlarFace, forkedMerlon, pointedSlit, type MerlonSize } from './italianWallParts';
+import { forkedMerlon, type MerlonSize } from '../kits/forkedMerlon';
+import { ashlarFace, pointedSlit } from './italianWallParts';
 import { TRACE_ITALIENNE } from './traceItalienne';
 
 /*
