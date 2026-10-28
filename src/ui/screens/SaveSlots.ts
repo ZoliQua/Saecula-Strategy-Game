@@ -121,8 +121,12 @@ export class SaveSlots {
     refocus?.focus({ preventScroll: true });
   }
 
+  private badge(row: SlotRow): HTMLElement {
+    return el('span', { class: 'slot-badge', html: row.slot === 'auto' ? GLYPHS.auto : undefined }, row.slot === 'auto' ? null : String(row.slot));
+  }
+
   private slotRow(row: SlotRow, i: number): HTMLElement {
-    const badge = el('span', { class: 'slot-badge', html: row.slot === 'auto' ? GLYPHS.auto : undefined }, row.slot === 'auto' ? null : String(row.slot));
+    const badge = this.badge(row);
     const text = el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, row.title), ...slotDetail(row));
     const btn = el(
       'button',
@@ -144,7 +148,7 @@ export class SaveSlots {
     return el(
       'div',
       { class: 'slot-row slot-confirm', role: 'group', style: `--i:${i}`, 'data-slot': String(row.slot) },
-      el('span', { class: 'slot-badge' }, row.slot === 'auto' ? '' : String(row.slot)),
+      this.badge(row),
       el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, question), ...slotDetail(row)),
       el('span', { class: 'slot-confirm-actions' }, no, yes),
     );
