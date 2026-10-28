@@ -5,6 +5,7 @@ import { FRENCH_CHARGES } from './architecture/french/frenchCharge';
 import { GERMAN_CHARGES } from './architecture/german/germanCharge';
 import { BASE_BACK_ITEMS, BASE_HATS, BASE_SHIELDS } from './units/baseGear';
 import { ENGLISH_HATS, ENGLISH_SHIELDS, ENGLISH_WEAPON_STYLES } from './units/english/englishGear';
+import { FRENCH_HATS, FRENCH_SHIELDS } from './units/french/frenchGear';
 import { GERMAN_HATS, GERMAN_SHIELDS } from './units/german/germanGear';
 import { BACK_ITEMS, HATS, SHIELDS, WEAPON_STYLES } from './units/gearRegistry';
 
@@ -15,8 +16,8 @@ import { BACK_ITEMS, HATS, SHIELDS, WEAPON_STYLES } from './units/gearRegistry';
  */
 
 const REGISTRIES: Array<[string, object, readonly object[]]> = [
-  ['HATS', HATS, [BASE_HATS, ENGLISH_HATS, GERMAN_HATS]],
-  ['SHIELDS', SHIELDS, [BASE_SHIELDS, ENGLISH_SHIELDS, GERMAN_SHIELDS]],
+  ['HATS', HATS, [BASE_HATS, ENGLISH_HATS, GERMAN_HATS, FRENCH_HATS]],
+  ['SHIELDS', SHIELDS, [BASE_SHIELDS, ENGLISH_SHIELDS, GERMAN_SHIELDS, FRENCH_SHIELDS]],
   ['BACK_ITEMS', BACK_ITEMS, [BASE_BACK_ITEMS]],
   ['WEAPON_STYLES', WEAPON_STYLES, [ENGLISH_WEAPON_STYLES]],
   ['CHARGES', CHARGES, [BASE_CHARGES, ENGLISH_CHARGES, GERMAN_CHARGES, FRENCH_CHARGES]],

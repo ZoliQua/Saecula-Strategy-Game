@@ -4,8 +4,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Pixel-identity guard for the French building art: every building
  * type x age and every Wonder stage (testing/pinnedArt.testkit.ts), so
  * later civs' kit and family changes cannot silently change French.
- * wall@1-3 paint the Hungarian wall styles until French gets its own
- * (its (b) task re-records them). Fix round 1 re-recorded the age-1
+ * wall@1-3 re-recorded in M5 Task 6, when French got its own wall styles
+ * (the wall building type paints a wall piece). Fix round 1 re-recorded the age-1
  * set (steeper slate, porticus kit), town_center@2 (bays clear of the
  * turrets), town_center@3 and tower@3 (no hidden glazing or dormers).
  */
@@ -22,7 +22,7 @@ pinBuildings('french', {
   'blacksmith@1': 'b4f7700e32f9bf69',
   'foundry@1': 'a7cfb2d7dbedd334',
   'tower@1': '5a1f0c50721ed531',
-  'wall@1': 'd66b24913ae3e99f',
+  'wall@1': '72a41ffc81c8f738',
   'wonder@1': '32d07b4f81da1b24',
   'town_center@2': '89e1cfa739ef028c',
   'house@2': 'b97a4a9f2ffef20f',
@@ -35,7 +35,7 @@ pinBuildings('french', {
   'blacksmith@2': 'b88f8d47735311a2',
   'foundry@2': '030614cd0de899f3',
   'tower@2': 'c928df8b12520c08',
-  'wall@2': '53e8494371d82728',
+  'wall@2': 'ae79f380835414ef',
   'wonder@2': 'f2eb0f708930fc7f',
   'town_center@3': '90b9c7d0e3c4d7a8',
   'house@3': '82899c74be072c9b',
@@ -48,7 +48,7 @@ pinBuildings('french', {
   'blacksmith@3': '66fb91695ac9c7e8',
   'foundry@3': '6b2844d39c867f02',
   'tower@3': '2cb3f5bdd365879d',
-  'wall@3': '8ff8aff035f28811',
+  'wall@3': '36ec3a6dfdb9aed7',
   'wonder@3': '21964fe35805dbb8',
   'wonder~s1': '57fa9a732f04b99b',
   'wonder~s2': 'cb4ab7b5bfefaa35',

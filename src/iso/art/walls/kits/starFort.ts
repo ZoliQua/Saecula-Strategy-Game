@@ -13,7 +13,8 @@ import { armShadow, frustum, line, padShadow } from './wallParts';
  * a sloped turf glacis in front, a battered scarp, a stone cordon and a
  * parapet with gun embrasures under the coping; quoined bastions with a
  * stone guérite and a gun on corner and end bastions. Each civ gives
- * the materials.
+ * the materials. The French Vauban trace (walls/french/vauban.ts) reuses
+ * the glacis, quoins, cordon and gun with its own outline.
  */
 
 export interface StarFortMaterials {
@@ -35,7 +36,7 @@ export interface StarFortMaterials {
 const STRAIGHT = [WALL_E | WALL_W, WALL_N | WALL_S, WALL_NE | WALL_SW, WALL_NW | WALL_SE];
 
 /** Long-and-short stone quoins at both ends of a face (the bastion's angles). */
-function quoins(ctx: Ctx, w: number, h: number, light: number, dressing: number): void {
+export function quoins(ctx: Ctx, w: number, h: number, light: number, dressing: number): void {
   for (let y = 0, i = 0; y < h - 2; y += 6, i++) {
     const qw = i % 2 ? 5 : 9;
     ctx.fillStyle = css(shade(dressing, light * 0.98));
@@ -45,7 +46,7 @@ function quoins(ctx: Ctx, w: number, h: number, light: number, dressing: number)
 }
 
 /** Rounded stone cordon: a lit band over a shadowed underside. */
-function cordonFace(ctx: Ctx, w: number, h: number): void {
+export function cordonFace(ctx: Ctx, w: number, h: number): void {
   ctx.fillStyle = 'rgba(240,244,248,.35)';
   ctx.fillRect(0, -h, w, 1.2);
   ctx.fillStyle = 'rgba(30,26,24,.4)';
@@ -69,7 +70,7 @@ function embrasures(ctx: Ctx, w: number, h: number, light: number, coping: numbe
 }
 
 /** Grass blades along the foot of the glacis, darker turf at the top break of slope. */
-function glacisFace(ctx: Ctx, w: number, h: number, light: number, glacisTop: number): void {
+export function glacisFace(ctx: Ctx, w: number, h: number, light: number, glacisTop: number): void {
   ctx.fillStyle = css(shade(glacisTop, light * 1.08), 0.55);
   for (let x = 2; x < w; x += 5) ctx.fillRect(x, -2 - ((x * 7) % 3), 1, 2 + ((x * 3) % 3));
   ctx.fillStyle = 'rgba(20,30,10,.25)';
@@ -91,7 +92,7 @@ function guerite(p: IsoPainter, z: number, m: StarFortMaterials): void {
 }
 
 /** A field gun on the bastion's terreplein, its muzzle over the salient. */
-function gun(p: IsoPainter, z: number): void {
+export function gun(p: IsoPainter, z: number): void {
   p.box(0.5, 0.5, 0.68, 0.68, z, z + 4.5, { color: 0x4a3524 }, 0x5a4230);
   for (const [u, v] of [[0.52, 0.68], [0.68, 0.52]] as const) {
     const [x, y] = p.p(u, v, z + 2.5);

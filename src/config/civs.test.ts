@@ -8,10 +8,16 @@ describe('civ registry', () => {
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes Hungarian, English and German available, the other five not', () => {
-    const done = ['hungarian', 'english', 'german'];
+  it('makes Hungarian, English, German and French available, the other four not', () => {
+    const done = ['hungarian', 'english', 'german', 'french'];
     expect(AVAILABLE_CIVS).toEqual(done);
     for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(done.includes(id));
+  });
+
+  it('gives French its own architecture, walls and unit look in every age', () => {
+    expect(CIV_DEFS.french.architecture).toEqual({ 1: 'gallo_roman', 2: 'gothic_fr', 3: 'classicisme' });
+    expect(CIV_DEFS.french.wallStyle).toEqual({ 1: 'murus_gallicus', 2: 'pepperpot_curtain', 3: 'vauban' });
+    expect(CIV_DEFS.french.unitLook).toBe('french');
   });
 
   it('gives German its own architecture, walls and unit look in every age', () => {
@@ -55,9 +61,6 @@ describe('dev all-civs stub (?civs=all)', () => {
     // Civs without art yet stay stubs: Hungarian art under their own keys.
     expect(civs.CIV_DEFS.spanish.available).toBe(false);
     expect(civs.CIV_DEFS.spanish.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
-    // French has its own architecture but stays unavailable until its walls and units are done.
-    expect(civs.CIV_DEFS.french.available).toBe(false);
-    expect(civs.CIV_DEFS.french.architecture).toEqual({ 1: 'gallo_roman', 2: 'gothic_fr', 3: 'classicisme' });
   });
 
   it('ignores other query strings', async () => {
@@ -65,7 +68,7 @@ describe('dev all-civs stub (?civs=all)', () => {
     vi.resetModules();
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(false);
-    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english', 'german']);
+    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english', 'german', 'french']);
   });
 });
 
@@ -74,8 +77,8 @@ describe('menuDioramaCivs', () => {
     expect([0, 1, 2, 3].map((visit) => menuDioramaCivs(visit))).toEqual([
       [MENU_CIV, 'english'],
       [MENU_CIV, 'german'],
+      [MENU_CIV, 'french'],
       [MENU_CIV, 'english'],
-      [MENU_CIV, 'german'],
     ]);
   });
 

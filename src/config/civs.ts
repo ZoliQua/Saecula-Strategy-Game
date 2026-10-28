@@ -31,9 +31,12 @@ export type WallStyleId =
   | 'star_fort'
   | 'limes_palisade'
   | 'backstein_curtain'
-  | 'sandstone_fort';
+  | 'sandstone_fort'
+  | 'murus_gallicus'
+  | 'pepperpot_curtain'
+  | 'vauban';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -100,8 +103,14 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'german',
     heraldry: { primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a },
   },
-  // Gold fleurs-de-lis on royal blue. Gallo-Roman / Loire Gothic / Classicisme buildings; walls and units stay Hungarian until its (b) task.
-  french: { ...upcoming({ primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 }), architecture: { 1: 'gallo_roman', 2: 'gothic_fr', 3: 'classicisme' } },
+  // Gold fleurs-de-lis on royal blue. Gallo-Roman / Loire Gothic / Classicisme buildings; murus gallicus, pepperpot-towered curtain and Vauban trace; French unit liveries.
+  french: {
+    available: true,
+    architecture: { 1: 'gallo_roman', 2: 'gothic_fr', 3: 'classicisme' },
+    wallStyle: { 1: 'murus_gallicus', 2: 'pepperpot_curtain', 3: 'vauban' },
+    unitLook: 'french',
+    heraldry: { primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 },
+  },
   spanish: upcoming({ primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f }),
   italian: upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
   russian: upcoming({ primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e }),
