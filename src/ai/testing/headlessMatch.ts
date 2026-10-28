@@ -91,6 +91,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   // Same per-frame A* budget as the game (scaled to the step length).
   const paths = new PathBudget();
   const wonderVictory = options.wonderVictory ?? false;
+  const isDefeated = (id: number) => players.get(id)?.defeated ?? false;
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
@@ -122,8 +123,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     systems.movement.update(dt);
     systems.death.update(dt);
     systems.wonders.update(dt);
-    for (const ai of ais) ai.update({ world, mapData: map, wonderVictory, enemyPlayerId: enemyOf(ai.player.id) }, dt);
-    humanAi?.update({ world, mapData: map, wonderVictory, enemyPlayerId: humanEnemy() }, dt);
+    for (const ai of ais) ai.update({ world, mapData: map, wonderVictory, isDefeated, enemyPlayerId: enemyOf(ai.player.id) }, dt);
+    humanAi?.update({ world, mapData: map, wonderVictory, isDefeated, enemyPlayerId: humanEnemy() }, dt);
     systems.population.update();
   };
   return {

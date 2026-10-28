@@ -2,7 +2,7 @@ import { AI_COMMON, AI_MEDIUM, type GatherWeights, type MediumTuning } from '../
 import type { Entity } from '../../ecs/components';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
-import { isUnitAvailable } from '../../game/availability';
+import { isBuildingAvailable, isUnitAvailable } from '../../game/availability';
 import { countPlayerBuildings } from '../../game/buildRules';
 import { TECH_SPECS } from '../../game/technologies';
 import type { BuildingType, Resources, TechId, UnitType } from '../../types';
@@ -10,7 +10,7 @@ import type { AIContext } from '../AIPlayer';
 import { ArmyControl } from '../ArmyControl';
 import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
 import { attackReady } from '../decisions/combat';
-import { shouldBuildWonder, wantsWonder } from '../decisions/wonder';
+import { shouldBuildWonder, wantsWonder, WonderSiteCheck } from '../decisions/wonder';
 import { weightsForGoal } from '../decisions/gathering';
 import { pickResearch } from '../decisions/research';
 import { needsHouse } from '../decisions/housing';
@@ -41,6 +41,7 @@ export class MediumStrategy extends BaseStrategy {
   protected readonly firstAttackAtMs: number;
   private lastScoutMs = -Infinity;
   protected pressureSent = false;
+  private readonly wonderSite = new WonderSiteCheck(AI_COMMON.wonderSiteRetryMs);
 
   /** `tune` is the strategy's table (AI_MEDIUM; Hard passes its own). */
   constructor(
@@ -236,9 +237,17 @@ export class MediumStrategy extends BaseStrategy {
     return next ? scaleCost(TECH_SPECS[next].cost, this.ageUpReserveShare(ctx)) : BUILDING_SPECS.wonder.cost;
   }
 
-  /** Playing for a Wonder not placed yet (wantsWonder): military and tech spending leave its cost saved. */
+  /**
+   * Playing for a Wonder not placed yet (wantsWonder: its cost can still be gathered) with a site for it
+   * near the town centre: military and tech spending leave its cost saved.
+   */
   private savingForWonder(ctx: AIContext, view: WorldView): boolean {
-    return wantsWonder(ctx, view, this.tune.wonder, countPlayerBuildings(ctx.world.entities, ctx.player.id, 'wonder'));
+    if (ctx.wonderVictory !== true || !isBuildingAvailable('wonder', ctx.player.age)) return false;
+    const stock = (t: 'wood' | 'gold') => workableNodes(view, t).reduce((n, e) => n + (e.resourceNode?.amount ?? 0), 0);
+    const owned = countPlayerBuildings(ctx.world.entities, ctx.player.id, 'wonder');
+    if (!wantsWonder(ctx, view, this.tune.wonder, owned, { wood: stock('wood'), gold: stock('gold') })) return false;
+    const tc = view.townCenter?.position;
+    return !!tc && this.wonderSite.available(ctx.timeMs, () => this.placeFor(ctx, view, 'wonder', tc) !== null);
   }
 
   /** Share of the next age-up's cost kept saved while spending (see `tune.ageUpReserve`). */
@@ -281,10 +290,12 @@ export class MediumStrategy extends BaseStrategy {
     const tc = view.townCenter;
     if (!tc?.position) return;
     const owned = countPlayerBuildings(ctx.world.entities, ctx.player.id, 'wonder');
-    const site = shouldBuildWonder(ctx, view, this.tune.wonder, owned)
+    const attacked = this.army.underAttack(view);
+    // Not while the base is under attack: the defence comes first.
+    const site = !attacked && shouldBuildWonder(ctx, view, this.tune.wonder, owned)
       ? this.startBuilding(ctx, view, 'wonder', tc.position)
       : view.buildings.find((b) => b.building?.type === 'wonder' && b.underConstruction);
-    if (!site?.underConstruction || site.id === undefined || this.army.underAttack(view)) return;
+    if (!site?.underConstruction || site.id === undefined || attacked) return;
     const building = view.villagers.filter((v) => v.buildCommand?.targetId === site.id).length;
     if (building < this.tune.wonder.builders) this.assignBuilders(ctx, view, site, this.tune.wonder.builders - building);
   }

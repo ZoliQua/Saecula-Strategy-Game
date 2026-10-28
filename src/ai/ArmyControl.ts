@@ -3,7 +3,7 @@ import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
-import { groupCentre, pickAttackTarget, pickEngageTarget } from './decisions/combat';
+import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
 import { chebyshev, nearest } from './decisions/gathering';
 import { nextExploreTarget } from './decisions/scouting';
 import type { KnownBuilding, WorldView } from './perception';
@@ -49,7 +49,7 @@ export class ArmyControl {
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
     for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
-    this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, ctx.wonderVictory === true);
+    this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
     this.steerWave(ctx, view);
     return this.wave.size;
@@ -90,7 +90,7 @@ export class ArmyControl {
   private steerWave(ctx: AIContext, view: WorldView): void {
     const members = [...this.wave].map((id) => view.byId.get(id)).filter((u): u is Entity => !!u && !u.dying);
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
-    this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, ctx.wonderVictory === true);
+    this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemy(e, ctx));
     const enemyBuildings = view.visibleEnemyBuildings.filter((e) => targetsEnemy(e, ctx));
     const idle: Entity[] = [];
@@ -178,6 +178,12 @@ export class ArmyControl {
 /** Waves only go after the AI's chosen enemy (the human); FFA between AIs is not modelled. */
 function targetsEnemy(e: Entity, ctx: AIContext): boolean {
   return ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId;
+}
+
+/** Wonders come first in a match a Wonder can win, except those of defeated owners (they can no longer win). */
+function wonderTargeting(ctx: AIContext): WonderTargeting | undefined {
+  if (ctx.wonderVictory !== true) return undefined;
+  return { canWin: (ownerId) => !(ctx.isDefeated?.(ownerId) ?? false) };
 }
 
 function home(view: WorldView): TileCoord {

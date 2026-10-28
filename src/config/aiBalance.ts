@@ -56,6 +56,8 @@ export const AI_COMMON = {
   villagerMemoryMs: 180_000,
   /** Expensive units the army saves for when the mix wants one next (cheaper units then leave its cost banked). */
   savesForUnits: ['cannon'] as readonly UnitType[],
+  /** A failed search for a Wonder site near the TC stops Wonder saving until this long has passed (ms). */
+  wonderSiteRetryMs: 120_000,
 } as const;
 
 /** A placement ring (Chebyshev tiles around the anchor). */

@@ -15,22 +15,28 @@ export function attackReady(r: AttackReadiness): boolean {
   return r.timeMs >= r.notBeforeMs && r.armySize >= r.wave;
 }
 
+/** Wonder targeting for a match a Wonder can win: whose Wonders still can (owners not defeated). */
+export interface WonderTargeting {
+  readonly canWin: (ownerId: number) => boolean;
+}
+
 /**
- * Where to send a wave. With `wondersFirst` (the match can be won by a
- * Wonder), any opponent's remembered Wonder nearest to `home` comes first,
- * whoever `enemyId` is. Then the remembered enemy (of `enemyId`, any when
- * undefined) town centre nearest to `home`, else the nearest remembered
- * enemy building. Null when the AI has not found the enemy yet.
+ * Where to send a wave. With `wonders` (the match can be won by a
+ * Wonder), the remembered Wonder (or Wonder site) nearest to `home` of any
+ * opponent that can still win comes first, whoever `enemyId` is. Then the
+ * remembered enemy (of `enemyId`, any when undefined) town centre nearest
+ * to `home`, else the nearest remembered enemy building. Null when the AI
+ * has not found the enemy yet.
  */
 export function pickAttackTarget(
   known: readonly KnownBuilding[],
   home: TileCoord,
   enemyId: number | undefined,
-  wondersFirst = false,
+  wonders?: WonderTargeting,
 ): KnownBuilding | null {
   const byDistance = (a: KnownBuilding, b: KnownBuilding) => chebyshev(a.position, home) - chebyshev(b.position, home);
-  if (wondersFirst) {
-    const wonder = known.filter((b) => b.type === 'wonder').sort(byDistance)[0];
+  if (wonders) {
+    const wonder = known.filter((b) => b.type === 'wonder' && wonders.canWin(b.ownerId)).sort(byDistance)[0];
     if (wonder) return wonder;
   }
   const mine = known.filter((b) => enemyId === undefined || b.ownerId === enemyId);

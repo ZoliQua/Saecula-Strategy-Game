@@ -227,11 +227,21 @@ export const hu = {
   gameOver: {
     victoryTitle: 'Győzelem!',
     defeatTitle: 'Vereség',
-    victoryBody: 'Minden ellenfél városházája elpusztult. A föld a tiéd.',
-    defeatBody: 'Az ellenfelek legyőztek téged. Még egy menet?',
+    /** Body line per cause and outcome. */
+    bodies: {
+      conquest: {
+        victory: 'Minden ellenfél városházája elpusztult. A föld a tiéd.',
+        defeat: 'Az ellenfelek legyőztek téged. Még egy menet?',
+      },
+      wonder: {
+        victory: 'Csodád 10 percig dacolt az ellenséggel. A győzelem a tiéd.',
+        defeat: 'Egy ellenfél Csodája 10 percig állt. Még egy menet?',
+      },
+    },
     backToMenu: 'Vissza a főmenübe',
     statsHeader: 'Statisztika',
     durationLabel: 'Játékidő',
+    causeLabel: 'Döntött',
     causes: { conquest: 'Hódítás', wonder: 'Csoda' },
   },
   loading: 'Betöltés…',

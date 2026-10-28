@@ -150,6 +150,13 @@ describe('VictoryChecker', () => {
       expect(w.vc.check()).toEqual({ kind: 'defeat', winnerId: 2, cause: 'wonder' });
     });
 
+    it('two Wonders both past the hold: the one held longest wins', () => {
+      const w = setup();
+      wonderOf(w, 2, WONDER_HOLD_MS + 16, 8);
+      wonderOf(w, 1, WONDER_HOLD_MS + 32, 13);
+      expect(w.vc.check()).toEqual({ kind: 'victory', winnerId: 1, cause: 'wonder' });
+    });
+
     it('conquest is checked before the Wonder', () => {
       const w = setup();
       wonderOf(w, 2, WONDER_HOLD_MS);

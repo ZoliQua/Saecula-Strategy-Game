@@ -19,6 +19,8 @@ export interface AIContext {
   readonly enemyPlayerId?: number;
   /** The match can be won by holding a Wonder (absent = false): the AI builds and hunts Wonders. */
   readonly wonderVictory?: boolean;
+  /** Whether a player is out of the match (public knowledge); absent = nobody is. */
+  readonly isDefeated?: (playerId: number) => boolean;
   /** Absolute game time in ms. */
   readonly timeMs: number;
   /** This AI's own fog of war: the only window its perception looks through (§10.4). */

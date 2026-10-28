@@ -28,6 +28,9 @@ import {
   reserveForGoal,
   savedForUnit,
   shouldBuildWonder,
+  wantsWonder,
+  WonderSiteCheck,
+  wonderReachable,
   weightsForGoal,
 } from '.';
 
@@ -228,11 +231,14 @@ describe('combat decisions', () => {
       id, type, ownerId, position: { tx, ty: 0 }, footprint: { width: 1, height: 1 },
     });
     const known = [b(2, 'town_center', 1, 10), b(4, 'wonder', 3, 60), b(5, 'wonder', 4, 40)];
+    const all = { canWin: () => true };
     // Nearest Wonder of any opponent, whoever the chosen enemy is.
-    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, true)?.id).toBe(5);
-    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, undefined, true)?.id).toBe(5);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, all)?.id).toBe(5);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, undefined, all)?.id).toBe(5);
+    // A defeated owner's Wonder can no longer win: the next one, then the usual order.
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, { canWin: (id) => id !== 4 })?.id).toBe(4);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, { canWin: () => false })?.id).toBe(2);
     // Without the Wonder victory a Wonder is just another building.
-    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, false)?.id).toBe(2);
     expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1)?.id).toBe(2);
   });
 
@@ -305,5 +311,31 @@ describe('wonder decisions', () => {
     const poor = make({ resources: { food: 2000, wood: 2000, gold: 999 } });
     expect(shouldBuildWonder(poor.ctx, poor.view, tune, 0)).toBe(false);
     expect(shouldBuildWonder(ok.ctx, ok.view, { ...tune, enabled: false }, 0)).toBe(false);
+  });
+
+  it('wantsWonder (the saving) needs the cost to be gatherable: wood and gold in hand plus what workable nodes still hold', () => {
+    const plenty = { wood: 50_000, gold: 10_000 };
+    const poor = make({ resources: { food: 0, wood: 0, gold: 400 } });
+    expect(wantsWonder(poor.ctx, poor.view, tune, 0, plenty)).toBe(true);
+    expect(wantsWonder(poor.ctx, poor.view, tune, 0, { wood: 50_000, gold: 599 })).toBe(false);
+    expect(wantsWonder(poor.ctx, poor.view, tune, 0, { wood: 1999, gold: 10_000 })).toBe(false);
+    expect(wonderReachable({ food: 0, wood: 0, gold: 400 }, { wood: 2000, gold: 600 })).toBe(true);
+    // Not Wonder time: no saving whatever the stock.
+    const off = make({ wonderVictory: false });
+    expect(wantsWonder(off.ctx, off.view, tune, 0, plenty)).toBe(false);
+    expect(wantsWonder(poor.ctx, poor.view, tune, 1, plenty)).toBe(false);
+  });
+
+  it('WonderSiteCheck searches again only after retryMs', () => {
+    const check = new WonderSiteCheck(1000);
+    let calls = 0;
+    const none = () => {
+      calls++;
+      return false;
+    };
+    expect(check.available(0, none)).toBe(false);
+    expect(check.available(999, () => true)).toBe(false);
+    expect(calls).toBe(1);
+    expect(check.available(1000, () => true)).toBe(true);
   });
 });

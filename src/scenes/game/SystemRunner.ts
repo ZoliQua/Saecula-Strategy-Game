@@ -70,6 +70,7 @@ export class SystemRunner {
   private readonly death: DeathSystem;
   private readonly wonders: WonderSystem;
   private readonly wonderVictory: boolean;
+  private readonly isDefeated: (playerId: number) => boolean;
   private readonly healthBars: HealthBarSystem;
   private readonly fogOfWar: FogOfWarSystem;
   private readonly ambientFx: AmbientFxSystem;
@@ -98,6 +99,7 @@ export class SystemRunner {
   ) {
     const { difficulty } = options;
     this.wonderVictory = options.wonderVictory;
+    this.isDefeated = (id) => players.get(id)?.defeated ?? false;
     this.humanId = players.human()?.id;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
@@ -193,7 +195,7 @@ export class SystemRunner {
     this.movement.update(delta);
     this.death.update(delta);
     this.wonders.update(delta);
-    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory };
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated };
     for (const ai of this.aiPlayers) {
       ai.update(this.humanId === undefined ? base : { ...base, enemyPlayerId: this.humanId }, delta);
     }

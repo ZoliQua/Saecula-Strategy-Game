@@ -86,7 +86,10 @@ export class Hud {
     const offCompleted = gameEvents.on('wonderCompleted', ({ playerId }) => {
       this.toast(playerId === 1 ? hu.hud.wonderOwn : hu.hud.wonderEnemy(playerId));
     });
-    const offLost = gameEvents.on('wonderLost', () => this.toast(hu.hud.wonderLost));
+    // Only Wonders the HUD shows a countdown for (not a defeated owner's).
+    const offLost = gameEvents.on('wonderLost', ({ entityId }) => {
+      if (uiStore.getState().wonders.some((w) => w.entityId === entityId)) this.toast(hu.hud.wonderLost);
+    });
     this.unsubscribeWonders = () => {
       offCompleted();
       offLost();

@@ -27,12 +27,11 @@ export class GameOver {
         el(
           'div',
           { class: `gameover-cause ${cause}` },
-          el('span', {}, hu.setup.victory),
+          el('span', {}, hu.gameOver.causeLabel),
           el('span', { class: 'sep' }, '·'),
           el('b', {}, hu.gameOver.causes[cause]),
         ),
-        // The victory line speaks of town centres: only a conquest win shows it.
-        victory && cause !== 'conquest' ? null : el('p', { class: 'gameover-body' }, victory ? hu.gameOver.victoryBody : hu.gameOver.defeatBody),
+        el('p', { class: 'gameover-body' }, hu.gameOver.bodies[cause][victory ? 'victory' : 'defeat']),
         el(
           'div',
           { class: 'gameover-stats' },
