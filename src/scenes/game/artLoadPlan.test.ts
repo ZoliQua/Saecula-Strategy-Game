@@ -134,9 +134,34 @@ describe('planArtLoad for a loaded save (reached ages)', () => {
     expect(loaded.critical).toContain('unit knight english');
     expect(loaded.critical).toContain('unit musketeer english');
     expect(loaded.critical.some((l) => l.startsWith('wall') && l.includes(' 3 english'))).toBe(true);
-    // Age 1 adds nothing; the background queue is today's.
+    // Age 1 adds nothing: the Hungarian age-2 walls stay in the background queue.
     expect(loaded.critical.some((l) => l.endsWith(' hungarian') && l.startsWith('unit'))).toBe(false);
+    // At age 3 the age-2 walls stay in the background (no player of the civ shows them).
     expect(loaded.background).toEqual(today.background);
+  });
+});
+
+describe('planArtLoad for a loaded save: age-2 walls', () => {
+  it('a civ reached at age 2 gets its age-2 wall pieces behind the loading card, not in the game', () => {
+    const owners = ownersOf(['hungarian', 'english']);
+    const run = (reached?: ReadonlyMap<CivId, 1 | 2 | 3>) => {
+      const log: string[] = [];
+      const plan = planArtLoad('hungarian', owners, recordingPainters(log), reached);
+      plan.critical.forEach((j) => j());
+      const critical = [...log];
+      plan.background.forEach((j) => j());
+      return { critical, background: log.slice(critical.length) };
+    };
+    const wall2 = (civ: string) => (l: string) => l.startsWith('wall') && l.endsWith(` 2 ${civ}`);
+    const today = run();
+    const loaded = run(new Map([['english', 2], ['hungarian', 1]]));
+    const englishWall2 = today.background.filter(wall2('english'));
+    expect(englishWall2).toHaveLength(COMMON_WALL_PIECES.length);
+    const ageUp: string[] = [];
+    ageUpArtJobs('english', 2, recordingPainters(ageUp)).forEach((j) => j());
+    expect(loaded.critical).toEqual([...today.critical, ...englishWall2, ...ageUp]);
+    expect(loaded.background).toEqual(today.background.filter((l) => !wall2('english')(l)));
+    expect(loaded.background.filter(wall2('hungarian'))).toHaveLength(COMMON_WALL_PIECES.length);
   });
 });
 

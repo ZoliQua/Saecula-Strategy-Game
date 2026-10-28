@@ -29,14 +29,13 @@ describe('parseSave (Review Focus 2)', () => {
   it('no human player → corrupt', () => {
     const save = copy();
     for (const p of save.players) (p as { isHuman: boolean }).isHuman = false;
-    // The human's id is no longer a non-human key holder; drop AI keys so only the human count is wrong.
-    save.ai = {};
     expectReason(save, 'corrupt');
   });
 
   it('more than one human player → corrupt', () => {
     const save = copy();
     for (const p of save.players) (p as { isHuman: boolean }).isHuman = true;
+    // AI keys would now name human players (corrupt for another reason): drop them so only the human count is wrong.
     save.ai = {};
     expectReason(save, 'corrupt');
   });

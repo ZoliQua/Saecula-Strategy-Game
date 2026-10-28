@@ -222,7 +222,7 @@ export class GameScene extends Phaser.Scene {
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
-    this.matchSave = new MatchSave(() => this.captureMatch(), this.storage);
+    this.matchSave = new MatchSave(() => this.captureMatch(), this.storage, this.gameElapsedMs);
 
     this.launchHud();
 

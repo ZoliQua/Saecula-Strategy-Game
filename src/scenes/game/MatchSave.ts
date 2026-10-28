@@ -15,12 +15,16 @@ export type SaveOutcome = WriteResult | { ok: false; reason: 'failed' };
  * notice; nothing here throws.
  */
 export class MatchSave {
-  private readonly clock = new AutosaveClock();
+  private readonly clock: AutosaveClock;
 
+  /** `gameTimeMs`: the match clock at start (a loaded save's), so autosaves fall on absolute 5-minute marks. */
   constructor(
     private readonly capture: () => MatchState,
     private readonly storage: SaveStorage,
-  ) {}
+    gameTimeMs = 0,
+  ) {
+    this.clock = new AutosaveClock(undefined, gameTimeMs);
+  }
 
   /** Once per game frame with the game-time delta (paused frames do not run). */
   update(gameDeltaMs: number): void {

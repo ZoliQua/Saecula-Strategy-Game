@@ -33,4 +33,12 @@ describe('AutosaveClock', () => {
     expect(clock.tick(900)).toBe(false);
     expect(clock.tick(100)).toBe(true);
   });
+
+  it('seeded with the game time of a loaded save, it fires on absolute interval marks', () => {
+    const clock = new AutosaveClock(1000, 2700);
+    expect(clock.tick(200)).toBe(false);
+    expect(clock.tick(100)).toBe(true); // game time 3000
+    expect(clock.tick(999)).toBe(false);
+    expect(clock.tick(1)).toBe(true); // game time 4000
+  });
 });

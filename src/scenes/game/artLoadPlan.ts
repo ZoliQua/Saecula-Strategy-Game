@@ -105,12 +105,14 @@ export function planArtLoad(
       else if (BACKGROUND_BUILDINGS.includes(type)) lateBuildings.push(() => paint.building(type, civ, owner));
     }
   }
-  const walls = (age: AgeId, into: Array<() => void>) => {
-    for (const civ of civs) for (const piece of COMMON_WALL_PIECES) into.push(() => paint.wall(piece, age, civ));
+  const walls = (age: AgeId, into: (civ: CivId) => Array<() => void>) => {
+    for (const civ of civs) for (const piece of COMMON_WALL_PIECES) into(civ).push(() => paint.wall(piece, age, civ));
   };
-  walls(1, critical);
+  walls(1, () => critical);
   // Age 3 follows each civ's first age-2 player (ageUpArtJobs): only ages its owners can show next.
-  walls(2, background);
+  // A loaded civ at age 2 can show age-2 walls in the first frames: painted while loading. A civ
+  // already at age 3 keeps them in the background (eviction would drop them again if no player shows age 2).
+  walls(2, (civ) => (reached?.get(civ) === 2 ? critical : background));
   background.push(...lateBuildings); // needed last (age 3)
   for (const [civ, age] of reached ?? []) for (let a = 2; a <= age; a++) critical.push(...ageUpArtJobs(civ, a as AgeId, paint));
   return { critical, background };

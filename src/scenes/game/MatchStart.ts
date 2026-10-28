@@ -52,10 +52,14 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
  */
 export async function startFromSlot(scene: Phaser.Scene, storage: SaveStorage, slot: SlotId): Promise<boolean> {
   const result = await storage.read(slot);
+  // The player may have left the match (menu, game over) while the slot was read.
+  if (!scene.scene.isActive() && !scene.scene.isPaused()) return false;
   if (!result.ok) {
     showHudNotice(readErrorText(result.reason));
     return false;
   }
+  // The new match launches its own HUD; the old one must not sit over the loading card.
+  scene.scene.stop('HUDScene');
   scene.scene.start('GameScene', { load: result.save } satisfies LoadRequest);
   return true;
 }
