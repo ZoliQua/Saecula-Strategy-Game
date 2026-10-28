@@ -166,7 +166,7 @@ export const BASE_UNIT_LOOKS: Readonly<Record<UnitType, UnitLook>> = {
 };
 
 /** Per unit-look id: the types whose look differs from the base. */
-const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitType, UnitLook>>>>> = {
+export const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitType, UnitLook>>>>> = {
   hungarian: {},
   english: ENGLISH_LOOKS,
   german: GERMAN_LOOKS,
