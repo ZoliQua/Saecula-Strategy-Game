@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { audio } from '../audio/AudioManager';
 import { menuDioramaCivs } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { MENU_PHASE } from '../config/visual';
@@ -127,6 +128,8 @@ export class MainMenuScene extends Phaser.Scene {
   /** `notice` alone: a line shown on the menu; with `config`: back to the setup card with that message. */
   create(data?: Partial<SetupReturn>): void {
     this.cameras.main.setBackgroundColor('#090c12');
+    // The menu track; it starts with the first gesture (audio stays silent until the unlock).
+    audio().setMusicScene('menu');
     const civs = menuDioramaCivs(menuVisits++);
     const QUARTERS: readonly Quarter[] = LAYOUTS.map((layout, i) => ({ ...layout, civ: civs[i] ?? civs[0] }));
     this.menuMs = 0;

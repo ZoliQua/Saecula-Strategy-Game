@@ -97,6 +97,8 @@ export class SystemRunner {
   /** Every player's fog by id: the human's (1) and each AI's. */
   private readonly fogById: Map<number, FogOfWarData>;
   private readonly humanId: number | undefined;
+  /** The human's age (the music follows it). */
+  private readonly humanAge: () => AgeId;
   private readonly unsubscribeAge: () => void;
   private readonly evictTimer: Phaser.Time.TimerEvent;
   /** Common wall pieces of the ages each civ's owners can show (keepWallKeys): eviction keeps them. */
@@ -117,6 +119,7 @@ export class SystemRunner {
     this.wonderVictory = options.wonderVictory;
     this.isDefeated = (id) => players.get(id)?.defeated ?? false;
     this.humanId = players.human()?.id;
+    this.humanAge = () => players.human()?.age ?? 1;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
     this.render.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
@@ -195,6 +198,7 @@ export class SystemRunner {
     });
     this.camera = scene.cameras.main;
     this.audioWatch = new AudioWatch(world, audio(), this.humanId, () => this.cameraTile());
+    audio().setMusicScene('game');
     this.updateListener();
     // Game start: the menu / preload art of civs not in this match goes now (design decision 7).
     this.render.releaseAbsentCivs(activeCivs(players));
@@ -254,6 +258,7 @@ export class SystemRunner {
     this.combatFx.update();
     this.updateListener();
     this.audioWatch.update(time);
+    audio().feedMusic(this.humanAge(), this.audioWatch.combatNear());
   }
 
   /** The tile under the camera centre (the audio listener). */

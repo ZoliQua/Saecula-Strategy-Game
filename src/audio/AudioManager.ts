@@ -14,9 +14,14 @@ import {
 } from '../config/audio';
 import { gameEvents } from '../game/events';
 import type { TileCoord } from '../iso/coordinates';
+import type { AgeId } from '../types';
 import { settingsStore, VOLUME_CHANNELS, type Settings, type SettingsStore, type VolumeChannel } from '../ui/settings';
 import { channelGain, positionalGain, stereoPan, tileDistance } from './mix';
-import { SFX_CATALOGUE, type SfxKey } from './sfx/catalogue';
+import type { MusicTrack } from './music/composer';
+import type { DirectorInput } from './music/MusicDirector';
+import { MusicPlayer, type MusicStats } from './music/MusicPlayer';
+import { NO_AUDIO, phaserHost } from './phaserHost';
+import { SFX_CATALOGUE, type SfxKey, type SoundKey } from './sfx/catalogue';
 import { SfxBank } from './sfx/SfxBank';
 import { VoiceLimiter } from './sfx/VoiceLimiter';
 
@@ -48,6 +53,8 @@ export interface AudioStats {
    */
   readonly gains: Readonly<Record<VolumeChannel, number>>;
   readonly ducked: boolean;
+  /** The music (null without WebAudio). */
+  readonly music: MusicStats | null;
 }
 
 export interface AudioManagerOptions {
@@ -61,6 +68,7 @@ interface Graph {
   readonly channels: Readonly<Record<VolumeChannel, GainNode>>;
   readonly bank: SfxBank;
   readonly limiter: VoiceLimiter;
+  readonly music: MusicPlayer;
 }
 
 interface Playing {
@@ -189,6 +197,30 @@ export class AudioManager implements AudioSink {
     this.listener = null;
   }
 
+  /**
+   * Crossfades the music to `track` (at `age`, composed from `seed`). A
+   * buffer registered under `music_<track>` plays looped instead. The
+   * music director calls this on its own; dropped before the unlock.
+   */
+  playMusic(track: MusicTrack, fadeInMs: number, age?: AgeId, seed?: number): void {
+    if (this.ready()) this.graph?.music.play(track, fadeInMs, age, seed);
+  }
+
+  /** Where the player is (the music director picks the track from it). */
+  setMusicScene(scene: DirectorInput['scene']): void {
+    this.graph?.music.setScene(scene);
+  }
+
+  /** Per game frame: the human's age and whether fighting is near the camera. */
+  feedMusic(age: AgeId, combatNear: boolean): void {
+    this.graph?.music.feed(age, combatNear);
+  }
+
+  /** Puts a decoded buffer under a key (a CC0 OGG replacing a generated sound or music track). */
+  registerSound(key: SoundKey, buffer: AudioBuffer): void {
+    this.graph?.bank.register(key, buffer);
+  }
+
   /** Music at ×MUSIC_DUCK_FACTOR (the pause menu). */
   setDucked(on: boolean): void {
     if (this.ducked === on) return;
@@ -196,12 +228,13 @@ export class AudioManager implements AudioSink {
     this.applyGains(this.settings.getState());
   }
 
-  /** Per real frame: renders the bank (after unlock) and frees voices whose sound has ended. */
+  /** Per real frame: renders the bank (after unlock), runs the music and frees voices whose sound has ended. */
   update(realDeltaMs: number): void {
     void realDeltaMs;
     const g = this.graph;
     if (!g || !this.ready()) return;
     g.bank.update(SFX_RENDER_BUDGET_MS);
+    g.music.update(this.now());
     const t = g.ctx.currentTime;
     for (const [id, p] of this.playing) if (t >= p.endsAt) this.finish(id);
   }
@@ -218,6 +251,7 @@ export class AudioManager implements AudioSink {
       bankReady: g ? g.bank.size : 0,
       gains: { ...this.gains },
       ducked: this.ducked,
+      music: g ? g.music.stats() : null,
     };
   }
 
@@ -259,11 +293,14 @@ export class AudioManager implements AudioSink {
       node.connect(bus);
       return node;
     };
+    const channels = { master: bus, music: channel(), sfx: channel(), notifications: channel() };
+    const bank = new SfxBank(ctx);
     return {
       ctx,
-      channels: { master: bus, music: channel(), sfx: channel(), notifications: channel() },
-      bank: new SfxBank(ctx),
+      channels,
+      bank,
       limiter: new VoiceLimiter(SFX_GLOBAL_VOICES, (id) => this.stop(id)),
+      music: new MusicPlayer(ctx, channels.music, bank),
     };
   }
 
@@ -330,9 +367,6 @@ function disconnect(p: Playing): void {
   p.panner?.disconnect();
 }
 
-/** No WebAudio (or Phaser fell back to HTML5 / no audio): a silent manager. */
-const NO_AUDIO: AudioHost = { context: null, locked: () => false, onUnlocked: () => {} };
-
 /** Pinned on globalThis like the stores, so Vite HMR re-evaluations share one manager. */
 const AUDIO_KEY = '__isorts_audio__';
 interface AudioHolder {
@@ -343,21 +377,6 @@ const holder = globalThis as unknown as AudioHolder;
 /** The game's audio manager; a silent one until `initAudio` ran. */
 export function audio(): AudioManager {
   return (holder[AUDIO_KEY] ??= new AudioManager(NO_AUDIO));
-}
-
-/** The Phaser sound manager as a host, when it runs on WebAudio. */
-function phaserHost(sound: Phaser.Sound.BaseSoundManager): AudioHost {
-  const web = sound as Phaser.Sound.BaseSoundManager & { context?: BaseAudioContext };
-  const context = web.context;
-  if (!context || typeof context.createBufferSource !== 'function') return NO_AUDIO;
-  return {
-    context,
-    locked: () => sound.locked,
-    onUnlocked: (cb) => {
-      if (!sound.locked) cb();
-      else sound.once('unlocked', cb);
-    },
-  };
 }
 
 /**

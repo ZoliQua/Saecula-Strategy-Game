@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { audio } from '../audio/AudioManager';
 import type { GameOverPlayerRow } from '../game/gameOverStats';
 import type { VictoryCause } from '../game/VictoryChecker';
 import { GameOver } from '../ui/screens/GameOver';
@@ -21,6 +22,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(data: GameOverData): void {
+    audio().setMusicScene(data.victory ? 'victory' : 'defeat');
     this.card = new GameOver(data, () => {
       this.scene.stop('GameScene');
       this.scene.stop('HUDScene');

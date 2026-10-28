@@ -40,6 +40,7 @@ const node = <T extends object>(extra: T) =>
 function fakeContext() {
   const sources: { started: number; stoppedAt: number | null; buffer: unknown; onended: (() => void) | null }[] = [];
   const gains: FakeParam[] = [];
+  const oscillators = { count: 0 };
   const ctx = {
     state: 'suspended' as AudioContextState,
     sampleRate: 8000,
@@ -53,13 +54,23 @@ function fakeContext() {
     createDynamicsCompressor: () =>
       node({ threshold: param(0), knee: param(0), ratio: param(1), attack: param(0), release: param(0) }),
     createStereoPanner: () => node({ pan: param(0) }),
-    createBuffer: (channels: number, length: number, sampleRate: number) => ({
-      numberOfChannels: channels,
-      length,
-      sampleRate,
-      duration: length / sampleRate,
-      copyToChannel: () => {},
-    }),
+    createBuffer: (channels: number, length: number, sampleRate: number) => {
+      const data = Array.from({ length: channels }, () => new Float32Array(length));
+      return {
+        numberOfChannels: channels,
+        length,
+        sampleRate,
+        duration: length / sampleRate,
+        copyToChannel: () => {},
+        getChannelData: (ch: number) => data[ch],
+      };
+    },
+    createConvolver: () => node({ normalize: true, buffer: null as unknown }),
+    createBiquadFilter: () => node({ type: 'lowpass', frequency: param(350), Q: param(1) }),
+    createOscillator: () => {
+      oscillators.count++;
+      return node({ type: 'sine', frequency: param(440), detune: param(0), onended: null, start() {}, stop() {} });
+    },
     createBufferSource: () => {
       const s = {
         started: 0,
@@ -67,6 +78,7 @@ function fakeContext() {
         buffer: null as unknown,
         onended: null as (() => void) | null,
         playbackRate: param(1),
+        loop: false,
         start() {
           s.started++;
         },
@@ -78,7 +90,7 @@ function fakeContext() {
       return node(s);
     },
   };
-  return { ctx, sources, gains };
+  return { ctx, sources, gains, oscillators };
 }
 
 function fakeHost(locked: boolean) {
@@ -296,5 +308,49 @@ describe('AudioManager', () => {
     m.destroy();
     m.destroy();
     expect(n).toBe(1);
+  });
+
+  it('music: nothing before the unlock; the menu scene plays the menu track once audio is unlocked', () => {
+    const h = fakeHost(true);
+    const m = new AudioManager(h.host, { settings: createSettingsStore(null), now });
+    m.setMusicScene('menu');
+    m.playMusic('combat', 1000);
+    for (let i = 0; i < 20; i++) m.update(16);
+    expect(m.stats().music?.track).toBeNull();
+    expect(h.oscillators.count).toBe(0);
+    h.unlock();
+    m.update(16);
+    expect(m.stats().music).toMatchObject({ track: 'menu', scene: 'menu' });
+    // The first notes are scheduled within the lookahead.
+    h.ctx.currentTime = 0.06;
+    m.update(16);
+    expect(h.oscillators.count).toBeGreaterThan(0);
+  });
+
+  it('music: the game feeds age and combat; a registered music_<track> buffer plays looped instead', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    m.setMusicScene('game');
+    m.feedMusic(2, false);
+    m.update(16);
+    expect(m.stats().music).toMatchObject({ track: 'calm_a', age: 2 });
+    const buffer = h.ctx.createBuffer(2, 100, 8000) as unknown as AudioBuffer;
+    m.registerSound('music_combat', buffer);
+    const before = h.sources.length;
+    m.feedMusic(2, true);
+    m.update(16);
+    expect(m.stats().music).toMatchObject({ track: 'combat', age: 2 });
+    const loop = h.sources.slice(before).find((s) => s.buffer === buffer) as { loop?: boolean } | undefined;
+    expect(loop?.loop).toBe(true);
+  });
+
+  it('music: a victory stinger replaces the game music', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    m.setMusicScene('game');
+    m.update(16);
+    m.setMusicScene('victory');
+    m.update(16);
+    expect(m.stats().music?.track).toBe('victory');
   });
 });
