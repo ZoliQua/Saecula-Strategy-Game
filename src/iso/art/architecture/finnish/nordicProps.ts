@@ -59,11 +59,10 @@ export function barrels(p: IsoPainter, u: number, v: number, n: number): void {
 }
 
 /** Clay shaft furnace for bog iron: a tapering clay chimney on a stone foot with its tuyere and bellows. */
-export function bloomery(p: IsoPainter, u: number, v: number, h: number): void {
+export function bloomery(p: IsoPainter, u: number, v: number, h: number, r0 = 15): void {
   const ctx = p.ctx;
   const [x, y] = p.p(u, v, 0);
-  const r0 = 15;
-  const r1 = 7;
+  const r1 = r0 * 0.47;
   const pts: Pt[] = [[x - r0, y], [x - r1, y - h], [x + r1, y - h], [x + r0, y]];
   const g = ctx.createLinearGradient(x - r0, 0, x + r0, 0);
   g.addColorStop(0, '#b98a5c');

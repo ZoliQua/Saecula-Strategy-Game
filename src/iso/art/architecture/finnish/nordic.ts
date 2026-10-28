@@ -16,9 +16,10 @@ const TOWER_AGE = { lookout: 1, kellotapuli: 2, lantern: 3 } as const;
 /**
  * Nordic family (Finnish ages 1-3): low log or board buildings under
  * the age's turf, shingle or gambrel roofs, the age's town centre,
- * tower and trades, all chosen by the style's NordicKits. The foundry
- * and the Petäjävesi Wonder are painted in whichever style is the
- * civ's last (they exist only in age 3).
+ * tower and trades, all chosen by the style's NordicKits. Every style
+ * builds a foundry and a Petäjävesi Wonder, but the game only shows
+ * the age-3 style's (buildings.ts LATE_TYPES); the foundry@1-2 and
+ * wonder@1-2 pins differ from @3 only by the painter seed.
  */
 export function nordicArt(s: ArchStyle): AgeArtSet {
   return {

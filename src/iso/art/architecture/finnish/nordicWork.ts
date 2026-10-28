@@ -76,18 +76,23 @@ function farm(s: ArchStyle): BuildingArt {
       rye(p, 0.08, 1.12, 1.92, 1.92, 3);
       p.footShadow();
       if (works === 'bruk') {
-        const barn: Block = [0.14, 0.14, 1.4, 0.98];
+        // A tall estate barn, its big doors and hay hatch in the gable facing the lane.
+        const barn: Block = [0.1, 0.1, 1.2, 1.06];
         footing(p, s, barn, 5);
-        wallBlock(p, s, barn, 5, 44, (w) => {
-          nDoor(p, s, w * 0.4, 20, 30, c.doors.work, 1);
+        wallBlock(p, s, barn, 5, 56, (w, h) => {
+          nDoor(p, s, w / 2 - 13, 26, 34, c.doors.work, 1);
           p.ctx.fillStyle = css(shade(c.trim, 1));
-          p.ctx.fillRect(w * 0.4 - 1, -31, 22, 1.4);
-        }, (w, h) => {
+          p.ctx.fillRect(w / 2 - 14, -35, 28, 1.6);
           p.ctx.fillStyle = '#1e1610';
-          p.ctx.fillRect(w / 2 - 5, -h + 6, 10, 9);
+          p.ctx.fillRect(w / 2 - 5, -h + 4, 10, 9);
+        }, (w, h) => {
+          for (const x of [0.25, 0.7]) {
+            p.ctx.fillStyle = '#1e1610';
+            p.ctx.fillRect(w * x - 4, -h + 14, 8, 8);
+          }
         });
-        const ridge = mainRoof(p, s, barn, 44, 'u');
-        bellCote(p, s, 0.62, (barn[1] + barn[3]) / 2, ridge - 3);
+        const ridge = mainRoof(p, s, barn, 56, 'v', { scale: 1.1 });
+        bellCote(p, s, (barn[0] + barn[2]) / 2, 0.5, ridge - 3);
         p.flag(1.36, 0.12, 0, 30, team);
       } else {
         // The riihi: a tall drying barn, its gable sooted round the smoke vent.

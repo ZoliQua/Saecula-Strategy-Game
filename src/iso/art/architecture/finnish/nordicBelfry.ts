@@ -1,6 +1,7 @@
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { R } from '../facade';
+import { logBox } from '../kits/logWall';
 import { bellRoof } from '../kits/shingleRoof';
 import { octPrism, tentRoof } from '../kits/tentRoof';
 import { post } from '../parts';
@@ -26,6 +27,8 @@ export interface BelfryOpts {
   readonly inside?: (z: number) => void;
   /** Face painter of the lower stage's lit face (doors, a crest). */
   readonly face?: (w: number, h: number) => void;
+  /** Unpainted timber instead of the style's walls and roofs (a church's bell tower): log, shingle and trim colours. */
+  readonly timber?: { readonly wall: number; readonly roof: number; readonly trim: number };
 }
 
 /** Louvred sound openings of the belfry, face-local. */
@@ -65,11 +68,20 @@ export function belfry(p: IsoPainter, s: ArchStyle, b: Block, z0: number, o: Bel
   const vc = (v0 + v1) / 2;
   const r = Math.min(u1 - u0, v1 - v0) / 2;
   const z1 = z0 + o.lower;
-  wallBlock(p, s, b, z0, z1, o.face, undefined, 0.05);
+  const t = o.timber;
+  const roof = t?.roof ?? c.roof;
+  const trim = t?.trim ?? c.trim;
+  const stage = (sb: Block, za: number, zz: number, left?: (w: number, h: number) => void, right?: (w: number, h: number) => void, ends = 0.05) => {
+    if (!t) return wallBlock(p, s, sb, za, zz, left, right, ends);
+    logBox(p, sb[0], sb[1], sb[2], sb[3], za, zz, t.wall, ends);
+    if (left) p.leftFace(sb[0], sb[2], sb[3], za, left, zz - za);
+    if (right) p.rightFace(sb[1], sb[3], sb[2], za, right, zz - za);
+  };
+  stage(b, z0, z1, o.face);
   const prev = p.material;
   p.material = 'shingle';
   // Flared skirt over the lower stage, seating the belfry.
-  bellRoof(p, uc, vc, r + 0.1, z1, 26, c.roof, { top: 0.62 });
+  bellRoof(p, uc, vc, r + 0.1, z1, 26, roof, { top: 0.62 });
   const ri = r * 0.62;
   const inner: Block = [uc - ri, vc - ri, uc + ri, vc + ri];
   const zb = z1 + 10;
@@ -83,23 +95,23 @@ export function belfry(p: IsoPainter, s: ArchStyle, b: Block, z0: number, o: Bel
     p.box(inner[2] - 0.04, inner[1], inner[2], inner[3], zb, zb + 11, { color: c.darkWood, detail: 'planks' }, c.darkWood);
     post(p, inner[2] - 0.02, inner[3] - 0.02, zb, z2, 2.4, c.darkWood);
   } else {
-    wallBlock(p, s, inner, zb - 2, z2, louvres(p, 1), louvres(p, R), 0.03);
+    stage(inner, zb - 2, z2, louvres(p, 1), louvres(p, R), 0.03);
   }
   let top: number;
   if (nordic(s).belfry === 'lantern') {
     // Bell roof, a small octagonal lantern, a little bell cap and the spire.
-    const capTop = bellRoof(p, uc, vc, ri + 0.06, z2, 34, c.roof, { top: 0.36, hips: c.trim });
+    const capTop = bellRoof(p, uc, vc, ri + 0.06, z2, 34, roof, { top: 0.36, hips: trim });
     const lr = (ri + 0.06) * 0.36;
-    octPrism(p, uc, vc, lr, capTop, capTop + 16, c.trim, 'plain', (w, h, light) => {
+    octPrism(p, uc, vc, lr, capTop, capTop + 16, trim, 'plain', (w, h, light) => {
       p.ctx.fillStyle = css(shade(0x1c1612, light));
       p.ctx.fillRect(w / 2 - 1.5, -h + 3, 3, h - 6);
     });
-    const tip = tentRoof(p, uc, vc, lr, capTop + 16, 14, c.roof, { material: 'shingle', eave: 0.03 });
+    const tip = tentRoof(p, uc, vc, lr, capTop + 16, 14, roof, { material: 'shingle', eave: 0.03 });
     finial(p, uc, vc, tip - 2, 16);
     top = tip + 14;
   } else {
     // Shingled pyramid with a ball finial.
-    p.hipRoof(inner[0], inner[1], inner[2], inner[3], z2, 40, c.roof, 0.06);
+    p.hipRoof(inner[0], inner[1], inner[2], inner[3], z2, 40, roof, 0.06);
     finial(p, uc, vc, z2 + 38, 14);
     top = z2 + 52;
   }

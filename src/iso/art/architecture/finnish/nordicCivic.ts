@@ -2,6 +2,7 @@ import type { IsoPainter } from '../../isoPainter';
 import { N_LEFT } from '../../lighting/viewSpace';
 import { css, shade } from '../../palette';
 import { cornice, crest, pilasters, R } from '../facade';
+import { post } from '../parts';
 import { mansardRoof } from '../roofs';
 import type { ArchStyle } from '../style';
 import type { BuildingArt } from '../types';
@@ -18,13 +19,34 @@ import { aitta, boulders, flagstaff, footing, kota, mainRoof, nDoor, nordic, nWi
  *   roof with a pedimented frontispiece, between two falu-red wings (age 3).
  */
 
+/**
+ * Loft storehouse (luhti): a log store on stilts carrying an upper
+ * storey that overhangs it on all sides, under a steep turf gable.
+ */
+function luhti(p: IsoPainter, s: ArchStyle, b: Block, team: number): void {
+  const [u0, v0, u1, v1] = b;
+  aitta(p, s, b, 'v', 12);
+  const o = 0.09;
+  const up: Block = [u0 - o, v0 - o, u1 + o, v1 + o];
+  const z = 12 + 26 + 18;
+  // Corner posts carry the loft over the lower roof.
+  for (const [u, v] of [[up[0] + 0.03, up[3] - 0.03], [up[2] - 0.03, up[3] - 0.03], [up[2] - 0.03, up[1] + 0.03]] as const) post(p, u, v, 12, z, 2.6, s.palette.timber);
+  wallBlock(p, s, up, z, z + 30, (w, h) => nDoor(p, s, w / 2 - 5, 10, h - 8, s.palette.doors.work, 1), (w, h) => {
+    p.ctx.fillStyle = '#18120d';
+    p.ctx.fillRect(w / 2 - 3, -h + 9, 6, 5);
+  }, 0.06);
+  const top = mainRoof(p, s, up, z + 30, 'v', { scale: 1.5, overhang: 0.08 });
+  p.flag((up[0] + up[2]) / 2, up[3], top - 6, 22, team);
+}
+
 function paintLonghouse(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
   const hall: Block = [0.3, 1.0, 2.7, 2.12];
   p.footShadow();
   p.ground(0.05, 0.05, 2.95, 2.95, 0x857858);
-  kota(p, 0.72, 0.6, 0.3, 66, c.roofAlt);
-  aitta(p, s, [1.75, 0.22, 2.3, 0.68], 'v', 13);
+  // The council kota and the two-storey loft storehouse (luhti) top the yard.
+  kota(p, 0.74, 0.62, 0.4, 102, c.roofAlt);
+  luhti(p, s, [1.72, 0.18, 2.36, 0.72], team);
   boulders(p, s, 0.15, 2.4, 1.0, 2.85, 5, 4);
   const z0 = footing(p, s, hall, 5);
   wallBlock(p, s, hall, z0, z0 + 32, (w, h) => {
@@ -165,5 +187,5 @@ export function nordicTownCentre(s: ArchStyle): BuildingArt {
   const civic = nordic(s).civic;
   if (civic === 'castle') return { size: 3, maxHeight: 280, paint: (p, team) => paintCastle(p, s, team) };
   if (civic === 'manor') return { size: 3, maxHeight: 190, paint: (p, team) => paintManor(p, s, team) };
-  return { size: 3, maxHeight: 160, paint: (p, team) => paintLonghouse(p, s, team) };
+  return { size: 3, maxHeight: 190, paint: (p, team) => paintLonghouse(p, s, team) };
 }

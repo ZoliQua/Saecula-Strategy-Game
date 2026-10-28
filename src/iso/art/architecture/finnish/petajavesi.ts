@@ -1,14 +1,15 @@
 import type { IsoPainter } from '../../isoPainter';
 import { shade } from '../../palette';
 import { crest } from '../facade';
+import { logBox } from '../kits/logWall';
 import { lantern, logPile } from '../parts';
 import type { ArchStyle } from '../style';
 import type { WonderArt } from '../types';
 import { WONDER_STAGES } from '../wonder';
 import { crane, scaffold } from '../wonderParts';
 import { belfry } from './nordicBelfry';
-import { nDoor, wallBlock, type Block } from './nordicParts';
-import { arm, ARM_WALL, CHURCH_LOG, crossing, type RoofState } from './petajavesiParts';
+import { nDoor, type Block } from './nordicParts';
+import { arm, ARM_WALL, BARE_BOARDS, CHURCH_LOG, CHURCH_SHINGLE, crossing, VERGE, type RoofState } from './petajavesiParts';
 
 /*
  * The Finnish Wonder: the Petäjävesi church. A cross plan of unpainted
@@ -52,7 +53,8 @@ function paintChurch(p: IsoPainter, s: ArchStyle, team: number | null, stage: nu
   const roof: RoofState = stage === 2 ? 'none' : done ? 'shingled' : 'bare';
   const lit = done;
   // Back arms, the crossing, then the front arms.
-  arm(p, s, [0.5, NEAR, NEAR, FAR], Z0, 'u', { wall, roof, lit, left: [0.3, 0.7] });
+  // No windows on the back arms: the front arms paint over their faces.
+  arm(p, s, [0.5, NEAR, NEAR, FAR], Z0, 'u', { wall, roof, lit });
   arm(p, s, [NEAR, 0.5, FAR, NEAR], Z0, 'v', { wall, roof, lit });
   if (stage >= 3) {
     const top = crossing(p, C, C, 0.52, 130, 196, done, lit);
@@ -71,10 +73,18 @@ function paintChurch(p: IsoPainter, s: ArchStyle, team: number | null, stage: nu
     if (stage === 2) scaffold(p, FAR, NEAR, 3.5, FAR, Z0, wall + 10);
     crane(p, 0.6, 0.6, stage === 2 ? 170 : 230, C, C, wall + 40);
     // The bell tower's lower stage waits for its belfry.
-    if (stage === 3) wallBlock(p, s, BELL, 0, 64, undefined, undefined, 0.05);
+    if (stage === 3) {
+      // The bell tower's base under a temporary board roof, in scaffolding.
+      logBox(p, ...BELL, 0, 64, CHURCH_LOG, 0.05);
+      const prev = p.material;
+      p.material = 'shingle';
+      p.hipRoof(...BELL, 64, 18, BARE_BOARDS, 0.04);
+      p.material = prev;
+      scaffold(p, ...BELL, 0, 80);
+    }
     return;
   }
-  const top = belfry(p, s, BELL, 0, { lower: 64, upper: 34, face: (w) => nDoor(p, s, w / 2 - 6, 12, 22, s.palette.doors.main, 1) });
+  const top = belfry(p, s, BELL, 0, { lower: 64, upper: 34, timber: { wall: CHURCH_LOG, roof: CHURCH_SHINGLE, trim: VERGE }, face: (w) => nDoor(p, s, w / 2 - 6, 12, 22, s.palette.doors.main, 1) });
   if (team !== null) p.flag(0.4, 2.82, top - 46, 30, team, true);
   lantern(p, 2.6, 3.62, 24, 2.6, 3.85);
 }

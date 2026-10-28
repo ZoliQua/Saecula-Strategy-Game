@@ -1,7 +1,8 @@
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { crest, R } from '../facade';
-import { post, strawButt, target } from '../parts';
+import { bellRoof } from '../kits/shingleRoof';
+import { haystack, post, strawButt, target } from '../parts';
 import type { ArchStyle } from '../style';
 import { towerLine } from '../towerParts';
 import type { AgeArtSet, BuildingArt } from '../types';
@@ -41,24 +42,32 @@ function barracks(s: ArchStyle): BuildingArt {
   const c = s.palette;
   const hall: Block = [0.3, 0.32, 2.62, 1.2];
   const gate: Block = [0.34, 1.86, 0.92, 2.44];
+  const SIDE_HALL: Block = [0.3, 0.3, 1.22, 2.62];
+  const SIDE_GATE: Block = [2.14, 0.22, 2.72, 0.8];
   return {
     size: 3,
     maxHeight: k.belfry === 'lookout' ? 150 : 250,
     paint: (p, team) => {
       p.footShadow();
       p.ground(0.05, 0.05, 2.95, 2.95, 0x8a7e62);
-      const z0 = footing(p, s, hall, 5);
+      // Age 1: the hall along the back. Later ages turn it to face the lane, its bell tower free on the right.
+      const lookout = k.belfry === 'lookout';
+      const h0 = lookout ? hall : SIDE_HALL;
+      const z0 = footing(p, s, h0, 5);
       const wall = k.walls === 'boards' ? 50 : 34;
-      wallBlock(p, s, hall, z0, z0 + wall, (w, h) => {
+      const longSide = (w: number, h: number) => {
         for (let i = 0; i < 5; i++) {
           const x = (w / 5) * (i + 0.5);
-          if (k.walls === 'boards') nWindow(p, s, x - 4, -h + 10, 8, 10, 1, false);
-          roundShield(p, x, -h + (k.walls === 'boards' ? 30 : 10), 4.5, team, 1);
+          if (k.walls === 'boards') nWindow(p, s, x - 4, -h + 10, 8, 10, lookout ? 1 : R, false);
+          roundShield(p, x, -h + (k.walls === 'boards' ? 30 : 10), 4.5, team, lookout ? 1 : R);
         }
         crest(p.ctx, s, w * 0.3, -h * 0.4, 8, team);
-        nDoor(p, s, w * 0.55, 15, 26, c.doors.gate, 1);
-      }, (w, h) => nWindow(p, s, w / 2 - 4, -h + 12, 8, 10, R, false));
-      mainRoof(p, s, hall, z0 + wall, 'u');
+        nDoor(p, s, w * 0.55, 15, 26, c.doors.gate, lookout ? 1 : R);
+      };
+      const gableEnd = (light: number) => (w: number, h: number) => nWindow(p, s, w / 2 - 4, -h + 12, 8, 10, light, false);
+      if (lookout) wallBlock(p, s, h0, z0, z0 + wall, longSide, gableEnd(R));
+      else wallBlock(p, s, h0, z0, z0 + wall, gableEnd(1), longSide);
+      mainRoof(p, s, h0, z0 + wall, lookout ? 'u' : 'v');
       if (k.belfry === 'lookout') {
         wallBlock(p, s, gate, 0, 74, (w) => nDoor(p, s, w / 2 - 8, 16, 26, c.doors.gate, 1), (w, h) => {
           p.ctx.fillStyle = '#18120d';
@@ -66,14 +75,17 @@ function barracks(s: ArchStyle): BuildingArt {
         });
         const top = mainRoof(p, s, gate, 74, 'u', { scale: 1.3, overhang: 0.08 });
         p.flag(0.63, 2.15, top - 4, 24, team, true);
-      } else {
-        const top = belfry(p, s, gate, 0, { lower: 70, upper: 26, face: (w) => nDoor(p, s, w / 2 - 8, 16, 26, c.doors.gate, 1) });
-        p.flag(0.4, 1.9, top - 30, 24, team, true);
+        // Dry-stone wall (kiviaita) along the two front edges.
+        boulders(p, s, 1.1, 2.72, 2.9, 2.9, 14, 4.5);
+        boulders(p, s, 2.72, 1.4, 2.9, 2.9, 10, 4.5);
+        spearRack(p, 2.35, 1.6, 2.3);
+        return;
       }
-      // Dry-stone wall (kiviaita) along the two front edges.
-      boulders(p, s, 1.1, 2.72, 2.9, 2.9, 14, 4.5);
-      boulders(p, s, 2.72, 1.4, 2.9, 2.9, 10, 4.5);
-      spearRack(p, 2.35, 1.6, 2.3);
+      const top = belfry(p, s, SIDE_GATE, 0, { lower: 80, upper: 28, face: (w) => nDoor(p, s, w / 2 - 8, 16, 26, c.doors.gate, 1) });
+      p.flag(SIDE_GATE[0] + 0.06, SIDE_GATE[1] + 0.06, top - 30, 24, team, true);
+      spearRack(p, 2.0, 1.5, 2.2);
+      boulders(p, s, 1.4, 2.72, 2.9, 2.9, 12, 4.5);
+      boulders(p, s, 2.72, 1.1, 2.9, 2.9, 10, 4.5);
     },
   };
 }
@@ -112,19 +124,54 @@ function archery(s: ArchStyle): BuildingArt {
       p.footShadow();
       p.ground(0.05, 0.05, 2.95, 2.95, 0x8a9a62);
       if (k.belfry === 'lookout') raisedHide(p, s, 2.3, 0.6);
-      else popinjay(p, 2.35, 0.55, 158, team);
+      else if (k.belfry === 'kellotapuli') popinjay(p, 2.35, 0.55, 158, team);
+      else targetWall(p, s, team);
       // Shooting shed: back and side walls, open front on posts.
       wallBlock(p, s, [shed[0], shed[1], shed[2], shed[1] + 0.12], 0, 34, undefined, undefined, 0.05);
       wallBlock(p, s, [shed[0], shed[1], shed[0] + 0.12, shed[3]], 0, 34, undefined, undefined, 0.05);
       const postColour = k.walls === 'boards' ? c.trim : c.timber;
       for (const [u, v] of [[shed[2], shed[3]], [shed[2], shed[1] + 0.12], [shed[0] + 0.12, shed[3]], [(shed[0] + shed[2]) / 2, shed[3]]] as const) post(p, u, v, 0, 34, 2.6, postColour);
-      mainRoof(p, s, shed, 34, 'u');
+      const ridge = mainRoof(p, s, shed, 34, 'u');
+      if (k.belfry === 'lantern') cupola(p, s, (shed[0] + shed[2]) / 2, (shed[1] + shed[3]) / 2, ridge - 6);
       for (const [u, v] of [[2.55, 1.2], [2.55, 1.85], [2.55, 2.5]] as const) target(p, u, v);
       strawButt(p, 2.0, 2.55);
       riukuaita(p, 0.08, 2.9, 1.8, 2.9, 12);
       p.flag(0.4, 2.6, 0, 40, team, true);
     },
   };
+}
+
+/** The shooting society's boarded target wall with painted rings and its tall flag mast. */
+function targetWall(p: IsoPainter, s: ArchStyle, team: number): void {
+  p.flag(2.62, 0.2, 0, 132, team, true);
+  p.addVolumePoint(2.62, 0.2, 132);
+  p.box(2.3, 0.3, 2.44, 1.55, 0, 52, { color: s.palette.darkWood }, s.palette.darkWood);
+  p.rightFace(0.3, 1.55, 2.44, 0, (w, h) => {
+    const ctx = p.ctx;
+    ctx.fillStyle = css(shade(s.palette.trim, R));
+    ctx.fillRect(0, -h, w, 3);
+    for (const x of [0.2, 0.5, 0.8]) {
+      ['#f2ead6', '#c0392b', '#f2ead6', '#1c1612'].forEach((col, i) => {
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.ellipse(w * x, -h * 0.55, 9 - i * 2.2, 10 - i * 2.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  }, 52);
+}
+
+/** Small boarded lantern cupola under a bell roof astride a ridge. */
+function cupola(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number): void {
+  const r = 0.1;
+  wallBlock(p, s, [u - r, v - r, u + r, v + r], z, z + 18, (w, h) => {
+    p.ctx.fillStyle = '#1c1612';
+    p.ctx.fillRect(w / 2 - 2, -h + 5, 4, 8);
+  }, undefined, 0.02);
+  const prev = p.material;
+  p.material = 'shingle';
+  bellRoof(p, u, v, r + 0.04, z + 18, 24, s.palette.roof, { hips: s.palette.trim });
+  p.material = prev;
 }
 
 /** Hay hoist: a beam out of the gable apex with a pulley and rope. */
@@ -138,6 +185,25 @@ function hayHoist(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number):
   p.ctx.arc(b[0], b[1] + 2, 2.4, 0, Math.PI * 2);
   p.ctx.fill();
   p.addVolumePoint(u + 0.22, v, z);
+}
+
+/** Two carved boards crossed above a gable apex, each ending in a horse head. */
+function horseHeads(p: IsoPainter, u: number, v: number, z: number): void {
+  const ctx = p.ctx;
+  const [x, y] = p.p(u, v, z - 2);
+  ctx.fillStyle = '#5e4c3a';
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x - side * 6, y + 4);
+    ctx.lineTo(x + side * 6, y - 14);
+    ctx.lineTo(x + side * 11, y - 15);
+    ctx.lineTo(x + side * 10, y - 11);
+    ctx.lineTo(x + side * 7, y - 11);
+    ctx.lineTo(x - side * 3, y + 5);
+    ctx.closePath();
+    ctx.fill();
+  }
+  p.addVolumePoint(u, v, z + 14);
 }
 
 /** Horse weathervane on a ridge point. */
@@ -181,6 +247,11 @@ function stable(s: ArchStyle): BuildingArt {
       };
       wallBlock(p, s, long, z0, z0 + 32, stalls(1));
       const ridge = mainRoof(p, s, long, z0 + 32, 'u');
+      if (k.roofs === 'turf') {
+        // Carved horse heads crossed over both gable ends, a tall hay rick by the barn.
+        for (const u of [long[0] - 0.08, long[2] + 0.08]) horseHeads(p, u, (long[1] + long[3]) / 2, ridge);
+        haystack(p, 2.3, 1.55, 15, 62);
+      }
       if (k.roofs === 'gambrel') {
         hayHoist(p, s, long[2] + 0.07, (long[1] + long[3]) / 2, ridge - 8);
         horseVane(p, 1.5, (long[1] + long[3]) / 2, ridge);

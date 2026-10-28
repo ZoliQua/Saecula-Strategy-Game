@@ -17,8 +17,12 @@ import { nWindow, type Block } from './nordicParts';
 
 /** Weathered, unpainted pine of the church (it was never painted). */
 export const CHURCH_LOG = 0x8a7258;
-/** Tarred shingles of the finished roofs. */
-export const CHURCH_SHINGLE = 0x4f4236;
+/** Weathered silver-grey shingles of the finished roofs. */
+export const CHURCH_SHINGLE = 0x6e655a;
+/** The drum's logs, a step lighter so the crossing stands off the arms. */
+export const DRUM_LOG = 0xa48a6c;
+/** Pale verge boards along the gables. */
+export const VERGE = 0xd9ccb2;
 /** Fresh sawn boards of roofs still waiting for their shingles. */
 export const BARE_BOARDS = 0xc9ab7c;
 /** Wall top of the arms and the ridge rise of their steep gables. */
@@ -62,6 +66,20 @@ export function arm(p: IsoPainter, s: ArchStyle, b: Block, z0: number, axis: 'u'
     p.ctx.fillRect(w / 2 - 3, -rise * 0.5, 6, 10);
   });
   p.material = prev;
+  if (o.roof !== 'shingled') return;
+  // Pale verge boards up the visible gable end.
+  const top = o.wall + ARM_RISE;
+  const [a, m, e] = axis === 'v'
+    ? [p.p(u0 - 0.08, v1 + 0.08, o.wall), p.p((u0 + u1) / 2, v1 + 0.08, top), p.p(u1 + 0.08, v1 + 0.08, o.wall)]
+    : [p.p(u1 + 0.08, v0 - 0.08, o.wall), p.p(u1 + 0.08, (v0 + v1) / 2, top), p.p(u1 + 0.08, v1 + 0.08, o.wall)];
+  p.ctx.strokeStyle = css(shade(VERGE, axis === 'v' ? 1 : R));
+  p.ctx.lineWidth = 2.6;
+  p.ctx.lineJoin = 'round';
+  p.ctx.beginPath();
+  p.ctx.moveTo(a[0], a[1]);
+  p.ctx.lineTo(m[0], m[1]);
+  p.ctx.lineTo(e[0], e[1]);
+  p.ctx.stroke();
 }
 
 /**
@@ -70,7 +88,7 @@ export function arm(p: IsoPainter, s: ArchStyle, b: Block, z0: number, axis: 'u'
  * the top height.
  */
 export function crossing(p: IsoPainter, uc: number, vc: number, r: number, z0: number, z1: number, tent: boolean, lit: boolean): number {
-  octPrism(p, uc, vc, r, z0, z1, CHURCH_LOG, 'logs', (w, h, light) => {
+  octPrism(p, uc, vc, r, z0, z1, DRUM_LOG, 'logs', (w, h, light) => {
     if (w < 10) return;
     const ww = 6;
     p.ctx.fillStyle = css(shade(0x5a4632, light));
