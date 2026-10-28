@@ -37,9 +37,12 @@ export type WallStyleId =
   | 'sandstone_fort'
   | 'murus_gallicus'
   | 'pepperpot_curtain'
-  | 'vauban';
+  | 'vauban'
+  | 'celtiberian'
+  | 'tapial'
+  | 'garita_bastion';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -114,10 +117,13 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'french',
     heraldry: { primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 },
   },
-  // Castile and León: gold castle on red. Hispania / Mudéjar / Colonial buildings (M5 Task 7); walls and units still Hungarian until Task 8.
+  // Castile and León: gold castle on red. Hispania / Mudéjar / Colonial buildings; Celtiberian dry stone, tapial with stepped merlons and a whitewashed garita bastion; Spanish unit liveries.
   spanish: {
-    ...upcoming({ primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f }),
+    available: true,
     architecture: { 1: 'hispania', 2: 'mudejar', 3: 'colonial' },
+    wallStyle: { 1: 'celtiberian', 2: 'tapial', 3: 'garita_bastion' },
+    unitLook: 'spanish',
+    heraldry: { primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f },
   },
   italian: upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
   russian: upcoming({ primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e }),

@@ -4,12 +4,12 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Pixel-identity guard for the Spanish building art: every building
  * type x age and every Wonder stage (testing/pinnedArt.testkit.ts), so
  * later civs' kit and family changes cannot silently change Spanish.
- * The wall pins still paint the Hungarian wall styles until Task 8.
  * Fix round 1 re-recorded tower@1 (Tower of Hercules outline), the
  * farm and camps of every age (palomar), town_center@3 (window clear of
  * the wing) and wonder~s2/s3 (the Vela rises last). Task 8 re-recorded
  * farm@3, lumber_camp@3 and mining_camp@3 (no palomar beside the ridge
- * espadaña).
+ * espadaña), and wall@1-3 (the wall building type now paints the Spanish
+ * wall pieces).
  */
 
 pinBuildings('spanish', {
@@ -24,7 +24,7 @@ pinBuildings('spanish', {
   'blacksmith@1': '145e9825eb70b375',
   'foundry@1': 'ca064aec20c50567',
   'tower@1': '9d17e00240275ae4',
-  'wall@1': 'a3011815d870defe',
+  'wall@1': '164ea0742297a6b0',
   'wonder@1': '3b8e295d09cc8ca6',
   'town_center@2': '024566c74a42f6e1',
   'house@2': 'e58314726c2803c3',
@@ -37,7 +37,7 @@ pinBuildings('spanish', {
   'blacksmith@2': 'f875010e5face825',
   'foundry@2': 'a859d6c34cf9ea8d',
   'tower@2': 'b353577c951fe87c',
-  'wall@2': '703fc75db10fe961',
+  'wall@2': '0f56ef1cf68d9850',
   'wonder@2': '4bf7d89a7e25e474',
   'town_center@3': 'b6bfd651869123d8',
   'house@3': '4d79650e8001f794',
@@ -50,7 +50,7 @@ pinBuildings('spanish', {
   'blacksmith@3': '548a62d22899c8f9',
   'foundry@3': 'e6f6df5d409c6c59',
   'tower@3': 'd80b2d2b2af86cb0',
-  'wall@3': 'd5751a3a3893902f',
+  'wall@3': '129d9d24d1660548',
   'wonder@3': '490562cfdf4d0f99',
   'wonder~s1': '830f88e0975efb0f',
   'wonder~s2': 'e8b209bd82b02490',

@@ -53,7 +53,7 @@ export const hu = {
       english: 'Szürke terméskő, meredek nádtetők',
       german: 'Fachwerk, lépcsős oromzatok, toronysisakok',
       french: 'Világos mészkő, kúpsisakos tornyok, magas palatetők',
-      spanish: 'Fehér vakolat, cseréptetők',
+      spanish: 'Fehér vakolat, lapos tetős udvarházak, lépcsős pártázat',
       italian: 'Reneszánsz árkádok, terrakotta',
       russian: 'Hagymakupolák, gerendaházak',
       finnish: 'Északi fa, tőzegtetők',

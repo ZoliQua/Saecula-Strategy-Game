@@ -100,8 +100,8 @@ describe('GameSetupConfig', () => {
 });
 
 describe('AI_CIV_CHOICES', () => {
-  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol / Német / Francia)', () => {
-    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french']);
+  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol / Német / Francia / Spanyol)', () => {
+    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish']);
   });
 
   it('every choice survives withSetup unchanged', () => {
@@ -121,7 +121,7 @@ describe('assignCivs', () => {
   });
 
   it('mixed: one civ per AI, distinct while the pool lasts, each available civ once there are enough AIs', () => {
-    const pool = ['hungarian', 'english', 'german', 'french'];
+    const pool = ['hungarian', 'english', 'german', 'french', 'spanish'];
     for (let seed = 1; seed <= 200; seed++) {
       for (let ais = 2; ais <= 5; ais++) {
         const civs = assignCivs(config(ais, 'mixed', seed), createRng(seed));
@@ -150,7 +150,7 @@ describe('assignCivs', () => {
       expect(civs).toHaveLength(1);
       seen.add(civs[0]!);
     }
-    expect(seen).toEqual(new Set(['hungarian', 'english', 'german', 'french']));
+    expect(seen).toEqual(new Set(['hungarian', 'english', 'german', 'french', 'spanish']));
   });
 
   it('is deterministic per seed', () => {

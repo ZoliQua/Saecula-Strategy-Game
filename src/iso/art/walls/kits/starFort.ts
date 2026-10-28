@@ -54,7 +54,7 @@ export function cordonFace(ctx: Ctx, w: number, h: number): void {
 }
 
 /** Splayed gun embrasures cut down into the parapet at intervals, over its coping line. */
-function embrasures(ctx: Ctx, w: number, h: number, light: number, coping: number): void {
+export function embrasures(ctx: Ctx, w: number, h: number, light: number, coping: number): void {
   ctx.fillStyle = css(shade(coping, light), 0.9);
   ctx.fillRect(0, -h, w, 1.6);
   for (let x = 14; x < w - 8; x += 28) {

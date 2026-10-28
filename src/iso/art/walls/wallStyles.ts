@@ -8,6 +8,7 @@ import { css, shade } from '../palette';
 import { ENGLISH_WALL_STYLES } from './english/englishWalls';
 import { FRENCH_WALL_STYLES } from './french/frenchWalls';
 import { GERMAN_WALL_STYLES } from './german/germanWalls';
+import { SPANISH_WALL_STYLES } from './spanish/spanishWalls';
 import { prism, type UV } from './prism';
 import { along, contactShadow, postShadow, stations, type WallAgeStyle } from './wallKit';
 
@@ -207,6 +208,7 @@ export const WALL_STYLE_BY_ID: Record<WallStyleId, WallAgeStyle> = {
   ...ENGLISH_WALL_STYLES,
   ...GERMAN_WALL_STYLES,
   ...FRENCH_WALL_STYLES,
+  ...SPANISH_WALL_STYLES,
 };
 
 /** The wall style a civ builds in an age. */

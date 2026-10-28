@@ -8,10 +8,16 @@ describe('civ registry', () => {
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes Hungarian, English, German and French available, the other four not', () => {
-    const done = ['hungarian', 'english', 'german', 'french'];
+  it('makes Hungarian, English, German, French and Spanish available, the other three not', () => {
+    const done = ['hungarian', 'english', 'german', 'french', 'spanish'];
     expect(AVAILABLE_CIVS).toEqual(done);
     for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(done.includes(id));
+  });
+
+  it('gives Spanish its own architecture, walls and unit look in every age', () => {
+    expect(CIV_DEFS.spanish.architecture).toEqual({ 1: 'hispania', 2: 'mudejar', 3: 'colonial' });
+    expect(CIV_DEFS.spanish.wallStyle).toEqual({ 1: 'celtiberian', 2: 'tapial', 3: 'garita_bastion' });
+    expect(CIV_DEFS.spanish.unitLook).toBe('spanish');
   });
 
   it('gives French its own architecture, walls and unit look in every age', () => {
@@ -68,7 +74,7 @@ describe('dev all-civs stub (?civs=all)', () => {
     vi.resetModules();
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(false);
-    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english', 'german', 'french']);
+    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english', 'german', 'french', 'spanish']);
   });
 });
 
@@ -78,7 +84,7 @@ describe('menuDioramaCivs', () => {
       [MENU_CIV, 'english'],
       [MENU_CIV, 'german'],
       [MENU_CIV, 'french'],
-      [MENU_CIV, 'english'],
+      [MENU_CIV, 'spanish'],
     ]);
   });
 

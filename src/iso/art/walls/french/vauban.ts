@@ -3,6 +3,7 @@ import type { Ctx } from '../../canvas';
 import { css, shade } from '../../palette';
 import { reachBody } from '../kits/bankPalisade';
 import { cordonFace, glacisFace, gun, quoins } from '../kits/starFort';
+import { freeSalients, salientAt } from '../kits/salients';
 import { armShadow, frustum, padShadow } from '../kits/wallParts';
 import { prism } from '../prism';
 import type { WallAgeStyle } from '../wallKit';
@@ -61,12 +62,12 @@ export const VAUBAN: WallAgeStyle = {
     frustum(p, 0.2, 0.2, 0.8, 0.8, 31, 35.5, 0, { color: DRESSING, top: DRESSING, face: (w, h) => cordonFace(p.ctx, w, h) });
     frustum(p, 0.22, 0.22, 0.78, 0.78, 35.5, 41, 0.05, { color: PARAPET, top: PARAPET_TOP, face: (w, h, l) => parapetFace(p.ctx, w, h, l) });
     // The échauguette hangs over a salient, its corbel out from the scarp: the front corner on a
-    // rhythm pier; on corner and end bastions the right-hand corner, clear of the gun on the front one.
-    if (STRAIGHT.includes(arms)) {
-      echauguette(p, 0.8, 0.8, 31, LIMESTONE, DRESSING);
-    } else {
-      echauguette(p, 0.8, 0.2, 31, LIMESTONE, DRESSING);
-      gun(p, 41);
-    }
+    // rhythm pier; on corner and end bastions a side corner, clear of the gun on the front one.
+    // The salient is a free one: never where a diagonal arm runs out (kits/salients.ts).
+    const straight = STRAIGHT.includes(arms);
+    const [free] = freeSalients(arms, straight ? ['front', 'right', 'left'] : ['right', 'left']);
+    const [u, v] = salientAt(free ?? (straight ? 'front' : 'right'), 0.2, 0.8);
+    echauguette(p, u, v, 31, LIMESTONE, DRESSING);
+    if (!straight) gun(p, 41);
   },
 };

@@ -16,6 +16,20 @@ type Pt = readonly [number, number];
  * part of a wall piece's paint.
  */
 
+/** paintWall builds 45° arms this much thicker (Arm.girth), so their outer edge sits farther from the line. */
+export const DIAGONAL_GIRTH = 1.25;
+
+/**
+ * Where arms start next to a round post (radius r tiles) whose arms are
+ * `half` tiles wide: a front arm starts where its outer edge meets the
+ * drum (no ground shows between), at sqrt(r² − w²), w the arm's actual
+ * half-width (`half` × the girth paintWall gives the arm); behind arms
+ * start at the centre (the post covers them).
+ */
+export function drumStart(r: number, half: number): (diagonal: boolean, behind: boolean) => number {
+  return (diagonal, behind) => (behind ? 0 : Math.sqrt(Math.max(0, r * r - (half * (diagonal ? DIAGONAL_GIRTH : 1)) ** 2)));
+}
+
 /** Soft contact shadow along an arm: three stacked strokes, widest and faintest first. */
 export function armShadow(p: IsoPainter, arm: Arm, half: number): void {
   const ctx = p.ctx;
