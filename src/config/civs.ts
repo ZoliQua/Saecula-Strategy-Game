@@ -23,7 +23,10 @@ export type ArchStyleId =
   | 'classicisme'
   | 'hispania'
   | 'mudejar'
-  | 'colonial';
+  | 'colonial'
+  | 'etruria'
+  | 'comune'
+  | 'rinascimento';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId =
   | 'palisade'
@@ -125,7 +128,11 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'spanish',
     heraldry: { primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f },
   },
-  italian: upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
+  // Tricolour: green, white, red. Etruria / Comune / Rinascimento buildings; walls and units still Hungarian until Task 10.
+  italian: {
+    ...upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
+    architecture: { 1: 'etruria', 2: 'comune', 3: 'rinascimento' },
+  },
   russian: upcoming({ primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e }),
   finnish: upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
 };

@@ -199,7 +199,13 @@ export type ArchFamily =
   /** Courtyard layouts: whitewashed flat-roofed blocks round patios, a forum behind an aqueduct, a Roman lighthouse tower (Spanish age 1). */
   | 'hispania'
   /** Courtyard layouts with a keep (or, with espadañas, a bell-gabled town hall) town centre, square towers, a foundry and the Alhambra (Spanish ages 2-3). */
-  | 'mudejar';
+  | 'mudejar'
+  /** Insula layouts: three-storey brick blocks over arched shops, a two-tier arcaded basilica town centre and a Roman brick tower (Italian age 1). */
+  | 'etruria'
+  /** Tower-house layouts: brick blocks with swallowtail merlons and tall towers, a Palazzo Pubblico with a Mangia-like tower (Italian age 2). */
+  | 'comune'
+  /** Palazzo layouts: rusticated blocks under heavy cornices, arcaded loggias, small lantern domes, an arsenal foundry and the Duomo (Italian age 3). */
+  | 'rinascimento';
 
 /**
  * Families whose painters size their canvases from the style

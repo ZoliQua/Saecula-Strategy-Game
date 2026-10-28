@@ -19,6 +19,10 @@ import { kaiserdom } from './german/kaiserdom';
 import { limesTower } from './german/limesTower';
 import { portaNigra } from './german/portaNigra';
 import { wehrturm } from './german/wehrturm';
+import { comuneArt } from './italian/comune';
+import { etruriaArt } from './italian/etruria';
+import { ITALIAN_COMUNE, ITALIAN_ETRURIA, ITALIAN_RINASCIMENTO } from './italian/italianStyles';
+import { rinascimentoArt } from './italian/rinascimento';
 import { hispaniaArt } from './spanish/hispania';
 import { mudejarArt } from './spanish/mudejar';
 import { SPANISH_COLONIAL, SPANISH_HISPANIA, SPANISH_MUDEJAR } from './spanish/spanishStyles';
@@ -57,6 +61,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   hispania: SPANISH_HISPANIA,
   mudejar: SPANISH_MUDEJAR,
   colonial: SPANISH_COLONIAL,
+  etruria: ITALIAN_ETRURIA,
+  comune: ITALIAN_COMUNE,
+  rinascimento: ITALIAN_RINASCIMENTO,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -74,6 +81,9 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   versailles: (s) => ({ ...baroqueArt(s), town_center: hotelDeVille(s), tower: classicTower(s), wonder: versaillesPalace(s) }),
   hispania: hispaniaArt,
   mudejar: mudejarArt,
+  etruria: etruriaArt,
+  comune: comuneArt,
+  rinascimento: rinascimentoArt,
 };
 
 /** Every style's painted set, by style id. */
