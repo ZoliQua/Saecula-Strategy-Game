@@ -23,6 +23,8 @@ export class MainMenu {
   private readonly root: HTMLElement;
   private readonly hero: HTMLElement;
   private readonly teardown: number;
+  private readonly loadBtn: HTMLButtonElement;
+  private readonly settingsBtn: HTMLButtonElement;
 
   constructor(onNewGame: () => void, onLoadGame: () => void, onSettings: () => void) {
     const play = el(
@@ -39,6 +41,7 @@ export class MainMenu {
       el('span', { class: 'arrow', html: ARROW }),
     );
     load.addEventListener('click', onLoadGame);
+    this.loadBtn = load;
     const settings = el(
       'button',
       { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:.94s' },
@@ -46,6 +49,7 @@ export class MainMenu {
       el('span', { class: 'arrow', html: ARROW }),
     );
     settings.addEventListener('click', onSettings);
+    this.settingsBtn = settings;
 
     const [line1 = '', line2 = ''] = hu.menu.headline.split('\n');
     this.hero = el(
@@ -97,6 +101,11 @@ export class MainMenu {
   /** Steps the hero copy aside while the setup card (or the load list, or the settings) is open. */
   setAway(away: boolean): void {
     this.root.classList.toggle('away', away);
+  }
+
+  /** Gives the keyboard focus back to the button whose card just closed. */
+  focusButton(which: 'load' | 'settings'): void {
+    (which === 'load' ? this.loadBtn : this.settingsBtn).focus({ preventScroll: true });
   }
 
   destroy(): void {

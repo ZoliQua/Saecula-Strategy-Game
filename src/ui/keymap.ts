@@ -20,11 +20,15 @@ export type RebindResult = { ok: true; keys: KeyBindings; swappedWith?: KeyActio
 /**
  * Binds `action` to `binding`. A reserved code is refused; a code another
  * action holds swaps the two (`swappedWith` names it); the same code is
- * a no-op.
+ * a no-op, apart from taking a changed label.
  */
 export function rebind(keys: KeyBindings, action: KeyAction, binding: KeyBinding): RebindResult {
   if (RESERVED_CODES.has(binding.code)) return { ok: false, reason: 'reserved' };
-  if (keys[action].code === binding.code) return { ok: true, keys };
+  const current = keys[action];
+  if (current.code === binding.code) {
+    // The same physical key: keep everything, unless its label changed (another keyboard layout).
+    return current.label === binding.label ? { ok: true, keys } : { ok: true, keys: { ...keys, [action]: { code: binding.code, label: binding.label } } };
+  }
   const holder = KEY_ACTIONS.find((a) => keys[a].code === binding.code);
   const next: Record<KeyAction, KeyBinding> = { ...keys, [action]: { code: binding.code, label: binding.label } };
   if (holder === undefined) return { ok: true, keys: next };

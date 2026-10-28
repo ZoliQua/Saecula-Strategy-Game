@@ -254,6 +254,7 @@ export class MainMenuScene extends Phaser.Scene {
       this.settings = null;
       this.away = false;
       this.menu?.setAway(false);
+      this.menu?.focusButton('settings');
       window.setTimeout(() => settings.destroy(), CARD_LEAVE_MS);
     });
     this.settings = settings;
@@ -276,6 +277,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.slots = null;
         this.away = false;
         this.menu?.setAway(false);
+        this.menu?.focusButton('load');
         window.setTimeout(() => slots.destroy(), CARD_LEAVE_MS);
       },
     });

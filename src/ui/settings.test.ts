@@ -87,6 +87,21 @@ describe('settings', () => {
     expect(loadSettings(storage)).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('setting a volume to its current value writes and notifies nothing', () => {
+    const storage = memory();
+    let writes = 0;
+    const store = createSettingsStore({ getItem: storage.getItem, setItem: (k, v) => (writes++, storage.setItem(k, v)) });
+    let notified = 0;
+    store.subscribe(() => notified++);
+    store.getState().setVolume('music', 60.2);
+    store.getState().setVolume('music', 60);
+    expect(writes).toBe(0);
+    expect(notified).toBe(0);
+    store.getState().setVolume('music', 61);
+    expect(writes).toBe(1);
+    expect(notified).toBe(1);
+  });
+
   it('a refused rebind changes nothing', () => {
     const store = createSettingsStore(memory());
     expect(store.getState().rebind('panUp', { code: 'Tab', label: 'TAB' })).toEqual({ ok: false, reason: 'reserved' });

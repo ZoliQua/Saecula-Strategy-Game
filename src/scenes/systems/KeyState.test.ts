@@ -54,6 +54,14 @@ describe('KeyState', () => {
     expect(keys.isDown('KeyD')).toBe(false);
   });
 
+  it('releasing Cmd clears the keys whose keyup macOS swallowed during the chord', () => {
+    const { target, keys } = make();
+    target.fire('keydown', { code: 'MetaLeft', target: null });
+    target.fire('keydown', { code: 'KeyA', target: null });
+    target.fire('keyup', { code: 'MetaLeft', target: null });
+    expect(keys.isDown('KeyA')).toBe(false);
+  });
+
   it('destroy removes its listeners', () => {
     const { target, keys } = make();
     keys.destroy();

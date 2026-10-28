@@ -29,6 +29,18 @@ describe('keymap', () => {
     expect(r.ok && r.keys.panUp.code).toBe('KeyI');
   });
 
+  it('lock keys and codes with no physical key are refused', () => {
+    for (const code of ['', 'Unidentified', 'CapsLock', 'NumLock', 'ScrollLock']) {
+      expect(rebind(DEFAULT_KEYS, 'panUp', { code, label: 'X' })).toEqual({ ok: false, reason: 'reserved' });
+    }
+  });
+
+  it('the same key with a new label (a changed layout) updates the label', () => {
+    const r = rebind(DEFAULT_KEYS, 'panUp', { code: 'KeyW', label: 'Z' });
+    expect(r.ok && r.swappedWith).toBe(undefined);
+    expect(r.ok && r.keys.panUp).toEqual({ code: 'KeyW', label: 'Z' });
+  });
+
   it('bindingFromEvent labels a QWERTZ KeyY as Z', () => {
     expect(bindingFromEvent({ code: 'KeyY', key: 'z' })).toEqual({ code: 'KeyY', label: 'Z' });
   });

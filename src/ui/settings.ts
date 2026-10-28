@@ -100,7 +100,10 @@ export function createSettingsStore(storage: Pick<Storage, 'getItem' | 'setItem'
       setVolume: (ch, v) => {
         if (!Number.isFinite(v)) return;
         const s = current();
-        commit({ ...s, volume: { ...s.volume, [ch]: clampVolume(v) } });
+        const next = clampVolume(v);
+        // A slider drag fires per pixel: an unchanged value neither writes nor notifies (Task 8's audio subscribes).
+        if (s.volume[ch] === next) return;
+        commit({ ...s, volume: { ...s.volume, [ch]: next } });
       },
       setMuted: (m) => commit({ ...current(), muted: m }),
       rebind: (action, b) => {

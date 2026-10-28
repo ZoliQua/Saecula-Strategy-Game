@@ -103,6 +103,9 @@ export class SettingsScreen {
     this.root = el('div', { class: 'screen pause-layer' }, this.card);
     uiRoot().append(this.root);
     this.unbindKeys = bindModalKeys(this.card, () => this.back());
+    // Using any other control (a slider, the switch) ends a capture, so its own keys work again.
+    this.card.addEventListener('pointerdown', this.onOutsideCapture);
+    this.card.addEventListener('focusin', this.onOutsideCapture);
     this.unsubscribe = settingsStore.subscribe((s) => this.sync(s));
     this.sync(settingsStore.getState());
     this.volumes.get('master')?.input.focus({ preventScroll: true });
@@ -195,7 +198,8 @@ export class SettingsScreen {
     if (action === null) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (e.repeat) return;
+    // An IME composition is not a key choice.
+    if (e.repeat || e.isComposing || e.key === 'Process') return;
     if (e.code === 'Escape') {
       this.stopCapture();
       this.notice(null);
@@ -214,6 +218,14 @@ export class SettingsScreen {
     this.stopCapture();
     for (const a of result.swappedWith === undefined ? [action] : [action, result.swappedWith]) this.flash(a);
     this.notice(settingsStore.getState().persisted ? rebindNotice(result) : { text: hu.settings.notSaved, tone: 'error' });
+  };
+
+  private readonly onOutsideCapture = (e: Event): void => {
+    if (this.capturing === null) return;
+    const row = this.keyRows.get(this.capturing)?.row;
+    if (row && e.target instanceof Node && row.contains(e.target)) return;
+    this.stopCapture();
+    this.notice(null);
   };
 
   /** A short amber pop on a keycap that just changed. */

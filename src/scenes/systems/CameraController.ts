@@ -11,6 +11,8 @@ import { KeyState } from './KeyState';
 
 export interface CameraControllerOptions {
   readonly edgeScroll?: boolean;
+  /** Where key events are heard (default: window); tests pass a fake. */
+  readonly keyTarget?: Pick<Window, 'addEventListener' | 'removeEventListener'>;
 }
 
 /**
@@ -24,12 +26,13 @@ export class CameraController {
   private readonly camera: Phaser.Cameras.Scene2D.Camera;
   private readonly edgeScroll: boolean;
   private pointerInside = false;
-  private readonly keyState = new KeyState();
+  private readonly keyState: KeyState;
 
   constructor(scene: Phaser.Scene, options: CameraControllerOptions = {}) {
     this.scene = scene;
     this.camera = scene.cameras.main;
     this.edgeScroll = options.edgeScroll ?? true;
+    this.keyState = new KeyState(options.keyTarget);
 
     scene.input.on(
       Phaser.Input.Events.POINTER_WHEEL,
@@ -41,6 +44,8 @@ export class CameraController {
     canvas.addEventListener('mouseenter', this.onEnter);
     canvas.addEventListener('mouseleave', this.onLeave);
     scene.input.on(Phaser.Input.Events.POINTER_MOVE, this.onMove, this);
+    // Every way out of the scene (quit, a load's restart, a failed start's return to the menu) shuts it down,
+    // so the window key listeners and canvas / input handlers go with it.
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.destroy());
   }
 

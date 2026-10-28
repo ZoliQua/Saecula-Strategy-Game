@@ -45,7 +45,10 @@ export const DEFAULT_PAN_KEYS = {
 } as const;
 /** The fixed secondary camera pan (always active, never remappable). */
 export const ARROW_PAN_CODES = { panUp: 'ArrowUp', panDown: 'ArrowDown', panLeft: 'ArrowLeft', panRight: 'ArrowRight' } as const;
-/** Keys no action can be bound to: Esc (pause), the arrows (fixed pan), focus / form keys, modifiers and the dev overlay. */
+/**
+ * Keys no action can be bound to: Esc (pause), the arrows (fixed pan), focus / form keys, modifiers, the dev
+ * overlay, the lock keys (macOS sends CapsLock's keyup only on toggle-off: a sticky pan) and keys with no code.
+ */
 export const RESERVED_KEY_CODES: readonly string[] = [
   'Escape',
   'ArrowUp',
@@ -65,6 +68,11 @@ export const RESERVED_KEY_CODES: readonly string[] = [
   'MetaRight',
   'Backquote',
   'F9',
+  'CapsLock',
+  'NumLock',
+  'ScrollLock',
+  'Unidentified',
+  '',
 ];
 /** Default volume per channel (0..100). */
 export const DEFAULT_VOLUMES = { master: 80, music: 60, sfx: 80, notifications: 80 } as const;

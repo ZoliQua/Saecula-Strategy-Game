@@ -44,7 +44,10 @@ export class KeyState {
 
   /** A release always counts, even from a field (the press may have come before the field took focus). */
   private readonly onUp = (e: Event): void => {
-    this.down.delete((e as KeyboardEvent).code);
+    const { code } = e as KeyboardEvent;
+    // While Cmd is held macOS swallows the other keys' keyup (Cmd+A would leave A "down"): its release frees them all.
+    if (code === 'MetaLeft' || code === 'MetaRight') this.down.clear();
+    else this.down.delete(code);
   };
 
   private readonly onBlur = (): void => {
