@@ -1,11 +1,11 @@
 import { TOWER_PLATFORM_Z } from '../../../../config/visual';
 import type { IsoPainter } from '../../isoPainter';
 import { css } from '../../palette';
-import { disc, lookout, ringBack } from '../english/englishTowers';
-import { drumWall } from '../english/roundhouse';
+import { drumWall } from '../kits/drum';
 import { needleSpire } from '../kits/needleSpire';
 import { post } from '../parts';
 import type { ArchStyle } from '../style';
+import { disc, lookout, ringBack } from '../towerParts';
 import type { BuildingArt } from '../types';
 
 /*

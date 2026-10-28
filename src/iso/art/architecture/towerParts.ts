@@ -1,5 +1,6 @@
 import type { IsoPainter, WallStyle } from '../isoPainter';
 import { BRAZIER_LIGHT } from '../lighting/buildingLights';
+import { N_UP } from '../lighting/viewSpace';
 import { css, shade } from '../palette';
 
 export type Headgear = 'galea' | 'kettle' | 'tricorn';
@@ -179,4 +180,46 @@ export function parapet(
     const b = v0 + i * 2 * step;
     p.box(u1 - t, b, u1, b + step, z + h, z + h + m, wall, cap);
   }
+}
+
+type Pt = readonly [number, number];
+
+/** Platform contents: fire basket and the archer. */
+export function lookout(p: IsoPainter, u0: number, u1: number, z: number, team: number, hat: Headgear): void {
+  brazier(p, u0 + 0.2, u1 - 0.18, z, 1.25, 1.35);
+  archer(p, u1 - 0.26, u0 + 0.3, z, team, hat);
+}
+
+/** Straight stroke between two canvas points (braces, ladders, gun barrels). */
+export function towerLine(p: IsoPainter, a: Pt, b: Pt, color: number, width: number): void {
+  p.ctx.strokeStyle = css(color);
+  p.ctx.lineWidth = width;
+  p.ctx.beginPath();
+  p.ctx.moveTo(a[0], a[1]);
+  p.ctx.lineTo(b[0], b[1]);
+  p.ctx.stroke();
+}
+
+/** Inner face of the far half of a round parapet (seen across the platform), with its coping. */
+export function ringBack(p: IsoPainter, uc: number, vc: number, r: number, z: number, h: number, color: number): void {
+  const n = 18;
+  const at = (a: number, rr: number, zz: number) => p.p(uc + rr * Math.cos(a), vc + rr * Math.sin(a), zz);
+  const outer: Pt[] = [];
+  const inner: Pt[] = [];
+  for (let k = 0; k <= n; k++) {
+    const a = Math.PI * 0.75 + (k / n) * Math.PI;
+    outer.push(at(a, r - 0.06, z + h));
+    inner.push(at(a, r - 0.06, z));
+  }
+  const band = [...outer, ...inner.reverse()];
+  p.fillPoly(band, css(shade(color, 0.62)));
+  p.normals.fill(band, N_UP);
+}
+
+/** Round flat roof (gun platform floor) of radius r at height z. */
+export function disc(p: IsoPainter, uc: number, vc: number, r: number, z: number, color: number): void {
+  const pts: Pt[] = [];
+  for (let k = 0; k < 24; k++) pts.push(p.p(uc + r * Math.cos((k / 24) * Math.PI * 2), vc + r * Math.sin((k / 24) * Math.PI * 2), z));
+  p.fillPoly(pts, css(color));
+  p.normals.fill(pts, N_UP);
 }

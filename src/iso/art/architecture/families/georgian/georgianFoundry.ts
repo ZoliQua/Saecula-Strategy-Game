@@ -1,12 +1,12 @@
-import type { IsoPainter } from '../../isoPainter';
-import { FURNACE_LIGHT } from '../../lighting/buildingLights';
-import { css, shade } from '../../palette';
-import { R } from '../facade';
-import { barrel, furnaceMouth, heap, shotPyramid } from '../foundry';
-import { helm, type HelmProfile } from '../roofs';
-import type { ArchStyle } from '../style';
-import { styledGable } from '../styledRoofs';
-import type { BuildingArt } from '../types';
+import type { IsoPainter } from '../../../isoPainter';
+import { FURNACE_LIGHT } from '../../../lighting/buildingLights';
+import { css, shade } from '../../../palette';
+import { R } from '../../facade';
+import { barrel, furnaceMouth, heap, shotPyramid } from '../../foundry';
+import { helm, type HelmProfile } from '../../roofs';
+import type { ArchStyle } from '../../style';
+import { styledGable } from '../../styledRoofs';
+import type { BuildingArt } from '../../types';
 import { flemishBond, georgianBlock, georgianStack, modillionCornice } from './georgianParts';
 
 /*
@@ -80,7 +80,7 @@ function pigs(p: IsoPainter, u: number, v: number): void {
   }
 }
 
-export function englishFoundry(s: ArchStyle): BuildingArt {
+export function georgianFoundry(s: ArchStyle): BuildingArt {
   const c = s.palette;
   return {
     size: 3,

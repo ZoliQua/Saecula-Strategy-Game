@@ -4,10 +4,10 @@ import type { ArchStyle, Ornaments } from '../style';
 /*
  * The English age styles (M4 design decision 4, CLAUDE.md §4.2 "Tudor,
  * szürke kő, meredek tetők"): cooler and greyer than the Hungarian
- * sets, with steeper roofs. Their own families (romanoBritish.ts,
- * tudor.ts, georgian.ts) paint the bespoke silhouettes; the towers
- * (englishTowers.ts), the foundry and the Gothic cathedral Wonder read
- * the same palettes.
+ * sets, with steeper roofs. Their families (romanoBritish.ts here;
+ * families/tudor and families/georgian, which later civs ride too)
+ * paint the bespoke silhouettes; the towers, the foundry and the
+ * Gothic cathedral Wonder read the same palettes.
  */
 
 const ENGLISH_ORNAMENTS: Ornaments = { chimneys: true, halfTimber: true, quoins: true, pilasters: false, dormers: true, boardedGables: false };
@@ -48,8 +48,8 @@ export const ENGLISH_ROMANO_BRITISH: ArchStyle = {
   headroom: 30,
 };
 
-/** Cool grey Kentish ragstone ashlar of the Norman curtain walls and towers (the Tudor ashlar dresses houses). */
-export const NORMAN_RAGSTONE = 0x9a9c99;
+/** Cool grey Kentish ragstone ashlar of the Norman curtain walls and towers (the Tudor ashlar dresses houses); the Tudor family's tower default. */
+export { NORMAN_RAGSTONE } from '../families/tudor/normanTower';
 
 /** Age 2 (Középkor): Tudor / Norman — black-and-white framing over grey stone, red-brown peg tile, brick stacks. */
 export const ENGLISH_TUDOR: ArchStyle = {

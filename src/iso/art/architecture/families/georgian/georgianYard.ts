@@ -1,6 +1,6 @@
-import { ellipse } from '../../canvas';
-import type { IsoPainter } from '../../isoPainter';
-import { css, shade } from '../../palette';
+import { ellipse } from '../../../canvas';
+import type { IsoPainter } from '../../../isoPainter';
+import { css, shade } from '../../../palette';
 
 type Pt = readonly [number, number];
 

@@ -1,7 +1,7 @@
-import { ellipse } from '../../canvas';
-import type { IsoPainter } from '../../isoPainter';
-import { css, shade } from '../../palette';
-import type { ArchStyle } from '../style';
+import { ellipse } from '../../../canvas';
+import type { IsoPainter } from '../../../isoPainter';
+import { css, shade } from '../../../palette';
+import type { ArchStyle } from '../../style';
 
 type Pt = readonly [number, number];
 

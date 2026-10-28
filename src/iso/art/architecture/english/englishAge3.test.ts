@@ -8,7 +8,7 @@ import { hashPainting, installRecordingCanvas, type RecordedCanvas } from '../..
 import { ARCH_FAMILIES } from '../registry';
 import type { ArchStyle } from '../style';
 import { WONDER_STAGES } from '../wonder';
-import { dummy } from './englishParts';
+import { dummy } from '../families/familyParts';
 import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './englishStyles';
 
 const TEAM = 0x3b6fd6;

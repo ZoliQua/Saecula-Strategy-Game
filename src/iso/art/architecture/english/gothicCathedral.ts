@@ -9,7 +9,7 @@ import type { WonderArt } from '../types';
 import { WONDER_STAGES } from '../wonder';
 import { flyingButtress, headstones, lancet, octSpire, pinnacle, pointedArch, portal, roseWindow, treadwheelCrane, yew } from './cathedralParts';
 import { churned, lodge, raggedCourses, scaffoldAround, shellTop, stonePile, trusses, type Block } from './cathedralWorks';
-import { hangingBanner } from './englishParts';
+import { hangingBanner } from '../families/familyParts';
 
 /*
  * The English Wonder: a Gothic cathedral in its close (after Salisbury)

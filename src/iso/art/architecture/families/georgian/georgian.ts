@@ -1,21 +1,20 @@
-import type { IsoPainter } from '../../isoPainter';
-import { css, shade } from '../../palette';
-import { clockFace, R } from '../facade';
-import { lantern } from '../parts';
-import { dormerLeft } from '../roofs';
-import { spireRoom } from '../kits/needleSpire';
-import type { ArchStyle } from '../style';
-import { onRoof, roofLift, styledHip } from '../styledRoofs';
-import type { AgeArtSet } from '../types';
-import { englishFoundry } from './englishFoundry';
-import { georgianTower } from './englishTowers';
-import { gothicCathedral } from './gothicCathedral';
+import type { IsoPainter } from '../../../isoPainter';
+import { css, shade } from '../../../palette';
+import { clockFace, R } from '../../facade';
+import { lantern } from '../../parts';
+import { dormerLeft } from '../../roofs';
+import { spireRoom } from '../../kits/needleSpire';
+import type { ArchStyle } from '../../style';
+import { onRoof, roofLift, styledHip } from '../../styledRoofs';
+import type { AgeArtSet } from '../../types';
+import { georgianFoundry } from './georgianFoundry';
+import { georgianTower } from './martelloTower';
 import { cupola, doorcase, georgianBlock, georgianStack, parapetWall, portico, sashWindow } from './georgianParts';
 import { cannon, gravel, railings, sentryBox, stackedArms, stableDoor } from './georgianProps';
 import { georgianWorkArt } from './georgianWork';
 
 /*
- * Age 3 English family (Georgian): a Palladian town hall with a
+ * Georgian family (English age 3; German Backstein rides it): a Palladian town hall with a
  * pedimented portico and clock cupola, a three-storey brick town house
  * with a fanlit door in the team colour, a brick barrack range round a
  * parade ground, and a stable block with a clock turret — red brick in
@@ -214,8 +213,7 @@ export function georgianArt(s: ArchStyle): AgeArtSet {
       },
     },
     tower: georgianTower(s),
-    foundry: englishFoundry(s),
-    wonder: gothicCathedral(s),
+    foundry: georgianFoundry(s),
   };
 }
 

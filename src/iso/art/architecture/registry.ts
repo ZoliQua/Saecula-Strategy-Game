@@ -1,9 +1,10 @@
 import type { ArchStyleId } from '../../../config/civs';
 import { baroqueArt } from './baroque';
 import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
-import { georgianArt } from './english/georgian';
+import { gothicCathedral } from './english/gothicCathedral';
 import { romanoBritishArt } from './english/romanoBritish';
-import { tudorArt } from './english/tudor';
+import { georgianArt } from './families/georgian/georgian';
+import { tudorArt } from './families/tudor/tudor';
 import { GERMAN_BACKSTEIN, GERMAN_FACHWERK, GERMAN_LIMES } from './german/germanStyles';
 import { kaiserdom } from './german/kaiserdom';
 import { limesTower } from './german/limesTower';
@@ -47,7 +48,7 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   baroque: baroqueArt,
   romano_british: romanoBritishArt,
   tudor: tudorArt,
-  georgian: georgianArt,
+  georgian: (s) => ({ ...georgianArt(s), wonder: gothicCathedral(s) }),
   porta_nigra: (s) => ({ ...romanArt(s), town_center: portaNigra(s), tower: limesTower(s) }),
   kaiserdom: (s) => ({ ...georgianArt(s), tower: wehrturm(s), wonder: kaiserdom(s) }),
 };

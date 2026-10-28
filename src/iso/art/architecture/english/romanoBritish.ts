@@ -6,7 +6,8 @@ import type { ArchStyle } from '../style';
 import { styledGable, styledHip } from '../styledRoofs';
 import type { AgeArtSet } from '../types';
 import { timberWatchtower } from './englishTowers';
-import { cruckGable, cruckWall, dummy, hangingBanner, roundFence, vexillum } from './englishParts';
+import { dummy, hangingBanner } from '../families/familyParts';
+import { cruckGable, cruckWall, roundFence, vexillum } from './englishParts';
 import { romanoBritishWorkArt } from './romanoBritishWork';
 import { roundhouse } from './roundhouse';
 

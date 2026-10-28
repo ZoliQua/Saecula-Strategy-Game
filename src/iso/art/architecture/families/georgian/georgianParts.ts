@@ -1,10 +1,10 @@
-import type { Ctx } from '../../canvas';
-import type { IsoPainter } from '../../isoPainter';
-import { css, shade } from '../../palette';
-import { clockFace, cornice, crest, R } from '../facade';
-import { finial, helm } from '../roofs';
-import { hasNeedleSpires, needleSpire } from '../kits/needleSpire';
-import type { ArchStyle } from '../style';
+import type { Ctx } from '../../../canvas';
+import type { IsoPainter } from '../../../isoPainter';
+import { css, shade } from '../../../palette';
+import { clockFace, cornice, crest, R } from '../../facade';
+import { finial, helm } from '../../roofs';
+import { hasNeedleSpires, needleSpire } from '../../kits/needleSpire';
+import type { ArchStyle } from '../../style';
 
 type FaceDraw = (w: number, h: number, light: number) => void;
 

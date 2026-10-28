@@ -5,8 +5,10 @@ import { chimney, forgeLight, goldPile, logPile, post, strawButt, wattleFence } 
 import type { ArchStyle } from '../style';
 import { roofLift, styledGable } from '../styledRoofs';
 import type { AgeArtSet } from '../types';
-import { cruckGable, cruckWall, drystone, spoilHeap } from './englishParts';
-import { coneRoof, drumWall, roundhouse } from './roundhouse';
+import { spoilHeap } from '../families/familyParts';
+import { cruckGable, cruckWall, drystone } from './englishParts';
+import { coneRoof, drumWall } from '../kits/drum';
+import { roundhouse } from './roundhouse';
 
 /*
  * Age 1 English workplaces: Celtic fields behind drystone walls with a

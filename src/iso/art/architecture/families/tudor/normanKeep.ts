@@ -1,10 +1,10 @@
-import type { IsoPainter, WallStyle } from '../../isoPainter';
-import { css, shade } from '../../palette';
-import { R } from '../facade';
-import type { ArchStyle } from '../style';
-import { parapet } from '../towerParts';
-import { hasNeedleSpires, needleSpire } from '../kits/needleSpire';
-import { hangingBanner } from './englishParts';
+import type { IsoPainter, WallStyle } from '../../../isoPainter';
+import { css, shade } from '../../../palette';
+import { R } from '../../facade';
+import type { ArchStyle } from '../../style';
+import { parapet } from '../../towerParts';
+import { hasNeedleSpires, needleSpire } from '../../kits/needleSpire';
+import { hangingBanner } from '../familyParts';
 
 /*
  * Norman square keep (the English age-2 town centre): a grey ashlar

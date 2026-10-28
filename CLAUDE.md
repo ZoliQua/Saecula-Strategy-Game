@@ -464,6 +464,7 @@ IsoRTS/
     │   ├── art/                 ← procedurális grafika (terep, épület, egység, dekor)
     │   │   ├── architecture/    ← épület-festők koronként (ArchStyle, stíluscsaládok)
     │   │   │   ├── kits/        ← népek közös díszítő-készletei (favázas rács, lépcsős oromzat, hagymakupola…)
+    │   │   │   ├── families/    ← több nép által használt festőcsaládok (tudor, georgian) és közös kellékeik
     │   │   │   ├── english/     ← angol építészet (romano-brit, Tudor/normann, georgiánus, gótikus katedrális)
     │   │   │   ├── german/      ← német (limes, Fachwerk, Backstein, speyeri császári dóm)
     │   │   │   ├── french/      ← francia (gallo-római, loire-i gótika, klasszicizmus, versailles-i palota)

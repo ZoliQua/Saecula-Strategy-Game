@@ -1,17 +1,17 @@
-import { ellipse } from '../../canvas';
-import type { IsoPainter } from '../../isoPainter';
-import { css, shade } from '../../palette';
-import { archedOpening, R } from '../facade';
-import { forgeLight, forgeMouth, goldPile, haystack, logPile, plankStack, post } from '../parts';
-import { stripField } from '../medievalWork';
-import type { ArchStyle } from '../style';
-import { roofLift, styledGable, styledHip } from '../styledRoofs';
-import type { AgeArtSet } from '../types';
-import { brickStack } from '../kits/chimneyStack';
-import { framedGable, leadedWindow, styleFraming } from '../kits/halfTimber';
-import { jettyStorey } from '../kits/jetty';
-import { earthButt, hangingBanner, hedge, spoilHeap } from './englishParts';
-import { drumWall } from './roundhouse';
+import { ellipse } from '../../../canvas';
+import type { IsoPainter } from '../../../isoPainter';
+import { css, shade } from '../../../palette';
+import { archedOpening, R } from '../../facade';
+import { forgeLight, forgeMouth, goldPile, haystack, logPile, plankStack, post } from '../../parts';
+import { stripField } from '../../medievalWork';
+import type { ArchStyle } from '../../style';
+import { roofLift, styledGable, styledHip } from '../../styledRoofs';
+import type { AgeArtSet } from '../../types';
+import { brickStack } from '../../kits/chimneyStack';
+import { framedGable, leadedWindow, styleFraming } from '../../kits/halfTimber';
+import { jettyStorey } from '../../kits/jetty';
+import { earthButt, hangingBanner, hedge, spoilHeap } from '../familyParts';
+import { drumWall } from '../../kits/drum';
 
 /*
  * Age 2 English workplaces: hedged strip fields with a granary on
