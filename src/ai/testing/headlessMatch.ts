@@ -16,14 +16,25 @@ import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { generateMap, type MapTemplate } from '../../map/generator';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
-import type { StatefulRng } from '../../map/random';
+import { createStatefulRng, type StatefulRng } from '../../map/random';
 import { PathBudget } from '../../map/pathBudget';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
-import { defaultSetupConfig, matchCivs, type Difficulty } from '../../game/GameSetupConfig';
+import type { PersonalityId } from '../../config/aiPersonality';
+import {
+  defaultSetupConfig,
+  MAP_SIZE_IDS,
+  MAP_SIZES,
+  matchCivs,
+  type Difficulty,
+  type GameSetupConfig,
+} from '../../game/GameSetupConfig';
+import { restoreMatch } from '../../save/deserializer';
+import type { SaveData } from '../../save/schema';
+import { serializeMatch, type MatchState } from '../../save/serializer';
 import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
-import { applyDifficulty } from '../createStrategy';
+import { aiRngSeed, applyDifficulty, createStrategy } from '../createStrategy';
 
 export interface HeadlessMatchOptions {
   readonly seed: number;
@@ -47,6 +58,8 @@ export interface HeadlessMatchOptions {
   readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
   /** The match can be won by a Wonder: WonderSystem runs and the AIs play for Wonders (default false). */
   readonly wonderVictory?: boolean;
+  /** Personality per AI player, set on the Player before its strategy is built (default: none). */
+  readonly personality?: (playerId: number) => PersonalityId | undefined;
 }
 
 export interface HeadlessMatch {
@@ -54,9 +67,27 @@ export interface HeadlessMatch {
   readonly map: MapData;
   readonly players: PlayerManager;
   readonly ais: readonly AIPlayer[];
+  /** The setup a live game would have had (from the options, or the save it resumed). */
+  readonly setup: GameSetupConfig;
   /** Advances every gameplay system (no rendering) by `stepMs`, `totalMs / stepMs` times. */
   run(totalMs: number, stepMs: number, onStep?: (timeMs: number) => boolean | void): void;
   readonly timeMs: () => number;
+  /** The match as a save; needs every AI built with an `rng` and no AI-driven human. */
+  snapshot(now?: Date): SaveData;
+}
+
+/** The setup a headless match stands for: the options over defaultSetupConfig(seed). */
+function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
+  const mapSize = MAP_SIZE_IDS.find((id) => MAP_SIZES[id].tiles === options.size);
+  if (!mapSize) throw new RangeError(`No map size has ${options.size} tiles`);
+  return {
+    ...defaultSetupConfig(options.seed),
+    aiCount: options.aiCount,
+    template: options.template ?? 'meadow',
+    mapSize,
+    difficulty: options.difficulty?.(2) ?? 'medium',
+    victory: options.wonderVictory === true ? 'conquest_wonder' : 'conquest',
+  };
 }
 
 /**
@@ -67,8 +98,9 @@ export interface HeadlessMatch {
  */
 export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatch {
   resetUiStore();
+  const setup = setupOf(options);
   const generated = generateMap({
-    template: options.template ?? 'meadow',
+    template: setup.template,
     width: options.size,
     height: options.size,
     seed: options.seed,
@@ -83,18 +115,83 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   spawnPresetWalls(world, players, map, generated.walls);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
+    const personality = options.personality?.(p.id);
+    if (personality) p.personality = personality;
     const rng = options.rng?.(p.id);
     return new AIPlayer(p, options.strategy(p.id), rng ? { rng } : {});
   });
   const human = players.human();
   const humanAi = options.humanStrategy && human ? new AIPlayer(human, options.humanStrategy) : null;
-  const humanEnemy = options.humanEnemy ?? (() => 2);
-  const enemyOf = options.enemyOf ?? (() => 1);
+  return assemble({
+    setup,
+    world,
+    map,
+    players,
+    ais,
+    humanAi,
+    humanEnemy: options.humanEnemy ?? (() => 2),
+    enemyOf: options.enemyOf ?? (() => 1),
+    startMs: 0,
+    camera: { tx: options.size / 2, ty: options.size / 2, zoom: 1 },
+    lightPhase: 0,
+  });
+}
+
+/**
+ * A headless match continued from a save: the saved world, map, fogs and
+ * players, and AIs rebuilt as a live game builds them
+ * (`createStrategy(setup.difficulty, rng.next, player.personality)`)
+ * then restored. AIs attack the human, as in a default headless match.
+ */
+export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
+  resetUiStore();
+  const r = restoreMatch(save);
+  const ais = r.players.ais().map((p) => {
+    const rng = createStatefulRng(aiRngSeed(r.setup.seed, p.id));
+    const fog = r.fogs.get(p.id);
+    const ai = new AIPlayer(p, createStrategy(r.setup.difficulty, rng.next, p.personality), fog ? { fog, rng } : { rng });
+    const state = r.aiStates.get(p.id);
+    if (state) ai.restore(state);
+    return ai;
+  });
+  return assemble({
+    setup: r.setup,
+    world: r.world,
+    map: r.mapData,
+    players: r.players,
+    ais,
+    humanAi: null,
+    humanEnemy: () => 2,
+    enemyOf: () => 1,
+    startMs: r.gameTimeMs,
+    camera: r.camera,
+    lightPhase: r.lightPhase,
+  });
+}
+
+interface MatchParts {
+  readonly setup: GameSetupConfig;
+  readonly world: EcsWorld;
+  readonly map: MapData;
+  readonly players: PlayerManager;
+  readonly ais: readonly AIPlayer[];
+  readonly humanAi: AIPlayer | null;
+  readonly humanEnemy: () => number;
+  readonly enemyOf: (playerId: number) => number;
+  readonly startMs: number;
+  readonly camera: MatchState['camera'];
+  readonly lightPhase: number;
+}
+
+/** The systems and the step loop over a built (or restored) match. */
+function assemble(parts: MatchParts): HeadlessMatch {
+  const { setup, world, map, players, ais, humanAi, humanEnemy, enemyOf } = parts;
+  const human = players.human();
   const fogFor = (id: number): FogOfWarData | null =>
     (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
   // Same per-frame A* budget as the game (scaled to the step length).
   const paths = new PathBudget();
-  const wonderVictory = options.wonderVictory ?? false;
+  const wonderVictory = setup.victory === 'conquest_wonder';
   const isDefeated = (id: number) => players.get(id)?.defeated ?? false;
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
@@ -111,7 +208,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     wonders: new WonderSystem(world, wonderVictory),
     population: new PopulationSystem(world, 1, players),
   };
-  let now = 0;
+  let now = parts.startMs;
   const step = (dt: number) => {
     now += dt;
     paths.reset(dt);
@@ -136,7 +233,15 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     map,
     players,
     ais,
+    setup,
     timeMs: () => now,
+    snapshot(date) {
+      if (humanAi) throw new Error('A headless match with an AI-driven human cannot be saved');
+      const fogs = new Map<number, FogOfWarData>();
+      for (const ai of ais) if (ai.fog) fogs.set(ai.player.id, ai.fog);
+      const state: MatchState = { setup, world, players, mapData: map, fogs, ais, gameTimeMs: now, camera: parts.camera, lightPhase: parts.lightPhase };
+      return serializeMatch(state, date);
+    },
     run(totalMs, stepMs, onStep) {
       const steps = Math.ceil(totalMs / stepMs);
       for (let i = 0; i < steps; i++) {

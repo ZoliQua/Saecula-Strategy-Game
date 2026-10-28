@@ -41,7 +41,8 @@ export function fireProjectile(world: EcsWorld, o: FireProjectileOptions): Entit
       durationMs: flightDurationMs(distance, b.speed, PROJECTILE_MIN_FLIGHT_MS),
       arcHeight: b.arcHeight,
       ownerId: o.ownerId,
-      payload: { ...o.payload },
+      // Only the attack values: callers pass a whole `attacker` (range, cooldowns), which a save would reject.
+      payload: { meleeAtk: o.payload.meleeAtk, pierceAtk: o.payload.pierceAtk, bonusVsCavalry: o.payload.bonusVsCavalry },
       targetId: t.id ?? -1,
       aoeRadius: o.kind === 'cannonball' ? CANNON_AOE_RADIUS : 0,
       ...(o.launchHeight !== undefined ? { launchHeight: o.launchHeight } : {}),

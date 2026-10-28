@@ -80,7 +80,7 @@ function cases(): [string, object, Inventory][] {
       {
         elapsedMs: 'saved',
         fogDelayMs: 'saved',
-        fogSystem: 'saved',
+        fogSystem: 'excluded: rebuilt on the first tick; only its scan phase is saved (AIPlayerState.fogSinceScanMs)',
         pendingSinceScanMs: 'saved',
         strategy: 'saved',
         rng: 'saved',
