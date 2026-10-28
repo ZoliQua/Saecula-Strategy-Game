@@ -5,7 +5,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * type x age and every Wonder stage (testing/pinnedArt.testkit.ts), so
  * later civs' kit and family changes cannot silently change French.
  * wall@1-3 re-recorded in M5 Task 6, when French got its own wall styles
- * (the wall building type paints a wall piece). Fix round 1 re-recorded the age-1
+ * (the wall building type paints a wall piece); wall@3 again in its
+ * polish round (taller échauguettes). Fix round 1 re-recorded the age-1
  * set (steeper slate, porticus kit), town_center@2 (bays clear of the
  * turrets), town_center@3 and tower@3 (no hidden glazing or dormers).
  */
@@ -48,7 +49,7 @@ pinBuildings('french', {
   'blacksmith@3': '66fb91695ac9c7e8',
   'foundry@3': '6b2844d39c867f02',
   'tower@3': '2cb3f5bdd365879d',
-  'wall@3': '36ec3a6dfdb9aed7',
+  'wall@3': '2bbbcbfc8fcc147c',
   'wonder@3': '21964fe35805dbb8',
   'wonder~s1': '57fa9a732f04b99b',
   'wonder~s2': 'cb4ab7b5bfefaa35',

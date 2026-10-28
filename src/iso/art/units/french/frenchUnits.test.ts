@@ -122,9 +122,12 @@ describe('French unit looks', () => {
     const fig = buildFigure('knight', 'french', 0, 'idle', 0);
     const lily = fig.mats.list.indexOf(FRENCH_M.lily);
     expect(fig.prims.filter((prim) => prim.mat === lily).length).toBeGreaterThanOrEqual(6);
-    // The shield faces the viewer in the first heading: the lily shows there in gold.
-    expect(goldPixels('knight', 'french')).toBeGreaterThanOrEqual(12);
-    expect(goldPixels('knight', 'french')).toBeGreaterThan(goldPixels('knight', 'english') + 10);
+    // Each gold prim has a dark outline copy behind it (readable on a yellow team).
+    const edge = fig.mats.list.indexOf(FRENCH_M.lilyEdge);
+    expect(fig.prims.filter((prim) => prim.mat === edge).length).toBe(fig.prims.filter((prim) => prim.mat === lily).length);
+    // The shield faces the viewer in the first heading: the lily shows there in gold, inside its outline.
+    expect(goldPixels('knight', 'french')).toBeGreaterThanOrEqual(6);
+    expect(goldPixels('knight', 'french')).toBeGreaterThan(goldPixels('knight', 'english') + 5);
   });
 
   it('paints deterministically', () => {

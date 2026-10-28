@@ -60,8 +60,13 @@ export const VAUBAN: WallAgeStyle = {
     frustum(p, 0.15, 0.15, 0.85, 0.85, 7, 31, 0.075, { color: LIMESTONE, detail: 'stone', face: (w, h, l) => quoins(p.ctx, w, h, l, DRESSING) });
     frustum(p, 0.2, 0.2, 0.8, 0.8, 31, 35.5, 0, { color: DRESSING, top: DRESSING, face: (w, h) => cordonFace(p.ctx, w, h) });
     frustum(p, 0.22, 0.22, 0.78, 0.78, 35.5, 41, 0.05, { color: PARAPET, top: PARAPET_TOP, face: (w, h, l) => parapetFace(p.ctx, w, h, l) });
-    if (!STRAIGHT.includes(arms)) gun(p, 41);
-    // The échauguette hangs over the salient (the bastion's front corner), its corbel out from the scarp.
-    echauguette(p, 0.8, 0.8, 31, LIMESTONE, DRESSING);
+    // The échauguette hangs over a salient, its corbel out from the scarp: the front corner on a
+    // rhythm pier; on corner and end bastions the right-hand corner, clear of the gun on the front one.
+    if (STRAIGHT.includes(arms)) {
+      echauguette(p, 0.8, 0.8, 31, LIMESTONE, DRESSING);
+    } else {
+      echauguette(p, 0.8, 0.2, 31, LIMESTONE, DRESSING);
+      gun(p, 41);
+    }
   },
 };

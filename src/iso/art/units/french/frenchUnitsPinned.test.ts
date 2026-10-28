@@ -4,7 +4,8 @@ import { pinUnits } from '../../testing/pinnedArt.testkit';
  * Pixel-identity guard for the French unit art (split pins, see
  * testing/pinnedArt.testkit.ts): pixels must never change; geometry may
  * be re-recorded when the sheet packing changes, with the reason in the
- * commit. Recorded in M5 Task 6.
+ * commit. Recorded in M5 Task 6; knight pixels re-recorded in its polish
+ * round (dark outline under the fleur-de-lis).
  */
 
 pinUnits('french', {
@@ -16,7 +17,7 @@ pinUnits('french', {
     crossbowman: 'ee7b65b3df13e4ce',
     musketeer: 'fd35c27087886896',
     scout: 'a5d45d44bd7f2ce5',
-    knight: '2df6467add3539a7',
+    knight: '1a3894b990258897',
     cavalry: '5b1900944910a429',
     cannon: '2f711e90624650b3',
   },

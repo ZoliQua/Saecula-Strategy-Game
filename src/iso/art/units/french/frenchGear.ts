@@ -112,14 +112,17 @@ export function fleurShield(fig: Figure, hand: V3, T: Xform): void {
   const [, across, up] = axes;
   // Lily-local point: across a, up b, d in front of the shield's centre (the field's top is cut 4.6 above it).
   const e = (a: number, b: number, d = 1.7): V3 => madd(madd(madd(c, face, d), across, a), up, b);
-  // Centre petal, the band, the side petals curling out and down, the foot.
-  fig.cone(e(0, -0.2), e(0, 4.0), 1.6, 0.2, F.lily);
-  fig.box(e(0, -0.8, 1.6), axesAlong(face, across), [0.4, 2.4, 0.6], F.lily);
-  for (const s of [1, -1]) {
-    fig.capsule(e(s * 0.8, -0.3), e(s * 2.9, 2.2), 0.8, F.lily);
-    fig.capsule(e(s * 2.9, 2.2), e(s * 3.6, -0.4), 0.7, F.lily);
+  // Centre petal, the band, the side petals curling out and down, the foot: first a slightly
+  // larger dark copy just behind (the outline that keeps the gold apart from a yellow team), then the gold.
+  for (const [mat, d, grow] of [[F.lilyEdge, 1.2, 0.4], [F.lily, 1.7, 0]] as const) {
+    fig.cone(e(0, -0.2 - grow, d), e(0, 4.0 + grow, d), 1.6 + grow, 0.2 + grow, mat);
+    fig.box(e(0, -0.8, d - 0.1), axesAlong(face, across), [0.4, 2.4 + grow, 0.6 + grow], mat);
+    for (const s of [1, -1]) {
+      fig.capsule(e(s * 0.8, -0.3, d), e(s * 2.9, 2.2, d), 0.8 + grow, mat);
+      fig.capsule(e(s * 2.9, 2.2, d), e(s * 3.6, -0.4, d), 0.7 + grow, mat);
+    }
+    fig.cone(e(0, -1.3, d), e(0, -4.6 - grow, d), 1.1 + grow, 0.25 + grow, mat);
   }
-  fig.cone(e(0, -1.3), e(0, -4.6), 1.1, 0.25, F.lily);
 }
 
 export const FRENCH_HATS = {

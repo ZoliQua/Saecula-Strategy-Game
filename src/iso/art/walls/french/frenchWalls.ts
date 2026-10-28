@@ -25,9 +25,16 @@ import { VAUBAN } from './vauban';
 
 const GO = FRENCH_GOTHIC.palette;
 
-/** A front arm next to a round post starts where its outer edge meets the drum (no ground shows between). */
+/** paintWall builds 45° arms this much thicker (Arm.girth), so their outer edge sits farther from the line. */
+const DIAGONAL_GIRTH = 1.25;
+
+/**
+ * A front arm next to a round post starts where its outer edge meets the
+ * drum (no ground shows between): at sqrt(r² − w²), w the arm's actual
+ * half-width (`half` × the girth paintWall gives the arm).
+ */
 function drumStart(r: number, half: number): (diagonal: boolean, behind: boolean) => number {
-  return (diagonal, behind) => (behind ? 0 : Math.sqrt(Math.max(0, r * r - (half * (diagonal ? 1.25 : 1)) ** 2)));
+  return (diagonal, behind) => (behind ? 0 : Math.sqrt(Math.max(0, r * r - (half * (diagonal ? DIAGONAL_GIRTH : 1)) ** 2)));
 }
 
 const EARTH = 0x6e5a3e;

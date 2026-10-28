@@ -14,6 +14,8 @@ const ROYAL_NAVY = 0x22283c;
 export const FRENCH_M = {
   /** Gold of the fleurs-de-lis (heraldry secondary). */
   lily: { color: LILY_GOLD } as Material,
+  /** Dark outline under the lily, so it reads on a yellow team field. */
+  lilyEdge: { color: 0x2a2218 } as Material,
   /** Dark navy wool hose: well apart from any team blue. */
   navy: { color: ROYAL_NAVY } as Material,
   /** Undyed Gaulish wool, checked trousers (braccae). */

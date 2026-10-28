@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../../game/wallNeighbours';
+import { CIV_DEFS, CIV_IDS } from '../../../../config/civs';
 import type { AgeId, CivId } from '../../../../types';
 import type { LitArt } from '../../lighting/normalLayer';
 import { hashPainting, installRecordingCanvas } from '../../testing/recordingCanvas.testkit';
@@ -20,7 +21,16 @@ const END: Record<number, readonly [number, number]> = {
   [WALL_N]: [0.5, 0], [WALL_E]: [1, 0.5], [WALL_S]: [0.5, 1], [WALL_W]: [0, 0.5],
   [WALL_NE]: [1, 0], [WALL_SE]: [1, 1], [WALL_SW]: [0, 1], [WALL_NW]: [0, 0],
 };
-const OTHERS: readonly CivId[] = ['hungarian', 'english', 'german'];
+/** One civ per other registered wall style set (Hungarian, English, earlier M5 civs; stubs share Hungarian's). */
+const OTHERS: readonly CivId[] = (() => {
+  const seen = new Map<string, CivId>();
+  const own = JSON.stringify(CIV_DEFS.french.wallStyle);
+  for (const civ of CIV_IDS) {
+    const key = JSON.stringify(CIV_DEFS[civ].wallStyle);
+    if (key !== own && !seen.has(key)) seen.set(key, civ);
+  }
+  return [...seen.values()];
+})();
 
 const lightingData = (art: LitArt) => ({ volume: art.volume, glows: art.glows, lights: art.lights, smoke: art.smoke });
 const topZ = (art: LitArt) => Math.max(...art.volume.map((v) => v.z));
@@ -53,7 +63,11 @@ describe('French wall styles', () => {
     expect(run()).toBe(run());
   });
 
-  it.each(AGES)('age %s: every piece differs from the Hungarian, English and German piece', (age) => {
+  it('compares against every other registered wall style set', () => {
+    expect(OTHERS).toEqual(expect.arrayContaining(['hungarian', 'english', 'german']));
+  });
+
+  it.each(AGES)('age %s: every piece differs from every other registered civ\'s piece', (age) => {
     for (const piece of PIECES) {
       const hash = (civ: CivId) => hashPainting(() => lightingData(paintWall.paintWallPiece(piece, age, civ)));
       const fr = hash('french');

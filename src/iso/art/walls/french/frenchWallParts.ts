@@ -81,15 +81,17 @@ export function loop(ctx: Ctx, x: number, y: number, h: number): void {
  */
 export function echauguette(p: IsoPainter, u: number, v: number, z: number, stone: number, dressing: number): number {
   helm(p, u, v, z - 14, [[0, 0.02], [6, 0.065], [11, 0.115], [14, 0.14]], dressing, false);
-  helm(p, u, v, z, [[0, 0.13], [18, 0.13]], stone, false);
+  // The box stands tall enough that its dome clears the parapet crest by a good margin at zoom 1.
+  const box = 25;
+  helm(p, u, v, z, [[0, 0.13], [box, 0.13]], stone, false);
   const ctx = p.ctx;
-  const [x, y] = p.p(u, v, z + 11);
+  const [x, y] = p.p(u, v, z + 15);
   ctx.fillStyle = '#17120e';
-  ctx.fillRect(x - 1.3, y - 5, 2.6, 10);
-  helm(p, u, v, z + 18, [[0, 0.15], [3, 0.145]], dressing, false);
-  helm(p, u, v, z + 21, [[0, 0.135], [4, 0.125], [7.5, 0.095], [10, 0.055], [11.2, 0.018]], shade(dressing, 0.94), false);
-  helm(p, u, v, z + 32, [[0, 0.014], [1.4, 0.036], [3, 0.036], [4.4, 0.01]], dressing, false);
-  for (const [du, dv] of [[-0.13, 0], [0.13, 0], [0, -0.13], [0, 0.13]] as const) p.addVolumePoint(u + du, v + dv, z + 21);
-  p.addVolumePoint(u, v, z + 36);
-  return z + 36;
+  ctx.fillRect(x - 1.3, y - 6, 2.6, 12);
+  helm(p, u, v, z + box, [[0, 0.15], [3, 0.145]], dressing, false);
+  helm(p, u, v, z + box + 3, [[0, 0.135], [4, 0.125], [7.5, 0.095], [10, 0.055], [11.2, 0.018]], shade(dressing, 0.94), false);
+  helm(p, u, v, z + box + 14, [[0, 0.014], [1.4, 0.036], [3, 0.036], [4.4, 0.01]], dressing, false);
+  for (const [du, dv] of [[-0.13, 0], [0.13, 0], [0, -0.13], [0, 0.13]] as const) p.addVolumePoint(u + du, v + dv, z + box + 3);
+  p.addVolumePoint(u, v, z + box + 18);
+  return z + box + 18;
 }
