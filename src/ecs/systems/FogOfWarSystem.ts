@@ -25,6 +25,15 @@ export class FogOfWarSystem {
     this.elapsedMs = intervalMs;
   }
 
+  /** Time since the last scan (saved games keep each AI's scan phase). */
+  get sinceScanMs(): number {
+    return this.elapsedMs;
+  }
+
+  set sinceScanMs(ms: number) {
+    this.elapsedMs = ms;
+  }
+
   update(deltaMs: number): void {
     this.elapsedMs += deltaMs;
     if (this.elapsedMs < this.intervalMs) return;

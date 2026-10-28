@@ -24,6 +24,7 @@ import {
 } from '../economyBuildings';
 import type { WorldView } from '../perception';
 import { expectKind, loadedTime, savedTime, type MediumFields, type StrategyState } from '../strategyState';
+import { PressureControl } from '../PressureControl';
 import { WonderPlay } from '../WonderPlay';
 import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
@@ -40,9 +41,7 @@ export class MediumStrategy extends BaseStrategy {
   protected readonly army: ArmyControl;
   protected firstAttackAtMs: number;
   private lastScoutMs = -Infinity;
-  protected pressureSent = false;
-  /** When the pressure raid left, until the main wave first goes (then null). */
-  private raidOutSinceMs: number | null = null;
+  private readonly pressure: PressureControl;
   private readonly wonder: WonderPlay;
 
   /** `tune` is the strategy's table (AI_MEDIUM; Hard passes its own). */
@@ -58,6 +57,15 @@ export class MediumStrategy extends BaseStrategy {
       startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a),
       assignBuilders: (c, v, site, n) => this.assignBuilders(c, v, site, n),
     });
+    this.pressure = new PressureControl(tune, this.army, {
+      isReserved: (u) => this.isReserved(u),
+      explorers: (v) => this.explorers(v),
+      missingExplorers: (v) => this.explorersWanted() - this.explorers(v).length,
+      train: (c, v, t, n) => this.train(c, v, t, n),
+      trainersFor: (v, t, n) => this.trainersFor(v, t, n),
+      firstAttackAtMs: () => this.firstAttackAtMs,
+      launched: (c, v) => this.onWaveLaunched(c, v),
+    });
   }
 
   snapshot(): StrategyState {
@@ -70,15 +78,22 @@ export class MediumStrategy extends BaseStrategy {
 
   /** Medium's saved fields; Hard and Mesteri add theirs. */
   protected mediumFields(): MediumFields {
-    const { firstAttackAtMs, pressureSent, raidOutSinceMs } = this;
-    return { base: this.baseState(), army: this.army.snapshot(), wonderSite: this.wonder.siteCheck.snapshot(), firstAttackAtMs, lastScoutMs: savedTime(this.lastScoutMs), pressureSent, raidOutSinceMs };
+    return {
+      base: this.baseState(),
+      army: this.army.snapshot(),
+      wonderSite: this.wonder.snapshot(),
+      pressure: this.pressure.snapshot(),
+      firstAttackAtMs: this.firstAttackAtMs,
+      lastScoutMs: savedTime(this.lastScoutMs),
+    };
   }
 
   protected restoreMedium(s: MediumFields): void {
     this.restoreBase(s.base);
     this.army.restore(s.army);
-    this.wonder.siteCheck.restore(s.wonderSite);
-    ({ firstAttackAtMs: this.firstAttackAtMs, pressureSent: this.pressureSent, raidOutSinceMs: this.raidOutSinceMs } = s);
+    this.wonder.restore(s.wonderSite);
+    this.pressure.restore(s.pressure);
+    this.firstAttackAtMs = s.firstAttackAtMs;
     this.lastScoutMs = loadedTime(s.lastScoutMs);
   }
 
@@ -104,11 +119,11 @@ export class MediumStrategy extends BaseStrategy {
     const waitingForTc = this.tryAgeUp(ctx, view);
     const first = this.tune.pressure.beforeFarms;
     // `beforeFarms`: while the raiders are short, their food comes first and new farms wait.
-    const raidingFirst = first && this.preparePressure(ctx, view);
+    const raidingFirst = first && this.pressure.prepare(ctx, view);
     // Houses and farms come before more mouths: an unaffordable one keeps the food for it.
     const saving = this.buildEssentials(ctx, view, raidingFirst);
     // Close to the first-attack time, the raiders come before more villagers.
-    const raiding = first ? raidingFirst : this.preparePressure(ctx, view);
+    const raiding = first ? raidingFirst : this.pressure.prepare(ctx, view);
     if (!waitingForTc && !saving && !raiding) this.trainVillagers(ctx, view);
     if (this.army.underAttack(view)) this.trainDefenders(ctx, view);
   }
@@ -122,42 +137,19 @@ export class MediumStrategy extends BaseStrategy {
     this.keepScouting(ctx, view);
     this.trainArmy(ctx, view);
     this.researchTechs(ctx, view);
-    this.pressure(ctx, view);
-    this.recallRaid(ctx, view);
-    if (this.pressureSent && !this.army.attacking && attackReady({
+    this.pressure.launch(ctx, view);
+    this.pressure.recall(ctx, view);
+    if (this.pressure.sent && !this.army.attacking && attackReady({
       armySize: view.military.filter((u) => !this.isReserved(u)).length,
       wave: this.waveThreshold(ctx, view),
       timeMs: ctx.timeMs,
       notBeforeMs: this.firstAttackAtMs,
     })) {
       this.army.launchWave(ctx, view);
-      this.raidOutSinceMs = null;
+      this.pressure.mainWaveLaunched();
       this.onWaveLaunched(ctx, view);
     }
     this.updateThoughts(ctx, view);
-  }
-
-  /**
-   * §10.2 first attack at the rolled 5-8 min: a small pressure wave of
-   * Roman-age infantry. Below the minimum size it waits for the next
-   * decision (a few more units) instead of sending a token force.
-   */
-  private pressure(ctx: AIContext, view: WorldView): void {
-    if (this.pressureSent) return;
-    const squad = this.pressureSquad(view);
-    if (ctx.timeMs < this.firstAttackAtMs || squad.length < this.tune.pressure.minArmy || this.army.attacking) return;
-    this.army.launchWave(ctx, view, squad);
-    this.pressureSent = true;
-    this.raidOutSinceMs = ctx.timeMs;
-    this.onWaveLaunched(ctx, view);
-  }
-
-  /** `tune.pressure.recallMs` after the raid left (and before any main wave), it is called home. */
-  private recallRaid(ctx: AIContext, view: WorldView): void {
-    const after = this.tune.pressure.recallMs;
-    if (after === undefined || this.raidOutSinceMs === null || ctx.timeMs - this.raidOutSinceMs < after) return;
-    this.raidOutSinceMs = null;
-    this.army.recall(ctx, view);
   }
 
   /** Called after each wave launch (pressure and main waves); Mesteri splits off a flank here. */
@@ -168,57 +160,12 @@ export class MediumStrategy extends BaseStrategy {
    * goes to the raid first), then `tune.scouts`.
    */
   private explorersWanted(): number {
-    return this.pressureSent ? this.tune.scouts : Math.min(1, this.tune.scouts);
+    return this.pressure.sent ? this.tune.scouts : Math.min(1, this.tune.scouts);
   }
 
   /** Scouts kept exploring (never wave or reserved units). */
   protected explorers(view: WorldView): Entity[] {
     return view.scouts.filter((s) => !this.army.inWave(s) && !this.isReserved(s)).slice(0, this.explorersWanted());
-  }
-
-  /** Pressure units besides the exploring scouts. */
-  private pressureSquad(view: WorldView): Entity[] {
-    const explorers = new Set(this.explorers(view));
-    return [...view.military, ...view.scouts].filter(
-      (u) => !explorers.has(u) && !this.isReserved(u) && u.unit?.unitType === this.tune.pressure.unit,
-    );
-  }
-
-  /**
-   * From `leadMs` before the first-attack time until the raid leaves,
-   * trains the pressure squad (queued units counted). True while the squad
-   * is still short, `holdsVillagers` is set and holding may pay off
-   * (`mayHoldForPressure`): the caller then holds back villager training
-   * (and, with `beforeFarms`, new farms).
-   */
-  private preparePressure(ctx: AIContext, view: WorldView): boolean {
-    const { unit, minArmy, leadMs } = this.tune.pressure;
-    if (this.pressureSent || ctx.timeMs < this.firstAttackAtMs - leadMs) return false;
-    const queued = view.buildings.reduce(
-      (n, b) => n + (b.trainingQueue?.entries.filter((e) => e.unitType === unit).length ?? 0),
-      0,
-    );
-    // Missing explorers: the next scouts trained go exploring first.
-    const wanted = minArmy + (unit === 'scout' ? this.explorersWanted() - this.explorers(view).length : 0);
-    const have = this.pressureSquad(view).length + queued;
-    if (have >= wanted) return false;
-    this.train(ctx, view, unit, this.tune.militaryQueue);
-    return this.tune.pressure.holdsVillagers && this.mayHoldForPressure(ctx, view);
-  }
-
-  /**
-   * Whether waiting for the raiders is worth it. Never without a finished
-   * trainer; never when starved (food below the raider's cost and no
-   * finished farm: holding farms and villagers would stall for good); and
-   * never past `AI_COMMON.pressureHoldCapMs` after the first-attack time
-   * (e.g. capped by population, or scouts keep dying).
-   */
-  private mayHoldForPressure(ctx: AIContext, view: WorldView): boolean {
-    const unit = this.tune.pressure.unit;
-    if (this.trainersFor(view, unit, Infinity).length === 0) return false;
-    if (ctx.timeMs > this.firstAttackAtMs + AI_COMMON.pressureHoldCapMs) return false;
-    const farm = view.buildings.some((b) => b.building?.type === 'farm' && !b.underConstruction);
-    return farm || ctx.player.resources.food >= UNIT_SPECS[unit].cost.food;
   }
 
   // ------------------------------------------------------------ economy

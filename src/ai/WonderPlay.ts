@@ -7,6 +7,7 @@ import type { BuildingType } from '../types';
 import type { AIContext } from './AIPlayer';
 import { shouldBuildWonder, wantsWonder, WonderSiteCheck } from './decisions/wonder';
 import type { WorldView } from './perception';
+import type { WonderSiteState } from './strategyState';
 import { workableNodes } from './workforce';
 
 /** The strategy helpers Wonder play acts through (BaseStrategy's placement and building). */
@@ -30,9 +31,13 @@ export class WonderPlay {
     private readonly act: WonderActions,
   ) {}
 
-  /** The cached site answer (re-checked every AI_COMMON.wonderSiteRetryMs). */
-  get siteCheck(): WonderSiteCheck {
-    return this.site;
+  /** The cached site answer (re-checked every AI_COMMON.wonderSiteRetryMs), for saved games. */
+  snapshot(): WonderSiteState {
+    return this.site.snapshot();
+  }
+
+  restore(state: WonderSiteState): void {
+    this.site.restore(state);
   }
 
   /**

@@ -59,6 +59,8 @@ export class AIPlayer {
   private fogSystem: FogOfWarSystem | null = null;
   private fogDelayMs: number;
   private readonly rng: StatefulRng | null;
+  /** A restored scan phase, applied when the fog system is built on the first tick. */
+  private pendingSinceScanMs: number | null = null;
 
   constructor(
     public readonly player: Player,
@@ -71,26 +73,36 @@ export class AIPlayer {
   }
 
   /**
-   * JSON-safe state for a saved game: the AI clock, the fog-scan delay,
-   * the RNG and the strategy. The fog itself is saved through
-   * FogOfWarData; the FogOfWarSystem scan phase is not (it restarts).
+   * JSON-safe state for a saved game: the AI clock, the fog-scan delay and
+   * phase (so restored AIs keep scanning on staggered frames), the RNG and
+   * the strategy. The fog itself is saved through FogOfWarData. Throws
+   * when built without an `rng` (its state could not be saved).
    */
   snapshot(): AIPlayerState {
     return {
       elapsedMs: this.elapsedMs,
       fogDelayMs: this.fogDelayMs,
-      rngState: this.rng?.getState() ?? 0,
+      fogSinceScanMs: this.fogSystem?.sinceScanMs ?? this.pendingSinceScanMs,
+      rngState: this.requireRng().getState(),
       strategy: this.strategy.snapshot(),
     };
   }
 
   /** Takes over a snapshot (RNG state included); throws when built without an `rng`. */
   restore(state: AIPlayerState): void {
-    if (!this.rng) throw new Error('AIPlayer.restore needs the AI built with an rng');
+    const rng = this.requireRng();
     this.strategy.restore(state.strategy);
     this.elapsedMs = state.elapsedMs;
     this.fogDelayMs = state.fogDelayMs;
-    this.rng.setState(state.rngState);
+    // Saved before the first tick (null): the next tick scans, as in a fresh match.
+    if (this.fogSystem) this.fogSystem.sinceScanMs = state.fogSinceScanMs ?? AI_COMMON.fogScanMs;
+    else this.pendingSinceScanMs = state.fogSinceScanMs;
+    rng.setState(state.rngState);
+  }
+
+  private requireRng(): StatefulRng {
+    if (!this.rng) throw new Error('AIPlayer snapshot/restore needs the AI built with an rng');
+    return this.rng;
   }
 
   /** The AI's fog, or null before its first tick when none was given. */
@@ -101,7 +113,11 @@ export class AIPlayer {
   update(ctx: Omit<AIContext, 'timeMs' | 'player' | 'fog'>, deltaMs: number): void {
     this.elapsedMs += deltaMs;
     const fog = (this.fogData ??= new FogOfWarData(ctx.mapData.width, ctx.mapData.height));
-    this.fogSystem ??= new FogOfWarSystem(ctx.world, fog, this.player.id, AI_COMMON.fogScanMs);
+    if (!this.fogSystem) {
+      this.fogSystem = new FogOfWarSystem(ctx.world, fog, this.player.id, AI_COMMON.fogScanMs);
+      if (this.pendingSinceScanMs !== null) this.fogSystem.sinceScanMs = this.pendingSinceScanMs;
+      this.pendingSinceScanMs = null;
+    }
     if (this.fogDelayMs > 0) this.fogDelayMs -= deltaMs;
     else this.fogSystem.update(deltaMs);
     this.strategy.update({ ...ctx, player: this.player, timeMs: this.elapsedMs, fog }, deltaMs);

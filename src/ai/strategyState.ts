@@ -12,9 +12,9 @@ import type { KnownBuilding, VillagerSighting } from './perception';
  * insertion order, which the AI's iteration depends on).
  *
  * Not saved (rebuilt as in a fresh match, harmless — M6 decisions 3, 4):
- * the dev ThoughtLog (overlay only: phase, plan, stance, recent entries)
- * and each AIPlayer's FogOfWarSystem scan phase (the next scan comes at
- * most one AI_COMMON.fogScanMs late). Tuning tables and the personality
+ * the dev ThoughtLog (overlay only: phase, plan, stance, recent entries).
+ * Each AI's fog-scan phase IS saved (AIPlayerState.fogSinceScanMs), so
+ * restored AIs keep scanning on staggered frames. Tuning tables and the personality
  * are not strategy state: they come from the difficulty and Player.personality
  * (pickPersonality(seed, id)) when the strategy is rebuilt.
  */
@@ -47,6 +47,12 @@ export interface FlankState {
   readonly count: number;
 }
 
+export interface PressureState {
+  readonly sent: boolean;
+  /** When the pressure raid left, until the main wave first goes (Mesteri's raid recall). */
+  readonly raidOutSinceMs: number | null;
+}
+
 /** WonderPlay's cached "is there a Wonder site" answer and when it is checked again. */
 export interface WonderSiteState {
   readonly nextSearchMs: number | null;
@@ -73,11 +79,9 @@ export interface MediumFields {
   readonly base: BaseState;
   readonly army: ArmyState;
   readonly wonderSite: WonderSiteState;
+  readonly pressure: PressureState;
   readonly firstAttackAtMs: number;
   readonly lastScoutMs: number | null;
-  readonly pressureSent: boolean;
-  /** When the pressure raid left, until the main wave first goes (Mesteri's raid recall). */
-  readonly raidOutSinceMs: number | null;
 }
 
 export interface MediumState extends MediumFields {
@@ -111,6 +115,8 @@ export interface AIPlayerState {
   /** The AI's own clock (its strategy's `timeMs`). */
   readonly elapsedMs: number;
   readonly fogDelayMs: number;
+  /** Time since the AI's last fog scan (its scan phase); null before its first tick (the first tick scans). */
+  readonly fogSinceScanMs: number | null;
   readonly rngState: number;
   readonly strategy: StrategyState;
 }
