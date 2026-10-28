@@ -51,4 +51,36 @@ describe('AI personalities', () => {
     // Mesteri keeps its own fields (flank) through the overlay.
     expect(applyPersonality(AI_MASTER, 'boomer').flank).toEqual(AI_MASTER.flank);
   });
+
+  it('only the turtle fortifies proactively (Hard family)', () => {
+    expect(applyPersonality(AI_HARD, 'turtle').turtle.proactive).toBe(true);
+    expect(applyPersonality(AI_MASTER, 'turtle').turtle.proactive).toBe(true);
+    expect(applyPersonality(AI_HARD, 'rusher').turtle.proactive).toBeUndefined();
+    expect(applyPersonality(AI_HARD, 'boomer').turtle.proactive).toBeUndefined();
+    expect(AI_HARD.turtle.proactive).toBeUndefined();
+  });
+
+  it('the villager multiplier scales the Hard family\'s population-share sizing', () => {
+    const boomer = applyPersonality(AI_HARD, 'boomer');
+    expect(boomer.villagerShare.peace).toBeCloseTo(AI_HARD.villagerShare.peace * 1.15, 10);
+    expect(boomer.villagerShare.war).toBeCloseTo(AI_HARD.villagerShare.war * 1.15, 10);
+    const rusher = applyPersonality(AI_MASTER, 'rusher');
+    expect(rusher.villagerShare.peace).toBeCloseTo(AI_MASTER.villagerShare.peace * 0.9, 10);
+    expect(applyPersonality(AI_HARD, 'turtle').villagerShare).toEqual(AI_HARD.villagerShare);
+    // Villagers wanted at age 2 (share × population target): boomer > base > rusher.
+    const at2 = (t: typeof AI_HARD) => Math.round(t.villagerShare.peace * (t.populationTarget[2] ?? 0));
+    expect(at2(boomer)).toBeGreaterThan(at2(AI_HARD));
+    expect(at2(applyPersonality(AI_HARD, 'rusher'))).toBeLessThan(at2(AI_HARD));
+  });
+
+  it('no personality touches the Wonder play or its guards (Task 1)', () => {
+    for (const id of PERSONALITIES) {
+      for (const base of [AI_MEDIUM, AI_HARD, AI_MASTER]) {
+        const t = applyPersonality(base, id);
+        expect(t.wonder, id).toEqual(base.wonder);
+        // Easier than the base would keep a boomer/turtle saving all game: the guard thresholds are the base's.
+        expect(t.ageUpReserve[3], id).toBe(base.ageUpReserve[3]);
+      }
+    }
+  });
 });

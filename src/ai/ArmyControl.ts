@@ -165,6 +165,11 @@ export class ArmyControl {
     for (const u of idle) ctx.world.addComponent(u, 'moveIntent', { target: this.exploreGoal });
   }
 
+  /** Calls the wave home (it is spent or its job is done). */
+  recall(ctx: AIContext, view: WorldView): void {
+    if (this.attacking) this.retreat(ctx, view);
+  }
+
   private retreat(ctx: AIContext, view: WorldView): void {
     const at = home(view);
     for (const id of this.wave) {

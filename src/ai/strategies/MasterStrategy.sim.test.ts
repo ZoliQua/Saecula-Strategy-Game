@@ -46,28 +46,44 @@ function duel(seed: number, minutes: number): { wonAt: number; master: MasterStr
   return { wonAt, master };
 }
 
+/** Hard alone (same setup as `alone`): when it reached age 2. */
+function hardAge2(seed: number): number {
+  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
+  const ai = match.players.get(2)!;
+  let age2 = Infinity;
+  match.run(16 * MIN, 100, (t) => {
+    if (age2 === Infinity && ai.age >= 2) age2 = t;
+    return age2 < Infinity;
+  });
+  return age2;
+}
+
 describe('MasterStrategy headless simulation (64×64 meadow)', () => {
   /**
-   * Alone, seeds 1-4 (AI_MASTER, gather split tuned in Task 2): age 2 at 12.15 / 11.62 / 12.87 / 12.69 min,
-   * age 3 at 18.09 / 17.97 / 18.39 / 18.20 min (Hard's worst on seeds 1-8: 13.24 / 20.87). The brief's
-   * age-2 target of 12.0 min is NOT met on seeds 1, 3 and 4 (see the Task 2 report): the bound below is
-   * the measured worst plus a small margin, pending the controller's ruling.
+   * Alone, seeds 1-4 (AI_MASTER after the Task 2 rulings: age-1 population 22, food-heavy Roman age,
+   * raid recalled after 2 min): age 2 at 10.82 / 10.44 / 11.44 / 11.25 min, age 3 at 17.59 / 17.62 /
+   * 19.05 / 18.44 min. Hard on the same seeds: age 2 at 12.65 / 11.89 / 12.64 / 12.62 (worst on 1-8:
+   * 13.24 / 20.87).
    */
-  it('on seeds 1-4 alone: age 2 by 13.0 min (measured worst 12.87) and age 3 by 19.5 min (worst 18.39)', () => {
+  it('on seeds 1-4 alone: age 2 by 12.0 min (worst 11.44) and earlier than Hard, age 3 by 19.5 min (worst 19.05)', () => {
     for (const seed of [1, 2, 3, 4]) {
       const r = alone(seed);
-      expect(r.age2, `seed ${seed} age 2`).toBeLessThanOrEqual(13.0 * MIN);
+      expect(r.age2, `seed ${seed} age 2`).toBeLessThanOrEqual(12.0 * MIN);
+      expect(r.age2, `seed ${seed} age 2 vs Hard`).toBeLessThan(hardAge2(seed));
       expect(r.age3, `seed ${seed} age 3`).toBeLessThanOrEqual(19.5 * MIN);
     }
   }, 300_000);
 
   /**
-   * Against Hard, seeds 1-4: Hard's TC falls at — / 14.75 / 18.56 / 16.00 min; on seed 1 Hard's scout
-   * pressure kills Mesteri's villagers and Mesteri loses its TC at 19.40. Seed 2 is pinned at its measured
-   * 14.75 min + 15 %. No flank leaves on any seed (flanksLaunched 0; see the Task 2 report).
+   * Against Hard, seeds 1-4: Hard's TC falls at — / 21.13 / 23.39 / 20.18 min (3 of 4); on seed 1 Hard's
+   * scout pressure kills Mesteri's villagers and Mesteri loses its TC at 19.40. Flanks: 0 / 0 / 1 / 0
+   * (the main waves leave at 10 in the rush stance; only seed 3 knew an economy building 6+ tiles from
+   * the enemy TC then). Seed 3 is pinned at its measured 23.39 min + 15 %.
    */
-  it('beats Hard on fixed seed 2: the rival TC falls within 17 min (measured 14.75)', () => {
-    expect(duel(2, 17).wonAt).toBeLessThanOrEqual(17 * MIN);
+  it('beats Hard on fixed seed 3 within 27 min (measured 23.39) and sends a flank on the way', () => {
+    const r = duel(3, 27);
+    expect(r.wonAt).toBeLessThanOrEqual(27 * MIN);
+    expect(r.master.flanksLaunched).toBeGreaterThanOrEqual(1);
   }, 300_000);
 
   it('is deterministic: two runs of seed 3 give identical age-2 times and thought lists', () => {

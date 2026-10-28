@@ -3,6 +3,9 @@
  * (ai/personality.ts) and laid over the Medium-family tuning of the
  * Medium, Hard and Mesteri AIs. Multipliers scale the base value (a span
  * scales both bounds); results are rounded. Easy has no personality.
+ * The villager multiplier scales Medium's `villagerTarget` and, for the
+ * Hard family (which sizes villagers as a share of its population), both
+ * `villagerShare` entries.
  */
 export type PersonalityId = 'rusher' | 'boomer' | 'turtle';
 
@@ -27,6 +30,8 @@ export interface PersonalityTuning {
   readonly turtleTowers: number;
   /** Hard family: added to `stance.rushEnter`. */
   readonly rushEnter: number;
+  /** Hard family: towers and walls go up from age 2 in any stance, not only once attacks made it turtle. */
+  readonly fortifyProactively: boolean;
 }
 
 const NEUTRAL: PersonalityTuning = {
@@ -39,6 +44,7 @@ const NEUTRAL: PersonalityTuning = {
   turtleEnter: 1,
   turtleTowers: 0,
   rushEnter: 0,
+  fortifyProactively: false,
 };
 
 export const AI_PERSONALITY: Readonly<Record<PersonalityId, PersonalityTuning>> = {
@@ -47,5 +53,5 @@ export const AI_PERSONALITY: Readonly<Record<PersonalityId, PersonalityTuning>> 
   /** Grows its economy first; attacks late with big waves. */
   boomer: { ...NEUTRAL, firstAttackMs: 1.4, attackWave: 1.3, villagerTarget: 1.15, fullAgeUpReserve: true },
   /** Keeps a big home guard, fortifies sooner, attacks late. */
-  turtle: { ...NEUTRAL, minDefenders: 4, firstAttackMs: 1.5, attackWave: 1.4, turtleEnter: 0.5, turtleTowers: 1 },
+  turtle: { ...NEUTRAL, minDefenders: 4, firstAttackMs: 1.5, attackWave: 1.4, turtleEnter: 0.5, turtleTowers: 1, fortifyProactively: true },
 };

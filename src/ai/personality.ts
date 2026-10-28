@@ -46,6 +46,14 @@ export function applyPersonality<T extends MediumTuning>(tune: T, id: Personalit
       turtleEnter: tune.stance.turtleEnter * p.turtleEnter,
       rushEnter: tune.stance.rushEnter + p.rushEnter,
     },
-    turtle: { ...tune.turtle, towers: tune.turtle.towers + p.turtleTowers },
+    villagerShare: {
+      peace: tune.villagerShare.peace * p.villagerTarget,
+      war: tune.villagerShare.war * p.villagerTarget,
+    },
+    turtle: {
+      ...tune.turtle,
+      towers: tune.turtle.towers + p.turtleTowers,
+      ...(p.fortifyProactively ? { proactive: true } : {}),
+    },
   };
 }

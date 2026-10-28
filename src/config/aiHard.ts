@@ -41,6 +41,8 @@ export interface HardTuning extends MediumTuning {
     readonly wallBuilders: number;
     /** While turtling, the army only marches out at this size. */
     readonly wave: number;
+    /** Fortify from age 2 in any stance (the turtle personality); absent = only in the turtle stance. */
+    readonly proactive?: boolean;
   };
   /** Rush: smaller waves, sent as soon as they are ready. */
   readonly rush: { readonly wave: number };

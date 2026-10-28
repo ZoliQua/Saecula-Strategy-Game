@@ -73,7 +73,8 @@ export class HardStrategy extends MediumStrategy {
   protected override decide(ctx: AIContext, view: WorldView): void {
     this.updateStance(ctx, view);
     super.decide(ctx, view);
-    if (this.stance.stance === 'turtle') this.fortify(ctx, view);
+    const proactive = this.hard.turtle.proactive === true && ctx.player.age >= 2;
+    if (this.stance.stance === 'turtle' || proactive) this.fortify(ctx, view);
     this.planHarass(ctx, view);
   }
 
@@ -155,11 +156,15 @@ export class HardStrategy extends MediumStrategy {
 
   /**
    * Turtle: towers (age 2+) and wall lines across the side the attacks
-   * came from (the remembered enemy TC when none came yet).
+   * came from (the remembered enemy TC when none came yet; a proactive
+   * turtle with neither faces the map centre, where enemies come from).
    */
   private fortify(ctx: AIContext, view: WorldView): void {
     const home = baseAnchor(view);
-    const threat = this.threatFrom ?? view.knownEnemyBuildings.find((b) => b.type === 'town_center')?.position ?? null;
+    const centre = { tx: Math.floor(ctx.mapData.width / 2), ty: Math.floor(ctx.mapData.height / 2) };
+    const threat = this.threatFrom
+      ?? view.knownEnemyBuildings.find((b) => b.type === 'town_center')?.position
+      ?? (this.hard.turtle.proactive === true ? centre : null);
     if (!home || !threat) return;
     const t = this.hard.turtle;
     const towerSpot = pointToward(home, threat, t.towerDistance);
@@ -167,8 +172,16 @@ export class HardStrategy extends MediumStrategy {
       this.startBuilding(ctx, view, 'tower', towerSpot, this.reserve(ctx, view));
     }
     if (this.wallLinesLaid < t.wallLines) {
-      const tiles = wallLineAcross(home, threat, t.wallDistance + this.wallLinesLaid * t.wallLineSpacing, t.wallHalfLength);
-      if (this.startWallLine(ctx, view, tiles, t.wallBuilders, this.reserve(ctx, view)) > 0) this.wallLinesLaid++;
+      // A proactive turtle whose line is blocked (trees, buildings) tries the next ring out instead.
+      const tries = t.proactive === true ? t.wallLines - this.wallLinesLaid : 1;
+      for (let k = 0; k < tries; k++) {
+        const distance = t.wallDistance + (this.wallLinesLaid + k) * t.wallLineSpacing;
+        const tiles = wallLineAcross(home, threat, distance, t.wallHalfLength);
+        if (this.startWallLine(ctx, view, tiles, t.wallBuilders, this.reserve(ctx, view)) > 0) {
+          this.wallLinesLaid++;
+          break;
+        }
+      }
     }
   }
 

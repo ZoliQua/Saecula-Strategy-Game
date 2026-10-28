@@ -40,6 +40,8 @@ export class MediumStrategy extends BaseStrategy {
   protected readonly firstAttackAtMs: number;
   private lastScoutMs = -Infinity;
   protected pressureSent = false;
+  /** When the pressure raid left, until the main wave first goes (then null). */
+  private raidOutSinceMs: number | null = null;
   private readonly wonder: WonderPlay;
 
   /** `tune` is the strategy's table (AI_MEDIUM; Hard passes its own). */
@@ -98,6 +100,7 @@ export class MediumStrategy extends BaseStrategy {
     this.trainArmy(ctx, view);
     this.researchTechs(ctx, view);
     this.pressure(ctx, view);
+    this.recallRaid(ctx, view);
     if (this.pressureSent && !this.army.attacking && attackReady({
       armySize: view.military.filter((u) => !this.isReserved(u)).length,
       wave: this.waveThreshold(ctx, view),
@@ -105,6 +108,7 @@ export class MediumStrategy extends BaseStrategy {
       notBeforeMs: this.firstAttackAtMs,
     })) {
       this.army.launchWave(ctx, view);
+      this.raidOutSinceMs = null;
       this.onWaveLaunched(ctx, view);
     }
     this.updateThoughts(ctx, view);
@@ -121,7 +125,16 @@ export class MediumStrategy extends BaseStrategy {
     if (ctx.timeMs < this.firstAttackAtMs || squad.length < this.tune.pressure.minArmy || this.army.attacking) return;
     this.army.launchWave(ctx, view, squad);
     this.pressureSent = true;
+    this.raidOutSinceMs = ctx.timeMs;
     this.onWaveLaunched(ctx, view);
+  }
+
+  /** `tune.pressure.recallMs` after the raid left (and before any main wave), it is called home. */
+  private recallRaid(ctx: AIContext, view: WorldView): void {
+    const after = this.tune.pressure.recallMs;
+    if (after === undefined || this.raidOutSinceMs === null || ctx.timeMs - this.raidOutSinceMs < after) return;
+    this.raidOutSinceMs = null;
+    this.army.recall(ctx, view);
   }
 
   /** Called after each wave launch (pressure and main waves); Mesteri splits off a flank here. */

@@ -27,6 +27,11 @@ export interface MediumTuning {
     readonly holdsVillagers: boolean;
     /** While the squad is short, new farms wait too. */
     readonly beforeFarms: boolean;
+    /**
+     * The raid is called home this long after it left (ms), so the main wave can go (it only leaves
+     * while no wave is out). Absent: the raid stays out until it falls below AI_COMMON.retreatBelow.
+     */
+    readonly recallMs?: number;
   };
   readonly militaryQueue: number;
   readonly trainPerDecision: number;
