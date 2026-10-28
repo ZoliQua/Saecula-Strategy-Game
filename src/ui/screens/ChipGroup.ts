@@ -32,11 +32,13 @@ export class ChipGroup<T extends string> {
     this.root = el('div', { class: `chip-group chips-${name}`, role: 'radiogroup', 'aria-label': label });
     items.forEach((item, i) => {
       const descId = item.description ? `chip-${name}-${item.value}-desc` : undefined;
+      // Named by the label alone: the description inside the chip is read once, as its description.
+      const labelId = `chip-${name}-${item.value}-label`;
       const b = el(
         'button',
-        { class: 'pick-chip', type: 'button', role: 'radio', 'aria-checked': false, 'aria-describedby': descId },
+        { class: 'pick-chip', type: 'button', role: 'radio', 'aria-checked': false, 'aria-labelledby': labelId, 'aria-describedby': descId },
         el('i', { class: 'pick-swatch', style: `background:${item.swatch}`, 'aria-hidden': 'true' }),
-        el('span', { class: 'pick-label' }, item.label),
+        el('span', { class: 'pick-label', id: labelId }, item.label),
         descId ? el('span', { class: 'sr-only', id: descId }, item.description) : null,
       );
       b.addEventListener('click', () => this.pick(item.value));
