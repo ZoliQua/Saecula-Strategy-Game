@@ -3,6 +3,7 @@ import type { BuildingType } from '../../../types';
 import type { WindowLook } from '../isoProps';
 import type { RoofMaterial } from '../roofCover';
 import type { CrestCharge } from './charges';
+import type { FrameSchool } from './kits/halfTimber';
 
 /*
  * ArchStyle (M4 design decision 3): the data that turns one painter
@@ -53,6 +54,8 @@ export interface ArchPalette {
   readonly shutter: number;
   /** Window frame and glazing (IsoPainter.window). */
   readonly window: WindowLook;
+  /** Masonry of free-standing towers where a family has its own default (the English Norman tower's ragstone). */
+  readonly towerStone?: number;
   /** Per-type main roof colour where it is not `roof` (the Roman set's varied roofs). */
   readonly roofs: Readonly<Partial<Record<BuildingType, number>>>;
 }
@@ -91,6 +94,28 @@ export interface Ornaments {
   readonly boardedGables: boolean;
 }
 
+/**
+ * Shared kits a style swaps into the spots its family already has
+ * (architecture/kits/). Every field is optional: absent keeps the
+ * family's own painting, so styles written before a kit existed paint
+ * exactly as before.
+ */
+export interface StyleKits {
+  /** Carpentry of framed storeys and gables (kits/halfTimber.ts); default 'tudor'. */
+  readonly framing?: FrameSchool;
+  /** Framed upper storeys overhang the storey below; default true. */
+  readonly jetties?: boolean;
+  /**
+   * Stepped (crow-step) gable ends on main gable roofs (kits/steppedGable.ts),
+   * in the wall's own render ('wall') or in brick with blind niches ('brick').
+   */
+  readonly steppedGables?: 'wall' | 'brick';
+  /** Turret caps, keep tops and roof cupolas become needle spires (kits/needleSpire.ts). */
+  readonly needleSpires?: boolean;
+  /** The Roman family's plastered blocks get a framed upper storey over a stone ground storey. */
+  readonly framedUpper?: boolean;
+}
+
 /** Heraldic charge on crests and shields (charges.ts, painted by facade.ts crest). */
 export type { CrestCharge } from './charges';
 
@@ -108,7 +133,17 @@ export type { CrestCharge } from './charges';
  * style ids freely and a family id only where its silhouette needs
  * painters of its own.
  */
-export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor' | 'georgian';
+export type ArchFamily =
+  | 'roman'
+  | 'medieval'
+  | 'baroque'
+  | 'romano_british'
+  | 'tudor'
+  | 'georgian'
+  /** Roman layouts with a Porta Nigra twin-tower gate as town centre (German age 1). */
+  | 'porta_nigra'
+  /** Georgian layouts with the Speyer Kaiserdom as Wonder (German age 3). */
+  | 'kaiserdom';
 
 /**
  * Families whose painters size their canvases from the style
@@ -116,7 +151,7 @@ export type ArchFamily = 'roman' | 'medieval' | 'baroque' | 'romano_british' | '
  * civ styles ride. Bespoke families size their own canvases, so they
  * must fit whatever headroom a style sets (style.test.ts).
  */
-export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque'];
+export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra'];
 
 export interface ArchStyle {
   readonly id: ArchStyleId;
@@ -134,6 +169,8 @@ export interface ArchStyle {
    * style's volume fits its canvas.
    */
   readonly headroom: number;
+  /** Kit substitutions (StyleKits); absent = none. */
+  readonly kits?: StyleKits;
 }
 
 /** Main roof colour of a building type in a style. */

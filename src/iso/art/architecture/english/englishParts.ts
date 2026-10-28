@@ -1,6 +1,7 @@
 import { ellipse, type Ctx } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
+import { CHARGES, type CrestCharge } from '../charges';
 import { post } from '../parts';
 
 /*
@@ -9,8 +10,11 @@ import { post } from '../parts';
  * lighting data (normals through boxes, volume, smoke) on the painter.
  */
 
-/** Team-coloured banner hanging from a rod on a face (face-local), with a white St George cross and gold fringe. */
-export function hangingBanner(ctx: Ctx, x: number, y: number, w: number, h: number, team: number, light = 1): void {
+/**
+ * Team-coloured banner hanging from a rod on a face (face-local) with a
+ * gold fringe, bearing a white St George cross or another style's charge.
+ */
+export function hangingBanner(ctx: Ctx, x: number, y: number, w: number, h: number, team: number, light = 1, charge: CrestCharge = 'st_george'): void {
   ctx.fillStyle = css(shade(0x2a221c, light));
   ctx.fillRect(x - 2, y - 2, w + 4, 2.4);
   const g = ctx.createLinearGradient(x, 0, x + w, 0);
@@ -25,9 +29,11 @@ export function hangingBanner(ctx: Ctx, x: number, y: number, w: number, h: numb
   ctx.lineTo(x, y + h);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = css(shade(0xf3eee2, light), 0.9);
-  ctx.fillRect(x + w / 2 - w * 0.11, y + 2, w * 0.22, h - w * 0.5);
-  ctx.fillRect(x + 1.5, y + h * 0.3, w - 3, w * 0.2);
+  if (charge === 'st_george') {
+    ctx.fillStyle = css(shade(0xf3eee2, light), 0.9);
+    ctx.fillRect(x + w / 2 - w * 0.11, y + 2, w * 0.22, h - w * 0.5);
+    ctx.fillRect(x + 1.5, y + h * 0.3, w - 3, w * 0.2);
+  } else CHARGES[charge](ctx, x + w / 2, y + h * 0.4, w * 0.42);
   ctx.fillStyle = css(shade(0xd9b14a, light));
   ctx.fillRect(x, y, w, 1.6);
 }

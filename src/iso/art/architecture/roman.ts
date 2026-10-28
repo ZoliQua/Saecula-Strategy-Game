@@ -1,15 +1,52 @@
 import { ellipse } from '../canvas';
 import { css, shade } from '../palette';
+import { R } from './facade';
+import { framedGable, styleFraming } from './kits/halfTimber';
 import { column, forgeLight, goldPile, logPile, target, torch } from './parts';
 import { roofOf, type ArchStyle } from './style';
 import { roofChimney, styledGable, styledHip } from './styledRoofs';
 import { romanTower } from './towers';
+import type { IsoPainter } from '../isoPainter';
 import type { AgeArtSet } from './types';
+
+/** Height of the framed upper storey a style with kits.framedUpper adds to the house (art px). */
+const FRAMED_STOREY = 22;
+
+/**
+ * House of a style with a framed upper storey: a dressed-stone ground
+ * storey with the door, a timber-framed whitewashed storey above, the
+ * chimney and the gable roof raised with it.
+ */
+function framedHouse(p: IsoPainter, s: ArchStyle, team: number): void {
+  const c = s.palette;
+  const ground = 26;
+  const eave = 40 + FRAMED_STOREY;
+  p.footShadow();
+  p.ground(0.15, 0.15, 1.85, 1.85, 0xa99f88);
+  p.box(0.3, 0.35, 1.7, 1.65, 0, ground, { color: c.stone, detail: 'stone' });
+  p.leftFace(0.3, 1.7, 1.65, 0, () => {
+    p.door(56, 15, 23, shade(team, 0.75));
+    p.window(18, -20, 10, 11, true);
+  }, ground);
+  p.rightFace(0.35, 1.65, 1.7, 0, () => p.window(34, -20, 10, 11, true), ground);
+  p.box(0.3, 0.35, 1.7, 1.65, ground, eave, { color: c.plaster, detail: 'plaster' });
+  p.leftFace(0.3, 1.7, 1.65, ground, (w, h) => {
+    styleFraming(p.ctx, s, w, h, 'close');
+    for (const x of [0.2, 0.62]) p.window(w * x, -h + 9, 11, 13);
+  }, eave - ground);
+  p.rightFace(0.35, 1.65, 1.7, ground, (w, h) => {
+    styleFraming(p.ctx, s, w, h, 'close', R);
+    p.window(w / 2 - 6, -h + 9, 12, 13);
+  }, eave - ground);
+  roofChimney(p, s, 0.55, 0.55, 0.8, 0.8, eave - 10, eave + 52, 38, { color: c.stone, detail: 'stone' });
+  styledGable(p, s, 0.3, 0.35, 1.7, 1.65, eave, 42, roofOf(s, 'house'), c.plaster, 'v', 0.12, framedGable(p.ctx, s));
+}
 
 /** Age 1 family (Római kor): plastered villas, hip and gable roofs, timber, columns, round arches. */
 export function romanArt(s: ArchStyle): AgeArtSet {
   const c = s.palette;
   const tall = (h: number) => h + s.headroom;
+  const framed = s.kits?.framedUpper === true;
   return {
     town_center: {
       size: 3,
@@ -46,8 +83,12 @@ export function romanArt(s: ArchStyle): AgeArtSet {
     },
     house: {
       size: 2,
-      maxHeight: tall(110),
+      maxHeight: tall(110) + (framed ? FRAMED_STOREY : 0),
       paint: (p, team) => {
+        if (framed) {
+          framedHouse(p, s, team);
+          return;
+        }
         p.footShadow();
         p.ground(0.15, 0.15, 1.85, 1.85, 0xa99f88);
         p.box(0.3, 0.35, 1.7, 1.65, 0, 40, { color: c.plaster, detail: 'plaster' });
@@ -156,9 +197,11 @@ export function romanArt(s: ArchStyle): AgeArtSet {
         p.ground(0.05, 0.05, 2.95, 2.95, 0xa89c84);
         p.box(0.3, 0.3, 2.7, 1.9, 0, 18, { color: c.stone, detail: 'stone' });
         p.box(0.3, 0.3, 2.7, 1.9, 18, 54, { color: c.plaster, detail: 'plaster' });
-        p.leftFace(0.3, 2.7, 1.9, 18, () => {
+        p.leftFace(0.3, 2.7, 1.9, 18, (w, h) => {
+          if (framed) styleFraming(p.ctx, s, w, h, 'square');
           for (let i = 0; i < 5; i++) p.window(14 + i * 30, -28, 9, 13, true);
         }, 36);
+        if (framed) p.rightFace(0.3, 1.9, 2.7, 18, (w, h) => styleFraming(p.ctx, s, w, h, 'square', R), 36);
         p.rightFace(0.3, 1.9, 2.7, 0, () => {
           p.door(30, 24, 34, c.doors.gate);
           // Team banners either side of the gate.

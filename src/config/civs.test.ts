@@ -45,9 +45,12 @@ describe('dev all-civs stub (?civs=all)', () => {
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(true);
     expect(civs.AVAILABLE_CIVS).toEqual(civs.CIV_IDS);
-    // Upcoming civs stay stubs: Hungarian art under their own keys.
+    // Civs without art yet stay stubs: Hungarian art under their own keys.
+    expect(civs.CIV_DEFS.french.available).toBe(false);
+    expect(civs.CIV_DEFS.french.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
+    // A civ whose architecture is drawn but not finished shows it, still unavailable outside the dev stub.
     expect(civs.CIV_DEFS.german.available).toBe(false);
-    expect(civs.CIV_DEFS.german.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
+    expect(civs.CIV_DEFS.german.architecture).toEqual({ 1: 'limes', 2: 'fachwerk', 3: 'backstein' });
   });
 
   it('ignores other query strings', async () => {

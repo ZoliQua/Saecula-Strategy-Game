@@ -1,4 +1,5 @@
 import type { IsoPainter, WallStyle } from '../isoPainter';
+import { steppedGableRoof, stepsGable } from './kits/steppedGable';
 import { chimney } from './parts';
 import { mansardRoof } from './roofs';
 import type { ArchStyle } from './style';
@@ -9,7 +10,8 @@ type GableDetail = (width: number, rise: number) => void;
 /*
  * Main roofs in a style's roof profile (style.roof): rises scale with
  * `pitch`, overhangs with `eave`, `form` may force hip or gable, and
- * `material` replaces the painter's cover. With the native profile
+ * `material` replaces the painter's cover. Styles with stepped gables
+ * (kits.steppedGables) close every main gable in coped steps. With the native profile
  * (pitch 1, eave 1, form 'native', no material) each call paints
  * exactly the IsoPainter / roofs.ts roof it wraps. Anything standing
  * on or through a main roof (chimneys, cupolas, dormers, vents) takes
@@ -78,6 +80,7 @@ export function styledGable(
   const o = overhang * s.roof.eave;
   withCover(p, s, () => {
     if (s.roof.form === 'hip') p.hipRoof(u0, v0, u1, v1, eave, r, color, o);
+    else if (stepsGable(s, r, axis === 'u' ? v1 - v0 : u1 - u0)) steppedGableRoof(p, s, u0, v0, u1, v1, eave, r, color, wall, axis, detail);
     else p.gableRoof(u0, v0, u1, v1, eave, r, color, wall, axis, o, detail);
   });
 }
@@ -100,7 +103,9 @@ export function styledHip(
   const o = overhang * s.roof.eave;
   return withCover(p, s, () => {
     if (s.roof.form !== 'gable') return p.hipRoof(u0, v0, u1, v1, eave, r, color, o);
-    p.gableRoof(u0, v0, u1, v1, eave, r, color, wall, u1 - u0 >= v1 - v0 ? 'u' : 'v', o);
+    const axis = u1 - u0 >= v1 - v0 ? 'u' : 'v';
+    if (stepsGable(s, r, axis === 'u' ? v1 - v0 : u1 - u0)) steppedGableRoof(p, s, u0, v0, u1, v1, eave, r, color, wall, axis);
+    else p.gableRoof(u0, v0, u1, v1, eave, r, color, wall, axis, o);
     return p.p((u0 + u1) / 2, (v0 + v1) / 2, eave + r);
   });
 }

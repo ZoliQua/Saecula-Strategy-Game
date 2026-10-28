@@ -8,7 +8,16 @@ import type { AgeId, CivId } from '../types';
  */
 
 /** Building painter set of one age style (art/buildings.ts). */
-export type ArchStyleId = 'roman' | 'medieval' | 'baroque' | 'romano_british' | 'tudor' | 'georgian';
+export type ArchStyleId =
+  | 'roman'
+  | 'medieval'
+  | 'baroque'
+  | 'romano_british'
+  | 'tudor'
+  | 'georgian'
+  | 'limes'
+  | 'fachwerk'
+  | 'backstein';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId = 'palisade' | 'curtain' | 'bastion' | 'bank_palisade' | 'norman_curtain' | 'star_fort';
 /** Unit palette / heraldry look (art/units). */
@@ -71,7 +80,11 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'english',
     heraldry: { primary: 0xf2efe6, secondary: 0xc8202e, accent: 0x1f2f5a },
   },
-  german: upcoming({ primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a }),
+  // Black eagle on gold, red. Limes / Fachwerk / Backstein buildings; walls and units still Hungarian until its (b) task.
+  german: {
+    ...upcoming({ primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a }),
+    architecture: { 1: 'limes', 2: 'fachwerk', 3: 'backstein' },
+  },
   french: upcoming({ primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 }),
   spanish: upcoming({ primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f }),
   italian: upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
@@ -81,9 +94,9 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
 
 /**
  * Dev builds with `?civs=all` in the URL: every civ is playable, the
- * upcoming ones as stubs painted with Hungarian art under their own
- * `~c<civ>` keys (N-civ memory / load measurements and UI shots before
- * their art exists). Always false in production and in tests (no `location`).
+ * unavailable ones under their own `~c<civ>` keys with whatever art they
+ * have so far (Hungarian sets where none is drawn yet): N-civ memory /
+ * load measurements, UI shots and in-game art review before a civ is done. Always false in production and in tests (no `location`).
  */
 export const DEV_ALL_CIVS: boolean =
   import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('civs') === 'all';

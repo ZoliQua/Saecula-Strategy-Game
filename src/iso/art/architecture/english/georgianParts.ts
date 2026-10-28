@@ -3,6 +3,7 @@ import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { clockFace, cornice, crest, R } from '../facade';
 import { finial, helm } from '../roofs';
+import { hasNeedleSpires, needleSpire } from '../kits/needleSpire';
 import type { ArchStyle } from '../style';
 
 type FaceDraw = (w: number, h: number, light: number) => void;
@@ -15,6 +16,9 @@ type FaceDraw = (w: number, h: number, light: number) => void;
  * clay pots, porticoes and clock cupolas. Face-local helpers draw inside
  * IsoPainter.leftFace / rightFace (x along the wall, y up as negative).
  */
+
+/** Rise of a cupola's needle spire (styles with needle spires). */
+export const CUPOLA_SPIRE = 80;
 
 const COURSE = 4.6;
 const HEADER = 4.2;
@@ -323,7 +327,8 @@ export function columnShaft(p: IsoPainter, u: number, v: number, z0: number, z1:
 /**
  * Clock cupola on a roof at (u, v, z): white square stage with clock
  * faces, an open arcaded lantern, a lead dome, a gilt ball and the
- * team flag. Returns the top of the dome.
+ * team flag — or, for a style with needle spires, a tall copper needle
+ * over the lantern. Returns the top of the dome or spire.
  */
 export function cupola(p: IsoPainter, s: ArchStyle, u: number, v: number, z: number, team: number, size = 0.32): number {
   const c = s.palette;
@@ -348,6 +353,7 @@ export function cupola(p: IsoPainter, s: ArchStyle, u: number, v: number, z: num
   };
   p.leftFace(u - l, u + l, v + l, z + 21, arch(1), 16);
   p.rightFace(v - l, v + l, u + l, z + 21, arch(R), 16);
+  if (hasNeedleSpires(s)) return needleSpire(p, u, v, l * 1.1, z + 37, CUPOLA_SPIRE, c.metal, 'copper');
   const r = l * 1.05;
   helm(p, u, v, z + 37, [[0, r], [5, r * 0.95], [10, r * 0.7], [14, r * 0.35], [16, r * 0.08]], c.metal);
   finial(p, u, v, z + 53, 9, false);

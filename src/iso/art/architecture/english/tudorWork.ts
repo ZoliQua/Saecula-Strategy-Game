@@ -8,7 +8,7 @@ import type { ArchStyle } from '../style';
 import { roofLift, styledGable, styledHip } from '../styledRoofs';
 import type { AgeArtSet } from '../types';
 import { brickStack } from '../kits/chimneyStack';
-import { framedGable, halfTimberLattice, leadedWindow } from '../kits/halfTimber';
+import { framedGable, leadedWindow, styleFraming } from '../kits/halfTimber';
 import { jettyStorey } from '../kits/jetty';
 import { earthButt, hangingBanner, hedge, spoilHeap } from './englishParts';
 import { drumWall } from './roundhouse';
@@ -44,8 +44,8 @@ function granary(p: IsoPainter, s: ArchStyle, u0: number, v0: number, u1: number
   const c = s.palette;
   for (const [u, v] of [[u0 + 0.05, v0 + 0.05], [u1 - 0.05, v0 + 0.05], [u0 + 0.05, v1 - 0.05], [u1 - 0.05, v1 - 0.05]] as const) staddle(p, u, v, c.stone);
   p.box(u0, v0, u1, v1, 11, 32, { color: c.plaster, detail: 'plaster' });
-  p.leftFace(u0, u1, v1, 11, (w, h) => halfTimberLattice(p.ctx, w, h, c.timber, 'close'), 21);
-  p.rightFace(v0, v1, u1, 11, (w, h) => halfTimberLattice(p.ctx, w, h, c.timber, 'close', R), 21);
+  p.leftFace(u0, u1, v1, 11, (w, h) => styleFraming(p.ctx, s, w, h, 'close'), 21);
+  p.rightFace(v0, v1, u1, 11, (w, h) => styleFraming(p.ctx, s, w, h, 'close', R), 21);
   styledHip(p, s, u0, v0, u1, v1, 32, 18, c.roof, 0.06);
 }
 
@@ -64,7 +64,7 @@ function engineHouse(p: IsoPainter, s: ArchStyle, team: number): void {
   p.leftFace(0.25, 0.9, 1.45, 0, (w) => {
     p.window(w / 2 - 5, -66, 10, 22, true);
     p.door(w / 2 - 7, 14, 24, c.doors.work);
-    hangingBanner(p.ctx, w - 12, -40, 8, 18, team);
+    hangingBanner(p.ctx, w - 12, -40, 8, 18, team, 1, s.charge);
   }, 78);
   p.rightFace(0.45, 1.45, 0.9, 0, (w) => {
     archedOpening(p.ctx, w / 2 - 9, 18, 26, shade(c.ashlar, 1.1), 0x1c140e, R);
@@ -201,11 +201,11 @@ export function tudorWorkArt(s: ArchStyle): AgeArtSet {
         p.box(0.25, 0.3, 1.1, 2.2, 0, 6, { color: c.stone }, c.stone);
         p.box(0.25, 0.3, 1.1, 2.2, 6, 38, { color: c.plaster, detail: 'plaster' });
         p.leftFace(0.25, 1.1, 2.2, 6, (w, h) => {
-          if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'square');
+          styleFraming(ctx, s, w, h, 'square');
           p.door(w / 2 - 6, 13, 22, c.doors.work);
         }, 32);
         p.rightFace(0.3, 2.2, 1.1, 6, (w, h) => {
-          if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'close', R);
+          styleFraming(ctx, s, w, h, 'close', R);
           for (const x of [0.15, 0.42, 0.7]) leadedWindow(p, w * x, -24, 18, 11, 3, R);
         }, 32);
         styledGable(p, s, 0.25, 0.3, 1.1, 2.2, 38, 34, c.roof, c.plaster, 'v', 0.14, framedGable(ctx, s));
@@ -236,11 +236,11 @@ export function tudorWorkArt(s: ArchStyle): AgeArtSet {
         p.rightFace(0.3, 1.5, 1.4, 0, (w) => forgeMouth(p, w * 0.35, 20, 18), 20);
         p.box(0.28, 0.3, 1.4, 1.5, 20, 44, { color: c.plaster, detail: 'plaster' });
         p.leftFace(0.28, 1.4, 1.5, 20, (w, h) => {
-          if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'close');
+          styleFraming(ctx, s, w, h, 'close');
           leadedWindow(p, w / 2 - 9, -18, 18, 10, 3);
         }, 24);
         p.rightFace(0.3, 1.5, 1.4, 20, (w, h) => {
-          if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, c.timber, 'close', R);
+          styleFraming(ctx, s, w, h, 'close', R);
         }, 24);
         p.leftFace(0.28, 1.4, 1.5, 0, (w) => p.door(w * 0.3, 15, 17, c.doors.work), 20);
         styledGable(p, s, 0.28, 0.3, 1.4, 1.5, 44, 36, c.roof, c.plaster, 'u', 0.12, framedGable(ctx, s, R));

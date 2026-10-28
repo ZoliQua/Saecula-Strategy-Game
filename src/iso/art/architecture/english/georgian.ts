@@ -3,6 +3,7 @@ import { css, shade } from '../../palette';
 import { clockFace, R } from '../facade';
 import { lantern } from '../parts';
 import { dormerLeft } from '../roofs';
+import { spireRoom } from '../kits/needleSpire';
 import type { ArchStyle } from '../style';
 import { onRoof, roofLift, styledHip } from '../styledRoofs';
 import type { AgeArtSet } from '../types';
@@ -42,7 +43,7 @@ export function georgianArt(s: ArchStyle): AgeArtSet {
     ...georgianWorkArt(s),
     town_center: {
       size: 3,
-      maxHeight: 220,
+      maxHeight: 220 + spireRoom(s, 90),
       paint: (p, team) => {
         p.footShadow();
         gravel(p, 0.05, 0.05, 2.95, 2.95, 0xbdb5a0);
@@ -155,7 +156,7 @@ export function georgianArt(s: ArchStyle): AgeArtSet {
     },
     stable: {
       size: 3,
-      maxHeight: 190,
+      maxHeight: 190 + spireRoom(s, 90),
       paint: (p, team) => {
         p.footShadow();
         p.ground(0.05, 0.05, 2.95, 2.95, 0x9e9680);

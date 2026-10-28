@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_CHARGES, CHARGES } from './architecture/charges';
 import { ENGLISH_CHARGES } from './architecture/english/englishCharge';
+import { GERMAN_CHARGES } from './architecture/german/germanCharge';
 import { BASE_BACK_ITEMS, BASE_HATS, BASE_SHIELDS } from './units/baseGear';
 import { ENGLISH_HATS, ENGLISH_SHIELDS, ENGLISH_WEAPON_STYLES } from './units/english/englishGear';
 import { BACK_ITEMS, HATS, SHIELDS, WEAPON_STYLES } from './units/gearRegistry';
@@ -16,7 +17,7 @@ const REGISTRIES: Array<[string, object, readonly object[]]> = [
   ['SHIELDS', SHIELDS, [BASE_SHIELDS, ENGLISH_SHIELDS]],
   ['BACK_ITEMS', BACK_ITEMS, [BASE_BACK_ITEMS]],
   ['WEAPON_STYLES', WEAPON_STYLES, [ENGLISH_WEAPON_STYLES]],
-  ['CHARGES', CHARGES, [BASE_CHARGES, ENGLISH_CHARGES]],
+  ['CHARGES', CHARGES, [BASE_CHARGES, ENGLISH_CHARGES, GERMAN_CHARGES]],
 ];
 
 describe('art registry ids', () => {

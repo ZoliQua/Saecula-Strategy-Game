@@ -4,6 +4,9 @@ import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './engli
 import { georgianArt } from './english/georgian';
 import { romanoBritishArt } from './english/romanoBritish';
 import { tudorArt } from './english/tudor';
+import { GERMAN_BACKSTEIN, GERMAN_FACHWERK, GERMAN_LIMES } from './german/germanStyles';
+import { kaiserdom } from './german/kaiserdom';
+import { portaNigra } from './german/portaNigra';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
 import { medievalArt } from './medieval';
 import { romanArt } from './roman';
@@ -30,6 +33,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   romano_british: ENGLISH_ROMANO_BRITISH,
   tudor: ENGLISH_TUDOR,
   georgian: ENGLISH_GEORGIAN,
+  limes: GERMAN_LIMES,
+  fachwerk: GERMAN_FACHWERK,
+  backstein: GERMAN_BACKSTEIN,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -40,6 +46,8 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   romano_british: romanoBritishArt,
   tudor: tudorArt,
   georgian: georgianArt,
+  porta_nigra: (s) => ({ ...romanArt(s), town_center: portaNigra(s) }),
+  kaiserdom: (s) => ({ ...georgianArt(s), wonder: kaiserdom(s) }),
 };
 
 /** Every style's painted set, by style id. */

@@ -5,16 +5,26 @@ import type { ArchStyle } from '../style';
 
 /*
  * Half-timber kit (shared by civs that frame their storeys): the lattice
- * patterns, framed gables and leaded mullioned windows. Face-local
- * helpers draw inside IsoPainter.leftFace / rightFace (x along the wall,
- * y up as negative values).
+ * patterns, framed gables and leaded mullioned windows. The framing
+ * school picks the carpentry: 'tudor' (English black-and-white close
+ * studding and magpie work) or 'alemannic' (German Fachwerk: storey
+ * rails, K-braces at the corner posts and Mann figures in the bays).
+ * Face-local helpers draw inside IsoPainter.leftFace / rightFace (x
+ * along the wall, y up as negative values).
  */
 
 /** 'close': close studding with a mid rail; 'square': square panels with diagonal and cross braces (magpie work). */
 export type FramePattern = 'close' | 'square';
 
-/** Black-and-white timber lattice over a whitewashed face of width w and height h. */
-export function halfTimberLattice(ctx: Ctx, w: number, h: number, color: number, pattern: FramePattern, light = 1): void {
+/** Carpentry school of the framing (ArchStyle.kits.framing). */
+export type FrameSchool = 'tudor' | 'alemannic';
+
+/** Timber lattice over a whitewashed face of width w and height h, in the school's carpentry. */
+export function halfTimberLattice(ctx: Ctx, w: number, h: number, color: number, pattern: FramePattern, light = 1, school: FrameSchool = 'tudor'): void {
+  if (school === 'alemannic') {
+    alemannicLattice(ctx, w, h, color, pattern, light);
+    return;
+  }
   const c = css(shade(color, light));
   const beam = 3.4;
   ctx.fillStyle = c;
@@ -75,11 +85,63 @@ export function halfTimberLattice(ctx: Ctx, w: number, h: number, color: number,
   }
 }
 
+/** A brace (diagonal timber) of width `t` from (x0, y0) to (x1, y1). */
+function brace(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, t: number): void {
+  ctx.lineWidth = t;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+}
+
+/**
+ * Alemannic Fachwerk: sill, top plate and two storey rails; corner
+ * posts carry K-braces, and the bays alternate a Mann figure (a centre
+ * post with long foot braces and short head braces) with plain window
+ * bays ('close' packs the Mann figures tighter than 'square').
+ */
+function alemannicLattice(ctx: Ctx, w: number, h: number, color: number, pattern: FramePattern, light: number): void {
+  const c = css(shade(color, light));
+  const beam = 3.6;
+  ctx.fillStyle = c;
+  ctx.strokeStyle = c;
+  ctx.lineCap = 'butt';
+  ctx.fillRect(0, -beam, w, beam);
+  ctx.fillRect(0, -h, w, beam + 0.8);
+  const sill = h * 0.4;
+  const lintel = h * 0.78;
+  ctx.fillRect(0, -sill - 1.4, w, 2.8);
+  ctx.fillRect(0, -lintel - 1.3, w, 2.6);
+  const bays = Math.max(2, Math.round(w / (pattern === 'close' ? 15 : 19)));
+  const bay = w / bays;
+  for (let i = 0; i <= bays; i++) ctx.fillRect(Math.min(w - beam, Math.max(0, i * bay - 1.5)), -h, i === 0 || i === bays ? beam : 3, h);
+  // K-braces at both corner posts.
+  for (const [x, dir] of [[beam, 1], [w - beam, -1]] as const) {
+    brace(ctx, x, -sill, x + dir * bay * 0.8, -beam, 2.6);
+    brace(ctx, x, -sill, x + dir * bay * 0.8, -lintel, 2.6);
+  }
+  for (let i = 1; i < bays - 1; i++) {
+    if (i % 2 === 0) continue;
+    const x0 = i * bay;
+    const cx = x0 + bay / 2;
+    // Mann: centre post, legs from the sill corners, arms up to the top plate.
+    ctx.fillRect(cx - 1.3, -h, 2.6, h);
+    brace(ctx, x0 + 1.5, -beam, cx, -lintel + 2, 2.5);
+    brace(ctx, x0 + bay - 1.5, -beam, cx, -lintel + 2, 2.5);
+    brace(ctx, cx, -lintel - 1, x0 + bay * 0.12, -h + beam, 2.2);
+    brace(ctx, cx, -lintel - 1, x0 + bay * 0.88, -h + beam, 2.2);
+  }
+}
+
 /**
  * Framed gable (gableRoof detail): king post, collar, close studs and a
  * dark carved bargeboard along the rakes, clipped to the triangle.
  */
-export function gableTimber(ctx: Ctx, w: number, rise: number, color: number, light = 1): void {
+export function gableTimber(ctx: Ctx, w: number, rise: number, color: number, light = 1, school: FrameSchool = 'tudor'): void {
+  if (school === 'alemannic') {
+    alemannicGable(ctx, w, rise, color, light);
+    return;
+  }
   const c = css(shade(color, light));
   ctx.save();
   ctx.beginPath();
@@ -113,9 +175,50 @@ export function gableTimber(ctx: Ctx, w: number, rise: number, color: number, li
   ctx.restore();
 }
 
-/** The gable fill a Tudor style uses (framing only with the halfTimber ornament). */
+/** Alemannic gable: collar and king post, a large Mann figure in the lower triangle, a thin bargeboard. */
+function alemannicGable(ctx: Ctx, w: number, rise: number, color: number, light: number): void {
+  const c = css(shade(color, light));
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w, 0);
+  ctx.lineTo(w / 2, -rise);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = c;
+  ctx.strokeStyle = c;
+  ctx.fillRect(0, -3.4, w, 3.4);
+  const collar = rise * 0.5;
+  ctx.fillRect(0, -collar - 1.5, w, 3);
+  ctx.fillRect(w / 2 - 1.5, -rise, 3, rise);
+  for (const x of [w * 0.25, w * 0.75]) ctx.fillRect(x - 1.3, -collar, 2.6, collar);
+  brace(ctx, w * 0.06, -3, w / 2, -collar + 1, 2.6);
+  brace(ctx, w * 0.94, -3, w / 2, -collar + 1, 2.6);
+  brace(ctx, w / 2, -collar - 2, w * 0.36, -rise * 0.72, 2.2);
+  brace(ctx, w / 2, -collar - 2, w * 0.64, -rise * 0.72, 2.2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = css(shade(color, light * 0.85));
+  ctx.beginPath();
+  ctx.moveTo(-1, 1);
+  ctx.lineTo(w / 2, -rise - 1);
+  ctx.lineTo(w + 1, 1);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** The style's carpentry school (default 'tudor'). */
+export function frameSchool(s: ArchStyle): FrameSchool {
+  return s.kits?.framing ?? 'tudor';
+}
+
+/** Timber framing on a face in the style's school, when the style frames its storeys (halfTimber ornament). */
+export function styleFraming(ctx: Ctx, s: ArchStyle, w: number, h: number, pattern: FramePattern, light = 1): void {
+  if (s.ornaments.halfTimber) halfTimberLattice(ctx, w, h, s.palette.timber, pattern, light, frameSchool(s));
+}
+
+/** The gable fill a framed style uses (framing only with the halfTimber ornament). */
 export function framedGable(ctx: Ctx, s: ArchStyle, light = 1): ((w: number, rise: number) => void) | undefined {
-  return s.ornaments.halfTimber ? (w, rise) => gableTimber(ctx, w, rise, s.palette.timber, light) : undefined;
+  return s.ornaments.halfTimber ? (w, rise) => gableTimber(ctx, w, rise, s.palette.timber, light, frameSchool(s)) : undefined;
 }
 
 /**
