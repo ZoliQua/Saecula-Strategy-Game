@@ -5,8 +5,8 @@ import { shutteredDark } from '../kits/insula';
 import { well } from '../kits/patio';
 import type { ArchStyle } from '../style';
 import type { BuildingArt } from '../types';
-import { bifora } from './italianParts';
-import { lowHip, pointedOpening, sieneseBlock, towerHouse, yardWall } from './comuneParts';
+import { bifora, lowHip } from './italianParts';
+import { pointedOpening, sieneseBlock, towerHouse, yardWall } from './comuneParts';
 
 /*
  * Italian age-2 house: a San Gimignano tower-house. The tall brick tower

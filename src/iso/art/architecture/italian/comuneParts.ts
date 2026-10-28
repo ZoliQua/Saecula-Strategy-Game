@@ -4,7 +4,7 @@ import { css, shade } from '../../palette';
 import { R } from '../facade';
 import { swallowtailCrown, swallowtailRun, type SwallowtailOpts } from '../kits/swallowtail';
 import type { ArchStyle } from '../style';
-import { banner, block, brickWall, lowHip, machicolation, putlogs, type Block, type FaceDraw } from './italianParts';
+import { banner, block, brickWall, machicolation, putlogs, type Block, type FaceDraw } from './italianParts';
 
 /*
  * Pieces of the Comune family (Italian age 2): the brick tower-house
@@ -90,9 +90,6 @@ export function crenellatedRoof(p: IsoPainter, s: ArchStyle, b: Block, z: number
   contents?.();
   swallowtailCrown(p, u0, v0, u1, v1, z, 'front', merlons(s));
 }
-
-/** Low tile hip (re-exported for the family's layouts). */
-export { lowHip };
 
 /** Yard wall along u (at v) or along v (at u) with swallowtail merlons, `h` px to the merlons. */
 export function yardWall(p: IsoPainter, s: ArchStyle, axis: 'u' | 'v', from: number, to: number, at: number, h: number): void {

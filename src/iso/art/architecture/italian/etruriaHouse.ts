@@ -25,7 +25,11 @@ function paintInsulaHouse(p: IsoPainter, s: ArchStyle, team: number): void {
   p.footShadow();
   p.ground(0.1, 0.1, 1.9, 1.9, 0xb3a58a);
   const top = STOREY * 4;
-  insula(p, TALL, 0, { ...insulaOpts(s, 4, [2, 2], [2, 2]), upper: stuccoWall(s), lit: 1 }, (w) => banner(p.ctx, w * 0.06, -top + 40, 7, 16, team, 1));
+  // The wing hides the left face's first upper storey: light the right face, and on the left one window above the wing.
+  insula(p, TALL, 0, { ...insulaOpts(s, 4, [2, 2], [2, 2]), upper: stuccoWall(s), lit: [0, 1] }, (w) => {
+    banner(p.ctx, w * 0.06, -top + 40, 7, 16, team, 1);
+    p.window(w * 0.75 - 4.5, -3 * STOREY + 6, 9, STOREY * 0.48, true);
+  });
   balcony(p, TALL[0] + 0.05, TALL[2] - 0.05, TALL[3], STOREY * 2, 0.12, c.timber);
   lowHip(p, s, TALL, top, 22, c.roof, 0.1);
   // Front shop range with the owner's door and a pergola on its terrace.

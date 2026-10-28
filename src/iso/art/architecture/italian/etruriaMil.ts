@@ -1,5 +1,5 @@
 import type { IsoPainter } from '../../isoPainter';
-import { css, shade } from '../../palette';
+import { shade } from '../../palette';
 import { archedOpening, crest, R } from '../facade';
 import { dummy } from '../families/familyParts';
 import { drumOpening, drumWall } from '../kits/drum';
@@ -8,7 +8,7 @@ import { target, torch } from '../parts';
 import { helm } from '../roofs';
 import type { ArchStyle } from '../style';
 import type { AgeArtSet } from '../types';
-import { banner, block, brickWall, cypress, lowHip, stuccoWall } from './italianParts';
+import { banner, block, brickWall, cypress, lowHip, nestHoles, stuccoWall } from './italianParts';
 import { loggia } from './loggia';
 
 /*
@@ -88,7 +88,7 @@ function stable(p: IsoPainter, s: ArchStyle, team: number): void {
   p.ground(0.05, 0.05, 2.95, 2.95, 0xa3946a);
   // Columbarium tower at the hall's far end.
   const tower = [2.25, 0.22, 2.72, 0.69] as const;
-  block(p, tower, 0, 96, stuccoWall(s), (w) => holes(p, w, 1), (w) => holes(p, w, R));
+  block(p, tower, 0, 96, stuccoWall(s), (w, h) => nestHoles(ctx, w, h, 1), (w, h) => nestHoles(ctx, w, h, R));
   lowHip(p, s, tower, 96, 24, c.roof, 0.07);
   const hall = [0.3, 0.3, 2.25, 1.45] as const;
   block(p, hall, 0, 34, brickWall(s), (w) => {
@@ -109,12 +109,6 @@ function stable(p: IsoPainter, s: ArchStyle, team: number): void {
   p.box(0.5, 1.75, 1.2, 1.9, 0, 8, { color: c.ashlar }, 0x4f7f95);
   for (const u of [0.55, 0.9]) p.box(u, 2.3, u + 0.3, 2.6, 0, 13, { color: 0xd9b55a }, 0xe8c873);
   p.flag(0.35, 2.75, 0, 34, team);
-}
-
-/** Nest holes in rows near the top of a dovecote face (face-local). */
-function holes(p: IsoPainter, w: number, light: number): void {
-  p.ctx.fillStyle = css(shade(0x2a1d14, light));
-  for (let r = 0; r < 3; r++) for (let x = 4 + (r % 2) * 3; x < w - 3; x += 6) p.ctx.fillRect(x, -88 + r * 5, 2.4, 2.4);
 }
 
 /** The Italian age-1 military buildings. */

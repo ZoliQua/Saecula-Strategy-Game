@@ -5,14 +5,18 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * type x age and every Wonder stage (testing/pinnedArt.testkit.ts), so
  * later civs' kit and family changes cannot silently change Italian.
  * wall@1-3 still paint the Hungarian stub walls; Task 10 re-records them.
+ * Fix round 1 re-recorded house@1, lumber_camp@1, mining_camp@1, the
+ * age-2 farm, camps, archery range, stable and smithy, town_center@3
+ * and barracks@3 (visible-window glows, workplace skyline cues, the
+ * age-3 barracks' armoury tower).
  */
 
 pinBuildings('italian', {
   'town_center@1': '68629ff718bcb11e',
-  'house@1': '43f27b93b31ac5fb',
+  'house@1': 'c010e9892545fc30',
   'farm@1': 'a4e1ff5872a9cd9a',
-  'lumber_camp@1': '85142f07db47d158',
-  'mining_camp@1': '9c63cb9eb9b8ebeb',
+  'lumber_camp@1': '2c5aaa892bb3851c',
+  'mining_camp@1': '43fec8c26f8aa641',
   'barracks@1': '2957d2ba624fb990',
   'archery_range@1': 'a405e56de4b100d2',
   'stable@1': 'a60fbb31b66f8ef5',
@@ -23,23 +27,23 @@ pinBuildings('italian', {
   'wonder@1': '8c766082b0317bba',
   'town_center@2': 'a0fefe4ac02afef3',
   'house@2': '92e4764cb3403d55',
-  'farm@2': '21308ac42896a57d',
-  'lumber_camp@2': 'af876eda49f577c0',
-  'mining_camp@2': '698849cd8bf5de4c',
+  'farm@2': 'c3bec801f76bc648',
+  'lumber_camp@2': 'dd34822b3198278e',
+  'mining_camp@2': '151c91e95f0d37db',
   'barracks@2': '2df5addb7db5e70f',
-  'archery_range@2': 'fa7afa24d473826e',
-  'stable@2': '83d5a1904088c92f',
-  'blacksmith@2': 'aab58a056da11192',
+  'archery_range@2': 'dd9aba98f34a003f',
+  'stable@2': '41d555f50276a307',
+  'blacksmith@2': 'a89eb06ddae6010f',
   'foundry@2': '96f0321a8f1598a8',
   'tower@2': 'bc3bcc22f1aa7bd6',
   'wall@2': '5d0c28b2b225990c',
   'wonder@2': 'f5013135469213d1',
-  'town_center@3': '733655955192121d',
+  'town_center@3': '2bb517dfaf0b2e9e',
   'house@3': 'd8b0ccd798a76d79',
   'farm@3': '8fd5109ab7ddb341',
   'lumber_camp@3': '72e5e62e2413a969',
   'mining_camp@3': 'df8bda1e367c1cb5',
-  'barracks@3': 'b82ce760fe0b1b4d',
+  'barracks@3': '6c96ff18d8205620',
   'archery_range@3': '648d13906e894521',
   'stable@3': '46f482d612aeea50',
   'blacksmith@3': '8e0317fd72cb0fec',

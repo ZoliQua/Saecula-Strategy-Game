@@ -220,5 +220,19 @@ export function cupola(p: IsoPainter, u: number, v: number, z: number, r: number
   return top + 7;
 }
 
+/** Nest holes (columbaria) in rows near the top of a dovecote face (face-local). */
+export function nestHoles(ctx: Ctx, w: number, h: number, light: number): void {
+  ctx.fillStyle = css(shade(0x2a1d14, light));
+  for (let r = 0; r < 3; r++) for (let x = 4 + (r % 2) * 3; x < w - 3; x += 6) ctx.fillRect(x, -h + 8 + r * 5, 2.4, 2.4);
+}
+
+/** Smith's anvil on its block at ground point (u, v). */
+export function anvil(p: IsoPainter, u: number, v: number): void {
+  const [x, y] = p.p(u, v, 0);
+  p.ctx.fillStyle = '#3a3a40';
+  p.ctx.fillRect(x - 8, y - 9, 16, 4);
+  p.ctx.fillRect(x - 3, y - 6, 6, 6);
+}
+
 export { cypress } from '../kits/patio';
 export { lowHip } from '../kits/lowHip';

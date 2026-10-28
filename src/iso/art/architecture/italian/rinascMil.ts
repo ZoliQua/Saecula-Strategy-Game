@@ -7,26 +7,55 @@ import { target, torch } from '../parts';
 import type { ArchStyle } from '../style';
 import type { AgeArtSet } from '../types';
 import { balustrade } from '../wonderParts';
-import { banner, block, cornicione, cupola, cypress, lowHip, type Block } from './italianParts';
+import { banner, block, cornicione, cupola, cypress, lowHip, rustication, type Block } from './italianParts';
 import { loggia } from './loggia';
-import { colombaia, palazzo, whiteWall } from './rinascParts';
+import { ashlarWall, colombaia, openTop, palazzo, whiteWall } from './rinascParts';
 
 /*
  * Italian age-3 military buildings: the barracks as a rusticated
- * palazzo with a domed chapel lantern on its roof, the archery range
+ * palazzo beside its armoury tower (an open arched top over the arms
+ * and crossed lances), the archery range
  * under a white arcaded loggia with a balustraded roof, and the stable
  * as a long corniced range with a cupola on its ridge and a dovecote
  * tower at its end (after Palladio's farm wings).
  */
+
+/** Square armoury tower on b: rusticated foot, quoined shaft with the arms and crossed lances, an open arched top. */
+function armoury(p: IsoPainter, s: ArchStyle, team: number, b: Block, top: number): void {
+  const c = s.palette;
+  const ctx = p.ctx;
+  block(p, b, 0, 30, { color: c.stone }, (w, h) => rustication(ctx, w, 0, h, c.stone, 1, 8), (w, h) => rustication(ctx, w, 0, h, c.stone, R, 8), c.stone);
+  const face = (light: number, arms: boolean) => (w: number, h: number) => {
+    ctx.fillStyle = css(shade(c.trim, light));
+    for (let y = 0; y < h; y += 9) {
+      const q = (y / 9) % 2 ? 4 : 7;
+      ctx.fillRect(0, -y - 8, q, 7);
+      ctx.fillRect(w - q, -y - 8, q, 7);
+    }
+    if (!arms) return;
+    ctx.strokeStyle = css(shade(0x6a5a40, light));
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 12, -h + 14);
+    ctx.lineTo(w / 2 + 12, -h + 44);
+    ctx.moveTo(w / 2 + 12, -h + 14);
+    ctx.lineTo(w / 2 - 12, -h + 44);
+    ctx.stroke();
+    crest(ctx, s, w / 2, -h + 28, 7, team);
+  };
+  block(p, b, 30, top, ashlarWall(s), face(1, true), face(R, false));
+  cornicione(p, b, top, 5, 0.04, shade(c.ashlar, 1.06));
+  openTop(p, s, [b[0] + 0.04, b[1] + 0.04, b[2] - 0.04, b[3] - 0.04], top + 5, top + 29, [2, 2], ashlarWall(s));
+}
 
 function barracks(p: IsoPainter, s: ArchStyle, team: number): void {
   const c = s.palette;
   const ctx = p.ctx;
   p.footShadow();
   p.ground(0.05, 0.05, 2.95, 2.95, 0xb2a586);
-  const b: Block = [0.35, 0.3, 2.65, 1.5];
-  const top = palazzo(p, s, b, {
-    ground: 28, storey: 26, storeys: 2, finish: 'ashlar', bays: [5, 3], lit: 3,
+  const b: Block = [0.35, 0.3, 2.2, 1.5];
+  palazzo(p, s, b, {
+    ground: 28, storey: 26, storeys: 2, finish: 'ashlar', bays: [4, 3], litLeft: [0, 1, 2],
     groundLeft: (w) => {
       ctx.fillStyle = css(shade(c.trim, 1));
       ctx.fillRect(w / 2 - 13, -26, 26, 26);
@@ -38,7 +67,7 @@ function barracks(p: IsoPainter, s: ArchStyle, team: number): void {
       banner(ctx, w * 0.8 - 7, -h + 30, 7, 20, team, 1);
     },
   });
-  cupola(p, 1.5, 0.9, top + 2, 0.42, 24, c.plaster, c.metal, c.trim);
+  armoury(p, s, team, [2.2, 0.3, 2.74, 0.84], 118);
   for (const u of [0.9, 1.6, 2.3]) dummy(p, u, 2.25);
   torch(p, 1.2, 1.55, 30, 1.2, 1.9);
   torch(p, 1.8, 1.55, 30, 1.8, 1.9);

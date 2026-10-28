@@ -6,8 +6,8 @@ import { shutteredDark } from '../kits/insula';
 import { target, torch } from '../parts';
 import type { ArchStyle } from '../style';
 import type { AgeArtSet } from '../types';
-import { banner, bifora, brickWall, cypress, type Block } from './italianParts';
-import { crenellatedRoof, lowHip, pointedOpening, sieneseBlock, towerHouse, yardWall } from './comuneParts';
+import { banner, bifora, brickWall, cypress, lowHip, type Block } from './italianParts';
+import { crenellatedRoof, pointedOpening, sieneseBlock, towerHouse, yardWall } from './comuneParts';
 import { loggia } from './loggia';
 
 /*
@@ -49,7 +49,7 @@ function archeryRange(p: IsoPainter, s: ArchStyle, team: number): void {
   p.ground(0.05, 0.05, 2.95, 2.95, 0x93a46a);
   yardWall(p, s, 'u', 0.2, 2.8, 0.16, 18);
   yardWall(p, s, 'v', 0.22, 2.8, 0.16, 18);
-  towerHouse(p, s, [2.3, 0.22, 2.74, 0.66], 112, { crown: 'swallowtail', lit: 0, team });
+  towerHouse(p, s, [2.3, 0.22, 2.74, 0.66], 80, { crown: 'plain', lit: 0, team });
   const b: Block = [0.35, 0.35, 1.75, 1.1];
   const o = { wall: brickWall(s), trim: c.ashlar, bays: [4, 2] as const, pier: 0.05 };
   loggia(p, b, 0, 42, 'back', o);
@@ -77,7 +77,7 @@ function stable(p: IsoPainter, s: ArchStyle, team: number): void {
   for (const u of [0.55, 0.9]) p.box(u, 1.7, u + 0.3, 2.0, 0, 13, { color: 0xd9b55a }, 0xe8c873);
   p.box(1.3, 1.65, 2.1, 1.8, 0, 8, { color: c.ashlar }, 0x4f7f95);
   yardWall(p, s, 'u', 0.25, 1.9, 2.78, 16);
-  towerHouse(p, s, [1.9, 2.4, 2.42, 2.92], 118, { crown: 'swallowtail', lit: 0, team });
+  towerHouse(p, s, [1.9, 2.4, 2.42, 2.92], 92, { crown: 'swallowtail', lit: 0, team });
   yardWall(p, s, 'v', 1.4, 2.42, 2.72, 16);
   p.flag(0.35, 2.75, 16, 30, team);
 }

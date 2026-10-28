@@ -6,7 +6,7 @@ import { forgeLight, forgeMouth, goldPile, logPile, plankStack } from '../parts'
 import type { ArchStyle } from '../style';
 import type { AgeArtSet } from '../types';
 import { cypressLine, oliveRows, vineRows } from './fields';
-import { block, cornicione, cupola, lowHip, rustication, type Block } from './italianParts';
+import { anvil, block, cornicione, cupola, lowHip, rustication, type Block } from './italianParts';
 import { loggia } from './loggia';
 import { colombaia, fumaiolo, openTop, palazzo, whiteWall } from './rinascParts';
 
@@ -91,7 +91,7 @@ function blacksmith(p: IsoPainter, s: ArchStyle, team: number): void {
   p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
   const b: Block = [0.3, 0.3, 1.7, 1.45];
   const top = palazzo(p, s, b, {
-    ground: 28, storey: 24, storeys: 1, finish: 'white', bays: [2, 2], lit: 2,
+    ground: 28, storey: 24, storeys: 1, finish: 'white', bays: [2, 2],
     groundLeft: (w) => {
       forgeMouth(p, w * 0.4, 26, 22);
       p.door(w * 0.1, 12, 18, shade(team, 0.75));
@@ -101,10 +101,7 @@ function blacksmith(p: IsoPainter, s: ArchStyle, team: number): void {
   lowHip(p, s, b, top, 16, c.roof, 0.05);
   fumaiolo(p, s, 0.55, 1.2, top - 2, top + 22);
   forgeLight(p, 1.0, 1.6);
-  const [x, y] = p.p(1.3, 1.72, 0);
-  p.ctx.fillStyle = '#3a3a40';
-  p.ctx.fillRect(x - 8, y - 9, 16, 4);
-  p.ctx.fillRect(x - 3, y - 6, 6, 6);
+  anvil(p, 1.3, 1.72);
   p.flag(1.85, 1.85, 0, 26, team);
 }
 

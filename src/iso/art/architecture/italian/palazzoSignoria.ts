@@ -61,7 +61,7 @@ function paintSignoria(p: IsoPainter, s: ArchStyle, team: number): void {
   }
   chapel(p, s);
   palazzo(p, s, PAL, {
-    ground: 30, storey: 30, storeys: 2, finish: 'ashlar', bays: [5, 4], lit: 3,
+    ground: 30, storey: 30, storeys: 2, finish: 'ashlar', bays: [5, 4], litLeft: [4], litRight: [0, 1],
     groundLeft: (w) => p.door(w / 2 - 9, 18, 24, shade(team, 0.7)),
     nobileLeft: (w, h) => {
       crest(ctx, s, w / 2, -h + 46, 6.5, team);

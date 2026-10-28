@@ -29,8 +29,13 @@ export interface PalazzoOpts {
   readonly finish: 'ashlar' | 'white';
   /** Window bays on the left and right faces. */
   readonly bays: readonly [number, number];
-  /** Lit windows: only the piano nobile's, on the left face (count from the left), default all. */
-  readonly lit?: number;
+  /**
+   * Lit piano-nobile bays by index (left face from its left end, right face
+   * from its front end): only bays that show, none behind a loggia or a
+   * wing. Defaults: every left bay, no right bay.
+   */
+  readonly litLeft?: readonly number[];
+  readonly litRight?: readonly number[];
   /** Extra painters for the ground storey (doors, gates) and the piano nobile (arms, banners). */
   readonly groundLeft?: FaceDraw;
   readonly groundRight?: FaceDraw;
@@ -62,7 +67,7 @@ export function palazzo(p: IsoPainter, s: ArchStyle, b: Block, o: PalazzoOpts, r
       for (let i = 0; i < bays; i++) {
         const x = i * bay + bay / 2 - 6;
         const y = -(k + 1) * o.storey + 7;
-        const lit = k === 0 && left && i < (o.lit ?? bays);
+        const lit = k === 0 && (left ? (o.litLeft?.includes(i) ?? true) : (o.litRight?.includes(i) ?? false));
         if (k === 0) bifora(p, o.finish === 'ashlar' ? shade(c.ashlar, 1.1) : c.trim, x, y, 12, o.storey - 12, light, lit);
         else shutteredDark(ctx, x + 2, y + 2, 8, o.storey - 14, c.shutter, light);
       }

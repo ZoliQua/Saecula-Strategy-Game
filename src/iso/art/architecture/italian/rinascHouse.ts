@@ -26,7 +26,7 @@ function paintPalazzetto(p: IsoPainter, s: ArchStyle, team: number): void {
   p.footShadow();
   p.ground(0.1, 0.1, 1.9, 1.9, 0xc2b394);
   const top = palazzo(p, s, HOUSE, {
-    ground: 26, storey: 26, storeys: 2, finish: 'ashlar', bays: [3, 2], lit: 2,
+    ground: 26, storey: 26, storeys: 2, finish: 'ashlar', bays: [3, 2], litLeft: [0, 1],
     groundLeft: (w) => p.door(w * 0.45, 13, 19, shade(team, 0.75)),
     nobileLeft: (w, h) => banner(p.ctx, w * 0.9, -h + 30, 6, 16, team, 1),
     rise: 14,

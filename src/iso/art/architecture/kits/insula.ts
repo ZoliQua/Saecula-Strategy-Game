@@ -78,12 +78,16 @@ export interface InsulaOpts {
   readonly shops: readonly [left: number, right: number];
   /** Windows per upper storey on the left and right faces. */
   readonly windows: readonly [left: number, right: number];
-  /** Upper storeys whose windows are lit (from the first upper storey); the rest stay shuttered. Default 1. */
-  readonly lit?: number;
+  /**
+   * Upper storeys whose windows are lit (from the first upper storey); the
+   * rest stay shuttered. A pair sets the left and right faces apart (light
+   * only storeys that show, e.g. above a lower wing). Default 1.
+   */
+  readonly lit?: number | readonly [left: number, right: number];
 }
 
 /** One face of an insula (face-local): shops below, string courses, windows above. */
-function insulaFace(p: IsoPainter, o: InsulaOpts, w: number, light: number, shops: number, windows: number): void {
+function insulaFace(p: IsoPainter, o: InsulaOpts, w: number, light: number, shops: number, windows: number, lit: number): void {
   const ctx = p.ctx;
   const st = o.storey;
   if (shops > 0) {
@@ -98,10 +102,16 @@ function insulaFace(p: IsoPainter, o: InsulaOpts, w: number, light: number, shop
     for (let i = 0; i < windows; i++) {
       const x = i * bay + (bay - ww) / 2;
       const y = -(k + 1) * st + 6;
-      if (k <= (o.lit ?? 1)) p.window(x, y, ww, st * 0.48, true);
+      if (k <= lit) p.window(x, y, ww, st * 0.48, true);
       else shutteredDark(ctx, x, y, ww, st * 0.42, o.shutter, light);
     }
   }
+}
+
+/** Lit upper storeys of a face (0 left, 1 right). */
+function litOf(o: InsulaOpts, face: 0 | 1): number {
+  const lit = o.lit ?? 1;
+  return typeof lit === 'number' ? lit : lit[face];
 }
 
 /** Multi-storey block on `b` from z0; returns its top. Extra face painters run after the insula's own. */
@@ -112,11 +122,11 @@ export function insula(p: IsoPainter, b: Block, z0: number, o: InsulaOpts, left?
   p.box(u0, v0, u1, v1, z0, z0 + o.storey, o.ground);
   p.box(u0, v0, u1, v1, z0 + o.storey, top, upper, shade(upper.color, 0.9));
   p.leftFace(u0, u1, v1, z0, (w, h) => {
-    insulaFace(p, o, w, 1, o.shops[0], o.windows[0]);
+    insulaFace(p, o, w, 1, o.shops[0], o.windows[0], litOf(o, 0));
     left?.(w, h);
   }, top - z0);
   p.rightFace(v0, v1, u1, z0, (w, h) => {
-    insulaFace(p, o, w, R, o.shops[1], o.windows[1]);
+    insulaFace(p, o, w, R, o.shops[1], o.windows[1], litOf(o, 1));
     right?.(w, h);
   }, top - z0);
   return top;
