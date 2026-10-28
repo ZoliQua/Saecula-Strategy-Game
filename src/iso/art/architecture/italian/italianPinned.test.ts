@@ -8,7 +8,8 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * Fix round 1 re-recorded house@1, lumber_camp@1, mining_camp@1, the
  * age-2 farm, camps, archery range, stable and smithy, town_center@3
  * and barracks@3 (visible-window glows, workplace skyline cues, the
- * age-3 barracks' armoury tower).
+ * age-3 barracks' armoury tower). Fix round 2 re-recorded mining_camp@1
+ * (furnace clear of the ore house, its right face unlit).
  */
 
 pinBuildings('italian', {
@@ -16,7 +17,7 @@ pinBuildings('italian', {
   'house@1': 'c010e9892545fc30',
   'farm@1': 'a4e1ff5872a9cd9a',
   'lumber_camp@1': '2c5aaa892bb3851c',
-  'mining_camp@1': '43fec8c26f8aa641',
+  'mining_camp@1': '81ae3ce710c2e776',
   'barracks@1': '2957d2ba624fb990',
   'archery_range@1': 'a405e56de4b100d2',
   'stable@1': 'a60fbb31b66f8ef5',

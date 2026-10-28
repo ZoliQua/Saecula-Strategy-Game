@@ -81,13 +81,14 @@ function miningCamp(p: IsoPainter, s: ArchStyle, team: number): void {
   const ctx = p.ctx;
   p.footShadow();
   p.ground(0.1, 0.1, 1.9, 1.9, 0x8b8070);
-  insula(p, [0.2, 0.25, 1.12, 1.15], 0, { ...insulaOpts(s, 3, [2, 1], [2, 1]), upper: stuccoWall(s) });
+  // The furnace stands off the ore house's right end, so its right face stays unlit (nothing glows behind it).
+  insula(p, [0.2, 0.25, 1.12, 1.15], 0, { ...insulaOpts(s, 3, [2, 1], [2, 1]), upper: stuccoWall(s), lit: [1, 0] });
   lowHip(p, s, [0.2, 0.25, 1.12, 1.15], 78, 20, c.roof, 0.08);
-  // Round brick smelting furnace with a tapering stack, in front of the ore house's right face.
-  drumWall(p, 1.5, 0.92, 0.28, 0, 44, c.brick, 'brick');
-  drumOpening(p, 1.5, 0.92, 0.28, Math.PI / 4, 4.5, 3, 13, c.ashlar, 'dark');
-  helm(p, 1.5, 0.92, 44, [[0, 0.3], [4, 0.3], [5, 0.24], [18, 0.18], [62, 0.13], [64, 0.16], [69, 0.16]], c.brick, false);
-  p.addSmoke(1.5, 0.92, 113);
+  // Round brick smelting furnace with a tapering stack, clear of the ore house's outline.
+  drumWall(p, 1.62, 0.42, 0.26, 0, 44, c.brick, 'brick');
+  drumOpening(p, 1.62, 0.42, 0.26, Math.PI / 4, 4.5, 3, 13, c.ashlar, 'dark');
+  helm(p, 1.62, 0.42, 44, [[0, 0.28], [4, 0.28], [5, 0.22], [18, 0.17], [66, 0.12], [68, 0.15], [73, 0.15]], c.brick, false);
+  p.addSmoke(1.62, 0.42, 117);
   // Ore cart and the gold.
   p.box(0.95, 1.38, 1.5, 1.74, 6, 20, { color: 0x6b4a2a, detail: 'planks' });
   goldPile(p, 1.25, 1.56);
