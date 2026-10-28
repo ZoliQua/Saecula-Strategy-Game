@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SFX_GLOBAL_VOICES } from '../../config/audio';
+import { SFX_GLOBAL_VOICES, SFX_INTERVAL_JITTER, SFX_INTERVAL_OVERRIDE_RATIO } from '../../config/audio';
 import { SFX_CATALOGUE } from './catalogue';
 import { VoiceLimiter } from './VoiceLimiter';
 
@@ -16,7 +16,8 @@ describe('VoiceLimiter', () => {
   });
 
   it('minInterval drops a repeat', () => {
-    const limiter = new VoiceLimiter(24);
+    // A mid rng: no jitter on the interval.
+    const limiter = new VoiceLimiter(24, undefined, () => 0.5);
     const rule = { maxVoices: 4, minIntervalMs: 50 };
     expect(limiter.request('unit_die', 1, 0, rule)).not.toBeNull();
     expect(limiter.request('unit_die', 1, 30, rule)).toBeNull();
@@ -73,5 +74,32 @@ describe('VoiceLimiter', () => {
     // Releasing an unknown id is harmless.
     limiter.release(999);
     expect(limiter.active).toBe(1);
+  });
+
+  it('a far quiet hit then a near loud hit within the interval → the near one plays', () => {
+    const evicted: number[] = [];
+    const limiter = new VoiceLimiter(24, (id) => evicted.push(id), () => 0.5);
+    const rule = { maxVoices: 1, minIntervalMs: 100 };
+    const far = limiter.request('sword_hit', 0.1, 0, rule);
+    expect(far).not.toBeNull();
+    // Not loud enough to override.
+    expect(limiter.request('sword_hit', 0.1 * SFX_INTERVAL_OVERRIDE_RATIO * 0.9, 10, rule)).toBeNull();
+    // Loud enough: plays, stealing the far voice at the cap.
+    const near = limiter.request('sword_hit', 0.1 * SFX_INTERVAL_OVERRIDE_RATIO, 20, rule);
+    expect(near).not.toBeNull();
+    expect(evicted).toEqual([far]);
+    // The near one now sets the interval: another equally loud hit waits.
+    expect(limiter.request('sword_hit', 0.25, 30, rule)).toBeNull();
+  });
+
+  it('the interval is jittered per play by up to ±SFX_INTERVAL_JITTER, from the injected rng', () => {
+    const rule = { maxVoices: 4, minIntervalMs: 100 };
+    const longest = new VoiceLimiter(24, undefined, () => 0.999999);
+    longest.request('arrow_shot', 1, 0, rule);
+    expect(longest.request('arrow_shot', 1, 100 * (1 + SFX_INTERVAL_JITTER) - 1, rule)).toBeNull();
+    expect(longest.request('arrow_shot', 1, 100 * (1 + SFX_INTERVAL_JITTER), rule)).not.toBeNull();
+    const shortest = new VoiceLimiter(24, undefined, () => 0);
+    shortest.request('arrow_shot', 1, 0, rule);
+    expect(shortest.request('arrow_shot', 1, 100 * (1 - SFX_INTERVAL_JITTER), rule)).not.toBeNull();
   });
 });

@@ -117,6 +117,8 @@ export class AudioManager implements AudioSink {
     if (!g || !this.ready()) return;
     const spec = SFX_CATALOGUE[key];
     if (key === 'ui_click' && this.now() - this.lastUiCueAt < UI_CUE_CLICK_SUPPRESS_MS) return this.drop(key);
+    // A cue answers the click even when it is itself dropped (its repeat interval).
+    if (UI_CUES.has(key)) this.lastUiCueAt = this.now();
     let gain = spec.gain * volume;
     let pan = 0;
     if (position) {
@@ -151,7 +153,6 @@ export class AudioManager implements AudioSink {
     source.start();
     this.playing.set(id, voice);
     this.played[key] = (this.played[key] ?? 0) + 1;
-    if (UI_CUES.has(key)) this.lastUiCueAt = this.now();
   }
 
   setMasterVolume(v: number): void {

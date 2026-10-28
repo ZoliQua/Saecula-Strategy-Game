@@ -263,6 +263,19 @@ describe('AudioManager', () => {
     expect(m.stats().played.ui_click).toBe(1);
   });
 
+  it('an error sound that was requested but dropped still silences the click', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    clock += 1000;
+    m.playSFX('ui_error');
+    clock += 100;
+    // Inside ui_error's repeat interval: the error is dropped, the click stays silent too.
+    m.playSFX('ui_error');
+    m.playSFX('ui_click');
+    expect(m.stats().dropped.ui_error).toBe(1);
+    expect(m.stats().played.ui_click).toBeUndefined();
+  });
+
   it('clearListener drops positional sounds; a closed context counts as none', () => {
     const h = fakeHost(false);
     const m = readyManager(h);

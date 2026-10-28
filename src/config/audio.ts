@@ -34,6 +34,10 @@ export const BATTLE_SFX_LIMITS = {
   cannon_impact: { maxVoices: 2, minIntervalMs: 150 },
   unit_die: { maxVoices: 3, minIntervalMs: 90 },
 } as const;
+/** Inside a key's repeat interval, a request this many times louder than the voice that set it still plays (a near hit beats a far one). */
+export const SFX_INTERVAL_OVERRIDE_RATIO = 2;
+/** Each play's repeat interval varies by ± this share, so battle sounds are not evenly spaced. */
+export const SFX_INTERVAL_JITTER = 0.2;
 /** Lowest pitch of a sound's sine body, in Hz: lower is inaudible on laptops and only pumps the limiter. */
 export const SFX_SUB_FLOOR_HZ = 50;
 
