@@ -1,6 +1,7 @@
 import { CIV_DEFS, type UnitLookId } from '../../../config/civs';
 import type { CivId, UnitType } from '../../../types';
 import { ENGLISH_LOOKS } from './english/englishLooks';
+import { FINNISH_LOOKS } from './finnish/finnishLooks';
 import { FRENCH_LOOKS } from './french/frenchLooks';
 import { GERMAN_LOOKS } from './german/germanLooks';
 import { ITALIAN_LOOKS } from './italian/italianLooks';
@@ -173,6 +174,7 @@ const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitTy
   spanish: SPANISH_LOOKS,
   italian: ITALIAN_LOOKS,
   russian: RUSSIAN_LOOKS,
+  finnish: FINNISH_LOOKS,
 };
 
 /** The look a civ's units of a type wear (civ registry unitLook → override, else the base look). */

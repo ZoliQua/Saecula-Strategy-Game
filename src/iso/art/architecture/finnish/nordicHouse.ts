@@ -44,7 +44,7 @@ function paintHouse(p: IsoPainter, s: ArchStyle, team: number): void {
     z0,
     top,
     (w, h) => {
-      for (const x of lights) nWindow(p, s, w * x, -h + (k.roofs === 'turf' ? 11 : 13), ww, ww * (k.roofs === 'turf' ? 0.8 : 1.15), 1);
+      for (const x of lights) nWindow(p, s, w * x, -h + 13, ww, ww * (k.roofs === 'turf' ? 0.8 : 1.15), 1);
     },
     (w, h) => {
       nDoor(p, s, w * 0.36, 11, k.roofs === 'turf' ? 20 : 24, c.doors.main, R);

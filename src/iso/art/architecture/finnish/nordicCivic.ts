@@ -50,7 +50,7 @@ function paintLonghouse(p: IsoPainter, s: ArchStyle, team: number): void {
   boulders(p, s, 0.15, 2.4, 1.0, 2.85, 5, 4);
   const z0 = footing(p, s, hall, 5);
   wallBlock(p, s, hall, z0, z0 + 32, (w, h) => {
-    for (const x of [0.16, 0.44]) nWindow(p, s, w * x, -h + 11, 7, 6, 1);
+    for (const x of [0.16, 0.44]) nWindow(p, s, w * x, -h + 13, 7, 6, 1);
     nDoor(p, s, w * 0.68, 13, 22, c.doors.main, 1);
     for (const x of [0.06, 0.3, 0.56, 0.86]) roundShield(p, w * x + 6, -h + 7, 4.2, team, 1);
   }, (w, h) => {

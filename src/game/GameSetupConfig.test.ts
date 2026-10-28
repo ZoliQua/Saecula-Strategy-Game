@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../map/random';
 import {
   AI_CIV_CHOICES,
+  AVAILABLE_CIVS,
   assignCivs,
   civsInPlay,
   clampAiCount,
@@ -58,18 +59,19 @@ describe('GameSetupConfig', () => {
     }
   });
 
-  it('falls back from options that are not implemented yet', () => {
-    const c = withSetup(defaultSetupConfig(1), { civ: 'finnish' });
-    expect(c.civ).toBe('hungarian');
+  it('falls back from an unknown human civ', () => {
+    const bogus = 'martian' as unknown as GameSetupConfig['civ'];
+    expect(withSetup(defaultSetupConfig(1), { civ: bogus }).civ).toBe('hungarian');
   });
 
-  it('keeps an available human civ', () => {
-    expect(withSetup(defaultSetupConfig(1), { civ: 'english' }).civ).toBe('english');
+  it('keeps every human civ (all eight are playable)', () => {
+    for (const civ of AVAILABLE_CIVS) expect(withSetup(defaultSetupConfig(1), { civ }).civ).toBe(civ);
+    expect(AVAILABLE_CIVS).toHaveLength(8);
   });
 
-  it('falls back to a mixed AI line-up for an unavailable AI civ', () => {
+  it('falls back to a mixed AI line-up for an unknown AI civ', () => {
     expect(withSetup(defaultSetupConfig(1), { aiCivs: 'english' }).aiCivs).toBe('english');
-    expect(withSetup(defaultSetupConfig(1), { aiCivs: 'finnish' }).aiCivs).toBe('mixed');
+    expect(withSetup(defaultSetupConfig(1), { aiCivs: 'finnish' }).aiCivs).toBe('finnish');
     const bogus = 'martian' as unknown as GameSetupConfig['aiCivs'];
     expect(withSetup(defaultSetupConfig(1), { aiCivs: bogus }).aiCivs).toBe('mixed');
   });
@@ -100,8 +102,8 @@ describe('GameSetupConfig', () => {
 });
 
 describe('AI_CIV_CHOICES', () => {
-  it('offers a mix first, then every playable civ (Vegyes / Magyar / Angol / Német / Francia / Spanyol / Olasz / Orosz)', () => {
-    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian']);
+  it('offers a mix first, then every civ: 9 options (Vegyes / Magyar / Angol / Német / Francia / Spanyol / Olasz / Orosz / Finn)', () => {
+    expect(AI_CIV_CHOICES).toEqual(['mixed', 'hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish']);
   });
 
   it('every choice survives withSetup unchanged', () => {
@@ -121,7 +123,7 @@ describe('assignCivs', () => {
   });
 
   it('mixed: one civ per AI, distinct while the pool lasts, each available civ once there are enough AIs', () => {
-    const pool = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian'];
+    const pool = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish'];
     for (let seed = 1; seed <= 200; seed++) {
       for (let ais = 2; ais <= 5; ais++) {
         const civs = assignCivs(config(ais, 'mixed', seed), createRng(seed));
@@ -150,7 +152,18 @@ describe('assignCivs', () => {
       expect(civs).toHaveLength(1);
       seen.add(civs[0]!);
     }
-    expect(seen).toEqual(new Set(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian']));
+    expect(seen).toEqual(new Set(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish']));
+  });
+
+  it('mixed (default Vegyes): 5 AIs over the full 8-civ pool get 5 distinct civs, and every civ is dealt over the seeds', () => {
+    expect(defaultSetupConfig(1).aiCivs).toBe('mixed');
+    const dealt = new Set<string>();
+    for (let seed = 1; seed <= 100; seed++) {
+      const civs = assignCivs(config(5, 'mixed', seed), createRng(seed));
+      expect(new Set(civs).size).toBe(5);
+      for (const civ of civs) dealt.add(civ);
+    }
+    expect(dealt).toEqual(new Set(AVAILABLE_CIVS));
   });
 
   it('is deterministic per seed', () => {

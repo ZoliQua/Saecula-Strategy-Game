@@ -8,14 +8,24 @@ describe('civ registry', () => {
     expect(Object.keys(CIV_DEFS).sort()).toEqual([...CIV_IDS].sort());
   });
 
-  it('makes Hungarian, English, German, French, Spanish, Italian and Russian available, Finnish not', () => {
-    const done = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian'];
-    expect(AVAILABLE_CIVS).toEqual(done);
-    for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(done.includes(id));
+  it('makes all eight civs available: the setup picker lists every one as playable', () => {
+    expect(AVAILABLE_CIVS).toEqual(CIV_IDS);
+    for (const id of CIV_IDS) expect(CIV_DEFS[id].available, id).toBe(true);
   });
 
-  it('gives Finnish its own architecture in every age (walls and units follow in Task 14)', () => {
+  it('gives Finnish its own architecture, walls and unit look in every age', () => {
     expect(CIV_DEFS.finnish.architecture).toEqual({ 1: 'finnic', 2: 'greystone', 3: 'gustavian' });
+    expect(CIV_DEFS.finnish.wallStyle).toEqual({ 1: 'hillfort', 2: 'granite_curtain', 3: 'granite_bastion' });
+    expect(CIV_DEFS.finnish.unitLook).toBe('finnish');
+  });
+
+  it('gives every civ its own walls and unit look (no Hungarian stub left)', () => {
+    const others = CIV_IDS.filter((id) => id !== 'hungarian');
+    for (const id of others) {
+      expect(CIV_DEFS[id].wallStyle, id).not.toEqual(CIV_DEFS.hungarian.wallStyle);
+      expect(CIV_DEFS[id].unitLook, id).not.toBe(CIV_DEFS.hungarian.unitLook);
+    }
+    expect(new Set(CIV_IDS.map((id) => CIV_DEFS[id].unitLook)).size).toBe(CIV_IDS.length);
   });
 
   it('gives Russian its own architecture, walls and unit look in every age', () => {
@@ -80,10 +90,6 @@ describe('dev all-civs stub (?civs=all)', () => {
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(true);
     expect(civs.AVAILABLE_CIVS).toEqual(civs.CIV_IDS);
-    // A civ not finished yet stays unavailable outside the dev flag; what it lacks keeps the Hungarian stub under its own keys.
-    expect(civs.CIV_DEFS.finnish.available).toBe(false);
-    expect(civs.CIV_DEFS.finnish.wallStyle).toEqual(civs.CIV_DEFS.hungarian.wallStyle);
-    expect(civs.CIV_DEFS.finnish.unitLook).toBe(civs.CIV_DEFS.hungarian.unitLook);
   });
 
   it('ignores other query strings', async () => {
@@ -91,19 +97,21 @@ describe('dev all-civs stub (?civs=all)', () => {
     vi.resetModules();
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(false);
-    expect(civs.AVAILABLE_CIVS).toEqual(['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian']);
+    expect(civs.AVAILABLE_CIVS).toEqual(civs.CIV_IDS);
   });
 });
 
 describe('menuDioramaCivs', () => {
   it('pairs the menu civ with the other playable civs today, one per visit', () => {
-    expect([0, 1, 2, 3, 4, 5].map((visit) => menuDioramaCivs(visit))).toEqual([
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map((visit) => menuDioramaCivs(visit))).toEqual([
       [MENU_CIV, 'english'],
       [MENU_CIV, 'german'],
       [MENU_CIV, 'french'],
       [MENU_CIV, 'spanish'],
       [MENU_CIV, 'italian'],
       [MENU_CIV, 'russian'],
+      [MENU_CIV, 'finnish'],
+      [MENU_CIV, 'english'],
     ]);
   });
 

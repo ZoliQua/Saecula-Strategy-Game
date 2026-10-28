@@ -3,8 +3,8 @@ import type { AgeId, CivId } from '../types';
 /**
  * Civ registry (CLAUDE.md §4.2, M4 design decision 1): which civs can be
  * played and which art each one shows. Civs differ only visually
- * (§4.3). The ids name painter sets in src/iso/art; a civ without its
- * own art yet points at the Hungarian sets.
+ * (§4.3). The ids name painter sets in src/iso/art; since M5 every civ
+ * has its own.
  */
 
 /** Building painter set of one age style (art/buildings.ts). */
@@ -55,9 +55,12 @@ export type WallStyleId =
   | 'trace_italienne'
   | 'rus_palisade'
   | 'gorodnya'
-  | 'kremlin';
+  | 'kremlin'
+  | 'hillfort'
+  | 'granite_curtain'
+  | 'granite_bastion';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -93,11 +96,6 @@ export const MENU_CIV: CivId = 'hungarian';
 
 const HUNGARIAN_ARCH: Record<AgeId, ArchStyleId> = { 1: 'roman', 2: 'medieval', 3: 'baroque' };
 const HUNGARIAN_WALLS: Record<AgeId, WallStyleId> = { 1: 'palisade', 2: 'curtain', 3: 'bastion' };
-
-/** A civ that is not drawn yet: Hungarian art, unavailable in setup. */
-function upcoming(heraldry: Heraldry): CivDef {
-  return { available: false, architecture: HUNGARIAN_ARCH, wallStyle: HUNGARIAN_WALLS, unitLook: 'hungarian', heraldry };
-}
 
 export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
   // Árpád stripes: red, white, green.
@@ -156,10 +154,13 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'russian',
     heraldry: { primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e },
   },
-  // Nordic cross: white, blue, grey. Turf homestead / greystone / Gustavian buildings; walls and units still the Hungarian stub (Task 14).
+  // Nordic cross: white, blue, grey. Turf homestead / greystone / Gustavian buildings; granite hill fort, boulder curtain with shingle-coned round towers and a turf-topped granite bastion trace; Finnish unit liveries.
   finnish: {
-    ...upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
+    available: true,
     architecture: { 1: 'finnic', 2: 'greystone', 3: 'gustavian' },
+    wallStyle: { 1: 'hillfort', 2: 'granite_curtain', 3: 'granite_bastion' },
+    unitLook: 'finnish',
+    heraldry: { primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 },
   },
 };
 

@@ -100,6 +100,9 @@ function tripHammer(p: IsoPainter, s: ArchStyle, u: number, v: number): void {
   p.addVolumePoint(u, v, 34);
 }
 
+/** Forge mouth [width, height]: smaller under the low turf eave of the age-1 forge, so its glow stays clear of the sod edge. */
+const FORGE_MOUTH = { low: [16, 17], tall: [20, 20] } as const;
+
 function smithy(s: ArchStyle): BuildingArt {
   const works = nordic(s).works;
   const c = s.palette;
@@ -120,7 +123,8 @@ function smithy(s: ArchStyle): BuildingArt {
       }
       const z0 = footing(p, s, forge, 5);
       const wall = works === 'homestead' ? 28 : 34;
-      wallBlock(p, s, forge, z0, z0 + wall, (w) => nDoor(p, s, w * 0.56, 13, 22, c.doors.work, 1), (w) => forgeMouth(p, w * 0.3, 20, 20));
+      const mouth = FORGE_MOUTH[works === 'homestead' ? 'low' : 'tall'];
+      wallBlock(p, s, forge, z0, z0 + wall, (w) => nDoor(p, s, w * 0.56, 13, 22, c.doors.work, 1), (w) => forgeMouth(p, w * 0.3, mouth[0], mouth[1]));
       mainRoof(p, s, forge, z0 + wall, 'v');
       forgeLight(p, 1.55, 0.8);
       if (works === 'bruk') tripHammer(p, s, 1.55, 1.5);

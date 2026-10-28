@@ -6,6 +6,7 @@ import { helm } from '../architecture/roofs';
 import type { IsoPainter } from '../isoPainter';
 import { css, shade } from '../palette';
 import { ENGLISH_WALL_STYLES } from './english/englishWalls';
+import { FINNISH_WALL_STYLES } from './finnish/finnishWalls';
 import { FRENCH_WALL_STYLES } from './french/frenchWalls';
 import { GERMAN_WALL_STYLES } from './german/germanWalls';
 import { ITALIAN_WALL_STYLES } from './italian/italianWalls';
@@ -213,6 +214,7 @@ export const WALL_STYLE_BY_ID: Record<WallStyleId, WallAgeStyle> = {
   ...SPANISH_WALL_STYLES,
   ...ITALIAN_WALL_STYLES,
   ...RUSSIAN_WALL_STYLES,
+  ...FINNISH_WALL_STYLES,
 };
 
 /** The wall style a civ builds in an age. */

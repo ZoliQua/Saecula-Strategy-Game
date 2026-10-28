@@ -103,7 +103,7 @@ describe('Finnish architecture (turf homestead, greystone, Gustavian, Petäjäve
     }
     expect(CHARGES.nordic_cross).toBeTypeOf('function');
     expect(CIV_DEFS.finnish.architecture).toEqual({ 1: 'finnic', 2: 'greystone', 3: 'gustavian' });
-    expect(CIV_DEFS.finnish.available).toBe(false);
+    expect(CIV_DEFS.finnish.available).toBe(true);
   });
 
   it('seed salts are unique across every registered style', () => {

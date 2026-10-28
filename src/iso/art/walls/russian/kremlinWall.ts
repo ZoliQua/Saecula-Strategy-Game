@@ -5,11 +5,12 @@ import { RUSSIAN_MUSCOVY } from '../../architecture/russian/russianStyles';
 import type { Ctx } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
+import { armDir } from '../kits/armRoof';
 import { forkedMerlon, type MerlonSize } from '../kits/forkedMerlon';
 import { armShadow, frontEdge, padShadow } from '../kits/wallParts';
 import { prism } from '../prism';
 import { stations, type WallAgeStyle } from '../wallKit';
-import { armDir, loopholes } from './russianWallParts';
+import { loopholes } from './russianWallParts';
 
 /*
  * Russian age-3 wall: a whitewashed brick kremlin (Moscow, as the

@@ -56,7 +56,7 @@ export const hu = {
       spanish: 'Fehér vakolat, lapos tetős udvarházak, lépcsős pártázat',
       italian: 'Téglatornyok fecskefarkú pártázattal, árkádok, terrakotta kupolák',
       russian: 'Gerendaházak, sátortetős tornyok, aranyló hagymakupolák',
-      finnish: 'Északi fa, tőzegtetők',
+      finnish: 'Tőzegtetős faházak, gránitvár harangtoronnyal, vörös deszkaházak',
     },
     aiCivs: 'Ellenfelek népe',
     aiCivMixed: 'Vegyes',

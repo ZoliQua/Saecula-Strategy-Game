@@ -8,11 +8,12 @@ import { R } from '../../architecture/facade';
 import { post } from '../../architecture/parts';
 import { shade } from '../../palette';
 import { reachBody, turfFace } from '../kits/bankPalisade';
+import { facesViewer, galleryRoof } from '../kits/armRoof';
 import { armShadow, frontEdge, frustum, padShadow } from '../kits/wallParts';
 import { prism } from '../prism';
 import { stations, type WallAgeStyle } from '../wallKit';
 import { KREMLIN, KREMLIN_TENT } from './kremlinWall';
-import { clampPost, facesViewer, galleryRoof, logEndColumn, loopholes } from './russianWallParts';
+import { clampPost, logEndColumn, loopholes } from './russianWallParts';
 
 export { KREMLIN_WALK } from './kremlinWall';
 
