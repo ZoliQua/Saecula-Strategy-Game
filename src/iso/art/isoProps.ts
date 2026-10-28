@@ -16,8 +16,8 @@ export interface WindowLook {
   readonly glassBottom: number;
   /** Glazing bars (drawn at 90 % opacity). */
   readonly bars: number;
-  /** Head of arched windows: round (default) or a pointed Gothic lancet. */
-  readonly arch?: 'round' | 'pointed';
+  /** Head of arched windows: round (default), a pointed Gothic lancet or a Moorish horseshoe. */
+  readonly arch?: 'round' | 'pointed' | 'horseshoe';
 }
 
 /** Dark wooden frame, warm lamplit glass. */
@@ -26,8 +26,10 @@ export const WARM_WINDOW: WindowLook = { frame: 0x2b1d12, glassTop: 0xffd27a, gl
 /** Window with frame and warm glow, in face-local coords. */
 export function paintWindow(ctx: Ctx, x: number, y: number, w: number, h: number, arched: boolean, look: WindowLook = WARM_WINDOW): void {
   const pointed = arched && look.arch === 'pointed';
+  const horseshoe = arched && look.arch === 'horseshoe';
   ctx.fillStyle = css(look.frame);
   if (pointed) lancet(ctx, x - 1.5, y - 1.5, w + 3, h + 3);
+  else if (horseshoe) horseshoeArch(ctx, x - 1.5, y - 1.5, w + 3, h + 3);
   else roundedOrArch(ctx, x - 1.5, y - 1.5, w + 3, h + 3, arched);
   ctx.fill();
   const g = ctx.createLinearGradient(0, y, 0, y + h);
@@ -35,6 +37,7 @@ export function paintWindow(ctx: Ctx, x: number, y: number, w: number, h: number
   g.addColorStop(1, css(look.glassBottom));
   ctx.fillStyle = g;
   if (pointed) lancet(ctx, x, y, w, h);
+  else if (horseshoe) horseshoeArch(ctx, x, y, w, h);
   else roundedOrArch(ctx, x, y, w, h, arched);
   ctx.fill();
   ctx.fillStyle = css(look.bars, 0.9);
@@ -109,6 +112,24 @@ function lancet(ctx: Ctx, x: number, y: number, w: number, h: number): void {
   ctx.quadraticCurveTo(x, y + w * 0.25, x + w / 2, y);
   ctx.quadraticCurveTo(x + w, y + w * 0.25, x + w, spring);
   ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+}
+
+/**
+ * Horseshoe (Moorish) arch outline: the round head continues past the
+ * half circle and returns inwards to jambs a little narrower than it.
+ */
+export function horseshoeArch(ctx: Ctx, x: number, y: number, w: number, h: number): void {
+  const r = w / 2;
+  const cx = x + r;
+  const cy = y + r;
+  const k = Math.min(r * 0.18, 2.4);
+  const a = Math.asin((r - k) / r);
+  ctx.beginPath();
+  ctx.moveTo(x + k, y + h);
+  ctx.lineTo(x + k, cy + Math.cos(a) * r);
+  ctx.arc(cx, cy, r, Math.PI / 2 + a, Math.PI / 2 - a);
+  ctx.lineTo(x + w - k, y + h);
   ctx.closePath();
 }
 

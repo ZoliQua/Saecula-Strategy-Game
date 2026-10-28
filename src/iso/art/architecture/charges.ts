@@ -2,6 +2,7 @@ import type { Ctx } from '../canvas';
 import { ENGLISH_CHARGES } from './english/englishCharge';
 import { FRENCH_CHARGES } from './french/frenchCharge';
 import { GERMAN_CHARGES } from './german/germanCharge';
+import { SPANISH_CHARGES } from './spanish/spanishCharge';
 
 /*
  * Heraldic charges by id (facade.ts crest): what a style's crests and
@@ -22,7 +23,7 @@ export const BASE_CHARGES = {
   },
 } satisfies Record<string, ChargePainter>;
 
-export const CHARGES = { ...BASE_CHARGES, ...ENGLISH_CHARGES, ...GERMAN_CHARGES, ...FRENCH_CHARGES } satisfies Record<string, ChargePainter>;
+export const CHARGES = { ...BASE_CHARGES, ...ENGLISH_CHARGES, ...GERMAN_CHARGES, ...FRENCH_CHARGES, ...SPANISH_CHARGES } satisfies Record<string, ChargePainter>;
 
 /** Heraldic charge on crests and shields. */
 export type CrestCharge = keyof typeof CHARGES;

@@ -19,6 +19,9 @@ import { kaiserdom } from './german/kaiserdom';
 import { limesTower } from './german/limesTower';
 import { portaNigra } from './german/portaNigra';
 import { wehrturm } from './german/wehrturm';
+import { hispaniaArt } from './spanish/hispania';
+import { mudejarArt } from './spanish/mudejar';
+import { SPANISH_COLONIAL, SPANISH_HISPANIA, SPANISH_MUDEJAR } from './spanish/spanishStyles';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
 import { medievalArt } from './medieval';
 import { romanArt } from './roman';
@@ -51,6 +54,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   gallo_roman: FRENCH_GALLO_ROMAN,
   gothic_fr: FRENCH_GOTHIC,
   classicisme: FRENCH_CLASSICISME,
+  hispania: SPANISH_HISPANIA,
+  mudejar: SPANISH_MUDEJAR,
+  colonial: SPANISH_COLONIAL,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -66,6 +72,8 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   maison_carree: (s) => ({ ...romanArt(s), town_center: maisonCarree(s), house: galloHouse(s), tower: galloTower(s) }),
   gothic_fr: (s) => ({ ...medievalArt(s), town_center: chateau(s), tower: gothicTower(s) }),
   versailles: (s) => ({ ...baroqueArt(s), town_center: hotelDeVille(s), tower: classicTower(s), wonder: versaillesPalace(s) }),
+  hispania: hispaniaArt,
+  mudejar: mudejarArt,
 };
 
 /** Every style's painted set, by style id. */

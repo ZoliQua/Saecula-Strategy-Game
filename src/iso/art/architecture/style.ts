@@ -128,6 +128,36 @@ export interface StyleKits {
   readonly porticus?: boolean;
   /** Round turrets with conical slate caps in the families' turret spots (kits/pepperpot.ts). */
   readonly pepperpots?: boolean;
+  /** The courtyard families' age reading (CourtyardKits); absent = their first-age reading. */
+  readonly courtyard?: CourtyardKits;
+}
+
+/**
+ * How the courtyard families (whitewashed or brick blocks round patios,
+ * kits/patio.ts) dress their layouts in one age. Main roofs follow the
+ * style's roof profile: 'native' keeps flat terraces with parapets on
+ * dwellings and low tile on halls, a forced 'hip' puts low hips on every
+ * block. Arch heads follow the window look (`arch`).
+ */
+export interface CourtyardKits {
+  /** Wall finish: lime whitewash over a painted plinth, or Toledan bond (rubble panels laced with brick). */
+  readonly walls: 'whitewash' | 'toledan';
+  /** Door and gate surrounds: granite voussoirs, a brick alfiz framing the arch, or an ochre plateresque frontispiece. */
+  readonly portal: 'voussoir' | 'alfiz' | 'plateresque';
+  /** Glazed tile (azulejo) bands under parapets and round towers. */
+  readonly tileBands: boolean;
+  /** Stepped merlons on the parapets of flat roofs. */
+  readonly merlons: boolean;
+  /** What rises in the layouts' tower spots (house, barracks): nothing, square brick towers with glazed pyramid caps, or whitewashed miradors under a domed garita. */
+  readonly towers: 'none' | 'brick' | 'mirador';
+  /** Bell gables (espadañas) on the ridges of halls and sheds; the town centre becomes the bell-gabled town hall. */
+  readonly espadanas: boolean;
+  /** Wrought-iron balconies on upper windows. */
+  readonly balconies: boolean;
+  /** Water in the patios: a Roman impluvium pool, a well head, or a basin fountain. */
+  readonly water: 'impluvium' | 'well' | 'fountain';
+  /** Planting of the farm: an olive grove with a threshing floor, an irrigated huerta with a noria, or a vineyard. */
+  readonly field: 'olives' | 'huerta' | 'vines';
 }
 
 /** Heraldic charge on crests and shields (charges.ts, painted by facade.ts crest). */
@@ -163,7 +193,11 @@ export type ArchFamily =
   /** Medieval layouts with pepperpot turrets, a Loire château town centre and a machicolated round tower (French age 2). */
   | 'gothic_fr'
   /** Baroque layouts with an hôtel de ville town centre, a belvedere tower and Versailles as Wonder (French age 3). */
-  | 'versailles';
+  | 'versailles'
+  /** Courtyard layouts: whitewashed flat-roofed blocks round patios, a forum behind an aqueduct, a Roman lighthouse tower (Spanish age 1). */
+  | 'hispania'
+  /** Courtyard layouts with a keep (or, with espadañas, a bell-gabled town hall) town centre, square towers, a foundry and the Alhambra (Spanish ages 2-3). */
+  | 'mudejar';
 
 /**
  * Families whose painters size their canvases from the style

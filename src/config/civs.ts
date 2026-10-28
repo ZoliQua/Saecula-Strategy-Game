@@ -20,7 +20,10 @@ export type ArchStyleId =
   | 'backstein'
   | 'gallo_roman'
   | 'gothic_fr'
-  | 'classicisme';
+  | 'classicisme'
+  | 'hispania'
+  | 'mudejar'
+  | 'colonial';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId =
   | 'palisade'
@@ -111,7 +114,11 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'french',
     heraldry: { primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 },
   },
-  spanish: upcoming({ primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f }),
+  // Castile and León: gold castle on red. Hispania / Mudéjar / Colonial buildings (M5 Task 7); walls and units still Hungarian until Task 8.
+  spanish: {
+    ...upcoming({ primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f }),
+    architecture: { 1: 'hispania', 2: 'mudejar', 3: 'colonial' },
+  },
   italian: upcoming({ primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e }),
   russian: upcoming({ primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e }),
   finnish: upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
