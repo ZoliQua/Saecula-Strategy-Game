@@ -26,6 +26,16 @@ function oliveGrove(p: IsoPainter, u0: number, v0: number, u1: number, v1: numbe
   }
 }
 
+/**
+ * The workplace block's skyline step: a palomar over its back corner, or
+ * in the Colonial reading the ridge espadaña alone (the two side by side
+ * merge into one lump at zoom 1).
+ */
+function skyline(p: IsoPainter, s: ArchStyle, b: Block, dovecote: Block, z: number): void {
+  if (kitsOf(s).espadanas && s.roof.form === 'hip') ridgeBells(p, s, b, z, 18, 34);
+  else palomar(p, s, dovecote, z);
+}
+
 function farm(s: ArchStyle): BuildingArt {
   return {
     size: 2,
@@ -37,8 +47,7 @@ function farm(s: ArchStyle): BuildingArt {
       p.ground(0.05, 0.05, 1.95, 1.95, 0x8d6a45);
       block(p, s, store, 0, 28, (w) => portal(p, s, w * 0.55, 12, 19, team, 1), (w) => windowAt(p, s, w * 0.4, -21, 7, 8, R));
       roofOver(p, s, store, 28, 18);
-      palomar(p, s, [0.15, 0.15, 0.45, 0.42], 28);
-      ridgeBells(p, s, store, 28, 18, 34);
+      skyline(p, s, store, [0.15, 0.15, 0.45, 0.42], 28);
       if (k.field === 'olives') {
         oliveGrove(p, 0.12, 0.75, 1.9, 1.9);
         threshingFloor(p, 1.38, 0.42, 0.3);
@@ -69,8 +78,7 @@ function lumberCamp(s: ArchStyle): BuildingArt {
       });
       // Open sawing shelter against the shed's +u side: posts under a low tile pent.
       roofOver(p, s, shed, 34, 18);
-      palomar(p, s, [0.2, 0.2, 0.52, 0.5], 34);
-      ridgeBells(p, s, shed, 34, 18, 34);
+      skyline(p, s, shed, [0.2, 0.2, 0.52, 0.5], 34);
       const ctx = p.ctx;
       for (const v of [0.25, 0.9]) {
         const [x, y] = p.p(1.6, v, 0);
@@ -97,8 +105,7 @@ function miningCamp(s: ArchStyle): BuildingArt {
       p.ground(0.08, 0.08, 1.92, 1.92, 0x8b7f6e);
       block(p, s, house, 0, 32, (w) => portal(p, s, w * 0.4, 12, 20, team, 1), (w) => windowAt(p, s, w * 0.5, -22, 7, 8, R));
       roofOver(p, s, house, 32, 18);
-      palomar(p, s, [0.2, 0.2, 0.52, 0.5], 32);
-      ridgeBells(p, s, house, 32, 18, 34);
+      skyline(p, s, house, [0.2, 0.2, 0.52, 0.5], 32);
       // Shaft collar and a timber windlass on trestles.
       p.box(1.25, 0.3, 1.75, 0.8, 0, 6, { color: c.stone, detail: 'stone' }, 0x2a221c);
       const ctx = p.ctx;

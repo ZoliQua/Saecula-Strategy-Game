@@ -7,7 +7,9 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * The wall pins still paint the Hungarian wall styles until Task 8.
  * Fix round 1 re-recorded tower@1 (Tower of Hercules outline), the
  * farm and camps of every age (palomar), town_center@3 (window clear of
- * the wing) and wonder~s2/s3 (the Vela rises last).
+ * the wing) and wonder~s2/s3 (the Vela rises last). Task 8 re-recorded
+ * farm@3, lumber_camp@3 and mining_camp@3 (no palomar beside the ridge
+ * espadaña).
  */
 
 pinBuildings('spanish', {
@@ -39,9 +41,9 @@ pinBuildings('spanish', {
   'wonder@2': '4bf7d89a7e25e474',
   'town_center@3': 'b6bfd651869123d8',
   'house@3': '4d79650e8001f794',
-  'farm@3': 'c35b98a57b3e9e42',
-  'lumber_camp@3': '70d9f910ef7a823c',
-  'mining_camp@3': '6a1e1b15869b05d7',
+  'farm@3': '2cfa8277e61ada05',
+  'lumber_camp@3': 'c86660316190a40c',
+  'mining_camp@3': 'a6acd6e6014f1cbc',
   'barracks@3': '14a1e62f2774d2ec',
   'archery_range@3': 'c3b267832f47640d',
   'stable@3': '5ba8589e226111d9',
