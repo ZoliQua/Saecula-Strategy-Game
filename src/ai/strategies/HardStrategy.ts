@@ -5,6 +5,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import type { UnitType } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { groupCentre } from '../decisions/combat';
+import { chebyshev } from '../decisions/gathering';
 import { pointToward, wallLineAcross } from '../decisions/fortify';
 import {
   decayedPeak,
@@ -157,14 +158,15 @@ export class HardStrategy extends MediumStrategy {
   /**
    * Turtle: towers (age 2+) and wall lines across the side the attacks
    * came from (the remembered enemy TC when none came yet; a proactive
-   * turtle with neither faces the map centre, where enemies come from).
+   * turtle with neither faces the map centre, where enemies come from,
+   * unless its base sits at the centre: then it waits for a side).
    */
   private fortify(ctx: AIContext, view: WorldView): void {
     const home = baseAnchor(view);
     const centre = { tx: Math.floor(ctx.mapData.width / 2), ty: Math.floor(ctx.mapData.height / 2) };
     const threat = this.threatFrom
       ?? view.knownEnemyBuildings.find((b) => b.type === 'town_center')?.position
-      ?? (this.hard.turtle.proactive === true ? centre : null);
+      ?? (this.hard.turtle.proactive === true && !!home && chebyshev(home, centre) >= this.hard.turtle.wallDistance ? centre : null);
     if (!home || !threat) return;
     const t = this.hard.turtle;
     const towerSpot = pointToward(home, threat, t.towerDistance);

@@ -58,6 +58,8 @@ export const AI_COMMON = {
   savesForUnits: ['cannon'] as readonly UnitType[],
   /** A failed search for a Wonder site near the TC stops Wonder saving until this long has passed (ms). */
   wonderSiteRetryMs: 120_000,
+  /** A flank unit found idle short of its target this many times (no path) is released from the flank. */
+  flankReorders: 3,
 } as const;
 
 /** A placement ring (Chebyshev tiles around the anchor). */

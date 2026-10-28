@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AI_MASTER } from '../config/aiBalance';
+import { AI_COMMON, AI_MASTER } from '../config/aiBalance';
 import { createBuilding, unblockBuilding } from '../ecs/archetypes/building';
 import { createUnit } from '../ecs/archetypes/createUnit';
 import { createEcsWorld } from '../ecs/world';
@@ -78,5 +78,25 @@ describe('FlankControl', () => {
     flank.launch(ctx, view, army.slice(0, 2), target);
     flank.launch(ctx, view, army.slice(2, 4), target);
     expect(flank.flanksLaunched).toBe(2);
+  });
+
+  it('a member that keeps ending up idle short of the target (no path) leaves the flank', () => {
+    const { ctx, army, farm, perception, flank } = setup();
+    const view = perception.update(ctx);
+    const target = view.knownEnemyBuildings.find((b) => b.id === farm.id)!;
+    // The farm drops out of sight (remembered only), so the flank marches instead of attacking.
+    ctx.fog.dimVisibleToExplored();
+    const [stuck, walker] = [army[0]!, army[1]!];
+    flank.launch(ctx, view, [stuck, walker], target);
+    for (let i = 0; i <= AI_COMMON.flankReorders; i++) {
+      // PathfindingSystem found no path: the order is dropped and the unit stands idle.
+      ctx.world.removeComponent(stuck, 'moveIntent');
+      flank.update(ctx, perception.update(ctx));
+      expect(flank.has(stuck), `round ${i}`).toBe(i < AI_COMMON.flankReorders);
+    }
+    expect(stuck.moveIntent).toBeUndefined();
+    // The walker (still on its way) stays on the flank, and the flank goes on.
+    expect(flank.has(walker)).toBe(true);
+    expect(walker.moveIntent?.target).toEqual(target.position);
   });
 });

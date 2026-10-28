@@ -78,12 +78,14 @@ describe('MasterStrategy headless simulation (64×64 meadow)', () => {
    * Against Hard, seeds 1-4: Hard's TC falls at — / 21.13 / 23.39 / 20.18 min (3 of 4); on seed 1 Hard's
    * scout pressure kills Mesteri's villagers and Mesteri loses its TC at 19.40. Flanks: 0 / 0 / 1 / 0
    * (the main waves leave at 10 in the rush stance; only seed 3 knew an economy building 6+ tiles from
-   * the enemy TC then). Seed 3 is pinned at its measured 23.39 min + 15 %.
+   * the enemy TC then). Every duel runs to 27 min (the slowest win, 23.39, + 15 %).
    */
-  it('beats Hard on fixed seed 3 within 27 min (measured 23.39) and sends a flank on the way', () => {
-    const r = duel(3, 27);
-    expect(r.wonAt).toBeLessThanOrEqual(27 * MIN);
-    expect(r.master.flanksLaunched).toBeGreaterThanOrEqual(1);
+  it('beats Hard on ≥ 3 of seeds 1-4 within 27 min (measured 3: seeds 2-4), with a flank on seed 3', () => {
+    const runs = [1, 2, 3, 4].map((seed) => ({ seed, ...duel(seed, 27) }));
+    const wins = runs.filter((r) => r.wonAt <= 27 * MIN).map((r) => r.seed);
+    expect(wins.length, `won on seeds ${wins.join(', ')}`).toBeGreaterThanOrEqual(3);
+    expect(runs[2]!.wonAt).toBeLessThanOrEqual(27 * MIN);
+    expect(runs[2]!.master.flanksLaunched).toBeGreaterThanOrEqual(1);
   }, 300_000);
 
   it('is deterministic: two runs of seed 3 give identical age-2 times and thought lists', () => {

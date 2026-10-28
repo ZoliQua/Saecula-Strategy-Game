@@ -17,6 +17,8 @@ const isBusy = (u: Entity) => u.attackIntent !== undefined || u.moveIntent !== u
  */
 export class FlankControl {
   private readonly flank = new Set<number>();
+  /** March orders given to a member found idle again (a failed path leaves it idle). */
+  private readonly reorders = new Map<number, number>();
   private goal: KnownBuilding | null = null;
   private launched = 0;
 
@@ -44,6 +46,7 @@ export class FlankControl {
   launch(ctx: AIContext, _view: WorldView, units: readonly Entity[], target: KnownBuilding): void {
     for (const u of units) if (u.id !== undefined) this.flank.add(u.id);
     this.goal = target;
+    this.reorders.clear();
     this.launched++;
     this.log.add(ctx.timeMs, 'flank', `${target.position.tx},${target.position.ty}`);
     // New orders (the wave's march is dropped); the upkeep then fights what it meets.
@@ -89,10 +92,23 @@ export class FlankControl {
         ctx.world.addComponent(u, 'attackIntent', { targetId: goal.id });
       } else if (!isBusy(u) || u.attackIntent) {
         // Walk to where the target was seen (an attack order on a building out of sight could be stale).
+        // Idle again and again without a fight: no path there, so the unit leaves the flank.
+        if (!u.attackIntent && this.countReorder(id) > AI_COMMON.flankReorders) {
+          this.flank.delete(id);
+          this.reorders.delete(id);
+          clearUnitOrders(ctx.world, u);
+          continue;
+        }
         clearUnitOrders(ctx.world, u);
         ctx.world.addComponent(u, 'moveIntent', { target: goal.position });
       }
     }
+  }
+
+  private countReorder(id: number): number {
+    const n = (this.reorders.get(id) ?? 0) + 1;
+    this.reorders.set(id, n);
+    return n;
   }
 
   /** The target is gone: the members stop where they are and are free again. */
@@ -104,6 +120,7 @@ export class FlankControl {
       if (u.movable) u.movable.path = [];
     }
     this.flank.clear();
+    this.reorders.clear();
     this.goal = null;
     this.log.add(ctx.timeMs, 'flank', 'done');
   }

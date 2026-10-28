@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
 import { defaultSetupConfig, matchCivs, withSetup, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
-import { gameOverRows } from '../game/gameOverStats';
+import { decidedWinner, gameOverRows } from '../game/gameOverStats';
 import { createPlayers, type PlayerManager } from '../game/PlayerManager';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
@@ -355,7 +355,7 @@ export class GameScene extends Phaser.Scene {
       victory: state.kind === 'victory',
       durationMs: this.gameElapsedMs,
       cause: state.cause,
-      players: gameOverRows(this.players.all(), state.winnerId, this.difficulty),
+      players: gameOverRows(this.players.all(), decidedWinner(state, this.players.all()), this.difficulty),
     };
     this.scene.launch('GameOverScene', data);
     this.scene.bringToTop('GameOverScene');

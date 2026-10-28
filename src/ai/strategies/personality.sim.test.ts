@@ -46,6 +46,7 @@ describe('AI personalities headless (64×64 meadow, passive human)', () => {
       const rusher = play('medium', 'rusher', seed);
       const boomer = play('medium', 'boomer', seed);
       expect(rusher.firstWave, `seed ${seed}`).toBeLessThanOrEqual(boomer.firstWave - 60_000);
+      expect(rusher.villagersAt12, `seed ${seed} sampled`).toBeGreaterThan(0);
       expect(boomer.villagersAt12, `seed ${seed}`).toBeGreaterThanOrEqual(rusher.villagersAt12 * 1.15);
     }
   }, 240_000);
