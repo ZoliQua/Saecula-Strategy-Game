@@ -98,11 +98,11 @@ export function pediment(p: IsoPainter, s: ArchStyle, u0: number, u1: number, v:
   p.leftFace(u0, u1, v, z, (w) => crest(p.ctx, s, w / 2, -rise * 0.38, rise * 0.24, team), rise);
 }
 
-/** Habsburg sentry box with black-yellow chevrons. */
-export function sentryBox(p: IsoPainter, u: number, v: number): void {
-  p.box(u, v, u + 0.24, v + 0.24, 0, 30, { color: 0xe8c240 });
+/** Sentry box with painted chevrons: Habsburg black on yellow by default. */
+export function sentryBox(p: IsoPainter, u: number, v: number, field = 0xe8c240, chevron = '#1e1a16'): void {
+  p.box(u, v, u + 0.24, v + 0.24, 0, 30, { color: field });
   const stripes = (w: number, h: number) => {
-    p.ctx.fillStyle = '#1e1a16';
+    p.ctx.fillStyle = chevron;
     for (let y = 4; y < h; y += 8) {
       p.ctx.beginPath();
       p.ctx.moveTo(0, -y);

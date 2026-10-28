@@ -16,6 +16,8 @@ export interface WindowLook {
   readonly glassBottom: number;
   /** Glazing bars (drawn at 90 % opacity). */
   readonly bars: number;
+  /** Head of arched windows: round (default) or a pointed Gothic lancet. */
+  readonly arch?: 'round' | 'pointed';
 }
 
 /** Dark wooden frame, warm lamplit glass. */
@@ -23,14 +25,17 @@ export const WARM_WINDOW: WindowLook = { frame: 0x2b1d12, glassTop: 0xffd27a, gl
 
 /** Window with frame and warm glow, in face-local coords. */
 export function paintWindow(ctx: Ctx, x: number, y: number, w: number, h: number, arched: boolean, look: WindowLook = WARM_WINDOW): void {
+  const pointed = arched && look.arch === 'pointed';
   ctx.fillStyle = css(look.frame);
-  roundedOrArch(ctx, x - 1.5, y - 1.5, w + 3, h + 3, arched);
+  if (pointed) lancet(ctx, x - 1.5, y - 1.5, w + 3, h + 3);
+  else roundedOrArch(ctx, x - 1.5, y - 1.5, w + 3, h + 3, arched);
   ctx.fill();
   const g = ctx.createLinearGradient(0, y, 0, y + h);
   g.addColorStop(0, css(look.glassTop));
   g.addColorStop(1, css(look.glassBottom));
   ctx.fillStyle = g;
-  roundedOrArch(ctx, x, y, w, h, arched);
+  if (pointed) lancet(ctx, x, y, w, h);
+  else roundedOrArch(ctx, x, y, w, h, arched);
   ctx.fill();
   ctx.fillStyle = css(look.bars, 0.9);
   ctx.fillRect(x + w / 2 - 0.6, y, 1.2, h);
@@ -93,6 +98,18 @@ export function paintFlag(ctx: Ctx, x: number, y: number, pole: number, team: nu
 
 export function lerp(a: Pt, b: Pt, t: number): Pt {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+}
+
+/** Pointed (lancet) window outline: two arcs meeting in a point a little above the springing. */
+function lancet(ctx: Ctx, x: number, y: number, w: number, h: number): void {
+  const spring = y + w * 0.85;
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x, spring);
+  ctx.quadraticCurveTo(x, y + w * 0.25, x + w / 2, y);
+  ctx.quadraticCurveTo(x + w, y + w * 0.25, x + w, spring);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
 }
 
 function roundedOrArch(ctx: Ctx, x: number, y: number, w: number, h: number, arched: boolean): void {

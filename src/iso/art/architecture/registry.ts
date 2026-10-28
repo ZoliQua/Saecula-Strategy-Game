@@ -2,6 +2,15 @@ import type { ArchStyleId } from '../../../config/civs';
 import { baroqueArt } from './baroque';
 import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
 import { gothicCathedral } from './english/gothicCathedral';
+import { chateau } from './french/chateau';
+import { classicTower } from './french/classicTower';
+import { FRENCH_CLASSICISME, FRENCH_GALLO_ROMAN, FRENCH_GOTHIC } from './french/frenchStyles';
+import { galloHouse } from './french/galloHouse';
+import { galloTower } from './french/galloTower';
+import { gothicTower } from './french/gothicTower';
+import { hotelDeVille } from './french/hotelDeVille';
+import { maisonCarree } from './french/maisonCarree';
+import { versaillesPalace } from './french/versailles';
 import { romanoBritishArt } from './english/romanoBritish';
 import { georgianArt } from './families/georgian/georgian';
 import { tudorArt } from './families/tudor/tudor';
@@ -39,6 +48,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   limes: GERMAN_LIMES,
   fachwerk: GERMAN_FACHWERK,
   backstein: GERMAN_BACKSTEIN,
+  gallo_roman: FRENCH_GALLO_ROMAN,
+  gothic_fr: FRENCH_GOTHIC,
+  classicisme: FRENCH_CLASSICISME,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -51,6 +63,9 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   georgian: (s) => ({ ...georgianArt(s), wonder: gothicCathedral(s) }),
   porta_nigra: (s) => ({ ...romanArt(s), town_center: portaNigra(s), tower: limesTower(s) }),
   kaiserdom: (s) => ({ ...georgianArt(s), tower: wehrturm(s), wonder: kaiserdom(s) }),
+  maison_carree: (s) => ({ ...romanArt(s), town_center: maisonCarree(s), house: galloHouse(s), tower: galloTower(s) }),
+  gothic_fr: (s) => ({ ...medievalArt(s), town_center: chateau(s), tower: gothicTower(s) }),
+  versailles: (s) => ({ ...baroqueArt(s), town_center: hotelDeVille(s), tower: classicTower(s), wonder: versaillesPalace(s) }),
 };
 
 /** Every style's painted set, by style id. */

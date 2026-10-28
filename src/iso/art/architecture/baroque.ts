@@ -3,6 +3,7 @@ import { archedOpening, baroqueWindow, clockFace, cornice } from './facade';
 import { baroqueWorkArt } from './baroqueWork';
 import { baroqueBlock, pediment, railFence, sentryBox, volutedGable } from './baroqueParts';
 import { foundryArt } from './foundry';
+import { hasPavilionRoofs } from './kits/pavilionRoof';
 import { lantern } from './parts';
 import { dormerLeft, dormerRight, finial, helm, type HelmProfile } from './roofs';
 import type { ArchStyle } from './style';
@@ -102,7 +103,7 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
     house: {
       size: 2,
       maxHeight: tall(140),
-      paint: (p) => {
+      paint: (p, team) => {
         p.footShadow();
         p.ground(0.12, 0.12, 1.88, 1.88, 0xb3a991);
         roofChimney(p, s, 0.55, 0.5, 0.75, 0.7, 30, 112, 44, { color: c.plaster, detail: 'plaster' });
@@ -120,7 +121,9 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         });
         p.material = 'tile';
         styledHip(p, s, 0.32, 0.3, 1.68, 1.62, 50, 44, c.roof, 0.1);
-        volutedGable(p, s, 0.44, 1.56, 1.62, 50, 42);
+        // Pavilion styles carry oeil-de-boeuf dormers instead of the street gable, and a pennant on the crest.
+        if (hasPavilionRoofs(s)) p.flag(1.0, 0.96, 50 + 44 * s.roof.pitch, 18, team);
+        else volutedGable(p, s, 0.44, 1.56, 1.62, 50, 42);
         lantern(p, 1.68, 0.7, 34, 1.86, 0.7);
         railFence(p, 0.14, 1.92, 0.9, 1.92, 11);
       },
@@ -146,7 +149,9 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         pediment(p, s, 1.15, 1.85, 1.85, 80, 36, team);
         lantern(p, 2.7, 0.75, 40, 2.9, 0.75);
         lantern(p, 2.7, 1.4, 40, 2.9, 1.4);
-        sentryBox(p, 2.76, 1.5);
+        // Pavilion (French) styles paint the royal guard's blue-and-white box.
+        if (hasPavilionRoofs(s)) sentryBox(p, 2.76, 1.5, 0x2c4a8a, '#efe9da');
+        else sentryBox(p, 2.76, 1.5);
         p.flag(1.0, 2.45, 0, 62, team, true);
         railFence(p, 0.12, 2.92, 2.92, 2.92, 12);
         railFence(p, 2.92, 2.1, 2.92, 2.92, 12);

@@ -75,9 +75,11 @@ export interface RoofProfile {
   /**
    * 'native' keeps each painter's hip / gable / mansard; 'hip' or 'gable'
    * forces that form; 'halfHip' turns the family's gables into half-hips
-   * (Krüppelwalm, kits/halfHip.ts) and keeps its hips.
+   * (Krüppelwalm, kits/halfHip.ts) and keeps its hips; 'pavilion' turns
+   * every main roof (hips, gables, mansards) into a tall truncated hip
+   * with a leaded crest (kits/pavilionRoof.ts).
    */
-  readonly form: 'native' | 'hip' | 'gable' | 'halfHip';
+  readonly form: 'native' | 'hip' | 'gable' | 'halfHip' | 'pavilion';
   /** Cover painted on main roofs; undefined keeps each painter's own material. */
   readonly material?: RoofMaterial;
 }
@@ -118,6 +120,8 @@ export interface StyleKits {
   readonly needleSpires?: boolean;
   /** The Roman family's plastered blocks get a framed upper storey over a stone ground storey. */
   readonly framedUpper?: boolean;
+  /** Round turrets with conical slate caps in the families' turret spots (kits/pepperpot.ts). */
+  readonly pepperpots?: boolean;
 }
 
 /** Heraldic charge on crests and shields (charges.ts, painted by facade.ts crest). */
@@ -147,7 +151,13 @@ export type ArchFamily =
   /** Roman layouts with a Porta Nigra twin-tower gate as town centre and a Limes watchtower (German age 1). */
   | 'porta_nigra'
   /** Georgian layouts with the Speyer Kaiserdom as Wonder (German age 3). */
-  | 'kaiserdom';
+  | 'kaiserdom'
+  /** Roman layouts with a Maison Carrée temple-forum town centre and a round Gallo-Roman tower (French age 1). */
+  | 'maison_carree'
+  /** Medieval layouts with pepperpot turrets, a Loire château town centre and a machicolated round tower (French age 2). */
+  | 'gothic_fr'
+  /** Baroque layouts with an hôtel de ville town centre, a belvedere tower and Versailles as Wonder (French age 3). */
+  | 'versailles';
 
 /**
  * Families whose painters size their canvases from the style
@@ -155,7 +165,7 @@ export type ArchFamily =
  * civ styles ride. Bespoke families size their own canvases, so they
  * must fit whatever headroom a style sets (style.test.ts).
  */
-export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra'];
+export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles'];
 
 export interface ArchStyle {
   readonly id: ArchStyleId;

@@ -53,8 +53,11 @@ describe('dev all-civs stub (?civs=all)', () => {
     expect(civs.DEV_ALL_CIVS).toBe(true);
     expect(civs.AVAILABLE_CIVS).toEqual(civs.CIV_IDS);
     // Civs without art yet stay stubs: Hungarian art under their own keys.
+    expect(civs.CIV_DEFS.spanish.available).toBe(false);
+    expect(civs.CIV_DEFS.spanish.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
+    // French has its own architecture but stays unavailable until its walls and units are done.
     expect(civs.CIV_DEFS.french.available).toBe(false);
-    expect(civs.CIV_DEFS.french.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
+    expect(civs.CIV_DEFS.french.architecture).toEqual({ 1: 'gallo_roman', 2: 'gothic_fr', 3: 'classicisme' });
   });
 
   it('ignores other query strings', async () => {

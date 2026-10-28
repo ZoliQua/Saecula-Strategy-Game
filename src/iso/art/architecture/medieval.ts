@@ -5,6 +5,7 @@ import { archedOpening, boardedGable, crest, R, shutteredWindow, timberFrame } f
 import { medievalWorkArt } from './medievalWork';
 import { palisade, post, torch, wattleFence } from './parts';
 import { porchRoofLeft, porchRoofRight } from './roofs';
+import { dovecote, hasPepperpots, pepperpotRoom, turret } from './kits/pepperpot';
 import type { ArchStyle } from './style';
 import { boardedFill, roofChimney, styledGable, styledHip } from './styledRoofs';
 import { medievalTower } from './towers';
@@ -29,6 +30,8 @@ function galleryLeft(p: IsoPainter, s: ArchStyle, u0: number, u1: number, v: num
 export function medievalArt(s: ArchStyle): AgeArtSet {
   const c = s.palette;
   const tall = (h: number) => h + s.headroom;
+  /** Pepperpot styles: a stair turret on the house, a round corner tower at the barracks, a stable dovecote. */
+  const pots = hasPepperpots(s);
   return {
     ...medievalWorkArt(s),
     town_center: {
@@ -90,8 +93,8 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
     },
     house: {
       size: 2,
-      maxHeight: tall(132),
-      paint: (p) => {
+      maxHeight: tall(132) + pepperpotRoom(s, 40),
+      paint: (p, team) => {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.12, 0.12, 1.88, 1.88, 0xa3977c);
@@ -111,6 +114,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
         styledGable(p, s, 0.4, 0.2, 1.32, 1.72, 40, 56, c.thatch, c.plaster, 'v', 0.16, boardedFill(s, (w, rise) => boardedGable(ctx, w, rise, c.board)));
         for (let i = 0; i <= 3; i++) post(p, 1.72, 0.32 + i * 0.43, 0, 28, 2.2, c.timber);
         porchRoofRight(p, 0.18, 1.74, 1.48, 0.3, 37, 28, c.thatch);
+        if (pots) turret(p, s, 0.42, 1.66, 0.17, 0, 64, { lights: [22, 46], team });
         wattleFence(p, 0.14, 1.93, 1.0, 1.93, 12);
         // Bench by the door.
         p.box(1.82, 1.0, 1.9, 1.3, 0, 7, { color: 0x6b4526 }, 0x7d5530);
@@ -118,7 +122,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
     },
     barracks: {
       size: 3,
-      maxHeight: tall(176),
+      maxHeight: tall(176) + pepperpotRoom(s, 40),
       paint: (p, team) => {
         const ctx = p.ctx;
         p.footShadow();
@@ -140,13 +144,16 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
         styledGable(p, s, 0.26, 0.26, 2.74, 1.94, 64, 64, c.roof, c.plaster, 'u', 0.14, boardedFill(s, (w, rise) => boardedGable(ctx, w, rise, c.board, R)));
         torch(p, 2.7, 1.35, 30, 2.95, 1.35);
         torch(p, 2.7, 0.85, 30, 2.95, 0.85);
-        // Timber watchtower at the yard corner.
-        p.box(0.18, 2.22, 0.72, 2.76, 0, 12, { color: c.stone, detail: 'fieldstone' }, c.stone);
-        for (const [u, v] of [[0.24, 2.7], [0.66, 2.7], [0.66, 2.28]] as const) post(p, u, v, 12, 74, 2.6, c.timber);
-        p.box(0.12, 2.16, 0.78, 2.82, 74, 92, { color: c.board, detail: 'planks' }, c.board);
-        p.material = 'shingle';
-        styledHip(p, s, 0.12, 2.16, 0.78, 2.82, 92, 34, c.roof, 0.06);
-        p.flag(0.45, 2.49, 92 + 34 * s.roof.pitch, 16, team, true);
+        // Timber watchtower at the yard corner (a round stone tower under a pepperpot in pepperpot styles).
+        if (pots) turret(p, s, 0.45, 2.49, 0.28, 0, 96, { lights: [44, 70], corbels: true, team });
+        else {
+          p.box(0.18, 2.22, 0.72, 2.76, 0, 12, { color: c.stone, detail: 'fieldstone' }, c.stone);
+          for (const [u, v] of [[0.24, 2.7], [0.66, 2.7], [0.66, 2.28]] as const) post(p, u, v, 12, 74, 2.6, c.timber);
+          p.box(0.12, 2.16, 0.78, 2.82, 74, 92, { color: c.board, detail: 'planks' }, c.board);
+          p.material = 'shingle';
+          styledHip(p, s, 0.12, 2.16, 0.78, 2.82, 92, 34, c.roof, 0.06);
+          p.flag(0.45, 2.49, 92 + 34 * s.roof.pitch, 16, team, true);
+        }
         // Training yard: dummies + palisade with a gate gap.
         for (const u of [1.3, 1.9, 2.5]) {
           const [x, y] = p.p(u, 2.4, 0);
@@ -164,7 +171,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
     },
     stable: {
       size: 3,
-      maxHeight: tall(150),
+      maxHeight: tall(150) + pepperpotRoom(s, 20),
       paint: (p, team) => {
         const ctx = p.ctx;
         p.footShadow();
@@ -190,6 +197,7 @@ export function medievalArt(s: ArchStyle): AgeArtSet {
         }, 28);
         p.material = 'shingle';
         styledGable(p, s, 0.27, 0.27, 2.73, 2.03, 62, 60, c.roof, c.plaster, 'u', 0.14, boardedFill(s, (w, rise) => boardedGable(ctx, w, rise, c.board, R)));
+        if (pots) dovecote(p, s, 2.4, 2.38, 0.2, 56);
         // Paddock fence.
         for (const [a, b] of [[[0.2, 2.86], [2.86, 2.86]], [[2.86, 2.86], [2.86, 2.2]]] as const) {
           const n = 7;

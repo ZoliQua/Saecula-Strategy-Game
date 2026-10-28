@@ -4,6 +4,7 @@ import { css } from '../palette';
 import { archedOpening, boardedGable, R } from './facade';
 import { forgeLight, forgeMouth, goldPile, haystack, logPile, post, strawButt, torch, wattleFence } from './parts';
 import { porchRoofLeft, porchRoofRight } from './roofs';
+import { dovecote, hasPepperpots, pepperpotRoom, turret } from './kits/pepperpot';
 import type { ArchStyle } from './style';
 import { boardedFill, roofChimney, styledGable, styledHip } from './styledRoofs';
 import type { AgeArtSet } from './types';
@@ -55,14 +56,17 @@ function sawhorse(p: IsoPainter, u: number, v: number): void {
 export function medievalWorkArt(s: ArchStyle): AgeArtSet {
   const c = s.palette;
   const tall = (h: number) => h + s.headroom;
+  /** Pepperpot styles raise a dovecote or stair turret in each yard (kits/pepperpot.ts). */
+  const pots = hasPepperpots(s);
   return {
     farm: {
       size: 2,
-      maxHeight: tall(64),
+      maxHeight: tall(64) + pepperpotRoom(s, 80),
       paint: (p, team) => {
         stripField(p, 7, '#d8b34a', 0x6a4828);
         haystack(p, 0.42, 0.42, 15, 34);
         haystack(p, 0.82, 0.3, 11, 26);
+        if (pots) dovecote(p, s, 1.45, 0.5, 0.2, 52);
         wattleFence(p, 0.06, 1.95, 1.95, 1.95, 12);
         wattleFence(p, 1.95, 0.06, 1.95, 1.95, 12);
         p.flag(1.95, 1.95, 0, 24, team);
@@ -70,7 +74,7 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
     },
     lumber_camp: {
       size: 2,
-      maxHeight: tall(118),
+      maxHeight: tall(118) + pepperpotRoom(s, 40),
       paint: (p, team) => {
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x857455);
@@ -80,19 +84,21 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         p.material = 'shingle';
         styledGable(p, s, 0.25, 0.25, 1.15, 1.47, 42, 52, c.roof, c.darkWood, 'v', 0.14, boardedFill(s, (w, r) => boardedGable(p.ctx, w, r, c.board)));
         torch(p, 0.3, 1.47, 30, 0.3, 1.66);
+        if (pots) dovecote(p, s, 1.62, 0.5, 0.17, 50, team);
         logPile(p, 1.2, 1.82, 10, 0x6b4426, 0xe0b880);
         logPile(p, 1.45, 1.15, 6, 0x6b4426, 0xe0b880);
         sawhorse(p, 0.72, 1.85);
-        p.flag(1.82, 0.32, 0, 32, team);
+        if (!pots) p.flag(1.82, 0.32, 0, 32, team);
       },
     },
     mining_camp: {
       size: 2,
-      maxHeight: tall(118),
+      maxHeight: tall(118) + pepperpotRoom(s, 40),
       paint: (p, team) => {
         const ctx = p.ctx;
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x877c6b);
+        if (pots) dovecote(p, s, 0.45, 0.48, 0.18, 48, team);
         p.box(0.18, 0.95, 1.05, 1.75, 0, 34, { color: c.stone, detail: 'fieldstone' });
         p.leftFace(0.18, 1.05, 1.75, 0, (w) => {
           archedOpening(ctx, w * 0.4, 16, 24, c.ashlar);
@@ -136,12 +142,12 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
           ctx.fillStyle = '#20160c';
           ctx.fill();
         }
-        p.flag(1.86, 0.2, 0, 30, team);
+        if (!pots) p.flag(1.86, 0.2, 0, 30, team);
       },
     },
     archery_range: {
       size: 3,
-      maxHeight: tall(140),
+      maxHeight: tall(140) + pepperpotRoom(s, 20),
       paint: (p, team) => {
         p.footShadow();
         p.ground(0.05, 0.05, 2.95, 2.95, 0x8d9c64);
@@ -153,13 +159,14 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         // Shooting gallery along the front.
         for (let i = 0; i <= 3; i++) post(p, 0.3 + i * 0.43, 1.6, 0, 30, 2.4, c.timber);
         porchRoofLeft(p, 0.22, 1.63, 1.3, 0.32, 40, 30, c.roof);
+        if (pots) dovecote(p, s, 2.05, 0.45, 0.18, 50);
         for (const [u, v] of [[2.5, 0.55], [2.55, 1.35], [2.5, 2.15]] as const) strawButt(p, u, v);
         p.flag(0.4, 2.6, 0, 38, team, true);
       },
     },
     blacksmith: {
       size: 2,
-      maxHeight: tall(130),
+      maxHeight: tall(130) + pepperpotRoom(s, 20),
       paint: (p, team) => {
         const ctx = p.ctx;
         p.footShadow();
@@ -173,6 +180,7 @@ export function medievalWorkArt(s: ArchStyle): AgeArtSet {
         p.rightFace(0.3, 1.5, 1.4, 0, (w) => forgeMouth(p, w * 0.35, 22, 26), 38);
         p.material = 'shingle';
         styledHip(p, s, 0.28, 0.3, 1.4, 1.5, 38, 46, c.roof, 0.12, c.stone);
+        if (pots) turret(p, s, 0.36, 1.62, 0.15, 0, 56, { lights: [32] });
         // Open lean-to over the anvil.
         post(p, 1.75, 0.4, 0, 28, 2.4, c.timber);
         post(p, 1.75, 1.4, 0, 28, 2.4, c.timber);
