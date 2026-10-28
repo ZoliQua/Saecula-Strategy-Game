@@ -4,7 +4,11 @@ import { FogOfWarData } from '../../map/FogOfWarData';
 import { MapData } from '../../map/MapData';
 import { createRng } from '../../map/random';
 import { TERRAIN } from '../../map/TerrainTypes';
-import type { KnownBuilding } from '../perception';
+import { AI_MEDIUM } from '../../config/aiMedium';
+import { createEcsWorld } from '../../ecs/world';
+import { createPlayer } from '../../game/Player';
+import type { AIContext } from '../AIPlayer';
+import type { KnownBuilding, WorldView } from '../perception';
 import {
   attackReady,
   canPlaceAt,
@@ -23,6 +27,7 @@ import {
   pickResearch,
   reserveForGoal,
   savedForUnit,
+  shouldBuildWonder,
   weightsForGoal,
 } from '.';
 
@@ -218,6 +223,19 @@ describe('combat decisions', () => {
     expect(pickAttackTarget([], { tx: 0, ty: 0 }, 1)).toBeNull();
   });
 
+  it('pickAttackTarget prefers a known Wonder of any opponent over the enemy TC', () => {
+    const b = (id: number, type: KnownBuilding['type'], ownerId: number, tx: number): KnownBuilding => ({
+      id, type, ownerId, position: { tx, ty: 0 }, footprint: { width: 1, height: 1 },
+    });
+    const known = [b(2, 'town_center', 1, 10), b(4, 'wonder', 3, 60), b(5, 'wonder', 4, 40)];
+    // Nearest Wonder of any opponent, whoever the chosen enemy is.
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, true)?.id).toBe(5);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, undefined, true)?.id).toBe(5);
+    // Without the Wonder victory a Wonder is just another building.
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, false)?.id).toBe(2);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1)?.id).toBe(2);
+  });
+
   it('engages armed units first, then other units, then buildings (walls last)', () => {
     const at = (tx: number, extra: Partial<Entity> = {}): Entity => ({ position: { tx, ty: 0 }, ...extra });
     const villager = at(2);
@@ -250,5 +268,42 @@ describe('scouting and research', () => {
   it('researches the first ready technology in priority order', () => {
     expect(pickResearch(['armor_1', 'double_saw'], (id) => id === 'double_saw')).toBe('double_saw');
     expect(pickResearch(['armor_1'], () => false)).toBeNull();
+  });
+});
+
+describe('wonder decisions', () => {
+  const tune = AI_MEDIUM.wonder;
+  const rich = { food: 2000, wood: 2000, gold: 1000 };
+  const villagers = (n: number) => Array.from({ length: n }, () => ({}));
+  const make = (o: { age?: 1 | 2 | 3; wonderVictory?: boolean; resources?: typeof rich; villagers?: number } = {}) => {
+    const player = createPlayer({ id: 2, age: o.age ?? 3, resources: o.resources ?? rich });
+    const ctx = {
+      world: createEcsWorld(),
+      mapData: new MapData(8, 8),
+      player,
+      timeMs: 0,
+      fog: new FogOfWarData(8, 8),
+      wonderVictory: o.wonderVictory ?? true,
+    } as AIContext;
+    const view = { villagers: villagers(o.villagers ?? tune.minVillagers) } as unknown as WorldView;
+    return { ctx, view };
+  };
+
+  it('shouldBuildWonder: false below age 3, false when wonderVictory is off, false with one owned or below minVillagers, false when unaffordable, true otherwise', () => {
+    expect(tune).toEqual({ enabled: true, minVillagers: 20, builders: 8 });
+    const ok = make();
+    expect(shouldBuildWonder(ok.ctx, ok.view, tune, 0)).toBe(true);
+    const age2 = make({ age: 2 });
+    expect(shouldBuildWonder(age2.ctx, age2.view, tune, 0)).toBe(false);
+    const off = make({ wonderVictory: false });
+    expect(shouldBuildWonder(off.ctx, off.view, tune, 0)).toBe(false);
+    const { wonderVictory: _absent, ...noFlag } = ok.ctx;
+    expect(shouldBuildWonder(noFlag as AIContext, ok.view, tune, 0)).toBe(false);
+    expect(shouldBuildWonder(ok.ctx, ok.view, tune, 1)).toBe(false);
+    const few = make({ villagers: tune.minVillagers - 1 });
+    expect(shouldBuildWonder(few.ctx, few.view, tune, 0)).toBe(false);
+    const poor = make({ resources: { food: 2000, wood: 2000, gold: 999 } });
+    expect(shouldBuildWonder(poor.ctx, poor.view, tune, 0)).toBe(false);
+    expect(shouldBuildWonder(ok.ctx, ok.view, { ...tune, enabled: false }, 0)).toBe(false);
   });
 });

@@ -13,6 +13,7 @@ import {
   mapTiles,
   playerCount,
   randomSeed,
+  VICTORY_MODES,
   withSetup,
   type GameSetupConfig,
 } from './GameSetupConfig';
@@ -28,6 +29,7 @@ describe('GameSetupConfig', () => {
       civ: 'hungarian',
       aiCivs: 'mixed',
       seed: 42,
+      victory: 'conquest_wonder',
     });
     expect(mapTiles(c)).toBe(96);
     expect(playerCount(c)).toBe(4);
@@ -51,6 +53,18 @@ describe('GameSetupConfig', () => {
     expect(clampSeed(12.9)).toBe(12);
     expect(clampSeed(1e12)).toBe(999_999);
     expect(clampSeed(Number.POSITIVE_INFINITY)).toBe(1);
+  });
+
+  it('default victory is conquest_wonder', () => {
+    expect(defaultSetupConfig(1).victory).toBe('conquest_wonder');
+    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder']);
+    expect(withSetup(defaultSetupConfig(1), { victory: 'conquest' }).victory).toBe('conquest');
+  });
+
+  it('unknown victory falls back', () => {
+    const bad = { victory: 'time' } as unknown as Partial<GameSetupConfig>;
+    expect(withSetup(defaultSetupConfig(1), bad).victory).toBe('conquest_wonder');
+    expect(withSetup(withSetup(defaultSetupConfig(1), { victory: 'conquest' }), bad).victory).toBe('conquest_wonder');
   });
 
   it('offers all three AI difficulties', () => {

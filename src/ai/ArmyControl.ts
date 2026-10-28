@@ -49,7 +49,7 @@ export class ArmyControl {
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
     for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
-    this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId);
+    this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, ctx.wonderVictory === true);
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
     this.steerWave(ctx, view);
     return this.wave.size;
@@ -90,7 +90,7 @@ export class ArmyControl {
   private steerWave(ctx: AIContext, view: WorldView): void {
     const members = [...this.wave].map((id) => view.byId.get(id)).filter((u): u is Entity => !!u && !u.dying);
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
-    this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId);
+    this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, ctx.wonderVictory === true);
     const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemy(e, ctx));
     const enemyBuildings = view.visibleEnemyBuildings.filter((e) => targetsEnemy(e, ctx));
     const idle: Entity[] = [];
@@ -104,7 +104,8 @@ export class ArmyControl {
         continue;
       }
       if (this.waveTarget) {
-        this.marchOn(ctx, u, this.waveTarget, enemyBuildings);
+        // Any visible building: a Wonder target may belong to another opponent than the chosen enemy.
+        this.marchOn(ctx, u, this.waveTarget, view.visibleEnemyBuildings);
         continue;
       }
       if (!isBusy(u)) idle.push(u);

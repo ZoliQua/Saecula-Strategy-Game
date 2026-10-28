@@ -1,5 +1,6 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CIV } from '../config/civs';
+import type { WonderClockInfo } from '../game/wonderClocks';
 import type {
   AgeId,
   BuildingType,
@@ -78,6 +79,8 @@ export interface UiState {
   wallPreview: { segments: number; wood: number } | null;
   /** In-game clock for the HUD (display only). */
   gameTimeMs: number;
+  /** Running Wonder countdowns, soonest first (empty in conquest-only matches). */
+  wonders: readonly WonderClockInfo[];
 }
 
 export interface UiActions {
@@ -91,6 +94,7 @@ export interface UiActions {
   setPlacementBuilding: (type: BuildingType | null) => void;
   setWallPreview: (preview: { segments: number; wood: number } | null) => void;
   setGameTime: (ms: number) => void;
+  setWonders: (wonders: readonly WonderClockInfo[]) => void;
 }
 
 export type UiStore = UiState & UiActions;
@@ -107,6 +111,7 @@ const INITIAL: UiState = {
   placementBuilding: null,
   wallPreview: null,
   gameTimeMs: 0,
+  wonders: [],
 };
 
 export function createUiStore(): StoreApi<UiStore> {
@@ -125,6 +130,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setPlacementBuilding: (type) => set({ placementBuilding: type, wallPreview: null }),
     setWallPreview: (preview) => set({ wallPreview: preview }),
     setGameTime: (ms) => set({ gameTimeMs: ms }),
+    setWonders: (wonders) => set({ wonders }),
   }));
 }
 
@@ -141,6 +147,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     placementBuilding: null,
     wallPreview: null,
     gameTimeMs: 0,
+    wonders: [],
   });
 }
 

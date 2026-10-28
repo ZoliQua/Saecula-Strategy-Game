@@ -7,6 +7,7 @@ import { icons } from './icons';
 import { CommandPanel } from './panels/CommandPanel';
 import { ResourceBar } from './panels/ResourceBar';
 import { SelectionPanel } from './panels/SelectionPanel';
+import { WonderTimers } from './panels/WonderTimers';
 import type { Minimap } from './Minimap';
 import { uiStore, type UiStore } from './store';
 import './hud.css';
@@ -27,6 +28,7 @@ export class Hud {
   private readonly resources = new ResourceBar();
   private readonly selection: SelectionPanel;
   private readonly commands: CommandPanel;
+  private readonly wonderTimers = new WonderTimers();
   private readonly ageChip: HTMLElement;
   private readonly clock: HTMLElement;
   private readonly hint: HTMLElement;
@@ -35,6 +37,7 @@ export class Hud {
   private readonly unsubscribe: () => void;
   private readonly unsubscribeAge: () => void;
   private readonly unsubscribeResearch: () => void;
+  private readonly unsubscribeWonders: () => void;
   private minimap: Minimap | null = null;
   private lastToast = '';
   private lastToastAt = 0;
@@ -68,7 +71,7 @@ export class Hud {
       this.minimapSlot,
     );
     const bottom = el('div', { class: 'hud-bottom' }, minimapCard, this.selection.root, this.commands.root);
-    this.root = el('div', { class: 'hud' }, top, this.hint, this.toasts, bottom);
+    this.root = el('div', { class: 'hud' }, top, this.wonderTimers.root, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
 
     this.render(uiStore.getState());
@@ -80,6 +83,14 @@ export class Hud {
     this.unsubscribeResearch = gameEvents.on('researchRejected', ({ playerId }) => {
       if (playerId === 1) this.toast(hu.hud.researchElsewhere);
     });
+    const offCompleted = gameEvents.on('wonderCompleted', ({ playerId }) => {
+      this.toast(playerId === 1 ? hu.hud.wonderOwn : hu.hud.wonderEnemy(playerId));
+    });
+    const offLost = gameEvents.on('wonderLost', () => this.toast(hu.hud.wonderLost));
+    this.unsubscribeWonders = () => {
+      offCompleted();
+      offLost();
+    };
   }
 
   attachMinimap(minimap: Minimap): void {
@@ -106,6 +117,7 @@ export class Hud {
     this.resources.render(state);
     this.selection.render(state);
     this.commands.render(state);
+    this.wonderTimers.render(state);
     this.ageChip.textContent = AGE_NAME[state.currentAge];
     this.clock.textContent = formatClock(state.gameTimeMs);
     if (state.placementBuilding) {
@@ -122,6 +134,8 @@ export class Hud {
     this.unsubscribe();
     this.unsubscribeAge();
     this.unsubscribeResearch();
+    this.unsubscribeWonders();
+    this.wonderTimers.destroy();
     this.minimap?.destroy();
     this.resources.destroy();
     this.selection.destroy();

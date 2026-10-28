@@ -26,6 +26,10 @@ export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
 
+/** How a match can be won: conquest only, or conquest or a Wonder held WONDER_HOLD_MS (CLAUDE.md §4.8). */
+export type VictoryMode = 'conquest' | 'conquest_wonder';
+export const VICTORY_MODES: readonly VictoryMode[] = ['conquest', 'conquest_wonder'];
+
 export const MIN_AI = 1;
 export const MAX_AI = 5;
 export const MAX_SEED = 999_999;
@@ -40,6 +44,8 @@ export interface GameSetupConfig {
   /** The AIs' civ: one for all, or 'mixed' (seeded mix of the available civs, see assignCivs). */
   readonly aiCivs: AiCivChoice;
   readonly seed: number;
+  /** Victory conditions in play. */
+  readonly victory: VictoryMode;
 }
 
 export type AiCivChoice = 'mixed' | CivId;
@@ -61,6 +67,7 @@ export function defaultSetupConfig(seed: number = randomSeed()): GameSetupConfig
     civ: DEFAULT_CIV,
     aiCivs: 'mixed',
     seed: clampSeed(seed),
+    victory: 'conquest_wonder',
   };
 }
 
@@ -76,7 +83,7 @@ export function clampAiCount(count: number): number {
 
 /**
  * Applies a partial change and returns a valid config: unsupported
- * template / difficulty / civ values fall back to the working ones,
+ * template / difficulty / civ / victory values fall back to the working ones,
  * numbers are clamped.
  */
 export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig>): GameSetupConfig {
@@ -89,6 +96,7 @@ export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig
     civ: AVAILABLE_CIVS.includes(next.civ) ? next.civ : DEFAULT_CIV,
     aiCivs: next.aiCivs !== 'mixed' && AVAILABLE_CIVS.includes(next.aiCivs) ? next.aiCivs : 'mixed',
     seed: clampSeed(next.seed),
+    victory: VICTORY_MODES.includes(next.victory) ? next.victory : 'conquest_wonder',
   };
 }
 

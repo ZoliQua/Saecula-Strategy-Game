@@ -17,6 +17,8 @@ export interface AIContext {
   readonly player: Player;
   /** Player the AI attacks (the human); any opponent when unset. */
   readonly enemyPlayerId?: number;
+  /** The match can be won by holding a Wonder (absent = false): the AI builds and hunts Wonders. */
+  readonly wonderVictory?: boolean;
   /** Absolute game time in ms. */
   readonly timeMs: number;
   /** This AI's own fog of war: the only window its perception looks through (§10.4). */

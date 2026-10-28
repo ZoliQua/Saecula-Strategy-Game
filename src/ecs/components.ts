@@ -108,6 +108,8 @@ export interface Entity {
     resumeTargetId?: number;
   };
   dying?: { ttlMs: number };
+  /** A finished Wonder's victory clock (only while the match's victory mode includes the Wonder). */
+  wonder?: { heldMs: number };
   fogEmitter?: { sightRange: number };
   /**
    * A shot in flight. Projectile entities have no `position`, `owner`

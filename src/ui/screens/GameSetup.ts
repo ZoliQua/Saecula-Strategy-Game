@@ -13,6 +13,7 @@ import {
   playerCount,
   randomSeed,
   withSetup,
+  VICTORY_MODES,
   type GameSetupConfig,
 } from '../../game/GameSetupConfig';
 import { CIV_DEFS } from '../../config/civs';
@@ -43,8 +44,8 @@ export interface GameSetupHandlers {
 }
 
 /**
- * Game setup card: map template / size, AI count, difficulty, the
- * human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
+ * Game setup card: map template / size, AI count, difficulty, victory
+ * conditions, the human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
  * "hamarosan" tag. Lives over the main menu's live diorama.
  */
 export class GameSetup {
@@ -54,6 +55,7 @@ export class GameSetup {
   private readonly aiSeg: Segmented<string>;
   private readonly sizeSeg: Segmented<string>;
   private readonly diffSeg: Segmented<string>;
+  private readonly victorySeg: Segmented<string>;
   private readonly aiCivChips: ChipGroup<GameSetupConfig['aiCivs']>;
   private readonly civPicker: CivPicker;
   private readonly seedInput: HTMLInputElement;
@@ -111,6 +113,11 @@ export class GameSetup {
     }));
     this.diffSeg = new Segmented('difficulty', t.difficulty, diffItems, this.config.difficulty, (v) =>
       this.change({ difficulty: v as GameSetupConfig['difficulty'] }),
+    );
+
+    const victoryItems: SegmentItem<string>[] = VICTORY_MODES.map((id) => ({ value: id, label: t.victories[id] }));
+    this.victorySeg = new Segmented('victory', t.victory, victoryItems, this.config.victory, (v) =>
+      this.change({ victory: v as GameSetupConfig['victory'] }),
     );
 
     this.aiHint = el('div', { class: 'setup-hint', 'aria-live': 'polite' });
@@ -175,6 +182,7 @@ export class GameSetup {
         field(t.size, this.sizeSeg.root),
         field(t.opponents, this.aiSeg.root, this.aiHint),
         field(t.difficulty, this.diffSeg.root),
+        field(t.victory, this.victorySeg.root),
         field(t.civ, this.civPicker.root, undefined, this.civPicker.caption),
         field(t.aiCivs, this.aiCivChips.root),
         field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
@@ -247,6 +255,7 @@ export class GameSetup {
     this.sizeSeg.set(c.mapSize);
     this.aiSeg.set(String(c.aiCount));
     this.diffSeg.set(c.difficulty);
+    this.victorySeg.set(c.victory);
     for (const chip of this.templateChips) chip.setAttribute('aria-checked', String(chip.dataset['tpl'] === c.template));
     this.aiCivChips.set(c.aiCivs);
     this.civPicker.set(c.civ);

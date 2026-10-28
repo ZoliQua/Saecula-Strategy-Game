@@ -10,6 +10,10 @@ export interface GameEvents {
   techResearched: { playerId: number; techId: TechId };
   /** A research command was refused for a reason the player should hear about. */
   researchRejected: { playerId: number; reason: 'already-in-progress' };
+  /** A Wonder was finished and its victory clock started. */
+  wonderCompleted: { playerId: number; entityId: number };
+  /** A Wonder with a running clock was destroyed (or removed); its clock stopped. */
+  wonderLost: { playerId: number; entityId: number };
 }
 
 type Listener<K extends keyof GameEvents> = (payload: GameEvents[K]) => void;
@@ -18,6 +22,8 @@ const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   ageChanged: new Set(),
   techResearched: new Set(),
   researchRejected: new Set(),
+  wonderCompleted: new Set(),
+  wonderLost: new Set(),
 };
 
 export const gameEvents = {

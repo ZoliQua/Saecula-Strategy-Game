@@ -16,7 +16,9 @@ export function attackReady(r: AttackReadiness): boolean {
 }
 
 /**
- * Where to send a wave: the remembered enemy (of `enemyId`, any when
+ * Where to send a wave. With `wondersFirst` (the match can be won by a
+ * Wonder), any opponent's remembered Wonder nearest to `home` comes first,
+ * whoever `enemyId` is. Then the remembered enemy (of `enemyId`, any when
  * undefined) town centre nearest to `home`, else the nearest remembered
  * enemy building. Null when the AI has not found the enemy yet.
  */
@@ -24,9 +26,14 @@ export function pickAttackTarget(
   known: readonly KnownBuilding[],
   home: TileCoord,
   enemyId: number | undefined,
+  wondersFirst = false,
 ): KnownBuilding | null {
-  const mine = known.filter((b) => enemyId === undefined || b.ownerId === enemyId);
   const byDistance = (a: KnownBuilding, b: KnownBuilding) => chebyshev(a.position, home) - chebyshev(b.position, home);
+  if (wondersFirst) {
+    const wonder = known.filter((b) => b.type === 'wonder').sort(byDistance)[0];
+    if (wonder) return wonder;
+  }
+  const mine = known.filter((b) => enemyId === undefined || b.ownerId === enemyId);
   const tcs = mine.filter((b) => b.type === 'town_center').sort(byDistance);
   if (tcs[0]) return tcs[0];
   return [...mine].sort(byDistance)[0] ?? null;

@@ -10,6 +10,7 @@ import { ProjectileSystem } from '../../ecs/systems/ProjectileSystem';
 import { ResearchSystem } from '../../ecs/systems/ResearchSystem';
 import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
+import { WonderSystem } from '../../ecs/systems/WonderSystem';
 import { createEcsWorld, type EcsWorld } from '../../ecs/world';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { generateMap, type MapTemplate } from '../../map/generator';
@@ -41,6 +42,8 @@ export interface HeadlessMatchOptions {
   readonly humanEnemy?: () => number;
   /** Civs of the human and the AIs (default: Hungarian human, seeded mixed AIs as in a real game). */
   readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
+  /** The match can be won by a Wonder: WonderSystem runs and the AIs play for Wonders (default false). */
+  readonly wonderVictory?: boolean;
 }
 
 export interface HeadlessMatch {
@@ -87,6 +90,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
   // Same per-frame A* budget as the game (scaled to the step length).
   const paths = new PathBudget();
+  const wonderVictory = options.wonderVictory ?? false;
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
@@ -99,6 +103,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     projectiles: new ProjectileSystem(world, players),
     movement: new MovementSystem(world, players),
     death: new DeathSystem(world, map),
+    wonders: new WonderSystem(world, wonderVictory),
     population: new PopulationSystem(world, 1, players),
   };
   let now = 0;
@@ -116,8 +121,9 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     systems.projectiles.update(dt);
     systems.movement.update(dt);
     systems.death.update(dt);
-    for (const ai of ais) ai.update({ world, mapData: map, enemyPlayerId: enemyOf(ai.player.id) }, dt);
-    humanAi?.update({ world, mapData: map, enemyPlayerId: humanEnemy() }, dt);
+    systems.wonders.update(dt);
+    for (const ai of ais) ai.update({ world, mapData: map, wonderVictory, enemyPlayerId: enemyOf(ai.player.id) }, dt);
+    humanAi?.update({ world, mapData: map, wonderVictory, enemyPlayerId: humanEnemy() }, dt);
     systems.population.update();
   };
   return {

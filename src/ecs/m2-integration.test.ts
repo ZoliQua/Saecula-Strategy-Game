@@ -32,7 +32,7 @@ function createRig() {
     createPlayer({ id: 1, isHuman: true }),
     createPlayer({ id: 2 }),
   ]);
-  const victory = new VictoryChecker(world, players);
+  const victory = new VictoryChecker(world, players, null);
 
   const systems = {
     pathfinding: new PathfindingSystem(world, map),

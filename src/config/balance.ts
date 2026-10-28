@@ -158,6 +158,9 @@ export const BUILDING_DEATH_TTL_MS = 2400;
 /** Buildings a player may own only one of (finished or under construction). */
 export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
 
+/** How long a finished Wonder must stand for its owner to win (Wonder victory, CLAUDE.md §4.8). */
+export const WONDER_HOLD_MS = 600_000;
+
 /** Tiles per second used by the game. */
 export function gameSpeed(tableSpeed: number): number {
   return tableSpeed * SPEED_SCALE;

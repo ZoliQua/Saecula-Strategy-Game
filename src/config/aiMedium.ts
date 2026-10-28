@@ -38,6 +38,14 @@ export interface MediumTuning {
   readonly militaryBuildings: readonly (readonly BuildingType[])[];
   /** Counter-unit reaction to sightings. */
   readonly counters: CounterTuning;
+  /** Wonder play (only when the match can be won by a Wonder). */
+  readonly wonder: {
+    readonly enabled: boolean;
+    /** Villagers the economy keeps before a Wonder goes up. */
+    readonly minVillagers: number;
+    /** Villagers sent to build it. */
+    readonly builders: number;
+  };
 }
 
 /** Medium AI (§10.2). */
@@ -124,4 +132,6 @@ export const AI_MEDIUM: MediumTuning = {
     ['barracks', 'archery_range', 'stable', 'blacksmith', 'foundry'],
   ],
   counters: { threshold: 0.3, boost: 0.6 },
+  /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
+  wonder: { enabled: true, minVillagers: 20, builders: 8 },
 };

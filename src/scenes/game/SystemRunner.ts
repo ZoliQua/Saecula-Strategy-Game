@@ -26,6 +26,7 @@ import { RenderSystem } from '../../ecs/systems/RenderSystem';
 import { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
+import { WonderSystem } from '../../ecs/systems/WonderSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { AI_COMMON } from '../../config/aiBalance';
 import { AGE_UP_FX, ART_EVICT_INTERVAL_MS } from '../../config/visual';
@@ -40,6 +41,14 @@ import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
+
+export interface SystemRunnerOptions {
+  readonly difficulty: Difficulty;
+  /** The match can be won by holding a Wonder: WonderSystem runs and the AIs play for Wonders. */
+  readonly wonderVictory: boolean;
+  /** The match seed (config.seed). */
+  readonly seed: number;
+}
 
 /** Owns every per-frame system and ticks them in a fixed, deterministic order. */
 export class SystemRunner {
@@ -59,6 +68,8 @@ export class SystemRunner {
   private readonly projectiles: ProjectileSystem;
   private readonly projectileRender: ProjectileRenderSystem;
   private readonly death: DeathSystem;
+  private readonly wonders: WonderSystem;
+  private readonly wonderVictory: boolean;
   private readonly healthBars: HealthBarSystem;
   private readonly fogOfWar: FogOfWarSystem;
   private readonly ambientFx: AmbientFxSystem;
@@ -83,8 +94,10 @@ export class SystemRunner {
     private readonly tileMap: TileMap,
     private readonly cameraController: CameraController,
     players: PlayerManager,
-    difficulty: Difficulty,
+    options: SystemRunnerOptions,
   ) {
+    const { difficulty } = options;
+    this.wonderVictory = options.wonderVictory;
     this.humanId = players.human()?.id;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
@@ -104,6 +117,7 @@ export class SystemRunner {
     this.projectiles = new ProjectileSystem(world, players);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
+    this.wonders = new WonderSystem(world, options.wonderVictory);
     this.healthBars = new HealthBarSystem(scene, world);
     this.fogData = new FogOfWarData(mapData.width, mapData.height);
     // Each AI sees through its own fog (perception, towers); scans are staggered across frames.
@@ -178,13 +192,10 @@ export class SystemRunner {
     this.projectiles.update(delta);
     this.movement.update(delta);
     this.death.update(delta);
+    this.wonders.update(delta);
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory };
     for (const ai of this.aiPlayers) {
-      ai.update(
-        this.humanId === undefined
-          ? { world: this.world, mapData: this.mapData }
-          : { world: this.world, mapData: this.mapData, enemyPlayerId: this.humanId },
-        delta,
-      );
+      ai.update(this.humanId === undefined ? base : { ...base, enemyPlayerId: this.humanId }, delta);
     }
     this.population.update();
     this.fogOfWar.update(delta);

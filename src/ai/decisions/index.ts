@@ -8,3 +8,4 @@ export * from './scouting';
 export * from './fortify';
 export * from './harass';
 export * from './stance';
+export * from './wonder';

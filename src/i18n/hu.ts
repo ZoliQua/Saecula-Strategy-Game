@@ -68,6 +68,8 @@ export const hu = {
     start: 'Játék indítása',
     loading: 'Betöltés…',
     summary: (players: number, tiles: number) => `${players} játékos · ${tiles}×${tiles} mező`,
+    victory: 'Győzelem',
+    victories: { conquest: 'Hódítás', conquest_wonder: 'Hódítás vagy Csoda' },
     mapFailed: 'Ezzel a térkép-maggal nem sikerült játszható térképet készíteni. Válassz másik magot vagy térképtípust.',
   },
   game: {
@@ -180,6 +182,10 @@ export const hu = {
       3: 'Beléptél a Felvilágosodás korába!',
     },
     controls: 'WASD: kamera · Görgő: zoom · Jobb klikk: parancs',
+    wonderClock: (t: string) => `Csoda: ${t}`,
+    wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
+    wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
+    wonderLost: 'Egy Csoda elpusztult.',
   },
   resourceNodes: {
     food: 'Bogyós bokor',
@@ -226,6 +232,7 @@ export const hu = {
     backToMenu: 'Vissza a főmenübe',
     statsHeader: 'Statisztika',
     durationLabel: 'Játékidő',
+    causes: { conquest: 'Hódítás', wonder: 'Csoda' },
   },
   loading: 'Betöltés…',
   /** Dev-build only (AI thoughts overlay); never shown in production. */

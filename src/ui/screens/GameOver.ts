@@ -1,3 +1,4 @@
+import type { VictoryCause } from '../../game/VictoryChecker';
 import { hu } from '../../i18n/hu';
 import { el, formatClock, uiRoot } from '../dom';
 import { icons } from '../icons';
@@ -8,7 +9,7 @@ import '../screens.css';
 export class GameOver {
   private readonly root: HTMLElement;
 
-  constructor(victory: boolean, durationMs: number, onBack: () => void) {
+  constructor(victory: boolean, durationMs: number, cause: VictoryCause, onBack: () => void) {
     const back = el('button', { class: 'btn btn-primary', type: 'button' }, hu.gameOver.backToMenu);
     back.addEventListener('click', onBack);
     this.root = el(
@@ -23,7 +24,15 @@ export class GameOver {
           { class: `gameover-title ${victory ? 'win' : 'lose'}` },
           victory ? hu.gameOver.victoryTitle : hu.gameOver.defeatTitle,
         ),
-        el('p', { class: 'gameover-body' }, victory ? hu.gameOver.victoryBody : hu.gameOver.defeatBody),
+        el(
+          'div',
+          { class: `gameover-cause ${cause}` },
+          el('span', {}, hu.setup.victory),
+          el('span', { class: 'sep' }, '·'),
+          el('b', {}, hu.gameOver.causes[cause]),
+        ),
+        // The victory line speaks of town centres: only a conquest win shows it.
+        victory && cause !== 'conquest' ? null : el('p', { class: 'gameover-body' }, victory ? hu.gameOver.victoryBody : hu.gameOver.defeatBody),
         el(
           'div',
           { class: 'gameover-stats' },
