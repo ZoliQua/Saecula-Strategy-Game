@@ -35,7 +35,8 @@ function paintCabildo(p: IsoPainter, s: ArchStyle, team: number): void {
     p.leftFace(MAIN[2] - 0.95, MAIN[2], MAIN[3], 0, (aw, ah) => arcade(ctx, aw, ah, { bays: 3, head: 'round', wall: c.plaster, column: c.plasterDeep, light: 1, rise: 0.86 }), GROUND);
     ctx.fillStyle = css(shade(c.plasterDeep, 1));
     ctx.fillRect(0, -GROUND - 3, w, 3);
-    for (const x of [0.1, 0.24, 0.66, 0.8]) windowAt(p, s, w * x, -h + 14, 9, 16, 1, true);
+    // The wing's hip hides the far end of the upper storey (u > 2): no window there.
+    for (const x of [0.1, 0.24, 0.62]) windowAt(p, s, w * x, -h + 14, 9, 16, 1, true);
     portal(p, s, w / 2 - 10, 20, 34, team, 1);
     framedCrest(p, s, w / 2, -h + 22, 7, team, 1);
   }, (w, h) => {

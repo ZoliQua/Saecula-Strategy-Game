@@ -11,17 +11,17 @@ import { realFabrica } from './realFabrica';
 
 /**
  * Mudéjar family (Spanish ages 2-3): the courtyard layouts with a town
- * centre, a tower, a foundry and the Wonder of their own. Its medieval
- * reading has the Castilian keep and the Teruel brick tower; with
- * espadañas (the Colonial reading) the town centre is the bell-gabled
- * cabildo and the tower the bastion tower with garitas and a bell.
+ * centre, a tower, a foundry and the Wonder of their own. The town
+ * centre follows `courtyard.civic` (Castilian keep or bell-gabled
+ * cabildo); the tower follows `courtyard.towers` (the Teruel brick tower,
+ * or with miradors the bastion tower with garitas and a bell).
  */
 export function mudejarArt(s: ArchStyle): AgeArtSet {
-  const bells = kitsOf(s).espadanas;
+  const k = kitsOf(s);
   return {
     ...hispaniaArt(s),
-    town_center: bells ? cabildo(s) : homenaje(s),
-    tower: bells ? colonialTower(s) : mudejarTower(s),
+    town_center: k.civic === 'cabildo' ? cabildo(s) : homenaje(s),
+    tower: k.towers === 'mirador' ? colonialTower(s) : mudejarTower(s),
     foundry: realFabrica(s),
     wonder: alhambra(s),
   };

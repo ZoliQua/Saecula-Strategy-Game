@@ -10,6 +10,7 @@ const FIRST_AGE: CourtyardKits = {
   merlons: false,
   towers: 'none',
   espadanas: false,
+  civic: 'keep',
   balconies: false,
   water: 'impluvium',
   field: 'olives',

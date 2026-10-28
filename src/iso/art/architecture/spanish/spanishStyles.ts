@@ -55,7 +55,7 @@ export const SPANISH_HISPANIA: ArchStyle = {
   charge: 'castle',
   seedSalt: 45053,
   headroom: 0,
-  kits: { courtyard: { walls: 'whitewash', portal: 'voussoir', tileBands: false, merlons: false, towers: 'none', espadanas: false, balconies: false, water: 'impluvium', field: 'olives' } },
+  kits: { courtyard: { walls: 'whitewash', portal: 'voussoir', tileBands: false, merlons: false, towers: 'none', espadanas: false, civic: 'keep', balconies: false, water: 'impluvium', field: 'olives' } },
 };
 
 /** Horseshoe lights with dark cedar frames (age 2). */
@@ -92,7 +92,7 @@ export const SPANISH_MUDEJAR: ArchStyle = {
   charge: 'castle',
   seedSalt: 49157,
   headroom: 0,
-  kits: { courtyard: { walls: 'toledan', portal: 'alfiz', tileBands: true, merlons: true, towers: 'brick', espadanas: false, balconies: false, water: 'well', field: 'huerta' } },
+  kits: { courtyard: { walls: 'toledan', portal: 'alfiz', tileBands: true, merlons: true, towers: 'brick', espadanas: false, civic: 'keep', balconies: false, water: 'well', field: 'huerta' } },
 };
 
 /** Tall casements behind green shutters and iron grilles (age 3). */
@@ -130,5 +130,5 @@ export const SPANISH_COLONIAL: ArchStyle = {
   charge: 'castle',
   seedSalt: 53249,
   headroom: 0,
-  kits: { courtyard: { walls: 'whitewash', portal: 'plateresque', tileBands: false, merlons: false, towers: 'mirador', espadanas: true, balconies: true, water: 'fountain', field: 'vines' } },
+  kits: { courtyard: { walls: 'whitewash', portal: 'plateresque', tileBands: false, merlons: false, towers: 'mirador', espadanas: true, civic: 'cabildo', balconies: true, water: 'fountain', field: 'vines' } },
 };

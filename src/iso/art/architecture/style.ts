@@ -150,8 +150,10 @@ export interface CourtyardKits {
   readonly merlons: boolean;
   /** What rises in the layouts' tower spots (house, barracks): nothing, square brick towers with glazed pyramid caps, or whitewashed miradors under a domed garita. */
   readonly towers: 'none' | 'brick' | 'mirador';
-  /** Bell gables (espadañas) on the ridges of halls and sheds; the town centre becomes the bell-gabled town hall. */
+  /** Bell gables (espadañas) on the ridges of halls and sheds. */
   readonly espadanas: boolean;
+  /** The town centre of the later family: a Castilian keep with bartizans, or a bell-gabled cabildo on its plaza. */
+  readonly civic: 'keep' | 'cabildo';
   /** Wrought-iron balconies on upper windows. */
   readonly balconies: boolean;
   /** Water in the patios: a Roman impluvium pool, a well head, or a basin fountain. */

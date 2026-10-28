@@ -4,7 +4,7 @@ import { R } from '../facade';
 import type { ArchStyle } from '../style';
 import { copingOf, kitsOf, wallOf } from './courtyardKits';
 import { portal } from './hispaniaOrnament';
-import { dress } from './hispaniaParts';
+import { block, dress, roofOver, type Block } from './hispaniaParts';
 
 /*
  * Yards of the courtyard families' workplaces: the coped yard walls
@@ -166,4 +166,21 @@ export function huerta(p: IsoPainter, u0: number, v0: number, u1: number, v1: nu
   for (let v = v0 + 0.05, i = 0; v < v1 - 0.08; v += 0.14, i++) {
     p.ground(u0 + 0.05, v, u1 - 0.05, v + 0.08, i % 3 === 2 ? 0x4b7cb0 : i % 2 ? 0x4f8a35 : 0x6f9a3d);
   }
+}
+
+/**
+ * Palomar: a tower-room raised over the back corner of a workplace's
+ * block (footprint b, standing on its roof at z), its face pierced by rows
+ * of pigeon holes, roofed like the block (terrace, or a low hip). It puts
+ * a second step on the skyline of the farmsteads and camps.
+ */
+export function palomar(p: IsoPainter, s: ArchStyle, b: Block, z: number, h = 22): void {
+  const holes = (light: number) => (w: number, hh: number) => {
+    p.ctx.fillStyle = css(shade(0x2a211b, light));
+    for (let row = 0; row < 2; row++) {
+      for (let x = 4 + row * 3; x < w - 4; x += 6) p.ctx.fillRect(x, -hh + 6 + row * 5, 2.4, 2.4);
+    }
+  };
+  block(p, s, b, z, z + h, holes(1), holes(R), false);
+  roofOver(p, s, b, z + h, 12, { parapet: 4 });
 }

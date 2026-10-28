@@ -3,15 +3,19 @@ import type { Ctx } from '../../canvas';
 import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { R } from '../facade';
-import { brazier, parapet, archer } from '../towerParts';
+import { BRAZIER_LIGHT } from '../../lighting/buildingLights';
+import { drumOpening, drumWall } from '../kits/drum';
+import { finial, helm } from '../roofs';
+import { archer } from '../towerParts';
 import type { ArchStyle } from '../style';
 import type { BuildingArt } from '../types';
 
 /*
  * Spanish age-1 tower: the Roman lighthouse of Brigantium (the Tower of
- * Hercules at A Coruña) — a tall square granite shaft wound by the band
- * of its outer ramp, an archer's platform at the gameplay height, and a
- * narrower lantern stage on its back corner carrying the beacon fire.
+ * Hercules at A Coruña) in stepped set-backs: a wide whitewashed base
+ * stage, a granite step, a slim square shaft wound by the band of its
+ * outer ramp, a corniced gallery at the gameplay height (no merlons) and
+ * a centred octagonal lantern under a small dome, its beacon glowing.
  */
 
 const GRANITE = 0xa69e8f;
@@ -44,35 +48,61 @@ function ramp(ctx: Ctx, w: number, h: number, light: number, phase: number): voi
   ctx.restore();
 }
 
+/** Plain low coped wall round the back or front edges of the platform (no merlons: a lighthouse gallery). */
+function gallery(p: IsoPainter, [u0, v0, u1, v1]: readonly [number, number, number, number], z: number, side: 'back' | 'front'): void {
+  const wall = { color: shade(GRANITE, 1.05) };
+  const cap = shade(GRANITE, 1.15);
+  const t = 0.035;
+  if (side === 'back') {
+    p.box(u0, v0, u1, v0 + t, z, z + 6, wall, cap);
+    p.box(u0, v0, u0 + t, v1, z, z + 6, wall, cap);
+  } else {
+    p.box(u0, v1 - t, u1, v1, z, z + 6, wall, cap);
+    p.box(u1 - t, v0, u1, v1, z, z + 6, wall, cap);
+  }
+}
+
 function paintFaro(p: IsoPainter, s: ArchStyle, team: number): void {
   const z = TOWER_PLATFORM_Z[1];
+  const c = s.palette;
   const wall = { color: GRANITE, detail: 'stone' as const };
   p.footShadow();
-  p.box(0.06, 0.06, 0.94, 0.94, 0, 10, { color: shade(GRANITE, 0.86), detail: 'stone' }, GRANITE);
-  p.box(0.14, 0.14, 0.86, 0.86, 10, z, wall);
-  p.leftFace(0.14, 0.86, 0.86, 10, (w, h) => {
+  // Wide whitewashed base stage on a red-ochre plinth, then a granite set-back, then the slim shaft.
+  p.box(0.06, 0.06, 0.94, 0.94, 0, 20, { color: c.plaster, detail: 'plaster' }, shade(c.plaster, 1.04));
+  p.leftFace(0.06, 0.94, 0.94, 0, (w) => {
+    p.ctx.fillStyle = css(c.plasterDeep);
+    p.ctx.fillRect(0, -6, w, 6);
+    p.door(w / 2 - 6, 12, 16, shade(team, 0.8));
+  }, 20);
+  p.rightFace(0.06, 0.94, 0.94, 0, (w) => {
+    p.ctx.fillStyle = css(shade(c.plasterDeep, R));
+    p.ctx.fillRect(0, -6, w, 6);
+  }, 20);
+  p.box(0.16, 0.16, 0.84, 0.84, 20, 34, { color: shade(GRANITE, 0.92), detail: 'stone' }, GRANITE);
+  p.box(0.24, 0.24, 0.76, 0.76, 34, z - 6, wall);
+  p.leftFace(0.24, 0.76, 0.76, 34, (w, h) => {
     ramp(p.ctx, w, h, 1, 0);
-    p.window(w * 0.3, -h + 22, 7, 11, true);
-    p.window(w * 0.62, -h * 0.5, 7, 11, true);
-    p.door(w / 2 - 6, 12, 20, shade(team, 0.8));
-  }, z - 10);
-  p.rightFace(0.14, 0.86, 0.86, 10, (w, h) => {
+    p.window(w * 0.5 - 3.5, -h + 18, 7, 11, true);
+    p.window(w * 0.5 - 3.5, -h * 0.45, 7, 11, true);
+  }, z - 40);
+  p.rightFace(0.24, 0.76, 0.76, 34, (w, h) => {
     ramp(p.ctx, w, h, R, 13);
-    p.window(w * 0.55, -h + 40, 7, 11, true);
-  }, z - 10);
-  // Cornice and the platform.
-  p.box(0.1, 0.1, 0.9, 0.9, z - 5, z, { color: shade(GRANITE, 1.08) }, 0x8c8478);
-  const stone = { color: s.palette.ashlar, detail: 'stone' as const };
-  parapet(p, 0.1, 0.1, 0.9, 0.9, z, stone, 'back', 0);
-  // Lantern stage on the back corner: a smaller square storey, a cornice and the beacon.
-  p.box(0.14, 0.14, 0.5, 0.5, z, z + 34, wall);
-  p.leftFace(0.14, 0.5, 0.5, z, (w, h) => p.window(w / 2 - 3, -h + 10, 6, 10, true), 34);
-  p.box(0.11, 0.11, 0.53, 0.53, z + 34, z + 38, { color: shade(GRANITE, 1.08) }, 0x7a7266);
-  brazier(p, 0.32, 0.32, z + 38, 0.6, 1.1);
-  p.addVolumePoint(0.32, 0.32, z + 60);
-  archer(p, 0.7, 0.62, z, team, 'galea');
-  parapet(p, 0.1, 0.1, 0.9, 0.9, z, stone, 'front', 0);
-  p.flag(0.86, 0.14, z + 11, 26, team);
+    p.window(w * 0.5 - 3.5, -h + 44, 7, 11, true);
+  }, z - 40);
+  // Projecting cornice and the gallery round the platform.
+  const deck = [0.18, 0.18, 0.82, 0.82] as const;
+  p.box(deck[0], deck[1], deck[2], deck[3], z - 6, z, { color: shade(GRANITE, 1.1) }, 0x8c8478);
+  gallery(p, deck, z, 'back');
+  // Centred octagonal lantern with its fire, a cornice ring, the dome and a finial.
+  drumWall(p, 0.5, 0.5, 0.15, z, z + 30, GRANITE, 'ashlar');
+  drumOpening(p, 0.5, 0.5, 0.15, Math.PI / 4, 4.5, z + 6, 18, shade(GRANITE, 1.1), 'fire');
+  helm(p, 0.5, 0.5, z + 30, [[0, 0.18], [4, 0.18]], shade(GRANITE, 1.12), false);
+  helm(p, 0.5, 0.5, z + 34, [[0, 0.16], [6, 0.15], [12, 0.12], [18, 0.07], [21, 0.02]], shade(GRANITE, 0.95), false);
+  finial(p, 0.5, 0.5, z + 55, 10, false);
+  p.addLight(0.9, 1.1, BRAZIER_LIGHT);
+  archer(p, 0.66, 0.74, z, team, 'galea');
+  gallery(p, deck, z, 'front');
+  p.flag(0.79, 0.21, z + 6, 26, team);
 }
 
 /** The Spanish age-1 tower: the Roman lighthouse (Tower of Hercules). */

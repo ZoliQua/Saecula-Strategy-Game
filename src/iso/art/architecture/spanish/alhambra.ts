@@ -65,9 +65,12 @@ function ranges(p: IsoPainter, s: ArchStyle, stage: number): void {
     rangeRoof(p, s, HALL, HALL_TOP);
   } else if (stage === 2) scaffold(p, ...HALL, Z0, HALL_TOP);
   // Torre de la Vela on the back-right corner, its watch bell in a belfry on top.
-  const velaTop = [0, Z0 + 30, 90, VELA_TOP][stage] ?? VELA_TOP;
-  tapialBlock(p, s, VELA, Z0, velaTop, { xs: [0.5], y: 30 }, { xs: [0.3, 0.7], y: 30 }, stage <= 2);
-  if (stage > 2) {
+  // The Vela is the last to rise: still a scaffolded shell in stage 3.
+  const done = stage > WONDER_STAGES;
+  const velaTop = done ? VELA_TOP : [0, Z0 + 30, 74, 90][stage] ?? 90;
+  tapialBlock(p, s, VELA, Z0, velaTop, { xs: [0.5], y: 30 }, { xs: [0.3, 0.7], y: 30 }, !done);
+  if (stage >= 2 && !done) scaffold(p, ...VELA, velaTop - 30, velaTop);
+  if (done) {
     terrace(p, s, VELA, velaTop, { parapet: 5, merlons: true, color: TAPIAL });
     espadana(p, s, 3.2, 3.6, 0.62, velaTop, 36, 1);
   }
