@@ -138,6 +138,32 @@ export interface StyleKits {
   readonly onionDomes?: boolean;
   /** The log-town family's age reading (LogTownKits); absent = its first-age reading. */
   readonly logTown?: LogTownKits;
+  /** The nordic family's age reading (NordicKits); absent = its first-age reading. */
+  readonly nordic?: NordicKits;
+}
+
+/**
+ * How the nordic family dresses its layouts in one age. Every layout
+ * choice keys on one of these fields, never on palette or ornaments.
+ */
+export interface NordicKits {
+  /** Walls: round logs with crossed corners (the palette's log colour), or vertical board cladding with white corner boards. */
+  readonly walls: 'logs' | 'boards';
+  /** Main roofs: rounded turf on birch bark, shingled gables, or shingled broken (gambrel) gables. */
+  readonly roofs: 'turf' | 'shingle' | 'gambrel';
+  /** The town centre: a turf-roofed longhouse hall, a granite castle hall beside its bell tower, or a manor between two wings. */
+  readonly civic: 'longhouse' | 'castle' | 'manor';
+  /** The tower and the barracks gate: a turf-roofed log lookout, a two-stage bell tower (kellotapuli), or a belfry under a bell roof and lantern. */
+  readonly belfry: 'lookout' | 'kellotapuli' | 'lantern';
+  /**
+   * The trades the workplaces show on the skyline: the homestead's (riihi
+   * drying barn, tar pit, bog-iron bloomery, fieldstone smithy stack), the
+   * village's (post mill, shear-leg log hoist, stone furnace with its
+   * charging bridge, granite forge stack) or the ironworks' (estate barn
+   * with its bell-cote, water-wheel sawmill, whim house and headframe,
+   * brick forge stack).
+   */
+  readonly works: 'homestead' | 'village' | 'bruk';
 }
 
 /**
@@ -233,7 +259,9 @@ export type ArchFamily =
   /** Log-town layouts: log cabins with steep carved plank gables, a hillfort or kremlin town centre, tent roofs and onions by age (Russian ages 1-2). */
   | 'izba'
   /** Baroque layouts with onion domes, a palace-and-church town centre, an onion tower, a cannon yard and St Basil's as Wonder (Russian age 3). */
-  | 'petrine';
+  | 'petrine'
+  /** Nordic layouts: low log buildings under turf, shingle or gambrel roofs by age, a longhouse / granite castle / manor town centre, bell towers and the Petäjävesi church as Wonder (Finnish ages 1-3). */
+  | 'nordic';
 
 /**
  * Families whose painters size their canvases from the style

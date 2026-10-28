@@ -29,7 +29,10 @@ export type ArchStyleId =
   | 'rinascimento'
   | 'rus_gord'
   | 'muscovy'
-  | 'petrine';
+  | 'petrine'
+  | 'finnic'
+  | 'greystone'
+  | 'gustavian';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId =
   | 'palisade'
@@ -153,7 +156,11 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'russian',
     heraldry: { primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e },
   },
-  finnish: upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
+  // Nordic cross: white, blue, grey. Turf homestead / greystone / Gustavian buildings; walls and units still the Hungarian stub (Task 14).
+  finnish: {
+    ...upcoming({ primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 }),
+    architecture: { 1: 'finnic', 2: 'greystone', 3: 'gustavian' },
+  },
 };
 
 /**

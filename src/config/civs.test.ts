@@ -14,6 +14,10 @@ describe('civ registry', () => {
     for (const id of CIV_IDS) expect(CIV_DEFS[id].available).toBe(done.includes(id));
   });
 
+  it('gives Finnish its own architecture in every age (walls and units follow in Task 14)', () => {
+    expect(CIV_DEFS.finnish.architecture).toEqual({ 1: 'finnic', 2: 'greystone', 3: 'gustavian' });
+  });
+
   it('gives Russian its own architecture, walls and unit look in every age', () => {
     expect(CIV_DEFS.russian.architecture).toEqual({ 1: 'rus_gord', 2: 'muscovy', 3: 'petrine' });
     expect(CIV_DEFS.russian.wallStyle).toEqual({ 1: 'rus_palisade', 2: 'gorodnya', 3: 'kremlin' });
@@ -76,9 +80,10 @@ describe('dev all-civs stub (?civs=all)', () => {
     const civs = await import('./civs');
     expect(civs.DEV_ALL_CIVS).toBe(true);
     expect(civs.AVAILABLE_CIVS).toEqual(civs.CIV_IDS);
-    // Civs without art yet stay stubs: Hungarian art under their own keys.
+    // A civ not finished yet stays unavailable outside the dev flag; what it lacks keeps the Hungarian stub under its own keys.
     expect(civs.CIV_DEFS.finnish.available).toBe(false);
-    expect(civs.CIV_DEFS.finnish.architecture).toEqual(civs.CIV_DEFS.hungarian.architecture);
+    expect(civs.CIV_DEFS.finnish.wallStyle).toEqual(civs.CIV_DEFS.hungarian.wallStyle);
+    expect(civs.CIV_DEFS.finnish.unitLook).toBe(civs.CIV_DEFS.hungarian.unitLook);
   });
 
   it('ignores other query strings', async () => {

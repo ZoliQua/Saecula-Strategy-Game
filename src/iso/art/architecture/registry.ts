@@ -2,6 +2,8 @@ import type { ArchStyleId } from '../../../config/civs';
 import { baroqueArt } from './baroque';
 import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
 import { gothicCathedral } from './english/gothicCathedral';
+import { FINNISH_FINNIC, FINNISH_GREYSTONE, FINNISH_GUSTAVIAN } from './finnish/finnishStyles';
+import { nordicArt } from './finnish/nordic';
 import { chateau } from './french/chateau';
 import { classicTower } from './french/classicTower';
 import { FRENCH_CLASSICISME, FRENCH_GALLO_ROMAN, FRENCH_GOTHIC } from './french/frenchStyles';
@@ -70,6 +72,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   rus_gord: RUSSIAN_GORD,
   muscovy: RUSSIAN_MUSCOVY,
   petrine: RUSSIAN_PETRINE,
+  finnic: FINNISH_FINNIC,
+  greystone: FINNISH_GREYSTONE,
+  gustavian: FINNISH_GUSTAVIAN,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -92,6 +97,7 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   rinascimento: rinascimentoArt,
   izba: izbaArt,
   petrine: petrineArt,
+  nordic: nordicArt,
 };
 
 /** Every style's painted set, by style id. */
