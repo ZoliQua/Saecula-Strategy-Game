@@ -4,6 +4,7 @@ import { archedOpening, baroqueWindow, clockFace, cornice } from './facade';
 import { baroqueWorkArt } from './baroqueWork';
 import { baroqueBlock, pediment, railFence, sentryBox, volutedGable } from './baroqueParts';
 import { foundryArt } from './foundry';
+import { hasOnionDomes, onionDome } from './kits/onionDome';
 import { lantern } from './parts';
 import { dormerLeft, dormerRight, finial, helm, type HelmProfile } from './roofs';
 import type { ArchStyle } from './style';
@@ -121,8 +122,13 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         });
         p.material = 'tile';
         styledHip(p, s, 0.32, 0.3, 1.68, 1.62, 50, 44, c.roof, 0.1);
+        // Onion styles crown the hip with a gilt onion on a drum and fly the pennant from the yard.
+        if (hasOnionDomes(s)) {
+          onionDome(p, 1.0, 0.96, 0.14, 50 + 44 * s.roof.pitch - 6, { color: c.metal, drum: { h: 30, color: c.plaster }, kokoshnik: c.trim });
+          p.flag(0.2, 1.86, 0, 30, team);
+        }
         // Without the street gable the house flies a pennant from its roof instead.
-        if (s.ornaments.streetGables === false) p.flag(1.0, 0.96, 50 + 44 * s.roof.pitch, 18, team);
+        else if (s.ornaments.streetGables === false) p.flag(1.0, 0.96, 50 + 44 * s.roof.pitch, 18, team);
         else volutedGable(p, s, 0.44, 1.56, 1.62, 50, 42);
         lantern(p, 1.68, 0.7, 34, 1.86, 0.7);
         railFence(p, 0.14, 1.92, 0.9, 1.92, 11);
@@ -146,6 +152,8 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         });
         styledMansard(p, s, 0.3, 0.3, 2.7, 1.85, 80, 30, 0.22, 12, c.roofAlt);
         if (hasDormers(s)) for (const uc of [0.62, 1.0, 2.0, 2.38]) dormerLeft(p, uc, 1.79, onRoof(s, 80, 90), 0.18, 14, c.trim, c.roofAlt, 'slate');
+        // Onion styles raise a gate church's drum and gilt onion over the roof.
+        if (hasOnionDomes(s)) onionDome(p, 1.5, 1.08, 0.18, 80 + 42 * s.roof.pitch - 10, { color: c.metal, drum: { h: 30, color: c.plaster }, kokoshnik: c.trim });
         pediment(p, s, 1.15, 1.85, 1.85, 80, 36, team);
         lantern(p, 2.7, 0.75, 40, 2.9, 0.75);
         lantern(p, 2.7, 1.4, 40, 2.9, 1.4);
@@ -181,8 +189,11 @@ export function baroqueArt(s: ArchStyle): AgeArtSet {
         const cupola = roofLift(s, 26 + 16);
         p.box(1.42, 1.07, 1.64, 1.29, 90 + cupola, 108 + cupola, { color: c.trim }, c.trim);
         p.leftFace(1.42, 1.64, 1.29, 90 + cupola, (w) => p.window(w / 2 - 3, -15, 6, 10, true), 18);
-        helm(p, 1.53, 1.18, 108 + cupola, CUPOLA_HELM, c.metal);
-        finial(p, 1.53, 1.18, 137 + cupola, 12, false);
+        if (hasOnionDomes(s)) onionDome(p, 1.53, 1.18, 0.13, 108 + cupola, { color: c.metal, drum: { h: 12, color: c.trim } });
+        else {
+          helm(p, 1.53, 1.18, 108 + cupola, CUPOLA_HELM, c.metal);
+          finial(p, 1.53, 1.18, 137 + cupola, 12, false);
+        }
         lantern(p, 2.7, 0.9, 40, 2.9, 0.9);
         railFence(p, 0.15, 2.86, 2.86, 2.86, 15);
         railFence(p, 2.86, 2.25, 2.86, 2.86, 15);

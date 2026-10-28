@@ -4,6 +4,8 @@ import { css } from '../palette';
 import { archedOpening, baroqueWindow } from './facade';
 import { baroqueBlock, railFence } from './baroqueParts';
 import { forgeLight, forgeMouth, goldPile, lantern, logPile, plankStack, post, target } from './parts';
+import { hasOnionDomes, onionDome } from './kits/onionDome';
+import { octPrism, tentRoof } from './kits/tentRoof';
 import { finial, helm } from './roofs';
 import type { ArchStyle } from './style';
 import { roofChimney, roofLift, styledGable, styledHip } from './styledRoofs';
@@ -109,6 +111,12 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         }, 36);
         p.material = 'tile';
         styledGable(p, s, 0.22, 0.22, 1.0, 1.3, 44, 42, c.roof, c.board, 'v', 0.12);
+        // Onion styles put a tented timber lantern on the store's roof.
+        if (hasOnionDomes(s)) {
+          const z = 44 + 42 * s.roof.pitch - 10;
+          octPrism(p, 0.61, 0.76, 0.12, z, z + 18, c.board, 'logs');
+          tentRoof(p, 0.61, 0.76, 0.12, z + 18, 40, c.roof, { material: 'copper', ribs: c.trim });
+        }
         lantern(p, 0.94, 1.3, 32, 0.94, 1.5);
         // Open saw shed with a frame saw.
         for (const [u, v] of [[1.1, 0.3], [1.72, 0.3], [1.1, 0.92], [1.72, 0.92]] as const) post(p, u, v, 0, 40, 2.4, c.timber);
@@ -154,8 +162,15 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
           ctx.lineTo(w / 2, -49);
           ctx.stroke();
         }, 76);
-        p.material = 'slate';
-        styledHip(p, s, 1.12, 0.19, 1.78, 0.85, 76, 36, c.roofAlt, 0.06, c.darkWood);
+        // Onion styles raise the shaft house under a steep tent with an onion; others keep a slate hip.
+        if (hasOnionDomes(s)) {
+          p.material = 'copper';
+          p.hipRoof(1.12, 0.19, 1.78, 0.85, 76, 66, c.roof, 0.06);
+          onionDome(p, 1.45, 0.52, 0.07, 76 + 62, { color: c.metal });
+        } else {
+          p.material = 'slate';
+          styledHip(p, s, 1.12, 0.19, 1.78, 0.85, 76, 36, c.roofAlt, 0.06, c.darkWood);
+        }
         // Mine office with a bell turret.
         baroqueBlock(p, s, 0.2, 0.85, 1.05, 1.75, 0, 44, {
           left: (w, h, l) => {
@@ -169,7 +184,8 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         styledHip(p, s, 0.2, 0.85, 1.05, 1.75, 44, 34, c.roof, 0.08);
         const turret = roofLift(s, 34);
         p.box(0.54, 1.22, 0.7, 1.38, 70 + turret, 86 + turret, { color: c.trim }, c.trim);
-        helm(p, 0.62, 1.3, 86 + turret, [[0, 0.11], [6, 0.1], [11, 0.05], [16, 0.01]], c.metal);
+        if (hasOnionDomes(s)) onionDome(p, 0.62, 1.3, 0.095, 86 + turret, { color: c.metal });
+        else helm(p, 0.62, 1.3, 86 + turret, [[0, 0.11], [6, 0.1], [11, 0.05], [16, 0.01]], c.metal);
         lantern(p, 0.42, 1.75, 30, 0.42, 1.92);
         // Rails and an ore cart.
         for (const du of [-0.08, 0.08]) {
@@ -204,7 +220,8 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         });
         p.material = 'tile';
         styledHip(p, s, 0.25, 0.25, 1.55, 1.25, 50, 38, c.roof, 0.1);
-        finial(p, 0.9, 0.75, 50 + 38 * s.roof.pitch, 14, false);
+        if (hasOnionDomes(s)) onionDome(p, 0.9, 0.75, 0.1, 50 + 38 * s.roof.pitch - 6, { color: c.metal, drum: { h: 14, color: c.plaster } });
+        else finial(p, 0.9, 0.75, 50 + 38 * s.roof.pitch, 14, false);
         lantern(p, 1.55, 1.0, 34, 1.72, 1.0);
         for (const [u, v] of [[2.5, 0.6], [2.5, 1.4], [2.5, 2.2]] as const) target(p, u, v);
         p.flag(0.4, 2.6, 0, 40, team, true);
@@ -218,6 +235,12 @@ export function baroqueWorkArt(s: ArchStyle): AgeArtSet {
         p.footShadow();
         p.ground(0.1, 0.1, 1.9, 1.9, 0x7f776a);
         roofChimney(p, s, 1.08, 0.28, 1.4, 0.6, 0, 118, 36, { color: c.stack, detail: 'brick' }, 'forge');
+        // Onion styles hood the forge stack with a little tent on posts.
+        if (hasOnionDomes(s)) {
+          const z = 118 + roofLift(s, 36);
+          for (const [u, v] of [[1.08, 0.6], [1.4, 0.6], [1.4, 0.28]] as const) post(p, u, v, z, z + 10, 1.2, 0x3a3530);
+          tentRoof(p, 1.24, 0.44, 0.19, z + 10, 44, c.roof, { material: 'copper' });
+        }
         baroqueBlock(p, s, 0.3, 0.3, 1.5, 1.5, 0, 46, {
           color: c.plasterDeep,
           left: (w, h, l) => {

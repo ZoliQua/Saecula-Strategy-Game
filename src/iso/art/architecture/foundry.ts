@@ -3,6 +3,8 @@ import type { IsoPainter } from '../isoPainter';
 import { FURNACE_LIGHT } from '../lighting/buildingLights';
 import { css, shade } from '../palette';
 import { archedOpening, cornice, quoins, R } from './facade';
+import { hasOnionDomes, onionDome } from './kits/onionDome';
+import { octPrism, tentRoof } from './kits/tentRoof';
 import { chimney } from './parts';
 import type { ArchStyle } from './style';
 import { roofChimney, roofLift, styledGable } from './styledRoofs';
@@ -139,8 +141,18 @@ export function foundryArt(s: ArchStyle): BuildingArt {
       styledGable(p, s, 0.28, 0.33, 1.97, 2.12, 74, HALL_RISE, c.roof, c.brick, 'u');
       // Louvred ridge vent letting the heat out.
       const vent = roofLift(s, HALL_RISE);
-      p.box(0.7, 1.12, 1.55, 1.33, 112 + vent, 126 + vent, { color: SOOT, detail: 'planks' }, SOOT);
-      p.gableRoof(0.7, 1.12, 1.55, 1.33, 126 + vent, 10, c.roof, SOOT, 'u', 0.05);
+      if (hasOnionDomes(s)) {
+        // Onion styles vent through a tented octagonal lantern with a gilt onion (a cannon yard's tower).
+        octPrism(p, 1.12, 1.22, 0.17, 106 + vent, 132 + vent, c.trim, 'stone', (w, _h, light) => {
+          ctx.fillStyle = css(shade(SOOT, light));
+          ctx.fillRect(w / 2 - 2.5, -20, 5, 13);
+        });
+        const apex = tentRoof(p, 1.12, 1.22, 0.17, 132 + vent, 58, c.roof, { material: 'copper', ribs: c.trim, lights: true });
+        onionDome(p, 1.12, 1.22, 0.045, apex - 3, { color: c.metal });
+      } else {
+        p.box(0.7, 1.12, 1.55, 1.33, 112 + vent, 126 + vent, { color: SOOT, detail: 'planks' }, SOOT);
+        p.gableRoof(0.7, 1.12, 1.55, 1.33, 126 + vent, 10, c.roof, SOOT, 'u', 0.05);
+      }
       p.addSmoke(1.1, 1.22, 132 + vent);
       // Blast furnace: battered stone base, brick shaft, iron-banded top and its own stack.
       p.box(2.0, 0.9, 2.88, 1.95, 0, 18, { color: c.stone, detail: 'stone' }, c.stone);

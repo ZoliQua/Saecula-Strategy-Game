@@ -130,6 +130,30 @@ export interface StyleKits {
   readonly pepperpots?: boolean;
   /** The courtyard families' age reading (CourtyardKits); absent = their first-age reading. */
   readonly courtyard?: CourtyardKits;
+  /**
+   * Onion domes on drums (kits/onionDome.ts) in the baroque family's
+   * skyline spots: the house's hip, the camps' and stable's turrets, the
+   * barracks' gate, the range's finial and a hooded forge stack.
+   */
+  readonly onionDomes?: boolean;
+  /** The log-town family's age reading (LogTownKits); absent = its first-age reading. */
+  readonly logTown?: LogTownKits;
+}
+
+/**
+ * How the log-town (izba) family dresses its layouts in one age: log
+ * cabins with steep plank gables, or the same yards with white-stone
+ * ground storeys, tent roofs (shatyor) and onion domes.
+ */
+export interface LogTownKits {
+  /** Halls and towers: all logs, or a whitewashed stone ground storey under the logs. */
+  readonly masonry: 'log' | 'whiteStone';
+  /** Tent roofs on the yards' towers, mills, headframes and porches. */
+  readonly tents: boolean;
+  /** Onion domes on drums over the town centre, the houses' towers and the barracks' gate church. */
+  readonly onions: boolean;
+  /** The town centre: a log hillfort tower on an earth rampart, or a white-stone kremlin tower and cathedral. */
+  readonly civic: 'hillfort' | 'kremlin';
 }
 
 /**
@@ -205,7 +229,11 @@ export type ArchFamily =
   /** Tower-house layouts: brick blocks with swallowtail merlons and tall towers, a Palazzo Pubblico with a Mangia-like tower (Italian age 2). */
   | 'comune'
   /** Palazzo layouts: rusticated blocks under heavy cornices, arcaded loggias, small lantern domes, an arsenal foundry and the Duomo (Italian age 3). */
-  | 'rinascimento';
+  | 'rinascimento'
+  /** Log-town layouts: log cabins with steep carved plank gables, a hillfort or kremlin town centre, tent roofs and onions by age (Russian ages 1-2). */
+  | 'izba'
+  /** Baroque layouts with onion domes, a palace-and-church town centre, an onion tower, a cannon yard and St Basil's as Wonder (Russian age 3). */
+  | 'petrine';
 
 /**
  * Families whose painters size their canvases from the style
@@ -213,7 +241,7 @@ export type ArchFamily =
  * civ styles ride. Bespoke families size their own canvases, so they
  * must fit whatever headroom a style sets (style.test.ts).
  */
-export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles'];
+export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles', 'petrine'];
 
 export interface ArchStyle {
   readonly id: ArchStyleId;

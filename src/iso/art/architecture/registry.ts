@@ -23,6 +23,9 @@ import { comuneArt } from './italian/comune';
 import { etruriaArt } from './italian/etruria';
 import { ITALIAN_COMUNE, ITALIAN_ETRURIA, ITALIAN_RINASCIMENTO } from './italian/italianStyles';
 import { rinascimentoArt } from './italian/rinascimento';
+import { izbaArt } from './russian/izba';
+import { petrineArt } from './russian/petrine';
+import { RUSSIAN_GORD, RUSSIAN_MUSCOVY, RUSSIAN_PETRINE } from './russian/russianStyles';
 import { hispaniaArt } from './spanish/hispania';
 import { mudejarArt } from './spanish/mudejar';
 import { SPANISH_COLONIAL, SPANISH_HISPANIA, SPANISH_MUDEJAR } from './spanish/spanishStyles';
@@ -64,6 +67,9 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   etruria: ITALIAN_ETRURIA,
   comune: ITALIAN_COMUNE,
   rinascimento: ITALIAN_RINASCIMENTO,
+  rus_gord: RUSSIAN_GORD,
+  muscovy: RUSSIAN_MUSCOVY,
+  petrine: RUSSIAN_PETRINE,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -84,6 +90,8 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   etruria: etruriaArt,
   comune: comuneArt,
   rinascimento: rinascimentoArt,
+  izba: izbaArt,
+  petrine: petrineArt,
 };
 
 /** Every style's painted set, by style id. */
