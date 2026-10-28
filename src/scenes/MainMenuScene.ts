@@ -19,6 +19,7 @@ import { directionFromDelta, type BuildingType, type CivId, type Direction, type
 import { paintNextCivPreview } from '../ui/civPreview';
 import { MainMenu, MENU_ENTRANCE_MS } from '../ui/screens/MainMenu';
 import { SaveSlots } from '../ui/screens/SaveSlots';
+import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { slotRows } from '../ui/screens/slotRows';
 import { browserSaveStore } from '../save/browserStore';
 import { SaveStorage } from '../save/storage';
@@ -93,8 +94,8 @@ interface Walker {
 }
 
 const WALK_MS = 4200;
-/** The load list's exit animation (pause.css `.leaving`). */
-const SLOTS_LEAVE_MS = 180;
+/** The load list's and the settings card's exit animation (pause.css `.leaving`). */
+const CARD_LEAVE_MS = 180;
 
 /**
  * Main menu: a live diorama of the world (swaying trees, drifting
@@ -115,6 +116,8 @@ export class MainMenuScene extends Phaser.Scene {
   private away = false;
   /** The load list ("Betöltés"), while open. */
   private slots: SaveSlots | null = null;
+  /** The settings card ("Beállítások"), while open. */
+  private settings: SettingsScreen | null = null;
   private readonly storage = new SaveStorage(browserSaveStore());
 
   constructor() {
@@ -207,6 +210,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.scene.launch('GameSetupScene');
       },
       () => this.openLoadList(),
+      () => this.openSettings(),
     );
     // A start that failed (no valid map) comes straight back to the setup card;
     // a notice alone (a save that could not be loaded) shows on the menu.
@@ -222,6 +226,8 @@ export class MainMenuScene extends Phaser.Scene {
       this.menu = null;
       this.slots?.destroy();
       this.slots = null;
+      this.settings?.destroy();
+      this.settings = null;
       this.tileMap?.destroy();
       this.tileMap = null;
       this.lighting?.destroy();
@@ -236,9 +242,26 @@ export class MainMenuScene extends Phaser.Scene {
     this.menu?.setAway(false);
   }
 
+  /** The settings card over the diorama; back (or Esc) brings the hero back. */
+  private openSettings(): void {
+    if (this.settings || this.slots) return;
+    this.away = true;
+    this.menu?.setAway(true);
+    const settings: SettingsScreen = new SettingsScreen(() => {
+      // A card already closing (Esc within its exit animation) must not close the next one.
+      if (this.settings !== settings) return;
+      settings.leave();
+      this.settings = null;
+      this.away = false;
+      this.menu?.setAway(false);
+      window.setTimeout(() => settings.destroy(), CARD_LEAVE_MS);
+    });
+    this.settings = settings;
+  }
+
   /** The load list over the diorama; picking a save starts GameScene on it (startFromSlot). */
   private openLoadList(): void {
-    if (this.slots) return;
+    if (this.slots || this.settings) return;
     this.away = true;
     this.menu?.setAway(true);
     const slots: SaveSlots = new SaveSlots('load', [], {
@@ -253,7 +276,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.slots = null;
         this.away = false;
         this.menu?.setAway(false);
-        window.setTimeout(() => slots.destroy(), SLOTS_LEAVE_MS);
+        window.setTimeout(() => slots.destroy(), CARD_LEAVE_MS);
       },
     });
     this.slots = slots;

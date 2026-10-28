@@ -89,7 +89,7 @@ export class PauseMenu {
     resume.focus({ preventScroll: true });
   }
 
-  /** Settings open from here once they exist (Task 7); until then the button is greyed with a "Hamarosan" tag. */
+  /** Whether the settings button works (off: greyed with a "Hamarosan" tag); PauseScene turns it on. */
   setSettingsEnabled(on: boolean): void {
     this.settingsBtn.disabled = !on;
     this.settingsBtn.querySelector('.soon')?.remove();

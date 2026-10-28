@@ -4,6 +4,7 @@ import { hu } from '../i18n/hu';
 import type { SaveStorage, SlotId } from '../save/storage';
 import { createPauseBackdrop, PauseMenu } from '../ui/screens/PauseMenu';
 import { SaveSlots } from '../ui/screens/SaveSlots';
+import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { slotRows } from '../ui/screens/slotRows';
 import type { SaveOutcome } from './game/MatchSave';
 import { startFromSlot } from './game/MatchStart';
@@ -21,13 +22,14 @@ const LEAVE_MS = 180;
 /**
  * The Esc pause: GameScene and HUDScene are paused (game time, AI and
  * autosave stop) under a dimmed backdrop with one card at a time, the
- * pause menu or a save / load slot list. Resume runs both again; load
+ * pause menu, a save / load slot list or the settings. Resume runs both again; load
  * and quit stop them instead.
  */
 export class PauseScene extends Phaser.Scene {
   private backdrop: HTMLElement | null = null;
   private menu: PauseMenu | null = null;
   private slots: SaveSlots | null = null;
+  private settings: SettingsScreen | null = null;
   private leaving = false;
   private pause!: PauseData;
 
@@ -57,6 +59,8 @@ export class PauseScene extends Phaser.Scene {
     this.menu = null;
     this.slots?.destroy();
     this.slots = null;
+    this.settings?.destroy();
+    this.settings = null;
   }
 
   private showMenu(): void {
@@ -65,10 +69,16 @@ export class PauseScene extends Phaser.Scene {
       onResume: () => this.resumeGame(),
       onSave: () => this.showSlots('save'),
       onLoad: () => this.showSlots('load'),
-      // Settings arrive with Task 7; the button stays disabled until then.
-      onSettings: () => {},
+      onSettings: () => this.showSettings(),
       onQuit: () => this.quit(),
     });
+    this.menu.setSettingsEnabled(true);
+  }
+
+  /** The settings card over the paused game; back (or Esc) returns to the pause card. */
+  private showSettings(): void {
+    this.clearCard();
+    this.settings = new SettingsScreen(() => this.showMenu());
   }
 
   /** The slot list; it shows placeholders until the slots have been read. */

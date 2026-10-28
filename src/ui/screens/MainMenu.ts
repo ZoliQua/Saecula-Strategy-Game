@@ -24,7 +24,7 @@ export class MainMenu {
   private readonly hero: HTMLElement;
   private readonly teardown: number;
 
-  constructor(onNewGame: () => void, onLoadGame: () => void) {
+  constructor(onNewGame: () => void, onLoadGame: () => void, onSettings: () => void) {
     const play = el(
       'button',
       { class: 'btn btn-primary e-up', type: 'button', style: 'animation-delay:.78s' },
@@ -39,13 +39,13 @@ export class MainMenu {
       el('span', { class: 'arrow', html: ARROW }),
     );
     load.addEventListener('click', onLoadGame);
-    const disabled = (label: string, delay: number) =>
-      el(
-        'button',
-        { class: 'btn btn-ghost e-up', type: 'button', disabled: true, style: `animation-delay:${delay}s` },
-        el('span', {}, label),
-        el('span', { class: 'soon' }, hu.menu.comingSoon),
-      );
+    const settings = el(
+      'button',
+      { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:.94s' },
+      el('span', {}, hu.menu.settings),
+      el('span', { class: 'arrow', html: ARROW }),
+    );
+    settings.addEventListener('click', onSettings);
 
     const [line1 = '', line2 = ''] = hu.menu.headline.split('\n');
     this.hero = el(
@@ -59,7 +59,7 @@ export class MainMenu {
         el('span', { class: 'row' }, el('span', { class: 'rise' }, line2)),
       ),
       el('p', { class: 'menu-tagline e-up', style: 'animation-delay:.62s' }, hu.menu.tagline),
-      el('div', { class: 'menu-actions' }, play, load, disabled(hu.menu.settings, 0.94)),
+      el('div', { class: 'menu-actions' }, play, load, settings),
     );
     this.root = el(
       'div',
@@ -94,7 +94,7 @@ export class MainMenu {
     this.hero.append(el('div', { class: 'menu-notice', role: 'status' }, message));
   }
 
-  /** Steps the hero copy aside while the setup card (or the load list) is open. */
+  /** Steps the hero copy aside while the setup card (or the load list, or the settings) is open. */
   setAway(away: boolean): void {
     this.root.classList.toggle('away', away);
   }

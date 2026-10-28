@@ -35,3 +35,36 @@ export const BACKGROUND_ART_FORCE_AFTER_FRAMES = 30;
 export const AUTOSAVE_INTERVAL_MS = 300_000;
 /** Manual save slots (save:1 … save:SAVE_SLOTS), besides save:auto. */
 export const SAVE_SLOTS = 5;
+
+/** Camera pan keys before any remapping ({ KeyboardEvent.code, keycap label }), in up / down / left / right order. */
+export const DEFAULT_PAN_KEYS = {
+  panUp: { code: 'KeyW', label: 'W' },
+  panDown: { code: 'KeyS', label: 'S' },
+  panLeft: { code: 'KeyA', label: 'A' },
+  panRight: { code: 'KeyD', label: 'D' },
+} as const;
+/** The fixed secondary camera pan (always active, never remappable). */
+export const ARROW_PAN_CODES = { panUp: 'ArrowUp', panDown: 'ArrowDown', panLeft: 'ArrowLeft', panRight: 'ArrowRight' } as const;
+/** Keys no action can be bound to: Esc (pause), the arrows (fixed pan), focus / form keys, modifiers and the dev overlay. */
+export const RESERVED_KEY_CODES: readonly string[] = [
+  'Escape',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'Tab',
+  'Enter',
+  'Space',
+  'ShiftLeft',
+  'ShiftRight',
+  'ControlLeft',
+  'ControlRight',
+  'AltLeft',
+  'AltRight',
+  'MetaLeft',
+  'MetaRight',
+  'Backquote',
+  'F9',
+];
+/** Default volume per channel (0..100). */
+export const DEFAULT_VOLUMES = { master: 80, music: 60, sfx: 80, notifications: 80 } as const;

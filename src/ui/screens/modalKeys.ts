@@ -12,7 +12,7 @@ export function bindModalKeys(card: HTMLElement, onEscape: () => void): () => vo
       // A held Esc must not flicker the card open and shut.
       if (!e.repeat) onEscape();
     } else if (e.key === 'Tab') {
-      const focusable = [...card.querySelectorAll<HTMLButtonElement>('button:not([disabled])')].filter((b) => !b.closest('[inert], [hidden]'));
+      const focusable = [...card.querySelectorAll<HTMLButtonElement>('button:not([disabled]), input:not([disabled])')].filter((b) => !b.closest('[inert], [hidden]'));
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (!first || !last) return;

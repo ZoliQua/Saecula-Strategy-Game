@@ -1,17 +1,21 @@
 import Phaser from 'phaser';
 import {
+  ARROW_PAN_CODES,
   CAMERA_EDGE_MARGIN,
   CAMERA_SPEED,
   MAX_ZOOM,
   MIN_ZOOM,
 } from '../../config/constants';
+import { settingsStore } from '../../ui/settings';
+import { KeyState } from './KeyState';
 
 export interface CameraControllerOptions {
   readonly edgeScroll?: boolean;
 }
 
 /**
- * Handles WASD / arrow-key panning, screen-edge pan, and mouse-wheel
+ * Handles key panning (the remappable pan keys from the settings store,
+ * read every update, plus the fixed arrows), screen-edge pan, and mouse-wheel
  * zoom. The camera is clamped by Phaser's camera bounds (set by the
  * owning scene), so no extra clamp logic is needed here.
  */
@@ -20,34 +24,12 @@ export class CameraController {
   private readonly camera: Phaser.Cameras.Scene2D.Camera;
   private readonly edgeScroll: boolean;
   private pointerInside = false;
-  private readonly keys: {
-    up: Phaser.Input.Keyboard.Key;
-    down: Phaser.Input.Keyboard.Key;
-    left: Phaser.Input.Keyboard.Key;
-    right: Phaser.Input.Keyboard.Key;
-    arrowUp: Phaser.Input.Keyboard.Key;
-    arrowDown: Phaser.Input.Keyboard.Key;
-    arrowLeft: Phaser.Input.Keyboard.Key;
-    arrowRight: Phaser.Input.Keyboard.Key;
-  };
+  private readonly keyState = new KeyState();
 
   constructor(scene: Phaser.Scene, options: CameraControllerOptions = {}) {
     this.scene = scene;
     this.camera = scene.cameras.main;
     this.edgeScroll = options.edgeScroll ?? true;
-
-    const kb = scene.input.keyboard;
-    if (!kb) throw new Error('Keyboard plugin not available');
-    this.keys = {
-      up: kb.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-      down: kb.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-      left: kb.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-      right: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-      arrowUp: kb.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
-      arrowDown: kb.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
-      arrowLeft: kb.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
-      arrowRight: kb.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
-    };
 
     scene.input.on(
       Phaser.Input.Events.POINTER_WHEEL,
@@ -81,10 +63,13 @@ export class CameraController {
     let dx = 0;
     let dy = 0;
 
-    if (this.keys.up.isDown || this.keys.arrowUp.isDown) dy -= step;
-    if (this.keys.down.isDown || this.keys.arrowDown.isDown) dy += step;
-    if (this.keys.left.isDown || this.keys.arrowLeft.isDown) dx -= step;
-    if (this.keys.right.isDown || this.keys.arrowRight.isDown) dx += step;
+    const keys = settingsStore.getState().keys;
+    const held = (action: keyof typeof ARROW_PAN_CODES): boolean =>
+      this.keyState.isDown(keys[action].code) || this.keyState.isDown(ARROW_PAN_CODES[action]);
+    if (held('panUp')) dy -= step;
+    if (held('panDown')) dy += step;
+    if (held('panLeft')) dx -= step;
+    if (held('panRight')) dx += step;
 
     if (this.edgeScroll && this.pointerInside) {
       const p = this.scene.input.activePointer;
@@ -130,6 +115,7 @@ export class CameraController {
   }
 
   destroy(): void {
+    this.keyState.destroy();
     this.scene.input.off(
       Phaser.Input.Events.POINTER_WHEEL,
       this.onWheel,

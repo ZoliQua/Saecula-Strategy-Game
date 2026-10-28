@@ -1,0 +1,146 @@
+/* Settings card (main menu and pause). The card shell, head, foot and notices come from pause.css; tokens from hud.css. */
+
+.settings-card { width: min(560px, 100%); max-height: 100%; padding: 28px 26px 18px; }
+.settings-card .pause-title { font-size: 32px; }
+
+.set-body { margin-top: 20px; display: flex; flex-direction: column; gap: 18px; min-height: 0; overflow: auto; padding: 2px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.set-section { animation: e-up 0.5s var(--ease) backwards; animation-delay: calc(0.14s + var(--i) * 0.08s); }
+
+/* section heads: icon, small-caps title, a hairline, and (audio) the mute switch */
+.set-section-head { display: flex; align-items: center; gap: 10px; margin: 0 2px 10px; }
+.set-section-head h3 {
+  margin: 0; font: 600 11.5px var(--font); letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber-2);
+  display: flex; align-items: center; gap: 12px; flex: 1;
+}
+.set-section-head h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(245, 168, 87, 0.35), transparent); }
+.set-section-icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; color: var(--amber-2); background: rgba(245, 168, 87, 0.1); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.22); }
+
+.set-panel {
+  border-radius: 14px; padding: 6px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.2));
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* volume rows */
+.set-volume { display: grid; grid-template-columns: 128px minmax(0, 1fr) 46px; align-items: center; gap: 14px; height: 46px; }
+.set-volume + .set-volume { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.set-label { font-size: 13.5px; color: var(--ink-2); transition: color 0.2s; }
+.set-volume.master .set-label { color: var(--ink); font-weight: 600; }
+.set-volume:hover .set-label, .set-volume:focus-within .set-label { color: var(--ink); }
+.set-value { justify-self: end; font: 600 13px var(--font); font-variant-numeric: tabular-nums; color: var(--amber-2); transition: color 0.2s, opacity 0.2s; }
+
+.set-range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; --fill: 50%; }
+.set-range:focus { outline: none; }
+.set-range::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, #c06f2b, var(--amber) 60%, var(--amber-2)) 0 0 / var(--fill) 100% no-repeat, rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: filter 0.25s;
+}
+.set-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; border: 0;
+  background: radial-gradient(circle at 50% 32%, #fff6e8, #ffd49a 46%, var(--amber));
+  box-shadow: 0 0 0 3px rgba(245, 168, 87, 0.16), 0 4px 10px rgba(0, 0, 0, 0.55);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s;
+}
+.set-range::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55); }
+.set-range::-moz-range-progress { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #c06f2b, var(--amber) 60%, var(--amber-2)); }
+.set-range::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%; border: 0;
+  background: radial-gradient(circle at 50% 32%, #fff6e8, #ffd49a 46%, var(--amber));
+  box-shadow: 0 0 0 3px rgba(245, 168, 87, 0.16), 0 4px 10px rgba(0, 0, 0, 0.55);
+}
+.set-range:hover::-webkit-slider-thumb { transform: scale(1.12); box-shadow: 0 0 0 5px rgba(245, 168, 87, 0.2), 0 0 18px rgba(245, 168, 87, 0.45), 0 4px 10px rgba(0, 0, 0, 0.55); }
+.set-range:active::-webkit-slider-thumb { transform: scale(1.18); }
+.set-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px #1a1612, 0 0 0 4px var(--amber), 0 0 18px rgba(245, 168, 87, 0.5); }
+.set-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px #1a1612, 0 0 0 4px var(--amber); }
+
+/* muted: the sliders stay usable but read as off */
+.set-section.muted .set-range::-webkit-slider-runnable-track { filter: saturate(0) brightness(0.75); }
+.set-section.muted .set-range::-moz-range-progress { filter: saturate(0) brightness(0.75); }
+.set-section.muted .set-value { color: var(--ink-3); text-decoration: line-through; text-decoration-color: rgba(255, 122, 107, 0.6); }
+
+/* mute switch */
+.set-mute { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2); cursor: pointer; user-select: none; }
+.set-mute-icon { display: grid; place-items: center; color: var(--ink-3); transition: color 0.2s; }
+.set-section.muted .set-mute-icon { color: #ffb4a8; }
+.set-section.muted .set-mute { color: var(--ink); }
+.set-switch {
+  position: relative; width: 42px; height: 24px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; flex: none;
+  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.set-switch i {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(180deg, #f2efe9, #bdb7ad); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s var(--ease), background 0.25s;
+}
+.set-switch[aria-checked='true'] {
+  background: linear-gradient(90deg, #c06f2b, var(--amber));
+  box-shadow: inset 0 0 0 1px rgba(255, 207, 143, 0.5), 0 0 16px -2px rgba(245, 168, 87, 0.55);
+}
+.set-switch[aria-checked='true'] i { transform: translateX(18px); background: linear-gradient(180deg, #fff8ee, #ffd8a6); }
+.set-mute:hover .set-switch:not([aria-checked='true']) { box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.4), inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.set-switch:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+/* key rows: two columns of buttons, each with its keycap */
+.set-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.set-key {
+  display: flex; align-items: center; gap: 11px; height: 54px; padding: 0 10px 0 12px; border: 0; border-radius: 13px;
+  font: inherit; text-align: left; color: var(--ink); cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.2));
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.25s var(--ease), background 0.25s, box-shadow 0.25s;
+}
+.set-key:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(245, 168, 87, 0.14), rgba(245, 168, 87, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.42), 0 12px 26px -16px rgba(245, 168, 87, 0.6);
+}
+.set-key:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.set-key-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--ink-3); background: rgba(255, 255, 255, 0.05); transition: color 0.2s, background 0.2s; }
+.set-key:hover .set-key-icon { color: var(--amber-2); background: rgba(245, 168, 87, 0.14); }
+.set-key-label { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-key:hover .set-key-label { color: var(--ink); }
+
+.keycap {
+  display: inline-grid; place-items: center; min-width: 38px; height: 34px; padding: 0 10px; border-radius: 9px; box-sizing: border-box;
+  font: 700 14px var(--font); letter-spacing: 0.02em; color: #fbf6ec; white-space: nowrap;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.035));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), inset 0 -3px 0 rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 5px 10px -5px rgba(0, 0, 0, 0.7);
+  transition: color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s var(--ease);
+}
+.set-key:hover .keycap { transform: translateY(-1px); }
+.set-key:active .keycap { transform: translateY(1px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(0, 0, 0, 0.42), 0 2px 4px -2px rgba(0, 0, 0, 0.7); }
+.keycap.bound { animation: cap-pop 0.6s var(--ease); }
+@keyframes cap-pop {
+  0% { transform: scale(0.9); color: #2b1608; background: linear-gradient(180deg, var(--amber-2), var(--amber)); box-shadow: 0 0 0 4px rgba(245, 168, 87, 0.25), 0 0 22px rgba(245, 168, 87, 0.7); }
+  100% { transform: none; }
+}
+
+/* waiting for a key press */
+.set-key.capturing {
+  background: linear-gradient(180deg, rgba(245, 168, 87, 0.2), rgba(245, 168, 87, 0.07));
+  box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.7), 0 0 0 4px rgba(245, 168, 87, 0.1), 0 14px 30px -16px rgba(245, 168, 87, 0.75);
+  animation: key-wait 1.4s ease-in-out infinite;
+}
+.set-key.capturing .set-key-label { color: var(--amber-2); }
+.set-key.capturing .set-key-icon { color: var(--amber-2); background: rgba(245, 168, 87, 0.16); }
+.set-key.capturing .keycap { color: #2b1608; background: linear-gradient(180deg, var(--amber-2), var(--amber)); box-shadow: inset 0 -3px 0 rgba(120, 60, 10, 0.45), 0 0 18px rgba(245, 168, 87, 0.55); animation: cap-blink 1s steps(2, jump-none) infinite; }
+@keyframes key-wait { 50% { box-shadow: inset 0 0 0 1px rgba(255, 207, 143, 0.95), 0 0 0 6px rgba(245, 168, 87, 0.06), 0 14px 30px -16px rgba(245, 168, 87, 0.75); } }
+@keyframes cap-blink { 50% { opacity: 0.55; } }
+.set-key.refused { animation: key-shake 0.4s var(--ease); box-shadow: inset 0 0 0 1px rgba(255, 122, 107, 0.75), 0 0 0 4px rgba(255, 122, 107, 0.12); }
+@keyframes key-shake { 20% { transform: translateX(-5px); } 45% { transform: translateX(4px); } 70% { transform: translateX(-2px); } }
+
+.set-fixed { display: flex; align-items: center; gap: 8px; margin: 10px 4px 0; font-size: 12px; color: var(--ink-3); }
+.set-fixed-icon { display: grid; place-items: center; color: var(--ink-3); opacity: 0.8; }
+
+/* notices: the amber info tone joins pause.css's ok / error */
+/* the notice line keeps its room, so the card does not jump when one appears */
+.set-status { min-height: 44px; align-items: flex-start; }
+.slots-notice.info { color: #ffe3bd; background: rgba(245, 168, 87, 0.08); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.3); }
+
+.set-foot { gap: 12px; margin-top: 4px; }
+.set-reset { height: 42px; gap: 9px; padding: 0 15px; animation: e-up 0.5s var(--ease) 0.34s backwards; }
+.set-reset .arrow { display: grid; place-items: center; transition: transform 0.4s var(--ease); }
+.pause-layer .set-reset:hover .arrow { transform: rotate(-120deg); color: var(--amber-2); }

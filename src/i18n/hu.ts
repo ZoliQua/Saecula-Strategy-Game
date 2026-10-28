@@ -181,7 +181,8 @@ export const hu = {
       2: 'Beléptél a Középkorba!',
       3: 'Beléptél a Felvilágosodás korába!',
     },
-    controls: 'WASD: kamera · Görgő: zoom · Jobb klikk: parancs',
+    /** `keys`: the camera pan keys as bound (keymap.keysHint), e.g. 'WASD'. */
+    controls: (keys: string) => `${keys}: kamera · Görgő: zoom · Jobb klikk: parancs`,
     wonderClock: (t: string) => `Csoda: ${t}`,
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
@@ -281,6 +282,26 @@ export const hu = {
     settings: 'Beállítások',
     quit: 'Kilépés a főmenübe',
     quitConfirm: 'Biztosan kilépsz? A nem mentett haladás elvész.',
+  },
+  /** The settings card (main menu and pause). */
+  settings: {
+    title: 'Beállítások',
+    /** Kicker over the title. */
+    kicker: 'Hang és irányítás',
+    audio: 'Hang',
+    volumes: { master: 'Fő hangerő', music: 'Zene', sfx: 'Hangeffektek', notifications: 'Értesítések' },
+    mute: 'Némítás',
+    keys: 'Billentyűk',
+    actions: { panUp: 'Kamera fel', panDown: 'Kamera le', panLeft: 'Kamera balra', panRight: 'Kamera jobbra' },
+    pressKey: 'Nyomj meg egy billentyűt… (Esc: mégse)',
+    reserved: 'Ez a billentyű foglalt (Esc, nyilak, módosítók)',
+    swapped: (a: string) => `Csere: a(z) „${a}” megkapta a korábbi billentyűt`,
+    fixedKeys: 'Esc: szünet · Nyilak: kamera (fix)',
+    reset: 'Alapértelmezés',
+    resetDone: 'Az alapértelmezett beállítások visszaállítva',
+    notSaved: 'A beállítások nem menthetők — csak erre a munkamenetre érvényesek',
+    /** Keycap labels for keys whose `key` prints nothing useful (by KeyboardEvent.code). */
+    keyNames: { Space: 'Szóköz' } as Record<string, string>,
   },
   common: {
     yes: 'Igen',

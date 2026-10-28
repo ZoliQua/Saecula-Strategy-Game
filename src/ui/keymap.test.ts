@@ -1,0 +1,47 @@
+import { describe, expect, it } from 'vitest';
+import { bindingFromEvent, DEFAULT_KEYS, keysHint, rebind } from './keymap';
+
+describe('keymap', () => {
+  it('rebind panUp to KeyD swaps with panRight', () => {
+    const r = rebind(DEFAULT_KEYS, 'panUp', { code: 'KeyD', label: 'D' });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.swappedWith).toBe('panRight');
+    expect(r.keys.panUp).toEqual({ code: 'KeyD', label: 'D' });
+    expect(r.keys.panRight).toEqual(DEFAULT_KEYS.panUp);
+    expect(r.keys.panLeft).toEqual(DEFAULT_KEYS.panLeft);
+  });
+
+  it('Escape, ArrowUp and ShiftLeft are refused', () => {
+    for (const code of ['Escape', 'ArrowUp', 'ShiftLeft']) {
+      expect(rebind(DEFAULT_KEYS, 'panLeft', { code, label: code })).toEqual({ ok: false, reason: 'reserved' });
+    }
+  });
+
+  it('same key is a no-op', () => {
+    const r = rebind(DEFAULT_KEYS, 'panDown', { code: 'KeyS', label: 'S' });
+    expect(r).toEqual({ ok: true, keys: DEFAULT_KEYS });
+  });
+
+  it('a free key moves the action without a swap', () => {
+    const r = rebind(DEFAULT_KEYS, 'panUp', { code: 'KeyI', label: 'I' });
+    expect(r.ok && r.swappedWith).toBe(undefined);
+    expect(r.ok && r.keys.panUp.code).toBe('KeyI');
+  });
+
+  it('bindingFromEvent labels a QWERTZ KeyY as Z', () => {
+    expect(bindingFromEvent({ code: 'KeyY', key: 'z' })).toEqual({ code: 'KeyY', label: 'Z' });
+  });
+
+  it('bindingFromEvent uses the Hungarian key names, else the code', () => {
+    expect(bindingFromEvent({ code: 'Space', key: ' ' }).label).toBe('Szóköz');
+    expect(bindingFromEvent({ code: 'Semicolon', key: 'é' }).label).toBe('É');
+    expect(bindingFromEvent({ code: 'Insert', key: 'Insert' }).label).toBe('Insert');
+  });
+
+  it('keysHint reads the bindings in up-left-down-right order', () => {
+    expect(keysHint(DEFAULT_KEYS)).toBe('WASD');
+    const r = rebind(DEFAULT_KEYS, 'panUp', { code: 'Insert', label: 'Insert' });
+    expect(r.ok && keysHint(r.keys)).toBe('Insert/A/S/D');
+  });
+});

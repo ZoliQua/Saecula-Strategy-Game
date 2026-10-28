@@ -11,7 +11,7 @@
 .pause-backdrop.leaving { opacity: 0; }
 .pause-layer { display: grid; place-items: center; padding: 24px 16px; pointer-events: auto; }
 
-.pause-card, .slots-card {
+.pause-card, .slots-card, .settings-card {
   position: relative; display: flex; flex-direction: column; overflow: hidden;
   background: var(--glass-strong);
   box-shadow: var(--edge), 0 40px 80px -30px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(245, 168, 87, 0.08);
@@ -21,16 +21,16 @@
 .pause-card { width: min(380px, 100%); padding: 30px 28px 18px; }
 .slots-card { width: min(580px, 100%); max-height: 100%; padding: 28px 26px 18px; }
 /* an amber hairline of light along the top edge */
-.pause-card::before, .slots-card::before {
+.pause-card::before, .slots-card::before, .settings-card::before {
   content: ''; position: absolute; top: 0; left: 16%; right: 16%; height: 1px; pointer-events: none;
   background: linear-gradient(90deg, transparent, rgba(255, 207, 143, 0.75), transparent);
 }
-.pause-card::after, .slots-card::after {
+.pause-card::after, .slots-card::after, .settings-card::after {
   content: ''; position: absolute; top: -60px; left: 50%; width: 260px; height: 120px; transform: translateX(-50%); pointer-events: none;
   background: radial-gradient(ellipse at center, rgba(245, 168, 87, 0.16), transparent 70%);
 }
 @keyframes pause-in { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
-.pause-layer.leaving .pause-card, .pause-layer.leaving .slots-card { opacity: 0; transform: translateY(6px) scale(0.985); animation: none; }
+.pause-layer.leaving .pause-card, .pause-layer.leaving .slots-card, .pause-layer.leaving .settings-card { opacity: 0; transform: translateY(6px) scale(0.985); animation: none; }
 
 .pause-head { text-align: center; }
 .pause-kicker { justify-content: center; animation: e-up 0.5s var(--ease) 0.05s both; }

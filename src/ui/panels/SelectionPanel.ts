@@ -9,6 +9,8 @@ import { icons, type IconName } from '../icons';
 import { type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
 import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
 import { formatStat, playerColor, playerColorCss } from '../format';
+import { keysHint } from '../keymap';
+import { settingsStore } from '../settings';
 import type { CivId, TechId } from '../../types';
 
 const RESOURCE_PORTRAIT: Record<'food' | 'wood' | 'gold', { key: string; frame?: number }> = {
@@ -42,10 +44,12 @@ export class SelectionPanel {
     }
     // Only rebuild when the shown data changes, so clicks on queue items
     // aren't lost to a re-render between pointerdown and click.
-    const key = `${JSON.stringify(sel)}#${state.selectionCount}#${state.researchedTechs.length}`;
+    // The idle hint names the current pan keys, so a rebind (made while paused) shows on the next render.
+    const keysLabel = keysHint(settingsStore.getState().keys);
+    const key = `${JSON.stringify(sel)}#${state.selectionCount}#${state.researchedTechs.length}#${keysLabel}`;
     if (key === this.bodyKey) return;
     this.bodyKey = key;
-    this.body.replaceChildren(...this.bodyFor(sel, state.selectionCount, state.researchedTechs));
+    this.body.replaceChildren(...this.bodyFor(sel, state.selectionCount, state.researchedTechs, keysLabel));
   }
 
   private setPortrait(sel: SelectedEntityInfo | null): void {
@@ -61,12 +65,12 @@ export class SelectionPanel {
     if (src) this.portrait.append(el('img', { src, alt: '' }));
   }
 
-  private bodyFor(sel: SelectedEntityInfo | null, count: number, researched: readonly TechId[]): Node[] {
+  private bodyFor(sel: SelectedEntityInfo | null, count: number, researched: readonly TechId[], keysLabel: string): Node[] {
     if (!sel) {
       return [
         el('div', { class: 'sel-head' }, el('span', { class: 'sel-name' }, hu.hud.noSelection)),
         el('p', { class: 'sel-hint' }, hu.hud.noSelectionHint),
-        el('p', { class: 'sel-hint', style: 'color:var(--ink-3)' }, hu.hud.controls),
+        el('p', { class: 'sel-hint', style: 'color:var(--ink-3)' }, hu.hud.controls(keysLabel)),
       ];
     }
     if (sel.kind === 'resource') {
