@@ -275,21 +275,6 @@ export function releaseAbsentCivArt(host: TextureHost, civsInPlay: ReadonlySet<C
   return removed;
 }
 
-/**
- * Frees one building texture and its lighting data (e.g. a setup-card
- * preview's town centre once its picture is captured). A team variant is
- * detached from its base's shared normal source first; remove a base only
- * after its variants.
- */
-export function releaseBuildingTexture(host: TextureHost, key: string): void {
-  if (!host.textures.exists(key)) return;
-  if (parseBuildingArtKey(key)?.playerId !== undefined) host.textures.get(key).dataSource = [];
-  host.textures.remove(key);
-  BUILDING_LIGHT.delete(key);
-  TRIMS.delete(key);
-  BASE_OWNER.delete(key);
-}
-
 /** Crop applied to each registered lit art, by its (civ-qualified) key; team variants reuse their base's. */
 const TRIMS = new Map<string, TrimRect>();
 

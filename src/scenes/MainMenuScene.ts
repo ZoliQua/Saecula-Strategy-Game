@@ -266,7 +266,7 @@ export class MainMenuScene extends Phaser.Scene {
   override update(time: number, delta: number): void {
     this.menuMs += delta;
     // One setup-card civ preview per frame, after the hero's entrance (skipped once all are painted).
-    if (this.menuMs >= PREVIEW_DELAY_MS && !this.previewsDone && !this.away) this.previewsDone = paintNextCivPreview(this.textures) === null;
+    if (this.menuMs >= PREVIEW_DELAY_MS && !this.previewsDone && !this.away) this.previewsDone = paintNextCivPreview() === null;
     this.tileMap?.update(time, delta);
     this.lighting?.update(delta);
     pumpUnitArt(this);

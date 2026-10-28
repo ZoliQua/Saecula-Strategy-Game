@@ -77,7 +77,7 @@ export class GameSetupScene extends Phaser.Scene {
   /** Paints one missing civ preview per frame and hands every ready one to the card (the menu may have painted some meanwhile). */
   private paintPreview(): void {
     if (this.previewsShown) return;
-    const painted = paintNextCivPreview(this.textures);
+    const painted = paintNextCivPreview();
     for (const civ of AVAILABLE_CIVS) {
       const preview = civPreview(civ);
       if (preview) this.setup?.setPreview(civ, preview);

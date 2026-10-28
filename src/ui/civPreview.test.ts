@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type Phaser from 'phaser';
+import type { CivId } from '../types';
 
 /*
- * Setup-card civ previews keep only their data URLs (M4 review M6): the
- * town-centre texture painted for a picture is freed afterwards, unless
- * something else (the menu diorama, a match) had it already.
+ * Setup-card civ previews keep only their data URLs (M4 review M6) and
+ * never create a texture; each civ takes two calls (paint, then light and
+ * encode), so callers spread the work one step per frame (M5 Task 15).
  */
 
 interface FakeCanvas {
@@ -39,41 +39,6 @@ vi.mock('../iso/art/trimArt', () => ({
   trimLitArt: (art: object) => ({ art, rect: { x: 0, y: 0, w: 1, h: 1 } }),
   cropCanvas: (canvas: object) => canvas,
 }));
-vi.mock('../iso/art/lighting/litTextures', async (original) => ({
-  ...(await original<typeof import('../iso/art/lighting/litTextures')>()),
-  halfNormalCanvas: (normal: object) => normal,
-}));
-
-interface FakeTexture {
-  readonly canvas: FakeCanvas;
-  dataSource: Array<{ image: unknown }>;
-  setDataSource(source: unknown): void;
-  getSourceImage(): FakeCanvas;
-}
-
-function fakeTextures() {
-  const map = new Map<string, FakeTexture>();
-  const textures = {
-    exists: (k: string) => map.has(k),
-    get: (k: string) => map.get(k)!,
-    remove: (k: string) => map.delete(k),
-    addCanvas: (k: string, canvas: FakeCanvas) => {
-      const t: FakeTexture = {
-        canvas,
-        dataSource: [],
-        setDataSource(source) {
-          t.dataSource = [{ image: source }];
-        },
-        getSourceImage: () => canvas,
-      };
-      map.set(k, t);
-    },
-  };
-  return { textures: textures as unknown as Phaser.Textures.TextureManager, map };
-}
-
-const TC = 'building_town_center~chungarian';
-
 describe('civ previews', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -82,83 +47,55 @@ describe('civ previews', () => {
     (globalThis as Record<string, unknown>)['document'] = { createElement: () => fakeCanvas() };
   });
 
-  async function load() {
-    return {
-      preview: await import('./civPreview'),
-      textures: await import('../iso/buildingTextures'),
-    };
-  }
+  const load = () => import('./civPreview');
+  const ORDER: readonly CivId[] = ['hungarian', 'english', 'german', 'french', 'spanish', 'italian', 'russian', 'finnish'];
 
-  it('keeps the data URLs and frees the town-centre texture it painted', async () => {
-    const { preview, textures: bt } = await load();
-    const { textures, map } = fakeTextures();
-    expect(preview.paintNextCivPreview(textures)).toBe('hungarian');
-    expect(map.has(TC)).toBe(false);
-    expect(map.size).toBe(0);
-    expect(bt.BUILDING_LIGHT.has(TC)).toBe(false);
+  it('paints a civ in two calls and keeps only its data URLs', async () => {
+    const preview = await load();
+    expect(preview.paintNextCivPreview()).toBe('hungarian');
+    expect(preview.civPreview('hungarian')).toBeUndefined();
+    expect(preview.paintNextCivPreview()).toBe('hungarian');
     expect(preview.civPreview('hungarian')?.art).toMatch(/^data:image\/png/);
     expect(preview.civPreview('hungarian')?.glow).toMatch(/^data:image\/png/);
   });
 
-  it('keeps a town-centre texture that existed before the call (the menu diorama shows it)', async () => {
-    const { preview, textures: bt } = await load();
-    const { textures, map } = fakeTextures();
-    expect(bt.buildingTexture({ textures }, 'town_center', 1, 1, 'hungarian')).toBe(TC);
-    preview.paintNextCivPreview(textures);
-    expect(map.has(TC)).toBe(true);
-    expect(bt.BUILDING_LIGHT.has(TC)).toBe(true);
-    expect(preview.civPreview('hungarian')?.art).toMatch(/^data:/);
+  it('creates no texture: the module takes no texture manager and touches no building texture', async () => {
+    const preview = await load();
+    expect(preview.paintNextCivPreview.length).toBe(0);
+    const bt = await import('../iso/buildingTextures');
+    for (let i = 0; i < 16; i++) preview.paintNextCivPreview();
+    expect([...bt.BUILDING_LIGHT.keys()]).toEqual([]);
   });
 
-  it('paints one civ per call, then reports done', async () => {
-    const { preview } = await load();
-    const { textures, map } = fakeTextures();
-    expect(preview.paintNextCivPreview(textures)).toBe('hungarian');
-    expect(preview.paintNextCivPreview(textures)).toBe('english');
-    expect(preview.paintNextCivPreview(textures)).toBe('german');
-    expect(preview.paintNextCivPreview(textures)).toBe('french');
-    expect(preview.paintNextCivPreview(textures)).toBe('spanish');
-    expect(preview.paintNextCivPreview(textures)).toBe('italian');
-    expect(preview.paintNextCivPreview(textures)).toBe('russian');
-    expect(preview.paintNextCivPreview(textures)).toBe('finnish');
-    expect(preview.paintNextCivPreview(textures)).toBeNull();
-    expect(map.size).toBe(0);
+  it('works through every civ two steps each, then reports done', async () => {
+    const preview = await load();
+    for (const civ of ORDER) {
+      expect(preview.paintNextCivPreview()).toBe(civ);
+      expect(preview.paintNextCivPreview()).toBe(civ);
+    }
+    expect(preview.paintNextCivPreview()).toBeNull();
+    for (const civ of ORDER) expect(preview.civPreview(civ)?.art).toMatch(/^data:/);
   });
 
-  it('a failed paint gives an empty placeholder (not retried) and still frees the texture', async () => {
-    const { preview } = await load();
-    const { textures, map } = fakeTextures();
+  it('a failed picture gives an empty placeholder (not retried)', async () => {
+    const preview = await load();
     contexts = false;
-    expect(preview.paintNextCivPreview(textures)).toBe('hungarian');
+    preview.paintNextCivPreview();
+    expect(preview.paintNextCivPreview()).toBe('hungarian');
     expect(preview.civPreview('hungarian')).toEqual({ art: '', glow: '' });
-    expect(map.size).toBe(0);
-    expect(preview.paintNextCivPreview(textures)).toBe('english');
+    expect(preview.paintNextCivPreview()).toBe('english');
   });
 
-  it('a painter that throws marks that civ failed once (placeholder, no retry) and never throws out', async () => {
-    const { preview } = await load();
-    const { textures, map } = fakeTextures();
+  it('a painter that throws marks that civ failed in one call (placeholder, no retry) and never throws out', async () => {
+    const preview = await load();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     paintThrows = true;
-    expect(() => preview.paintNextCivPreview(textures)).not.toThrow();
-    expect(preview.civPreview('hungarian')).toEqual({ art: '', glow: '' });
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(map.size).toBe(0);
-    expect(preview.paintNextCivPreview(textures)).toBe('english');
-    expect(warn).toHaveBeenCalledTimes(2);
-    expect(preview.paintNextCivPreview(textures)).toBe('german');
-    expect(warn).toHaveBeenCalledTimes(3);
-    expect(preview.paintNextCivPreview(textures)).toBe('french');
-    expect(warn).toHaveBeenCalledTimes(4);
-    expect(preview.paintNextCivPreview(textures)).toBe('spanish');
-    expect(warn).toHaveBeenCalledTimes(5);
-    expect(preview.paintNextCivPreview(textures)).toBe('italian');
-    expect(warn).toHaveBeenCalledTimes(6);
-    expect(preview.paintNextCivPreview(textures)).toBe('russian');
-    expect(warn).toHaveBeenCalledTimes(7);
-    expect(preview.paintNextCivPreview(textures)).toBe('finnish');
-    expect(warn).toHaveBeenCalledTimes(8);
-    expect(preview.paintNextCivPreview(textures)).toBeNull();
+    for (const [i, civ] of ORDER.entries()) {
+      expect(() => expect(preview.paintNextCivPreview()).toBe(civ)).not.toThrow();
+      expect(preview.civPreview(civ)).toEqual({ art: '', glow: '' });
+      expect(warn).toHaveBeenCalledTimes(i + 1);
+    }
+    expect(preview.paintNextCivPreview()).toBeNull();
     warn.mockRestore();
   });
 });
