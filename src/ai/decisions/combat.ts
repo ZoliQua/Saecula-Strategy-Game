@@ -1,5 +1,6 @@
 import type { Entity } from '../../ecs/components';
 import type { TileCoord } from '../../iso/coordinates';
+import type { BuildingType } from '../../types';
 import type { KnownBuilding } from '../perception';
 import { chebyshev } from './gathering';
 
@@ -43,6 +44,34 @@ export function pickAttackTarget(
   const tcs = mine.filter((b) => b.type === 'town_center').sort(byDistance);
   if (tcs[0]) return tcs[0];
   return [...mine].sort(byDistance)[0] ?? null;
+}
+
+/** Enemy buildings a flank goes for: the economy behind the defence. */
+const FLANK_TARGETS: ReadonlySet<BuildingType> = new Set<BuildingType>(['farm', 'house', 'lumber_camp', 'mining_camp']);
+
+/**
+ * Where a flank goes while the main wave hits `main`: the remembered
+ * economy building (farm, house, camp) of `enemyId` (any opponent when
+ * undefined) farthest from `main`, at least `minSeparation` tiles from
+ * it. Null when there is none.
+ */
+export function pickFlankTarget(
+  known: readonly KnownBuilding[],
+  main: KnownBuilding,
+  enemyId: number | undefined,
+  minSeparation: number,
+): KnownBuilding | null {
+  let best: KnownBuilding | null = null;
+  let bestDist = -1;
+  for (const b of known) {
+    if (!FLANK_TARGETS.has(b.type) || (enemyId !== undefined && b.ownerId !== enemyId)) continue;
+    const d = chebyshev(b.position, main.position);
+    if (d >= minSeparation && d > bestDist) {
+      best = b;
+      bestDist = d;
+    }
+  }
+  return best;
 }
 
 /**

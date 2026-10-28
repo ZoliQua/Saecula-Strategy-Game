@@ -45,7 +45,7 @@ export const hu = {
     opponentsOk: 'Ajánlott ezen a méreten',
     opponentsCrowded: 'Zsúfolt lesz ezen a méreten, és a gép is többet dolgozik',
     difficulty: 'Nehézség',
-    difficulties: { easy: 'Könnyű', medium: 'Közepes', hard: 'Nehéz' },
+    difficulties: { easy: 'Könnyű', medium: 'Közepes', hard: 'Nehéz', master: 'Mesteri' },
     civ: 'Néped',
     /** One line per civ under its name on the setup card (architecture, CLAUDE.md §4.2). */
     civDesc: {
@@ -243,7 +243,14 @@ export const hu = {
     durationLabel: 'Játékidő',
     causeLabel: 'Döntött',
     causes: { conquest: 'Hódítás', wonder: 'Csoda' },
+    /** The player table. */
+    players: 'Játékosok',
+    human: 'Te',
+    outcomes: { winner: 'Győztes', defeated: 'Legyőzve', standing: 'Talpon' },
+    ageLabel: (a: number) => `${a}. kor`,
   },
+  /** AI personalities (shown with the AI's difficulty on the game-over table). */
+  personalities: { rusher: 'Rohamozó', boomer: 'Gazdálkodó', turtle: 'Védekező' },
   loading: 'Betöltés…',
   /** Dev-build only (AI thoughts overlay); never shown in production. */
   dev: {
@@ -255,7 +262,7 @@ export const hu = {
       plan: 'Terv',
       recent: 'Döntések',
       none: '—',
-      strategies: { easy: 'Könnyű', medium: 'Közepes', hard: 'Nehéz' } as Record<string, string>,
+      strategies: { easy: 'Könnyű', medium: 'Közepes', hard: 'Nehéz', master: 'Mesteri' } as Record<string, string>,
       phases: {
         opening: 'Nyitás',
         ageUp: 'Korváltásra gyűjt',
@@ -275,6 +282,7 @@ export const hu = {
         explore: 'Felfedezés',
         rebalance: 'Átcsoportosítás',
         harass: 'Portyázás',
+        flank: 'Bekerítés',
         stance: 'Stratégiaváltás',
       },
       stanceLabel: 'Stratégia',

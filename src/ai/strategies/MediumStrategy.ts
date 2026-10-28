@@ -105,6 +105,7 @@ export class MediumStrategy extends BaseStrategy {
       notBeforeMs: this.firstAttackAtMs,
     })) {
       this.army.launchWave(ctx, view);
+      this.onWaveLaunched(ctx, view);
     }
     this.updateThoughts(ctx, view);
   }
@@ -120,7 +121,11 @@ export class MediumStrategy extends BaseStrategy {
     if (ctx.timeMs < this.firstAttackAtMs || squad.length < this.tune.pressure.minArmy || this.army.attacking) return;
     this.army.launchWave(ctx, view, squad);
     this.pressureSent = true;
+    this.onWaveLaunched(ctx, view);
   }
+
+  /** Called after each wave launch (pressure and main waves); Mesteri splits off a flank here. */
+  protected onWaveLaunched(_ctx: AIContext, _view: WorldView): void {}
 
   /**
    * Scouts wanted exploring: one until the pressure raid has left (food

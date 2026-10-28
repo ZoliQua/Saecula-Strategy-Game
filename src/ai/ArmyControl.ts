@@ -38,6 +38,21 @@ export class ArmyControl {
     return this.wave.size;
   }
 
+  /** Ids of the units on the attack wave. */
+  members(): ReadonlySet<number> {
+    return this.wave;
+  }
+
+  /** Where the wave is headed (null while it explores, or with no wave out). */
+  get target(): KnownBuilding | null {
+    return this.waveTarget;
+  }
+
+  /** Takes units off the wave (another controller, e.g. a flank, now leads them). */
+  detach(ids: readonly number[]): void {
+    for (const id of ids) this.wave.delete(id);
+  }
+
   /** True while the unit belongs to the attack wave. */
   inWave(u: Entity): boolean {
     return u.id !== undefined && this.wave.has(u.id);

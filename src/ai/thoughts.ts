@@ -15,6 +15,7 @@ export type ThoughtKind =
   | 'explore'
   | 'rebalance'
   | 'harass'
+  | 'flank'
   | 'stance';
 
 export interface Thought {

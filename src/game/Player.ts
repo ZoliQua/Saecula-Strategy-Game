@@ -1,5 +1,6 @@
 import type { AgeId, CivId, Resources, TechId } from '../types';
 import { DEFAULT_CIV } from '../config/civs';
+import type { PersonalityId } from '../config/aiPersonality';
 
 export interface Player {
   id: number;
@@ -16,6 +17,8 @@ export interface Player {
    * 20% faster); 1 for the human and the other difficulties.
    */
   gatherHandicap: number;
+  /** Seeded AI personality (Medium, Hard and Mesteri AIs only; absent for the human and Easy). */
+  personality?: PersonalityId;
 }
 
 export const PLAYER_COLORS: readonly number[] = [

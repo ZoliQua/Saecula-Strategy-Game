@@ -95,6 +95,26 @@
 .gameover-stats { margin: 22px 0 24px; display: flex; justify-content: center; }
 .gameover-stats .stat { font-size: 13px; padding: 8px 12px; }
 .gameover .btn { width: 100%; justify-content: center; }
+.gameover-card:has(.gameover-players) { width: min(560px, calc(100vw - 32px)); }
+.gameover-stats:has(+ .gameover-players) { margin-bottom: 18px; }
+.gameover-players { margin: 0 0 22px; text-align: left; }
+.gameover-players-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 8px 2px; }
+.gameover-table { display: grid; gap: 4px; }
+.gameover-row {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) minmax(0, 1.7fr) 52px 92px; align-items: center; gap: 12px;
+  padding: 8px 12px; border-radius: 10px; font-size: 13px; color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.03); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: e-up 0.5s var(--ease) calc(0.45s + var(--i, 0) * 0.07s) both;
+}
+.gameover-row.human { background: rgba(245, 168, 87, 0.07); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.22); }
+.gameover-swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--swatch); box-shadow: 0 0 10px var(--swatch); }
+.gameover-civ { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gameover-who { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gameover-age { color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gameover-outcome { justify-self: end; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.gameover-outcome.winner { color: var(--amber-2); background: rgba(245, 168, 87, 0.12); }
+.gameover-outcome.defeated { color: #ffb4a8; background: rgba(255, 120, 100, 0.1); }
+.gameover-outcome.standing { color: var(--ink-2); background: rgba(255, 255, 255, 0.06); }
 
 /* ---------- loading (terrain bake) ---------- */
 .loading { display: grid; place-items: center; background: radial-gradient(ellipse at 50% 45%, rgba(24, 20, 15, 0.92), rgba(6, 7, 9, 0.98)); pointer-events: auto; animation: e-fade 0.35s ease both; }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
-import { defaultSetupConfig, matchCivs, withSetup, type GameSetupConfig } from '../game/GameSetupConfig';
+import { defaultSetupConfig, matchCivs, withSetup, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
+import { gameOverRows } from '../game/gameOverStats';
 import { createPlayers, type PlayerManager } from '../game/PlayerManager';
 import { VictoryChecker } from '../game/VictoryChecker';
 import { queueUnit } from '../ecs/queueUnit';
@@ -55,6 +56,7 @@ export class GameScene extends Phaser.Scene {
   /** Dev builds only (window.__timeScale): game time runs this much faster than real time. */
   private timeScale = 1;
   private gameOverTriggered = false;
+  private difficulty: Difficulty = 'easy';
   private commandUnsubscribe: (() => void) | null = null;
   /** This match's civ art: base owners, loading-card art and the background queue (age-2 walls, age-up art). */
   private matchArt: MatchArt | null = null;
@@ -166,6 +168,7 @@ export class GameScene extends Phaser.Scene {
 
     const cameraController = new CameraController(this);
     this.world = createEcsWorld();
+    this.difficulty = config.difficulty;
     this.runner = new SystemRunner(
       this,
       this.world,
@@ -352,6 +355,7 @@ export class GameScene extends Phaser.Scene {
       victory: state.kind === 'victory',
       durationMs: this.gameElapsedMs,
       cause: state.cause,
+      players: gameOverRows(this.players.all(), state.winnerId, this.difficulty),
     };
     this.scene.launch('GameOverScene', data);
     this.scene.bringToTop('GameOverScene');

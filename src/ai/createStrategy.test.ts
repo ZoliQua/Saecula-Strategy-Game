@@ -8,7 +8,10 @@ import { createPlayer } from '../game/Player';
 import { PlayerManager } from '../game/PlayerManager';
 import { MapData } from '../map/MapData';
 import { TERRAIN } from '../map/TerrainTypes';
+import { AI_MEDIUM } from '../config/aiBalance';
 import { applyDifficulty, createStrategy } from './createStrategy';
+import { MasterStrategy } from './strategies/MasterStrategy';
+import { MediumStrategy } from './strategies/MediumStrategy';
 
 describe('createStrategy', () => {
   it('honours the chosen difficulty', () => {
@@ -16,6 +19,21 @@ describe('createStrategy', () => {
     expect(createStrategy('medium').name).toBe('medium');
     expect(createStrategy('hard').name).toBe('hard');
     expect(createStrategy('hard')).not.toBe(createStrategy('hard'));
+  });
+
+  it('master builds a MasterStrategy', () => {
+    const s = createStrategy('master');
+    expect(s).toBeInstanceOf(MasterStrategy);
+    expect(s.name).toBe('master');
+  });
+
+  it('personality is applied to Medium tuning', () => {
+    const plain = createStrategy('medium') as MediumStrategy;
+    const turtle = createStrategy('medium', Math.random, 'turtle') as MediumStrategy;
+    const tune = (s: MediumStrategy) => (s as unknown as { tune: typeof AI_MEDIUM }).tune;
+    expect(tune(plain)).toBe(AI_MEDIUM);
+    expect(tune(turtle).minDefenders).toBe(AI_MEDIUM.minDefenders + 4);
+    expect(tune(turtle).attackWave).toBe(Math.round(AI_MEDIUM.attackWave * 1.4));
   });
 });
 
@@ -30,6 +48,15 @@ describe('difficulty gather handicap', () => {
     applyDifficulty(medium, 'medium');
     applyDifficulty(hard, 'hard');
     expect([human, easy, medium, hard].map((p) => p.gatherHandicap)).toEqual([1, 1, 1, 1.2]);
+  });
+
+  it('master gets gather handicap 1.2', () => {
+    const master = createPlayer({ id: 2 });
+    applyDifficulty(master, 'master');
+    expect(master.gatherHandicap).toBe(1.2);
+    const human = createPlayer({ id: 1, isHuman: true });
+    applyDifficulty(human, 'master');
+    expect(human.gatherHandicap).toBe(1);
   });
 
   it('GatheringSystem applies it to every resource (berries too) and grants nothing else', () => {

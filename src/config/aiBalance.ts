@@ -138,8 +138,16 @@ export const AI_COUNTERS = {
  * faster because it cannot use its economy as well as a human). Applied
  * to AI players only, through the gather-rate modifiers.
  */
-export const AI_GATHER_HANDICAP: Readonly<Record<Difficulty, number>> = { easy: 1, medium: 1, hard: 1.2 };
+export const AI_GATHER_HANDICAP: Readonly<Record<Difficulty, number>> = {
+  easy: 1,
+  medium: 1,
+  hard: 1.2,
+  /** Mesteri keeps Hard's rate: no extra vision or resources (M6 decision 10). */
+  master: 1.2,
+};
 
 // Strategy-family tables (split out to keep each file focused).
 export * from './aiMedium';
 export * from './aiHard';
+export * from './aiMaster';
+export * from './aiPersonality';

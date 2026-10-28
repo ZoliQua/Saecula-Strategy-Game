@@ -22,6 +22,7 @@ import {
   nextUnitToTrain,
   pickAttackTarget,
   pickEngageTarget,
+  pickFlankTarget,
   pickGatherType,
   pickRebalance,
   pickResearch,
@@ -240,6 +241,26 @@ describe('combat decisions', () => {
     expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1, { canWin: () => false })?.id).toBe(2);
     // Without the Wonder victory a Wonder is just another building.
     expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1)?.id).toBe(2);
+  });
+
+  it('pickFlankTarget picks the farthest economy building past minSeparation, or null', () => {
+    const b = (id: number, type: KnownBuilding['type'], ownerId: number, tx: number, ty = 0): KnownBuilding => ({
+      id, type, ownerId, position: { tx, ty }, footprint: { width: 1, height: 1 },
+    });
+    const main = b(1, 'town_center', 1, 20, 20);
+    const known = [
+      main,
+      b(2, 'farm', 1, 24, 20), // too close (4)
+      b(3, 'house', 1, 20, 34), // 14
+      b(4, 'mining_camp', 1, 33, 20), // 13
+      b(5, 'barracks', 1, 40, 40), // farthest, but not economy
+      b(6, 'lumber_camp', 2, 20, 45), // 25, another owner
+    ];
+    expect(pickFlankTarget(known, main, 1, 10)?.id).toBe(3);
+    // Any owner when the enemy is unset.
+    expect(pickFlankTarget(known, main, undefined, 10)?.id).toBe(6);
+    expect(pickFlankTarget(known, main, 1, 15)).toBeNull();
+    expect(pickFlankTarget([main], main, 1, 0)).toBeNull();
   });
 
   it('engages armed units first, then other units, then buildings (walls last)', () => {

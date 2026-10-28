@@ -6,7 +6,7 @@ import type { CivId } from '../types';
 export { AVAILABLE_CIVS };
 
 export type MapSizeId = 'small' | 'medium' | 'large';
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'master';
 
 export interface MapSizeSpec {
   /** Tiles per side (CLAUDE.md §4.7). */
@@ -21,9 +21,9 @@ export const MAP_SIZES: Readonly<Record<MapSizeId, MapSizeSpec>> = {
   large: { tiles: 128, recommendedAi: 5 },
 };
 export const MAP_SIZE_IDS: readonly MapSizeId[] = ['small', 'medium', 'large'];
-export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
+export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard', 'master'];
 /** Options that work today; the setup screen shows the rest as "coming soon". */
-export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
+export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard', 'master'];
 export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
 
 /** How a match can be won: conquest only, or conquest or a Wonder held WONDER_HOLD_MS (CLAUDE.md §4.8). */
