@@ -28,6 +28,8 @@ export class MatchArt {
   constructor(
     private readonly scene: Phaser.Scene,
     players: ReadonlyArray<{ readonly id: number; readonly civ: CivId; readonly isHuman: boolean }>,
+    /** Each time the background queue empties (the match evicts unused art then). */
+    private readonly onBackgroundDrained: () => void = () => {},
   ) {
     this.owners = civBaseOwners(players);
     setBuildingBaseOwners(this.owners);
@@ -46,7 +48,7 @@ export class MatchArt {
     const spans = load?.spans;
     for (const [civ, { max }] of spans ?? []) for (let a = 2; a <= max; a++) this.ageQueued.add(`${civ}:${a}`);
     const plan = planArtLoad(humanCiv, this.owners, this.painters(), spans);
-    this.background = new BackgroundArt(plan.background);
+    this.background = new BackgroundArt(plan.background, { onDrained: this.onBackgroundDrained });
     const restored = (load?.buildings ?? []).map((art) => () => {
       if (art.kind === 'building') buildingTexture(this.scene, art.type, art.age, art.owner, art.civ);
       else wonderStageTexture(this.scene, art.stage, art.civ);

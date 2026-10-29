@@ -158,6 +158,8 @@ export interface BackgroundArtOptions {
   /** After this many paced frames skipped as busy, the next one runs a job anyway (slow machines). */
   readonly forceAfterFrames: number;
   readonly now: () => number;
+  /** Called each time a job empties the queue (the match evicts unused art then: texture peak). */
+  readonly onDrained?: () => void;
 }
 
 const DEFAULT_OPTIONS: BackgroundArtOptions = {
@@ -212,6 +214,7 @@ export class BackgroundArt {
     this.stats.jobs++;
     this.stats.totalMs += dt;
     this.stats.maxJobMs = Math.max(this.stats.maxJobMs, dt);
+    if (this.done) this.options.onDrained?.();
   }
 }
 

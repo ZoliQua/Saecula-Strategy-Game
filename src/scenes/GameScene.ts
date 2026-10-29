@@ -88,7 +88,7 @@ export class GameScene extends Phaser.Scene {
     this.players = prepared.match.players;
     uiStore.getState().setCiv(this.players.human()?.civ ?? DEFAULT_CIV);
     // Only once the match will run (the menu keeps player 1's colour): each civ's bases in its base owner's colour.
-    const matchArt = new MatchArt(this, this.players.all());
+    const matchArt = new MatchArt(this, this.players.all(), () => this.runner.evictUnusedArt());
     this.matchArt = matchArt;
     this.mapData = start.kind === 'new' ? start.generated.mapData : start.restored.mapData;
     // Lighting first: the map and render proxies register lit sprites and shadows with it.

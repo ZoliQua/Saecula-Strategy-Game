@@ -185,6 +185,46 @@ describe('BackgroundArt', () => {
     return { now: () => t, advance: (ms: number) => (t += ms) };
   };
 
+  it('reports each drain once: the first eviction runs when the queue empties (texture peak)', () => {
+    const c = clock();
+    let drained = 0;
+    const ran: number[] = [];
+    const bg = new BackgroundArt([0, 1].map((i) => () => ran.push(i)), {
+      startDelayMs: 0,
+      maxFrameWorkMs: 5,
+      everyFrames: 1,
+      now: c.now,
+      onDrained: () => drained++,
+    });
+    bg.update(16, c.now());
+    expect(drained).toBe(0);
+    bg.update(16, c.now());
+    expect(ran).toEqual([0, 1]);
+    expect(drained).toBe(1);
+    bg.update(16, c.now());
+    expect(drained).toBe(1);
+    bg.enqueue([() => ran.push(2)]);
+    bg.update(16, c.now());
+    expect(drained).toBe(2);
+  });
+
+  it('a job that re-enqueues itself (a unit sheet deferred to a later frame) is not a drain', () => {
+    const c = clock();
+    let drained = 0;
+    let tries = 0;
+    const bg: BackgroundArt = new BackgroundArt([() => (++tries < 2 ? bg.enqueue([() => tries++]) : undefined)], {
+      startDelayMs: 0,
+      maxFrameWorkMs: 5,
+      everyFrames: 1,
+      now: c.now,
+      onDrained: () => drained++,
+    });
+    bg.update(16, c.now());
+    expect(drained).toBe(0);
+    bg.update(16, c.now());
+    expect(drained).toBe(1);
+  });
+
   it('waits out the start delay, then runs one job per eligible frame', () => {
     const c = clock();
     const ran: number[] = [];

@@ -113,7 +113,7 @@ export class SystemRunner {
     private readonly mapData: MapData,
     private readonly tileMap: TileMap,
     private readonly cameraController: CameraController,
-    players: PlayerManager,
+    private readonly players: PlayerManager,
     options: SystemRunnerOptions,
   ) {
     const { difficulty } = options;
@@ -180,10 +180,7 @@ export class SystemRunner {
     this.evictTimer = scene.time.addEvent({
       ...evictionTimer(restore !== undefined),
       loop: true,
-      callback: () => {
-        this.render.releaseUnusedArt(this.keepWalls);
-        this.render.releaseAbsentCivs(activeCivs(players));
-      },
+      callback: () => this.evictUnusedArt(),
     });
     // Once the age-up wave has played out, drop age styles nobody shows any more (per civ).
     this.unsubscribeAge = gameEvents.on('ageChanged', () => {
@@ -203,6 +200,12 @@ export class SystemRunner {
     this.updateListener();
     // Game start: the menu / preload art of civs not in this match goes now (design decision 7).
     this.render.releaseAbsentCivs(activeCivs(players));
+  }
+
+  /** Frees generated art nothing shows (old wall joins, Wonder stages, absent civs): the eviction timer, and whenever the background art queue empties. */
+  evictUnusedArt(): void {
+    this.render.releaseUnusedArt(this.keepWalls);
+    this.render.releaseAbsentCivs(activeCivs(this.players));
   }
 
   /** The AI players, in tick order (saved games snapshot and restore them). */
