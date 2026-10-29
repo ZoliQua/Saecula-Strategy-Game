@@ -3,7 +3,8 @@ import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { BUILDING_BALANCE } from '../../config/balance';
 import { COMMON_WALL_PIECES } from '../../iso/art/walls/commonWallPieces';
 import type { BuildingType, CivId } from '../../types';
-import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, prewarmUnitTypes, type AgeSpan, type ArtPainters } from './artLoadPlan';
+import { ART_EVICT_AFTER_LOAD_MS, ART_EVICT_INTERVAL_MS } from '../../config/visual';
+import { ageUpArtJobs, BackgroundArt, civBaseOwners, evictionTimer, planArtLoad, prewarmUnitTypes, type AgeSpan, type ArtPainters } from './artLoadPlan';
 
 const ALL_TYPES = Object.keys(BUILDING_SPECS) as BuildingType[];
 const AGE1_TYPES = ALL_TYPES.filter((t) => BUILDING_BALANCE[t].age === 1);
@@ -236,5 +237,20 @@ describe('BackgroundArt', () => {
     bg.update(16, c.now());
     bg.update(16, c.now());
     expect(bg.stats).toEqual({ jobs: 2, maxJobMs: 7, totalMs: 10 });
+  });
+});
+
+describe('evictionTimer', () => {
+  it('a new match evicts first after a full interval', () => {
+    expect(evictionTimer(false)).toEqual({ delay: ART_EVICT_INTERVAL_MS, startAt: 0 });
+  });
+
+  it('a loaded match evicts first right after its first frames, then every interval', () => {
+    const t = evictionTimer(true);
+    expect(t.delay).toBe(ART_EVICT_INTERVAL_MS);
+    // Phaser fires a looping TimerEvent first when elapsed (starting at startAt) reaches delay.
+    expect(t.delay - t.startAt).toBe(ART_EVICT_AFTER_LOAD_MS);
+    expect(ART_EVICT_AFTER_LOAD_MS).toBeGreaterThan(0);
+    expect(ART_EVICT_AFTER_LOAD_MS).toBeLessThan(5_000);
   });
 });

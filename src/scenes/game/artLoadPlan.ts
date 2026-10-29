@@ -5,6 +5,7 @@ import {
   BACKGROUND_ART_MAX_FRAME_WORK_MS,
   BACKGROUND_ART_START_DELAY_MS,
 } from '../../config/constants';
+import { ART_EVICT_AFTER_LOAD_MS, ART_EVICT_INTERVAL_MS } from '../../config/visual';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { COMMON_WALL_PIECES } from '../../iso/art/walls/commonWallPieces';
 import type { AgeId, BuildingType, CivId, UnitType } from '../../types';
@@ -212,4 +213,13 @@ export class BackgroundArt {
     this.stats.totalMs += dt;
     this.stats.maxJobMs = Math.max(this.stats.maxJobMs, dt);
   }
+}
+
+/**
+ * The looping eviction timer (Phaser TimerEvent `delay` / `startAt`): every
+ * ART_EVICT_INTERVAL_MS, the first one a full interval into a new match but
+ * only ART_EVICT_AFTER_LOAD_MS into a loaded one (texture peak after a load).
+ */
+export function evictionTimer(loaded: boolean): { delay: number; startAt: number } {
+  return { delay: ART_EVICT_INTERVAL_MS, startAt: loaded ? ART_EVICT_INTERVAL_MS - ART_EVICT_AFTER_LOAD_MS : 0 };
 }

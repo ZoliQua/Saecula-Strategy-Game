@@ -33,7 +33,7 @@ import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import { WonderSystem } from '../../ecs/systems/WonderSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { AI_COMMON } from '../../config/aiBalance';
-import { AGE_UP_FX, ART_EVICT_INTERVAL_MS } from '../../config/visual';
+import { AGE_UP_FX } from '../../config/visual';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -47,6 +47,7 @@ import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
+import { evictionTimer } from './artLoadPlan';
 
 export interface SystemRunnerOptions {
   readonly difficulty: Difficulty;
@@ -177,7 +178,7 @@ export class SystemRunner {
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
     this.evictTimer = scene.time.addEvent({
-      delay: ART_EVICT_INTERVAL_MS,
+      ...evictionTimer(restore !== undefined),
       loop: true,
       callback: () => {
         this.render.releaseUnusedArt(this.keepWalls);

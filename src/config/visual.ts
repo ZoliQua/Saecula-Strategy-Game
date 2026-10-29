@@ -138,6 +138,14 @@ export const COMBAT_FX = {
 /** How often unused generated art (old wall joins, Wonder stages) is freed, real ms (texture memory budget). */
 export const ART_EVICT_INTERVAL_MS = 20_000;
 
+/**
+ * After a save loads, the first eviction runs this soon (real ms), once the
+ * first frames have given the restored world its sprites: loading paints
+ * wall pieces nobody shows, and waiting a full interval let the texture peak
+ * pass the 256 MB budget on a large window.
+ */
+export const ART_EVICT_AFTER_LOAD_MS = 1_000;
+
 /** Age-up transformation of a player's buildings (AgeUpFxSystem). Times in ms, sizes in world px. */
 export const AGE_UP_FX = {
   /** Delay between consecutive buildings, rippling out from the town centre … */
