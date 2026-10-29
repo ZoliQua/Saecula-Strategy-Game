@@ -1,6 +1,6 @@
 import { hu } from '../../i18n/hu';
 import { el } from '../dom';
-import { hex } from '../screens/CivPicker';
+import { grouped, hex } from '../format';
 import type { ScoreRowInfo } from '../store';
 
 const COUNT_MS = 600;
@@ -17,8 +17,6 @@ interface Row {
   start: number;
 }
 
-/** Thousands with a thin space, Hungarian style (12 345). */
-const grouped = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 /**
  * The side panel's "Pontszám" view: one row per player, highest score

@@ -23,9 +23,6 @@ export function formatLength(ms: number | null): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-/** Thousands with a thin space (12 345). */
-export const grouped = (n: number): string => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
-
 /** The export file's local date part (YYYY-MM-DD). */
 export function exportDate(now: Date): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

@@ -1,7 +1,7 @@
 import type { WonderClockInfo } from '../../game/wonderClocks';
 import { hu } from '../../i18n/hu';
 import { el, formatClock } from '../dom';
-import { hex } from '../screens/CivPicker';
+import { hex } from '../format';
 import type { UiStore } from '../store';
 
 interface Row {

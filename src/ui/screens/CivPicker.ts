@@ -3,12 +3,10 @@ import { hu } from '../../i18n/hu';
 import type { CivId } from '../../types';
 import type { CivPreview } from '../civPreview';
 import { el } from '../dom';
+import { hex } from '../format';
 import { arrowStep, nextEnabled } from './radioNav';
 
 const CHECK = `<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>`;
-
-/** CSS colour of a 0xRRGGBB heraldry tint. */
-export const hex = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 
 /**
  * The human's civ choice on the setup card: a 4×2 grid with a card per

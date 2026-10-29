@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { exportDate, exportPayload, formatLength, formatRate, formatWhen, grouped } from './statsView';
+import { exportDate, exportPayload, formatLength, formatRate, formatWhen } from './statsView';
 
 describe('statsView', () => {
-  it('formats rates, lengths and big numbers', () => {
+  it('formats rates and lengths', () => {
     expect([formatRate(null), formatRate(0), formatRate(2 / 3), formatRate(1)]).toEqual(['–', '0\u202f%', '67\u202f%', '100\u202f%']);
     expect([formatLength(null), formatLength(65_400), formatLength(3_725_000)]).toEqual(['–', '1:05', '1:02:05']);
-    expect([grouped(5), grouped(12345), grouped(1234567)]).toEqual(['5', '12\u202f345', '1\u202f234\u202f567']);
   });
 
   it('dates are local and zero-padded', () => {
