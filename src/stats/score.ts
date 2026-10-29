@@ -24,9 +24,15 @@ export interface ScoreBreakdown {
 /** A cost as one number: food + wood + gold. */
 export const costValue = (cost: Resources): number => cost.food + cost.wood + cost.gold;
 
-/** What destroying this unit or building is worth (its cost); 0 for anything else. */
-export function victimValue(v: { readonly unitType?: UnitType; readonly buildingType?: BuildingType }): number {
-  if (v.buildingType) return costValue(BUILDING_SPECS[v.buildingType].cost);
+/**
+ * What destroying this unit or building is worth: its cost, a foundation's
+ * scaled by its build `progress` (floored); 0 for anything else.
+ */
+export function victimValue(v: { readonly unitType?: UnitType; readonly buildingType?: BuildingType; readonly progress?: number }): number {
+  if (v.buildingType) {
+    const cost = costValue(BUILDING_SPECS[v.buildingType].cost);
+    return v.progress === undefined ? cost : Math.floor(cost * v.progress);
+  }
   if (v.unitType) return costValue(UNIT_SPECS[v.unitType].cost);
   return 0;
 }

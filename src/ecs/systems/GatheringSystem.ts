@@ -260,8 +260,10 @@ export class GatheringSystem {
     if (floored <= 0) return;
     const ownerId = v.owner.playerId;
     const player = this.players?.get(ownerId);
-    if (player) player.resources[type] += floored;
-    gameEvents.emit('resourcesDelivered', { world: this.world, playerId: ownerId, amount: floored });
+    if (player) {
+      player.resources[type] += floored;
+      gameEvents.emit('resourcesDelivered', { world: this.world, playerId: ownerId, amount: floored });
+    }
     if (ownerId === 1) {
       const state = uiStore.getState();
       state.setResources({ [type]: state.resources[type] + floored });

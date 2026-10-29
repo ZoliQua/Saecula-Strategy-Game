@@ -44,6 +44,20 @@ describe('MatchStats', () => {
     detach();
   });
 
+  it('an unfinished foundation is worth its cost scaled by its construction progress', () => {
+    const { world, map, stats, detach } = setup();
+    // Barracks 175 wood, 40 % built → floor(70) = 70; a house site barely begun (1 %) → floor(0.3) = 0.
+    const site = createBuilding(world, { type: 'barracks', origin: { tx: 1, ty: 1 }, playerId: 2, mapData: map, underConstruction: true }) as Damageable;
+    site.underConstruction!.elapsed = site.underConstruction!.totalTime * 0.4;
+    applyDamage(world, site, 9999, 1);
+    const fresh = createBuilding(world, { type: 'house', origin: { tx: 6, ty: 1 }, playerId: 2, mapData: map, underConstruction: true }) as Damageable;
+    fresh.underConstruction!.elapsed = fresh.underConstruction!.totalTime * 0.01;
+    applyDamage(world, fresh, 9999, 1);
+    expect(stats.of(1).killValue).toBe(70);
+    expect(stats.of(2).buildingsLost).toBe(2);
+    detach();
+  });
+
   it('counts only its own world, and nothing once detached', () => {
     const { world, stats, detach } = setup();
     const other = createEcsWorld();

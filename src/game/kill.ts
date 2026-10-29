@@ -2,6 +2,7 @@ import { BUILDING_DEATH_TTL_MS } from '../config/balance';
 import type { Entity } from '../ecs/components';
 import type { EcsWorld } from '../ecs/world';
 import { gameEvents } from './events';
+import { siteProgress } from './refund';
 
 /** Time a dying unit stays in the world (matches unitAnim DYING_MS); buildings use BUILDING_DEATH_TTL_MS. */
 export const DEATH_TTL_MS = 900;
@@ -29,6 +30,7 @@ export function applyDamage(
     victimOwnerId: target.owner?.playerId ?? 0,
     ...(target.unit ? { unitType: target.unit.unitType } : {}),
     ...(target.building ? { buildingType: target.building.type } : {}),
+    ...(target.underConstruction ? { progress: siteProgress(target.underConstruction) } : {}),
   });
   return true;
 }

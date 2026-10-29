@@ -190,8 +190,6 @@ interface MatchParts {
 /** The systems and the step loop over a built (or restored) match. */
 function assemble(parts: MatchParts): HeadlessMatch {
   const { setup, world, map, players, ais, humanAi, humanEnemy, enemyOf, stats } = parts;
-  // Headless matches are never torn down: the world filter keeps another match's events out.
-  stats.attach();
   const human = players.human();
   const fogFor = (id: number): FogOfWarData | null =>
     (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
@@ -251,10 +249,17 @@ function assemble(parts: MatchParts): HeadlessMatch {
       return serializeMatch(state, date);
     },
     run(totalMs, stepMs, onStep) {
-      const steps = Math.ceil(totalMs / stepMs);
-      for (let i = 0; i < steps; i++) {
-        step(stepMs);
-        if (onStep?.(now) === true) return;
+      // The stats listen only while the match steps: a headless match is never torn down,
+      // so a permanent listener would outlive it (sims build many matches per process).
+      const detach = stats.attach();
+      try {
+        const steps = Math.ceil(totalMs / stepMs);
+        for (let i = 0; i < steps; i++) {
+          step(stepMs);
+          if (onStep?.(now) === true) return;
+        }
+      } finally {
+        detach();
       }
     },
   };

@@ -31,6 +31,8 @@ export interface GameEvents {
     victimOwnerId: number;
     unitType?: UnitType;
     buildingType?: BuildingType;
+    /** A foundation's build progress 0..1 (absent: a finished building or a unit). */
+    progress?: number;
   };
   /** A villager dropped `amount` resources at a dropoff. */
   resourcesDelivered: { world: EcsWorld; playerId: number; amount: number };

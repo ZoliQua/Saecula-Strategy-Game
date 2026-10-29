@@ -6,6 +6,8 @@ import { createBuilding } from '../archetypes/building';
 import { createResourceNode } from '../archetypes/resource';
 import { createVillager } from '../archetypes/villager';
 import { createEcsWorld } from '../world';
+import { gameEvents } from '../../game/events';
+import { createPlayers } from '../../game/PlayerManager';
 import { GatheringSystem } from './GatheringSystem';
 import { MovementSystem } from './MovementSystem';
 import { REPATH_RETRY_MS } from '../../config/balance';
@@ -81,6 +83,29 @@ describe('GatheringSystem', () => {
     expect(uiStore.getState().resources.wood).toBe(5);
     expect(villager.gatherer!.carrying).toBe(0);
     expect(villager.gatherer!.carryingType).toBeNull();
+  });
+
+  it('announces a delivery for the match stats only for a known owner and a positive amount', () => {
+    const seen: number[] = [];
+    const off = gameEvents.on('resourcesDelivered', (e) => seen.push(e.amount));
+    const load = (system: GatheringSystem, villager: ReturnType<typeof setup>['villager'], amount: number) => {
+      villager.position = { tx: 3, ty: 1 };
+      villager.gatherer!.capacity = 5;
+      villager.gatherer!.carrying = amount;
+      villager.gatherer!.carryingType = 'wood';
+      system.update(50);
+    };
+    // No player manager: the owner is unknown, nothing is announced.
+    const a = setup();
+    load(a.system, a.villager, 5);
+    // A known owner: announced; a load under one whole unit: not.
+    const b = setup();
+    const known = new GatheringSystem(b.world, b.map, createPlayers('hungarian', ['english']));
+    load(known, b.villager, 5);
+    const c = setup();
+    load(new GatheringSystem(c.world, c.map, createPlayers('hungarian', ['english'])), c.villager, 0.5);
+    off();
+    expect(seen).toEqual([5]);
   });
 
   it('a villager sent to new work with a partial load of another type drops it off first (no ping-pong)', () => {

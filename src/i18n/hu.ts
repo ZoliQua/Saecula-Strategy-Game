@@ -157,7 +157,6 @@ export const hu = {
     },
     selectRow: (n: number, what: string) => `${n} falusi kijelölése (${what.toLowerCase()})`,
     total: (n: number) => `${n} falusi összesen`,
-    leader: 'Vezet',
   },
   hud: {
     noSelection: 'Nincs kijelölés',
