@@ -14,9 +14,9 @@ import { WonderSystem } from '../../ecs/systems/WonderSystem';
 import { createEcsWorld, type EcsWorld } from '../../ecs/world';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { generateMap, type MapTemplate } from '../../map/generator';
-import type { FogOfWarData } from '../../map/FogOfWarData';
+import { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
-import { createStatefulRng, type StatefulRng } from '../../map/random';
+import type { StatefulRng } from '../../map/random';
 import { PathBudget } from '../../map/pathBudget';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
@@ -34,7 +34,8 @@ import type { SaveData } from '../../save/schema';
 import { serializeMatch, type MatchState } from '../../save/serializer';
 import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
-import { aiRngSeed, applyDifficulty, createStrategy } from '../createStrategy';
+import { applyDifficulty } from '../createStrategy';
+import { buildMatchAIs } from '../matchAIs';
 
 export interface HeadlessMatchOptions {
   readonly seed: number;
@@ -139,20 +140,17 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
 
 /**
  * A headless match continued from a save: the saved world, map, fogs and
- * players, and AIs rebuilt as a live game builds them
- * (`createStrategy(setup.difficulty, rng.next, player.personality)`)
- * then restored. AIs attack the human, as in a default headless match.
+ * players, and AIs rebuilt and restored by the live game's own
+ * buildMatchAIs. AIs attack the human, as in a default headless match.
  */
 export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
   resetUiStore();
   const r = restoreMatch(save);
-  const ais = r.players.ais().map((p) => {
-    const rng = createStatefulRng(aiRngSeed(r.setup.seed, p.id));
-    const fog = r.fogs.get(p.id);
-    const ai = new AIPlayer(p, createStrategy(r.setup.difficulty, rng.next, p.personality), fog ? { fog, rng } : { rng });
-    const state = r.aiStates.get(p.id);
-    if (state) ai.restore(state);
-    return ai;
+  const ais = buildMatchAIs(r.players.ais(), {
+    seed: r.setup.seed,
+    difficulty: r.setup.difficulty,
+    fogOf: (id) => r.fogs.get(id) ?? new FogOfWarData(r.mapData.width, r.mapData.height),
+    states: r.aiStates,
   });
   return assemble({
     setup: r.setup,

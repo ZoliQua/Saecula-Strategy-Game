@@ -5,7 +5,8 @@ import type Phaser from 'phaser';
 import { AIPlayer } from '../../ai/AIPlayer';
 import { audio } from '../../audio/AudioManager';
 import { AudioWatch } from '../../audio/AudioWatch';
-import { aiRngSeed, applyDifficulty, createStrategy, hasPersonality } from '../../ai/createStrategy';
+import { applyDifficulty, hasPersonality } from '../../ai/createStrategy';
+import { buildMatchAIs } from '../../ai/matchAIs';
 import { pickPersonality } from '../../ai/personality';
 import type { AIPlayerState } from '../../ai/strategyState';
 import type { AIThoughts } from '../../ai/thoughts';
@@ -32,14 +33,12 @@ import { TowerCombatSystem } from '../../ecs/systems/TowerCombatSystem';
 import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import { WonderSystem } from '../../ecs/systems/WonderSystem';
 import type { EcsWorld } from '../../ecs/world';
-import { AI_COMMON } from '../../config/aiBalance';
 import { AGE_UP_FX } from '../../config/visual';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { PathBudget } from '../../map/pathBudget';
-import { createStatefulRng } from '../../map/random';
 import { PATHFINDS_MAX_PER_TICK, PATHFINDS_PER_FRAME } from '../../config/constants';
 import { keepWallKeys } from '../../iso/art/walls/commonWallPieces';
 import { screenToTile, type TileCoord } from '../../iso/coordinates';
@@ -146,21 +145,23 @@ export class SystemRunner {
     this.fogData = savedFog(1);
     // Each AI sees through its own fog (perception, towers); scans are staggered across frames.
     const fogs = (this.fogById = new Map<number, FogOfWarData>([[1, this.fogData]]));
-    this.aiPlayers = players.ais().map((p, i, all) => {
-      const fog = savedFog(p.id);
-      fogs.set(p.id, fog);
-      if (!restore) {
+    const ais = players.ais();
+    if (!restore) {
+      for (const p of ais) {
         applyDifficulty(p, difficulty);
         if (hasPersonality(difficulty)) p.personality = pickPersonality(options.seed, p.id);
       }
-      // Seeded per AI (M6 decision 2): a seed replays its AIs and the RNG state can be saved.
-      const rng = createStatefulRng(aiRngSeed(options.seed, p.id));
-      const strategy = createStrategy(difficulty, rng.next, p.personality);
-      const ai = new AIPlayer(p, strategy, { fog, fogPhaseMs: (AI_COMMON.fogScanMs * i) / all.length, rng });
-      // Throws on a state of another strategy kind; the caller treats that as a failed load.
-      const state = restore?.ais.get(p.id);
-      if (state) ai.restore(state);
-      return ai;
+    }
+    // Throws on a saved state of another strategy kind; the caller treats that as a failed load.
+    this.aiPlayers = buildMatchAIs(ais, {
+      seed: options.seed,
+      difficulty,
+      fogOf: (id) => {
+        const fog = savedFog(id);
+        fogs.set(id, fog);
+        return fog;
+      },
+      states: restore?.ais,
     });
     this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null);
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1);
