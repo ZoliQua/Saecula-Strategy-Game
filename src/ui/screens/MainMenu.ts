@@ -9,7 +9,7 @@ import '../setup.css';
 /** `.e-up` entrance length (screens.css `.enter .e-up`), shared with GameSetup. */
 export const E_UP_S = 0.7;
 /** The footer enters last. */
-const FOOT_DELAY_S = 1.05;
+const FOOT_DELAY_S = 1.12;
 /** When the menu's entrance has fully played (the footer is the last to land). */
 export const MENU_ENTRANCE_MS = Math.round((FOOT_DELAY_S + E_UP_S) * 1000);
 
@@ -25,8 +25,9 @@ export class MainMenu {
   private readonly teardown: number;
   private readonly loadBtn: HTMLButtonElement;
   private readonly settingsBtn: HTMLButtonElement;
+  private readonly statsBtn: HTMLButtonElement;
 
-  constructor(onNewGame: () => void, onLoadGame: () => void, onSettings: () => void) {
+  constructor(onNewGame: () => void, onLoadGame: () => void, onSettings: () => void, onStats: () => void) {
     const play = el(
       'button',
       { class: 'btn btn-primary e-up', type: 'button', style: 'animation-delay:.78s' },
@@ -42,9 +43,17 @@ export class MainMenu {
     );
     load.addEventListener('click', onLoadGame);
     this.loadBtn = load;
-    const settings = el(
+    const stats = el(
       'button',
       { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:.94s' },
+      el('span', {}, hu.menu.stats),
+      el('span', { class: 'arrow', html: ARROW }),
+    );
+    stats.addEventListener('click', onStats);
+    this.statsBtn = stats;
+    const settings = el(
+      'button',
+      { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:1.02s' },
       el('span', {}, hu.menu.settings),
       el('span', { class: 'arrow', html: ARROW }),
     );
@@ -63,7 +72,7 @@ export class MainMenu {
         el('span', { class: 'row' }, el('span', { class: 'rise' }, line2)),
       ),
       el('p', { class: 'menu-tagline e-up', style: 'animation-delay:.62s' }, hu.menu.tagline),
-      el('div', { class: 'menu-actions' }, play, load, settings),
+      el('div', { class: 'menu-actions' }, play, load, stats, settings),
     );
     this.root = el(
       'div',
@@ -98,14 +107,15 @@ export class MainMenu {
     this.hero.append(el('div', { class: 'menu-notice', role: 'status' }, message));
   }
 
-  /** Steps the hero copy aside while the setup card (or the load list, or the settings) is open. */
+  /** Steps the hero copy aside while the setup card (or the load list, the statistics or the settings) is open. */
   setAway(away: boolean): void {
     this.root.classList.toggle('away', away);
   }
 
   /** Gives the keyboard focus back to the button whose card just closed. */
-  focusButton(which: 'load' | 'settings'): void {
-    (which === 'load' ? this.loadBtn : this.settingsBtn).focus({ preventScroll: true });
+  focusButton(which: 'load' | 'settings' | 'stats'): void {
+    const button = { load: this.loadBtn, settings: this.settingsBtn, stats: this.statsBtn }[which];
+    button.focus({ preventScroll: true });
   }
 
   destroy(): void {

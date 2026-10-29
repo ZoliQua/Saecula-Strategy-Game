@@ -5,6 +5,7 @@ export const hu = {
     newGame: 'Új játék',
     loadGame: 'Betöltés',
     settings: 'Beállítások',
+    stats: 'Statisztika',
     credits: 'Készítők',
     eyebrow: 'Skirmish · Rómától a felvilágosodásig',
     headline: 'Építs birodalmat.\nVédd meg a földed.',
@@ -309,6 +310,31 @@ export const hu = {
       loadFailed: 'A mentés betöltése nem sikerült',
       saveFailed: 'A mentés nem sikerült',
     },
+  },
+  /** The statistics screen (main menu): the local match log. */
+  stats: {
+    kicker: 'Eddigi meccseid',
+    title: 'Statisztika',
+    kpis: { matches: 'Meccsek', winRate: 'Győzelmi arány', avgLength: 'Átlagos hossz', bestScore: 'Legjobb pontszám' },
+    /** Under the matches tile. */
+    record: (wins: number, defeats: number, abandoned: number) => `${wins} győzelem · ${defeats} vereség · ${abandoned} feladva`,
+    byCiv: 'Néped szerint',
+    byDifficulty: 'Nehézség szerint',
+    /** A group row's count: wins of matches. */
+    groupCount: (wins: number, matches: number) => `${wins} / ${matches}`,
+    recent: 'Legutóbbi meccsek',
+    recentHint: (shown: number, total: number) => (shown < total ? `a legutóbbi ${shown} (összesen ${total})` : `${total} meccs`),
+    outcomes: { victory: 'Győzelem', defeat: 'Vereség', abandoned: 'Feladva' },
+    opponents: (n: number) => `${n} ellenfél`,
+    scoreLabel: 'pont',
+    emptyTitle: 'Még nincs lejátszott meccs',
+    emptyBody: 'Játssz egy meccset: a végén — vagy ha a szünetből kilépsz — ide kerül minden fontos adata.',
+    corrupt: (n: number) => `${n} sérült bejegyzés kihagyva`,
+    unavailable: 'A meccsnapló nem érhető el ebben a böngészőben (privát mód?)',
+    export: 'Exportálás (JSON)',
+    exported: 'A meccsnapló letöltése elindult',
+    /** The exported file's name (date: YYYY-MM-DD). */
+    exportFile: (date: string) => `isorts-meccsek-${date}.json`,
   },
   /** The pause menu (Esc). */
   pause: {

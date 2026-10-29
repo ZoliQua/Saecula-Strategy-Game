@@ -19,6 +19,8 @@ export interface PauseData {
   /** Saves the running match (MatchSave.saveTo). */
   save: (slot: SlotId) => Promise<SaveOutcome>;
   storage: SaveStorage;
+  /** Runs on "Kilépés a főmenübe", before the match stops (the match log's 'abandoned' record). */
+  onQuit: () => void;
   /** The card to open on (the `techTree` key); default the pause menu. */
   card?: 'techTree';
 }
@@ -159,6 +161,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private quit(): void {
+    this.pause.onQuit();
     this.scene.stop('GameScene');
     this.scene.stop('HUDScene');
     this.scene.start('MainMenuScene');

@@ -155,24 +155,27 @@ const PlayerSchema = z
 
 const count = int.nonnegative();
 
+/** One player's MatchStats counters (also kept in the match log, src/stats/matchRecord.ts). */
+export const PlayerMatchStatsSchema = z
+  .object({
+    gathered: nonNeg,
+    killValue: nonNeg,
+    unitsTrained: count,
+    unitsLost: count,
+    buildingsBuilt: count,
+    buildingsLost: count,
+    ageUpAtMs: z.array(nonNeg),
+  })
+  .strict();
+
+/** A score / population timeline point (player id order). */
+export const TimelineSampleSchema = z.object({ tMs: nonNeg, scores: z.array(num), pops: z.array(nonNeg) }).strict();
+
 /** MatchStats.snapshot(): counters by player id and the score / population timeline (player id order). */
 export const MatchStatsSchema = z
   .object({
-    players: z.record(
-      playerKey,
-      z
-        .object({
-          gathered: nonNeg,
-          killValue: nonNeg,
-          unitsTrained: count,
-          unitsLost: count,
-          buildingsBuilt: count,
-          buildingsLost: count,
-          ageUpAtMs: z.array(nonNeg),
-        })
-        .strict(),
-    ),
-    timeline: z.array(z.object({ tMs: nonNeg, scores: z.array(num), pops: z.array(nonNeg) }).strict()),
+    players: z.record(playerKey, PlayerMatchStatsSchema),
+    timeline: z.array(TimelineSampleSchema),
   })
   .strict();
 

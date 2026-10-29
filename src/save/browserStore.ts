@@ -1,4 +1,5 @@
 import localforage from 'localforage';
+import type { MatchStore } from '../stats/matchLog';
 import type { KeyValueStore } from './storage';
 
 /**
@@ -10,6 +11,19 @@ import type { KeyValueStore } from './storage';
 export function browserSaveStore(): KeyValueStore | null {
   try {
     return localforage.createInstance({ name: 'isorts', storeName: 'saves' });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The browser's match log store (M7 Decision 11): its own localforage
+ * instance (`name: 'isorts', storeName: 'matches'`), or null when one
+ * cannot be created; a failing store is reported by MatchLog.
+ */
+export function browserMatchStore(): MatchStore | null {
+  try {
+    return localforage.createInstance({ name: 'isorts', storeName: 'matches' });
   } catch {
     return null;
   }

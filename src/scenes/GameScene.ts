@@ -32,6 +32,7 @@ import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
 import { wireHudControls } from './game/HudControls';
 import { liveMatchState, MatchSave } from './game/MatchSave';
+import { MatchRecorder } from './game/MatchRecorder';
 import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
 import { prepareMatch, runnerFor, startFromSlot, type MatchStart, type MenuReturn } from './game/MatchStart';
 import type { GameOverData } from './GameOverScene';
@@ -56,6 +57,7 @@ export class GameScene extends Phaser.Scene {
   private hudSync!: HudSync;
   private setup!: GameSetupConfig;
   private matchSave: MatchSave | null = null;
+  private recorder: MatchRecorder | null = null;
   private readonly storage = new SaveStorage(browserSaveStore());
   private lighting!: LightManager;
   private gameElapsedMs = 0;
@@ -224,11 +226,12 @@ export class GameScene extends Phaser.Scene {
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
     this.matchSave = new MatchSave(() => this.captureMatch(), this.storage, this.gameElapsedMs);
+    this.recorder = MatchRecorder.forMatch({ setup: this.setup, world: this.world, players: this.players, stats: this.runner.stats, startMs: this.gameElapsedMs, now: () => this.gameElapsedMs });
 
     this.launchHud();
 
     const human = this.players.human();
-    const openPause = wirePause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage);
+    const openPause = wirePause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage, () => this.recorder?.quit());
     this.placement = wirePlayerInput(this, {
       world: this.world,
       mapData,
@@ -373,11 +376,13 @@ export class GameScene extends Phaser.Scene {
     const state = this.victoryChecker.check();
     if (state.kind === 'playing') return;
     this.gameOverTriggered = true;
+    const winnerId = decidedWinner(state, this.players.all());
+    this.recorder?.gameOver(MatchRecorder.endOf(state, winnerId));
     const data: GameOverData = {
       victory: state.kind === 'victory',
       durationMs: this.gameElapsedMs,
       cause: state.cause,
-      players: gameOverRows(this.players.all(), decidedWinner(state, this.players.all()), this.difficulty),
+      players: gameOverRows(this.players.all(), winnerId, this.difficulty),
     };
     this.scene.launch('GameOverScene', data);
     this.scene.bringToTop('GameOverScene');

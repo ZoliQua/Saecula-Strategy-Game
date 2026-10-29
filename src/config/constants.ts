@@ -39,6 +39,10 @@ export const BACKGROUND_ART_FORCE_AFTER_FRAMES = 30;
 export const AUTOSAVE_INTERVAL_MS = 300_000;
 /** Manual save slots (save:1 … save:SAVE_SLOTS), besides save:auto. */
 export const SAVE_SLOTS = 5;
+/** Records the local match log keeps (the oldest goes first, M7 Decision 11). */
+export const MATCH_LOG_CAP = 200;
+/** Matches the statistics screen lists, newest first. */
+export const RECENT_MATCHES = 50;
 
 /** Camera pan keys before any remapping ({ KeyboardEvent.code, keycap label }), in up / down / left / right order. */
 export const DEFAULT_PAN_KEYS = {

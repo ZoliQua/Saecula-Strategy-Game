@@ -21,8 +21,10 @@ import { paintNextCivPreview } from '../ui/civPreview';
 import { MainMenu, MENU_ENTRANCE_MS } from '../ui/screens/MainMenu';
 import { SaveSlots } from '../ui/screens/SaveSlots';
 import { SettingsScreen } from '../ui/screens/SettingsScreen';
+import { StatsScreen } from '../ui/screens/StatsScreen';
+import { MatchLog } from '../stats/matchLog';
 import { slotRows } from '../ui/screens/slotRows';
-import { browserSaveStore } from '../save/browserStore';
+import { browserMatchStore, browserSaveStore } from '../save/browserStore';
 import { SaveStorage } from '../save/storage';
 import { startFromSlot } from './game/MatchStart';
 import type { SetupReturn } from './GameSetupScene';
@@ -119,6 +121,8 @@ export class MainMenuScene extends Phaser.Scene {
   private slots: SaveSlots | null = null;
   /** The settings card ("Beállítások"), while open. */
   private settings: SettingsScreen | null = null;
+  /** The statistics card ("Statisztika"), while open. */
+  private stats: StatsScreen | null = null;
   private readonly storage = new SaveStorage(browserSaveStore());
 
   constructor() {
@@ -214,6 +218,7 @@ export class MainMenuScene extends Phaser.Scene {
       },
       () => this.openLoadList(),
       () => this.openSettings(),
+      () => this.openStats(),
     );
     // A start that failed (no valid map) comes straight back to the setup card;
     // a notice alone (a save that could not be loaded) shows on the menu.
@@ -231,6 +236,8 @@ export class MainMenuScene extends Phaser.Scene {
       this.slots = null;
       this.settings?.destroy();
       this.settings = null;
+      this.stats?.destroy();
+      this.stats = null;
       this.tileMap?.destroy();
       this.tileMap = null;
       this.lighting?.destroy();
@@ -245,9 +252,29 @@ export class MainMenuScene extends Phaser.Scene {
     this.menu?.setAway(false);
   }
 
+  /** The statistics card over the diorama (the local match log); back (or Esc) brings the hero back. */
+  private openStats(): void {
+    if (this.settings || this.slots || this.stats) return;
+    this.away = true;
+    this.menu?.setAway(true);
+    const stats: StatsScreen = new StatsScreen(() => {
+      if (this.stats !== stats) return;
+      stats.leave();
+      this.stats = null;
+      this.away = false;
+      this.menu?.setAway(false);
+      this.menu?.focusButton('stats');
+      window.setTimeout(() => stats.destroy(), CARD_LEAVE_MS);
+    });
+    this.stats = stats;
+    void new MatchLog(browserMatchStore()).readAll().then((read) => {
+      if (this.stats === stats) stats.show(read);
+    });
+  }
+
   /** The settings card over the diorama; back (or Esc) brings the hero back. */
   private openSettings(): void {
-    if (this.settings || this.slots) return;
+    if (this.settings || this.slots || this.stats) return;
     this.away = true;
     this.menu?.setAway(true);
     const settings: SettingsScreen = new SettingsScreen(() => {
@@ -265,7 +292,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The load list over the diorama; picking a save starts GameScene on it (startFromSlot). */
   private openLoadList(): void {
-    if (this.slots || this.settings) return;
+    if (this.slots || this.settings || this.stats) return;
     this.away = true;
     this.menu?.setAway(true);
     const slots: SaveSlots = new SaveSlots('load', [], {
