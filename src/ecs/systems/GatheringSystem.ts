@@ -219,7 +219,7 @@ export class GatheringSystem {
     if ((this.repathAt.get(v) ?? 0) > this.nowMs) return;
     const to = goal();
     if (to && !this.paths.take()) return;
-    const escape = escapeRulesAt(this.world, v.position, this.mapData);
+    const escape = escapeRulesAt(this.world, v.position, this.mapData, v.owner?.playerId ?? 0);
     const path = to ? (findPath(this.mapData, v.position, to, escape) ?? findPathToAny(this.mapData, v.position, isWorkTile, escape)) : null;
     if (!path) {
       this.repathAt.set(v, this.nowMs + REPATH_RETRY_MS);

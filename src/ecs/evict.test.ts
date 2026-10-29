@@ -111,16 +111,12 @@ describe('evictUnitsFrom never sends a unit through another structure (fix round
 describe('evictUnitsFrom, last resort: a footprint whose whole ring is blocked (final review)', () => {
   const ORIGIN = { tx: 8, ty: 9 };
   const SIZE = { width: 3, height: 3 };
-  /** Houses (any owner) on every tile of the ring around a 3×3 at (8,9): x 7..11, y 8..12. */
-  function enclosedByHouses() {
+  /** Houses of `owner` (player 1 by default; 0 = Gaia) on every tile of the ring around a 3×3 at (8,9): x 7..11, y 8..12. */
+  function enclosedByHouses(owner: (i: number) => number = () => 1) {
     const world = createEcsWorld();
     const map = new MapData(32, 32, TERRAIN.grass);
-    const houses: [number, number, number][] = [
-      [6, 7, 1], [8, 7, 2], [10, 7, 1],
-      [6, 12, 2], [8, 12, 1], [10, 12, 2],
-      [6, 9, 1], [6, 11, 2], [11, 9, 2], [11, 11, 1],
-    ];
-    for (const [tx, ty, playerId] of houses) createBuilding(world, { type: 'house', origin: { tx, ty }, playerId, mapData: map });
+    const houses: [number, number][] = [[6, 7], [8, 7], [10, 7], [6, 12], [8, 12], [10, 12], [6, 9], [6, 11], [11, 9], [11, 11]];
+    houses.forEach(([tx, ty], i) => createBuilding(world, { type: 'house', origin: { tx, ty }, playerId: owner(i), mapData: map }));
     return { world, map };
   }
   const ringBlocked = (map: MapData) => {
@@ -128,8 +124,8 @@ describe('evictUnitsFrom, last resort: a footprint whose whole ring is blocked (
     return true;
   };
 
-  it('a unit enclosed by houses crosses a neighbouring house to the nearest free tile', () => {
-    const { world, map } = enclosedByHouses();
+  it('a unit enclosed by its own (and Gaia) houses crosses one to the nearest free tile', () => {
+    const { world, map } = enclosedByHouses((i) => (i % 2 === 0 ? 1 : 0));
     const v = createVillager(world, { tile: { tx: 9, ty: 10 } });
     createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
     expect(ringBlocked(map)).toBe(true);
@@ -146,8 +142,31 @@ describe('evictUnitsFrom, last resort: a footprint whose whole ring is blocked (
   it('a unit standing there later re-plans out the same way (escapeRulesAt), and reaches its goal', () => {
     const { world, map } = enclosedByHouses();
     createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map });
-    const path = findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map));
+    const path = findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map, 1));
     expect(path?.at(-1)).toEqual({ tx: 25, ty: 25 });
+  });
+
+  it("a unit enclosed by another player's houses stays (never crossed; same documented limit as walls)", () => {
+    const { world, map } = enclosedByHouses(() => 2);
+    const v = createVillager(world, { tile: { tx: 9, ty: 10 }, playerId: 1 });
+    createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
+    evictUnitsFrom(world, map, ORIGIN, SIZE);
+    expect(v.movable!.path).toEqual([]);
+    expect(findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map, 1))).toBeNull();
+    // Player 2's own unit there may cross its own houses.
+    expect(findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map, 2))?.at(-1)).toEqual({ tx: 25, ty: 25 });
+  });
+
+  it('a ring of own and enemy houses: only the own house is crossed, even when the goal lies past the enemy', () => {
+    // Own house only at the east side (11,9); every other ring house is player 2's.
+    const { world, map } = enclosedByHouses((i) => (i === 8 ? 1 : 2));
+    createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map });
+    const path = findPath(map, { tx: 9, ty: 10 }, { tx: 2, ty: 10 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map, 1))!;
+    expect(path.at(-1)).toEqual({ tx: 2, ty: 10 });
+    const enemyTiles = world.with('building', 'owner', 'position').entities.filter((b) => b.owner.playerId === 2);
+    const onEnemy = (t: { tx: number; ty: number }) =>
+      enemyTiles.some((b) => t.tx >= b.position.tx && t.tx < b.position.tx + 2 && t.ty >= b.position.ty && t.ty < b.position.ty + 2);
+    expect(path.some(onEnemy)).toBe(false);
   });
 
   it('a unit enclosed by wall segments stays (walls are never crossed; documented limit)', () => {
@@ -160,7 +179,7 @@ describe('evictUnitsFrom, last resort: a footprint whose whole ring is blocked (
     createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
     evictUnitsFrom(world, map, ORIGIN, SIZE);
     expect(v.movable!.path).toEqual([]);
-    expect(findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map))).toBeNull();
+    expect(findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map, 1))).toBeNull();
   });
 
   it('a ring of houses and water: the house is crossed, the water never', () => {
@@ -170,7 +189,7 @@ describe('evictUnitsFrom, last resort: a footprint whose whole ring is blocked (
     for (let y = 6; y <= 14; y++) for (let x = 6; x <= 13; x++) map.setTile(x, y, TERRAIN.water);
     for (const [x, y] of [[6, 9], [7, 9], [6, 10], [7, 10]] as const) map.setTile(x, y, TERRAIN.grass);
     for (let y = 9; y <= 11; y++) for (let x = 8; x <= 10; x++) map.setTile(x, y, TERRAIN.grass);
-    createBuilding(world, { type: 'house', origin: { tx: 6, ty: 9 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'house', origin: { tx: 6, ty: 9 }, playerId: 1, mapData: map });
     const v = createVillager(world, { tile: { tx: 9, ty: 10 } });
     createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
     evictUnitsFrom(world, map, ORIGIN, SIZE);

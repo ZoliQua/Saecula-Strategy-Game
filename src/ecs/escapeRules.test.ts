@@ -24,7 +24,7 @@ describe('escapeRulesAt: a unit on blocked ground crosses only the structure it 
 
   it('a pocket step never cuts the corner of a wall segment, but may cut a house corner', () => {
     const sim = createMiniSim(20);
-    const rules = escapeRulesAt(sim.world, { tx: 10, ty: 10 }, sim.map);
+    const rules = escapeRulesAt(sim.world, { tx: 10, ty: 10 }, sim.map, 1);
     createWall(sim.world, { tile: { tx: 9, ty: 10 }, playerId: 2, mapData: sim.map });
     createBuilding(sim.world, { type: 'house', origin: { tx: 11, ty: 9 }, playerId: 1, mapData: sim.map });
     expect(rules.cuttable(9, 10)).toBe(false);
