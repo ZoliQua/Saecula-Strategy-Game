@@ -368,7 +368,7 @@ function disconnect(p: Playing): void {
 }
 
 /** Pinned on globalThis like the stores, so Vite HMR re-evaluations share one manager. */
-const AUDIO_KEY = '__isorts_audio__';
+const AUDIO_KEY = '__saecula_audio__';
 interface AudioHolder {
   [AUDIO_KEY]?: AudioManager;
 }

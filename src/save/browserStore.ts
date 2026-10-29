@@ -10,6 +10,7 @@ import type { KeyValueStore } from './storage';
  */
 export function browserSaveStore(): KeyValueStore | null {
   try {
+    // The 'isorts' name predates Saecula; kept so existing saves and match logs survive (CLAUDE.md 7.6).
     return localforage.createInstance({ name: 'isorts', storeName: 'saves' });
   } catch {
     return null;

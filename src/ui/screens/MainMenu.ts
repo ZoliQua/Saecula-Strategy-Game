@@ -1,4 +1,5 @@
 import { AVAILABLE_CIVS, CIV_IDS } from '../../config/civs';
+import { APP_VERSION } from '../../config/version';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
 import { icons } from '../icons';
@@ -94,6 +95,7 @@ export class MainMenu {
         { class: 'menu-foot e-up', style: `animation-delay:${FOOT_DELAY_S}s` },
         el('span', {}, hu.subtitle),
         el('span', {}, hu.menu.footer),
+        el('span', { class: 'menu-version' }, hu.menu.version(APP_VERSION)),
       ),
     );
     uiRoot().append(this.root);

@@ -216,7 +216,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
  * a dev-only quality-of-life; in the production bundle the module
  * is evaluated once anyway).
  */
-const STORE_KEY = '__isorts_uiStore__';
+const STORE_KEY = '__saecula_uiStore__';
 interface GlobalHolder {
   [STORE_KEY]?: StoreApi<UiStore>;
 }
