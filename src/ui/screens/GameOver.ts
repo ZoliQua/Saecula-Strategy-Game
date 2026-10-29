@@ -27,7 +27,13 @@ export class GameOver {
       { class: 'screen gameover' },
       el(
         'div',
-        { class: 'glass gameover-card' },
+        // A modal card: game keys (onKeyAction) stand aside, so Tab moves focus here.
+        {
+          class: 'glass gameover-card',
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': victory ? hu.gameOver.victoryTitle : hu.gameOver.defeatTitle,
+        },
         el('div', { class: 'gameover-kicker' }, hu.gameOver.statsHeader),
         el(
           'h2',

@@ -130,12 +130,15 @@ export class SettingsControlsTab {
 
   private keyRow(action: KeyAction): HTMLElement {
     const cap = el('kbd', { class: 'keycap' });
+    // A fixed second key (Backspace for deleting) shows beside the bound one, locked.
+    const second = hu.settings.secondaryKeys[action];
     const row = el(
       'button',
       { class: 'set-key', type: 'button' },
       el('span', { class: 'set-key-icon', html: ACTION_GLYPHS[action] }),
       el('span', { class: 'set-key-label' }, hu.settings.actions[action]),
       cap,
+      second === undefined ? null : el('kbd', { class: 'keycap keycap-fixed', title: hu.settings.secondaryTip }, second),
     );
     row.addEventListener('click', () => (this.capturingAction === action ? this.stopCapture() : this.startCapture(action)));
     this.keyRows.set(action, { row, cap });

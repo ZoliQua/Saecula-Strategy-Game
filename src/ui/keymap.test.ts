@@ -92,4 +92,10 @@ describe('keymap', () => {
     expect(back.ok && back.keys.scorePanel.code).toBe('Tab');
     expect(validBindings({ ...DEFAULT_KEYS, home: { code: 'Tab', label: 'Tab' }, scorePanel: { code: 'KeyP', label: 'P' } })).toBe(false);
   });
+
+  it('Backspace (the fixed second delete key) is reserved for every action', () => {
+    for (const a of ['deleteBuilding', 'home', 'panUp'] as const) {
+      expect(rebind(DEFAULT_KEYS, a, { code: 'Backspace', label: 'Backspace' })).toEqual({ ok: false, reason: 'reserved' });
+    }
+  });
 });

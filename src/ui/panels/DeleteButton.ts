@@ -39,8 +39,8 @@ export class DeleteButton {
     const pct = own ? refundPercent(sel.constructionProgress ?? null) : 0;
     const armed = own && armedId === sel.id;
     const last = own && sel.lastTownCenter === true;
-    // The tooltip names the key as bound now (the settings card may have moved it).
-    const keyLabel = settingsStore.getState().keys.deleteBuilding.label;
+    // The tooltip names the key as bound now (the settings card may have moved it) and the fixed ⌫.
+    const keyLabel = `${settingsStore.getState().keys.deleteBuilding.label} / ${hu.settings.secondaryKeys.deleteBuilding ?? ''}`;
     const key = own ? `${sel.id}:${pct}:${armed}:${last}:${keyLabel}` : 'none';
     if (key === this.shownKey) return;
     this.shownKey = key;

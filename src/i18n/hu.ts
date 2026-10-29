@@ -334,7 +334,10 @@ export const hu = {
     pressKey: 'Nyomj meg egy billentyűt… (Esc: mégse)',
     reserved: 'Ez a billentyű foglalt (Esc, nyilak, módosítók)',
     swapped: (a: string) => `Csere: a(z) „${a}” megkapta a korábbi billentyűt`,
-    fixedKeys: 'Esc: szünet · Nyilak: kamera (fix)',
+    fixedKeys: 'Esc: szünet · Nyilak: kamera · ⌫: törlés (fix)',
+    /** The fixed second key of a command (shown beside its keycap, never remappable). */
+    secondaryKeys: { deleteBuilding: '⌫' } as Partial<Record<string, string>>,
+    secondaryTip: 'Fix második billentyű (MacBook: delete)',
     /** Tab is reserved for every action but the score panel. */
     reservedTab: 'A Tab csak a pontszám panelé lehet',
     reset: 'Alapértelmezés',

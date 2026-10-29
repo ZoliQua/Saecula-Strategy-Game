@@ -64,4 +64,33 @@ describe('onKeyAction', () => {
     t.events.emit('shutdown');
     expect(t.listeners.size).toBe(0);
   });
+
+  it('Backspace is a fixed second key for deleteBuilding only (a MacBook delete key), repeats included', () => {
+    const store = createSettingsStore(null);
+    const t = host();
+    const del: boolean[] = [];
+    let home = 0;
+    onKeyAction(t.h, 'deleteBuilding', (e) => del.push(e.repeat), { target: t.target, store });
+    onKeyAction(t.h, 'home', () => home++, { target: t.target, store });
+    expect(t.press({ code: 'Backspace' }).prevented).toBe(true);
+    t.press({ code: 'Backspace', repeat: true });
+    t.press({ code: 'Backspace', target: { tagName: 'TEXTAREA' } as unknown as EventTarget });
+    store.getState().rebind('deleteBuilding', { code: 'KeyX', label: 'X' });
+    t.press({ code: 'Backspace' });
+    t.press({ code: 'KeyX' });
+    expect(del).toEqual([false, true, false, false]);
+    expect(home).toBe(0);
+  });
+
+  it('a press while a modal card is open (game over, settings) is left alone, so Tab keeps moving focus there', () => {
+    const store = createSettingsStore(null);
+    const t = host();
+    let modal = true;
+    let n = 0;
+    onKeyAction(t.h, 'scorePanel', () => n++, { target: t.target, store, modalOpen: () => modal });
+    expect(t.press({ code: 'Tab' }).prevented).toBe(false);
+    modal = false;
+    expect(t.press({ code: 'Tab' }).prevented).toBe(true);
+    expect(n).toBe(1);
+  });
 });

@@ -64,8 +64,10 @@ export const WHEEL_ZOOM_STEP = 1.1;
 export const TRACKPAD_DELTA_MAX = 40;
 /** The fixed secondary camera pan (always active, never remappable). */
 export const ARROW_PAN_CODES = { panUp: 'ArrowUp', panDown: 'ArrowDown', panLeft: 'ArrowLeft', panRight: 'ArrowRight' } as const;
+/** Fixed secondary command keys (always active, never remappable): a MacBook's delete key sends Backspace. */
+export const SECONDARY_COMMAND_CODES = { deleteBuilding: 'Backspace' } as const;
 /**
- * Keys no action can be bound to: Esc (pause), the arrows (fixed pan), focus / form keys, modifiers, the dev
+ * Keys no action can be bound to: Esc (pause), the arrows (fixed pan), Backspace (fixed second delete key), focus / form keys, modifiers, the dev
  * overlay, the lock keys (macOS sends CapsLock's keyup only on toggle-off: a sticky pan) and keys with no code.
  */
 export const RESERVED_KEY_CODES: readonly string[] = [
@@ -85,6 +87,7 @@ export const RESERVED_KEY_CODES: readonly string[] = [
   'AltRight',
   'MetaLeft',
   'MetaRight',
+  'Backspace',
   'Backquote',
   'F9',
   'CapsLock',
