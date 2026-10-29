@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
 import { evictUnitsFrom } from '../../ecs/evict';
+import { clearUnitOrders } from '../../ecs/orders';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
@@ -95,11 +96,11 @@ export class BuildPlacement {
       underConstruction: true,
     });
     evictUnitsFrom(this.world, this.mapData, origin, { width: spec.width, height: spec.height });
-    const selected = this.selection.getSelected();
-    if (selected && selected.gatherer && site.id !== undefined) {
-      this.world.addComponent(selected, 'buildCommand', {
-        targetId: site.id,
-      });
+    // Every selected own villager drops its work and builds the new site.
+    for (const v of this.selection.getAllSelected()) {
+      if (!v.gatherer || v.owner?.playerId !== this.playerId || site.id === undefined) continue;
+      clearUnitOrders(this.world, v);
+      this.world.addComponent(v, 'buildCommand', { targetId: site.id });
     }
     state.setPlacementBuilding(null);
   }

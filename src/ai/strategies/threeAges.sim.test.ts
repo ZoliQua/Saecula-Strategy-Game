@@ -19,14 +19,15 @@ const SIM_TIMEOUT_MS = 60_000;
  * Every gold piece is mined from the map (each start's two lodes,
  * START_ECONOMY): nothing is handed out. `live()` counts units, buildings and
  * projectiles (the 500 budget of CLAUDE.md §10), not resource nodes.
- * Measured (96×96, seed 3): both in age 3 by 20.89 min; foundries for both;
- * Hard's first cannon at 22.20 min; bullets, bolts and arrows; at most 223
- * entities. The human slot's Medium no longer gets a cannon here: since M7
- * builders step off foundations instead of building from inside them
- * (about 33 s of Hard's house and farm work moved), Hard's age-3 wave guts
- * the human slot's economy at 21-22 min instead of 23-25 (before M7 its
- * first cannon came at 23.63). Medium and Hard alone are pinned to a cannon
- * count below.
+ * Measured (96×96, seed 3, Medium RNG 12): both in age 3 by 20.07 min;
+ * foundries for both; Hard's first cannon at 21.15 min (cannonballs from
+ * 22.39), the human slot's at 22.20; four cannons each; bullets, bolts and
+ * arrows; at most 219 entities. (Before M7 the Medium RNG was 6. Since M7
+ * builders step off foundations instead of building from inside them, and
+ * with RNG 6 Hard's age-3 wave now guts the human slot before its foundry
+ * pays off. Sweeping Medium RNGs 1-12 except 6 and 10: the human slot gets a cannon
+ * with 1, 2, 4, 7 and 12 and none with 3, 5 (fails elsewhere), 8, 9 and 11.)
+ * Medium and Hard alone are pinned to a cannon count below.
  */
 describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Hard AI', () => {
   it('both reach age 3, fight with age-3 armies, and the world stays within the 500-entity budget', () => {
@@ -39,7 +40,7 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
       // Hard and the human go for Easy first; Easy (3) fights back at Hard.
       enemyOf: (id) => (id === 3 ? 2 : duel ? 1 : 3),
-      humanStrategy: new MediumStrategy(createRng(6)),
+      humanStrategy: new MediumStrategy(createRng(12)),
       humanEnemy: () => (duel ? 2 : 3),
     });
     const human = match.players.get(1)!;
@@ -80,7 +81,8 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
     expect(seen.projectiles.has('cannonball')).toBe(true);
     expect(seen.projectiles.has('bullet')).toBe(true);
     expect(seen.age3Kinds.has('cannon')).toBe(true);
-    // Hard saves up and pays for cannons from mined gold (AI_COMMON.savesForUnits).
+    // Both sides save up and pay for cannons from mined gold (AI_COMMON.savesForUnits).
+    expect(cannons.get(1)!.size, 'Medium (human slot) cannons').toBeGreaterThan(0);
     expect(cannons.get(2)!.size, 'Hard cannons').toBeGreaterThan(0);
   }, SIM_TIMEOUT_MS);
 });

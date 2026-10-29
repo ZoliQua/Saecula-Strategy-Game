@@ -3,6 +3,7 @@ import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToNearest } from '../../map/pathfinding';
 import type { Entity } from '../components';
+import { escapeRulesAt } from '../escapeRules';
 import type { EcsWorld } from '../world';
 
 type PathableEntity = With<Entity, 'position' | 'moveIntent' | 'movable'>;
@@ -42,7 +43,7 @@ export class PathfindingSystem {
       return true;
     }
     if (!this.paths.take()) return false;
-    const path = findPathToNearest(this.mapData, entity.position, target);
+    const path = findPathToNearest(this.mapData, entity.position, target, escapeRulesAt(this.world, entity.position));
     if (!path || path.length < 2) {
       this.world.removeComponent(entity as Entity, 'moveIntent');
       return true;

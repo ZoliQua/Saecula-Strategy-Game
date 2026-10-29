@@ -6,6 +6,7 @@ import { findPath, findPathToAny } from '../../map/pathfinding';
 import { FARM_BALANCE, REPATH_RETRY_MS, TRAINER_BUILDINGS } from '../../config/balance';
 import { BUILDING_SPECS, towerAttacker } from '../archetypes/building';
 import type { Entity } from '../components';
+import { escapeRulesAt } from '../escapeRules';
 import { onFootprintRing } from '../footprint';
 import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
@@ -149,8 +150,10 @@ export class ConstructionSystem {
     const goal = findAdjacent(this.mapData, site, b.position);
     if (goal && !this.paths.take()) return;
     // A picked tile that is cut off (a hole in a forest) falls back to the nearest reachable ring tile.
+    const escape = escapeRulesAt(this.world, b.position);
     const path = goal
-      ? (findPath(this.mapData, b.position, goal) ?? findPathToAny(this.mapData, b.position, (tx, ty) => isAdjacentToFootprint({ tx, ty }, site)))
+      ? (findPath(this.mapData, b.position, goal, escape) ??
+        findPathToAny(this.mapData, b.position, (tx, ty) => isAdjacentToFootprint({ tx, ty }, site), escape))
       : null;
     if (!path) {
       this.repathAt.set(b, this.nowMs + REPATH_RETRY_MS);

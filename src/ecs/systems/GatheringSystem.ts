@@ -8,6 +8,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import type { ResourceType } from '../../types';
 import { uiStore } from '../../ui/store';
 import type { Entity } from '../components';
+import { escapeRulesAt } from '../escapeRules';
 import { faceToward } from './facing';
 import {
   findAdjacentPassable,
@@ -217,7 +218,8 @@ export class GatheringSystem {
     if ((this.repathAt.get(v) ?? 0) > this.nowMs) return;
     const to = goal();
     if (to && !this.paths.take()) return;
-    const path = to ? (findPath(this.mapData, v.position, to) ?? findPathToAny(this.mapData, v.position, isWorkTile)) : null;
+    const escape = escapeRulesAt(this.world, v.position);
+    const path = to ? (findPath(this.mapData, v.position, to, escape) ?? findPathToAny(this.mapData, v.position, isWorkTile, escape)) : null;
     if (!path) {
       this.repathAt.set(v, this.nowMs + REPATH_RETRY_MS);
       return;
