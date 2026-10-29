@@ -10,7 +10,8 @@ export type GameCommand =
   | { type: 'queue-unit'; trainerId: number; unitType: UnitType }
   | { type: 'cancel-queue'; trainerId: number; index: number }
   | { type: 'research'; buildingId: number; techId: TechId }
-  | { type: 'cancel-research'; buildingId: number };
+  | { type: 'cancel-research'; buildingId: number }
+  | { type: 'delete-building'; buildingId: number };
 
 type Listener = (cmd: GameCommand) => void;
 

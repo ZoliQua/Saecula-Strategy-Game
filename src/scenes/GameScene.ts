@@ -23,6 +23,7 @@ import { Loading } from '../ui/screens/Loading';
 import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
 import { BuildPlacement } from './game/BuildPlacement';
+import { wireBuildingDeletion } from './game/BuildingDeletion';
 import { MatchArt, type LoadArt } from './game/MatchArt';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
@@ -244,9 +245,8 @@ export class GameScene extends Phaser.Scene {
       openPause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage),
     );
     pointer.register();
-    const input = pointer;
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => input.unregister());
-
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => pointer?.unregister());
+    wireBuildingDeletion(this, this.world, this.players.human()?.id ?? 1);
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
   }
 

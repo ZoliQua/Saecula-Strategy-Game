@@ -11,6 +11,7 @@ export const icons = {
   speed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 16a8 8 0 1 1 16 0"/><path d="m12 16 4-5"/></svg>`,
   sack: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 4h6l-1.5 3c4 1.5 6 5 6 8.5 0 3-2.5 4.5-7.5 4.5S4.5 18.5 4.5 15.5C4.5 12 6.5 8.5 10.5 7Z"/></svg>`,
   hammer: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6 4 4M11 3l7 7-2 2-7-7Z"/><path d="m12 11-8 8"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V4.5h5V7"/><path d="M6.5 7 7.5 20h9l1-13"/><path d="M10.5 11v5.5M13.5 11v5.5"/></svg>`,
   mark: `<svg viewBox="0 0 32 32"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf8f"/><stop offset="1" stop-color="#e08a3c"/></linearGradient></defs><path fill="url(#bm)" d="M16 2 29 9.5v13L16 30 3 22.5v-13Z"/><path fill="#1a1512" d="M16 8.5 23 12.5v8L16 24.5 9 20.5v-8Z"/><path fill="#ffcf8f" d="M16 12 19.5 14v4L16 20l-3.5-2v-4Z"/></svg>`,
 } as const;
 

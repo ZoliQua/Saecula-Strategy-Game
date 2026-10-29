@@ -155,6 +155,13 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
  */
 export const BUILDING_DEATH_TTL_MS = 2400;
 
+/**
+ * Deleting an own building (M7): a site up to `untilProgress` built
+ * refunds `(1 - progress) * maxPercent` % of its cost, anything else
+ * nothing (src/game/refund.ts).
+ */
+export const DELETE_REFUND = { maxPercent: 80, untilProgress: 0.5 } as const;
+
 /** Buildings a player may own only one of (finished or under construction). */
 export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
 

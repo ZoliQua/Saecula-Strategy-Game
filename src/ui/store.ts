@@ -81,6 +81,8 @@ export interface UiState {
   gameTimeMs: number;
   /** Running Wonder countdowns, soonest first (empty in conquest-only matches). */
   wonders: readonly WonderClockInfo[];
+  /** Building whose delete button is armed (the next press deletes it), or null. */
+  deleteArmedId: number | null;
 }
 
 export interface UiActions {
@@ -95,6 +97,7 @@ export interface UiActions {
   setWallPreview: (preview: { segments: number; wood: number } | null) => void;
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
+  setDeleteArmed: (id: number | null) => void;
 }
 
 export type UiStore = UiState & UiActions;
@@ -112,6 +115,7 @@ const INITIAL: UiState = {
   wallPreview: null,
   gameTimeMs: 0,
   wonders: [],
+  deleteArmedId: null,
 };
 
 export function createUiStore(): StoreApi<UiStore> {
@@ -131,6 +135,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setWallPreview: (preview) => set({ wallPreview: preview }),
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
+    setDeleteArmed: (id) => set({ deleteArmedId: id }),
   }));
 }
 
@@ -148,6 +153,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     wallPreview: null,
     gameTimeMs: 0,
     wonders: [],
+    deleteArmedId: null,
   });
 }
 

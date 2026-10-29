@@ -1,4 +1,4 @@
-import type { AgeId, TechId } from '../types';
+import type { AgeId, BuildingType, TechId } from '../types';
 
 /**
  * Small typed bus for game-side facts that render / UI code reacts to
@@ -14,6 +14,11 @@ export interface GameEvents {
   wonderCompleted: { playerId: number; entityId: number };
   /** A Wonder with a running clock was destroyed (or removed); its clock stopped. */
   wonderLost: { playerId: number; entityId: number };
+  /**
+   * The owner deleted its own building (M7). It dies through killEntity
+   * with no attacker, so it is never a kill: no killer gets score for it.
+   */
+  buildingDeleted: { playerId: number; entityId: number; buildingType: BuildingType };
   /** The pause menu opened or closed (PauseScene). The music ducks on it (Task 9); nothing in play listens. */
   pauseChanged: { paused: boolean };
 }
@@ -26,6 +31,7 @@ const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   researchRejected: new Set(),
   wonderCompleted: new Set(),
   wonderLost: new Set(),
+  buildingDeleted: new Set(),
   pauseChanged: new Set(),
 };
 

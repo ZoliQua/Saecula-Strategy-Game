@@ -8,6 +8,7 @@ import { dispatchCommand } from '../events';
 import { icons, type IconName } from '../icons';
 import { type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
 import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
+import { DeleteButton } from './DeleteButton';
 import { formatStat, playerColor, playerColorCss } from '../format';
 import { keysHint } from '../keymap';
 import { settingsStore } from '../settings';
@@ -25,17 +26,19 @@ export class SelectionPanel {
   readonly root: HTMLElement;
   private readonly portrait: HTMLElement;
   private readonly body: HTMLElement;
+  private readonly deleteButton = new DeleteButton();
   private identity = '';
   private bodyKey = '';
 
   constructor(private readonly textures: Phaser.Textures.TextureManager) {
     this.portrait = el('div', { class: 'portrait empty' });
     this.body = el('div', { class: 'sel-body' });
-    this.root = el('div', { class: 'glass selection anim-in' }, this.portrait, this.body);
+    this.root = el('div', { class: 'glass selection anim-in' }, this.portrait, this.body, this.deleteButton.root);
   }
 
   render(state: UiStore): void {
     const sel = state.selectedEntity;
+    this.deleteButton.render(sel, state.deleteArmedId);
     // The building portrait follows its age style, so a re-skin refreshes it.
     const identity = sel ? `${sel.kind}:${sel.id}:${sel.kind === 'building' ? (sel.textureKey ?? '') : ''}` : 'none';
     if (identity !== this.identity) {

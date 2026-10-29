@@ -187,6 +187,14 @@ export const hu = {
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
     wonderLost: 'Egy Csoda elpusztult.',
+    /** The selection panel's delete button; `pct` is the refund of a site (0 = none). */
+    deleteBuilding: (pct: number) => (pct > 0 ? `Törlés · +${pct} %` : 'Törlés'),
+    /** The armed button, waiting for the confirming second press. */
+    deleteConfirm: (pct: number) => (pct > 0 ? `Biztosan? · +${pct} %` : 'Biztosan törlöd?'),
+    deleteTip: (pct: number) =>
+      pct > 0
+        ? `Az épület lebontása, az ára ${pct} %-a visszajár. Kattints kétszer (vagy Delete).`
+        : 'Az épület lebontása, visszatérítés nélkül. Kattints kétszer (vagy Delete).',
   },
   resourceNodes: {
     food: 'Bogyós bokor',
