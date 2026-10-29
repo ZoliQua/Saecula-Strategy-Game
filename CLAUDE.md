@@ -786,11 +786,13 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
   többet — egy köztes terep-felbontási szint későbbi feladat.
 - **Állapot (2026-10-29):** kész — mentés és betöltés (automatikus mentéssel),
   szünet menü, beállítások, procedurális hang és zene, Csoda-győzelem, Mesteri
-  AI és személyiségek. Mérve (1280×720): 6 különböző nép 245,9 MB, a hat
-  legnehezebb nép 243,5 MB, az M4 két népes eset 158,5 MB, a betöltött 6 népes
-  mentés (1,2,3,1,2,3. kor) csúcsa 250,8 MB; képkocka-CPU p95 6,5 ms hanggal (96×96,
-  4 játékos); legfeljebb 292 entitás (6 játékos); bundle 0,71 MB gzip; egy
-  128×128-as, 6 játékosos mentés 0,44 MB JSON, mentés ~6–11 ms, betöltés ~8 s.
+  AI és személyiségek. Mérve — textúra-memória (1280×720-as nézet): 6 különböző
+  nép 245,9 MB, a hat legnehezebb nép 243,5 MB, az M4 két népes eset 158,5 MB, a
+  betöltött 6 népes mentés (1,2,3,1,2,3. kor) csúcsa 250,8 MB; a teljes
+  böngészőablakban (1728×963): képkocka-CPU p95 6,5 ms hanggal (96×96, 4 játékos),
+  egy 128×128-as, 6 játékosos mentés betöltése ~8 s; nézetmérettől függetlenül:
+  legfeljebb 292 entitás (6 játékos), bundle 0,71 MB gzip, a fenti mentés 0,44 MB
+  JSON, mentése ~6–11 ms.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
