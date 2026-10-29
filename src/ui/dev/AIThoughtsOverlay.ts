@@ -1,6 +1,7 @@
 import type { AIThoughts, Thought } from '../../ai/thoughts';
 import { hu } from '../../i18n/hu';
 import { el, formatClock, uiRoot } from '../dom';
+import { hex } from '../format';
 import './aiThoughts.css';
 
 /** One AI as the overlay shows it. */
@@ -83,7 +84,7 @@ export class AIThoughtsOverlay {
 
   private card(s: AIThoughtSource): HTMLElement {
     const th = s.thoughts;
-    const swatch = el('span', { class: 'ait-swatch', style: `background:#${s.color.toString(16).padStart(6, '0')}` });
+    const swatch = el('span', { class: 'ait-swatch', style: `background:${hex(s.color)}` });
     const head = el(
       'div',
       { class: 'ait-card-head' },

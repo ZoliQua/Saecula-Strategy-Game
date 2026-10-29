@@ -7,7 +7,7 @@ import type { CivId } from '../../types';
 import { el, uiRoot } from '../dom';
 import { icons } from '../icons';
 import { bindModalKeys, GLYPHS } from './modalKeys';
-import { grouped } from '../format';
+import { grouped, hex } from '../format';
 import { exportDate, exportPayload, formatLength, formatRate, formatWhen } from './statsView';
 import '../hud.css';
 import '../screens.css';
@@ -19,7 +19,6 @@ const EXPORT_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
 const CHART_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><rect x="5.5" y="11" width="3" height="6" rx="0.6"/><rect x="10.5" y="6" width="3" height="11" rx="0.6"/><rect x="15.5" y="13" width="3" height="4" rx="0.6"/></svg>`;
 const SCROLL_ICON = `<svg viewBox="0 0 48 48" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9h22a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4h-2v20a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4v0a4 4 0 0 1 4-4h2Z"/><path d="M14 9a4 4 0 0 0-4 4v0a4 4 0 0 0 4 4M20 22h8M20 28h6"/></svg>`;
 
-const css = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 /** Perceived lightness 0..1 of 0xRRGGBB. */
 const lightness = (c: number): number => (0.299 * ((c >> 16) & 255) + 0.587 * ((c >> 8) & 255) + 0.114 * (c & 255)) / 255;
 
@@ -27,8 +26,8 @@ const lightness = (c: number): number => (0.299 * ((c >> 16) & 255) + 0.587 * ((
 function crest(civ: CivId): HTMLElement {
   const { primary, secondary } = CIV_DEFS[civ].heraldry;
   const node = el('span', { class: 'st-crest', 'aria-hidden': 'true' }, hu.civs[civ].charAt(0));
-  node.style.setProperty('--c1', css(primary));
-  node.style.setProperty('--c2', css(secondary));
+  node.style.setProperty('--c1', hex(primary));
+  node.style.setProperty('--c2', hex(secondary));
   node.style.setProperty('--ci', lightness(primary) > 0.6 ? '#2a1a0c' : '#fff8ec');
   return node;
 }

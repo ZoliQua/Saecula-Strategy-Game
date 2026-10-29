@@ -1,5 +1,6 @@
 import type { GameOverPlayerRow } from '../../game/gameOverStats';
 import { hu } from '../../i18n/hu';
+import { hex } from '../format';
 
 /** Display texts of one game-over table row. */
 export interface GameOverRowView {
@@ -21,7 +22,7 @@ export function gameOverRowView(row: GameOverPlayerRow): GameOverRowView {
         .filter((s) => s !== '')
         .join(' · ');
   return {
-    swatch: `#${row.color.toString(16).padStart(6, '0')}`,
+    swatch: hex(row.color),
     civ: hu.civs[row.civ],
     who,
     age: hu.gameOver.ageLabel(row.age),
