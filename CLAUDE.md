@@ -849,6 +849,19 @@ Az első teljes játék (2026-10-29) hibalistája és kérései. Ág: `feat/M7-p
   intenzitásával nő, változatosabb frázisok és tempó.
 - Nem része: épületjavítás, egyedi egységek, multiplayer, online statisztika.
 - Keret (10.): az M6 keretei változatlanok.
+- **Állapot (2026-10-29):** kész — beragadó egységek javítása, segítség az
+  építésben, környezetfüggő kurzor, érintőpad és irányítás-beállítások,
+  épülettörlés visszatérítéssel, fejlődési fa, jobb oldali panel (pontszám,
+  falusiak), kamera-gombok, játéknapló és statisztika, dinamikusabb zene.
+  Mérve — textúra-memória (1280×720-as nézet): 6 különböző nép 245,9 MB, a hat
+  legnehezebb nép 243,5 MB, az M4 két népes eset 158,5 MB, a betöltött 6 népes
+  mentés csúcsa 250,8 MB (mind azonos az M6-tal); a teljes böngészőablakban
+  (1728×963): képkocka-CPU p95 7,1–8,0 ms hanggal (96×96, 4 játékos; ugyanabban
+  a terhelt munkamenetben az M6 kódja 7,4–7,9 ms, tehát nincs visszaesés), egy
+  128×128-as, 6 játékosos mentés betöltése ~8 s; nézetmérettől függetlenül:
+  legfeljebb 329 entitás (6 játékos), bundle 0,73 MB gzip, a fenti mentés
+  0,44 MB JSON (`schemaVersion` 2), mentése ~6–15 ms; a hosszú AI-szimulációk
+  (`src/ai/strategies`) 25 s alatt futnak le.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
