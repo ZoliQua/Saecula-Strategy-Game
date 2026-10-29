@@ -1,4 +1,4 @@
-import { MUSIC_LAYER_MIN, MUSIC_OSTINATO_FROM, MUSIC_OSTINATO_FULL, MUSIC_PULSE_LEVEL, MUSIC_VARIATION } from '../../config/audio';
+import { MUSIC_CALM_TOP, MUSIC_LAYER_MIN, MUSIC_OSTINATO_FROM, MUSIC_OSTINATO_FULL, MUSIC_PULSE_LEVEL, MUSIC_VARIATION } from '../../config/audio';
 import type { AgeId } from '../../types';
 import type { Arrangement } from './arrangers';
 import type { VoiceId } from './composer';
@@ -19,8 +19,8 @@ type Stroke = readonly [number, boolean, number, number];
 
 const PULSE: Readonly<Record<'calm' | 'combat', Readonly<Record<Meter, readonly Stroke[]>>>> = {
   calm: {
-    4: [[0, false, 0.55, 0], [2, false, 0.4, 0.2], [3, true, 0.3, 0.35], [1.5, true, 0.26, 0.5], [3.5, true, 0.24, 0.7], [1, false, 0.3, 0.85]],
-    3: [[0, false, 0.55, 0], [2, true, 0.3, 0.25], [1, true, 0.26, 0.45], [2.5, true, 0.22, 0.65], [1.5, false, 0.3, 0.85]],
+    4: [[0, false, 0.55, 0], [2, false, 0.4, 0.2], [3, true, 0.3, 0.35], [1.5, true, 0.26, 0.45], [3.5, true, 0.24, 0.6], [1, false, 0.3, 0.7]],
+    3: [[0, false, 0.55, 0], [2, true, 0.3, 0.25], [1, true, 0.26, 0.4], [2.5, true, 0.22, 0.55], [1.5, false, 0.3, 0.7]],
   },
   combat: {
     4: [[0, false, 0.7, 0], [1, false, 0.4, 0], [2, false, 0.6, 0], [3, false, 0.45, 0.2], [0.5, true, 0.28, 0.4], [2.5, true, 0.3, 0.55], [3.5, true, 0.36, 0.7], [1.5, true, 0.26, 0.9]],
@@ -62,7 +62,9 @@ function pulse(a: Arrangement, kind: 'calm' | 'combat'): void {
     const lift = kind === 'calm' && bar.section === 'B' && bar.phraseBar < 2 ? 0.15 : bar.section === 'intro' ? 0.3 : 0;
     for (const [at, high, v, min] of strokes) {
       if (only && at !== 0) continue;
-      a.score.add(bar.start + at, 0.25, 'tom', high ? low + 5 : low, v * level * (0.6 + 0.5 * bar.energy), { min: Math.min(1, Math.max(MUSIC_LAYER_MIN, min + lift)), pulse: true });
+      // A calm tier stays reachable without a battle (MUSIC_CALM_TOP).
+      const top = kind === 'calm' ? MUSIC_CALM_TOP : 1;
+      a.score.add(bar.start + at, 0.25, 'tom', high ? low + 5 : low, v * level * (0.6 + 0.5 * bar.energy), { min: Math.min(top, Math.max(MUSIC_LAYER_MIN, min + lift)), pulse: true });
     }
   }
 }

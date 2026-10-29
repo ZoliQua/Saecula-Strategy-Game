@@ -158,10 +158,14 @@ export const MUSIC_VOICES = {
  */
 export const MUSIC_INTENSITY = {
   ageBase: { 1: 0.1, 2: 0.15, 3: 0.2 } as const satisfies Record<AgeId, number>,
-  movingWeight: 0.4,
+  movingWeight: 0.65,
   movingFull: 12,
   battle: 0.55,
 } as const;
+/** The highest calm intensity every age reaches (age 1, all units moving): every calm layer tier sits at or under it. */
+export const MUSIC_CALM_TOP = MUSIC_INTENSITY.ageBase[1] + MUSIC_INTENSITY.movingWeight;
+/** A layer note enters at its `min` and leaves only below `min` − this (no flicker at a threshold). */
+export const MUSIC_LAYER_HYSTERESIS = 0.05;
 /** Smoothing of the intensity (time constants, ms): it rises in a few seconds and settles slower. */
 export const MUSIC_INTENSITY_RISE_MS = 2500;
 export const MUSIC_INTENSITY_FALL_MS = 8000;
@@ -173,9 +177,9 @@ export const MUSIC_TEMPO_STEP = 0.01;
 export const MUSIC_PULSE_LIVE_LO = 0.5;
 /** The percussion layer as written: quiet in calm pieces, full in combat. */
 export const MUSIC_PULSE_LEVEL = { calm: 0.55, combat: 0.85 } as const;
-/** The ostinato voice enters above this intensity (its off-beats from MUSIC_OSTINATO_FULL). */
+/** The ostinato voice enters above this intensity; in calm its off-beats join from MUSIC_OSTINATO_FULL (combat writes on-beats only). */
 export const MUSIC_OSTINATO_FROM = 0.5;
-export const MUSIC_OSTINATO_FULL = 0.75;
+export const MUSIC_OSTINATO_FULL = 0.65;
 /** Every layer note needs at least this intensity: at intensity 0 a piece is its base arrangement alone. */
 export const MUSIC_LAYER_MIN = 0.1;
 /** Seeded phrase variation in repeated sections: chance per repeat of a syncopation (rhythmic displacement) and of an octave leap. */

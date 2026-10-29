@@ -63,7 +63,8 @@ export class MusicDirector {
 
   /**
    * The music's intensity, 0..1, smoothed: it drives the layers, the
-   * percussion level and the tempo lift (Decision 12). 0 outside a match.
+   * percussion level and the tempo lift (Decision 12). 0 in the menu; it
+   * decays after a victory or defeat.
    */
   get intensity(): number {
     return this.level;
@@ -85,9 +86,14 @@ export class MusicDirector {
   private follow(nowMs: number, input: DirectorInput): void {
     const dt = this.lastMs === null ? 0 : nowMs - this.lastMs;
     this.lastMs = nowMs;
-    if (input.scene !== 'game') {
+    if (input.scene === 'menu') {
       this.level = 0;
       this.lastMs = null;
+      return;
+    }
+    if (input.scene !== 'game') {
+      // After a victory or defeat the intensity settles (no jump to 0 under the stinger).
+      this.level = smoothIntensity(this.level, 0, dt);
       return;
     }
     const target = intensityTarget(input.age, input.movingUnits ?? 0, this.track === 'combat');

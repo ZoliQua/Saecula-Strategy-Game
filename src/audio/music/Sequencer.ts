@@ -1,4 +1,5 @@
 import {
+  MUSIC_LAYER_HYSTERESIS,
   MUSIC_LOOKAHEAD_S,
   MUSIC_MAX_VOICES,
   MUSIC_PULSE_LIVE_LO,
@@ -68,15 +69,29 @@ export function tempoFactor(intensity: number): number {
 
 /** The first phrase start after `beat` (a looping piece's phrases repeat every `piece.beats`); Infinity when none. */
 export function nextPhrase(piece: Piece, beat: number): number {
-  const starts = piece.phrases.length > 0 ? piece.phrases : [0];
-  if (!piece.loop) return starts.find((b) => b > beat) ?? Number.POSITIVE_INFINITY;
+  const starts = piece.phrases;
+  if (!piece.loop) {
+    for (const b of starts) if (b > beat) return b;
+    return Number.POSITIVE_INFINITY;
+  }
   const len = piece.beats;
   const k = Math.floor(beat / len);
-  for (const period of [k, k + 1]) {
-    for (const b of starts) if (b + period * len > beat) return b + period * len;
-  }
-  return Number.POSITIVE_INFINITY;
+  for (const b of starts) if (b + k * len > beat) return b + k * len;
+  return (starts[0] ?? 0) + (k + 1) * len;
 }
+
+/**
+ * The layer gate after a bar line: it follows a rise of the intensity at
+ * once and a fall only past MUSIC_LAYER_HYSTERESIS, so a layer note enters
+ * at its `min` and leaves only below `min` − the hysteresis.
+ */
+export function latchGate(gate: number, intensity: number): number {
+  if (intensity >= gate) return intensity;
+  return intensity < gate - MUSIC_LAYER_HYSTERESIS ? intensity + MUSIC_LAYER_HYSTERESIS : gate;
+}
+
+/** Humanized notes sit up to ≈ 0.02 beats early: a note this close before a bar line belongs to the next bar. */
+const BAR_SLACK = 0.05;
 
 /** A note missed by more than this (a hidden tab, a long frame) is skipped, not played late. */
 const LATE_S = 0.03;
@@ -194,6 +209,9 @@ export class Sequencer implements VoiceOwner {
   private factor = 1;
   /** The music's intensity, 0..1 (MusicDirector). */
   intensity = 0;
+  /** The intensity the layer notes are gated by, latched once per bar (latchGate). */
+  private gate = 0;
+  private gateBar = -1;
   /** Beats scheduled so far (exclusive), from the piece start. */
   private scheduled = 0;
   private stopAt = Number.POSITIVE_INFINITY;
@@ -217,6 +235,8 @@ export class Sequencer implements VoiceOwner {
     this.anchorTime = atTime;
     this.anchorBeat = 0;
     this.factor = tempoFactor(this.intensity);
+    this.gate = this.intensity;
+    this.gateBar = -1;
     this.scheduled = 0;
     this.stopAt = Number.POSITIVE_INFINITY;
   }
@@ -253,6 +273,7 @@ export class Sequencer implements VoiceOwner {
 
   /** Audio-clock time a non-looping piece ends (null: looping, stopped or idle). */
   endTime(): number | null {
+    // At the current tempo: a later phrase may play faster, so this is re-read every frame (the director does).
     const p = this.piece;
     if (!p || p.loop || this.stopAt !== Number.POSITIVE_INFINITY) return null;
     return this.timeOf(p, p.beats);
@@ -284,7 +305,7 @@ export class Sequencer implements VoiceOwner {
     if (this.beatAt(p, horizon) <= from) return;
     if (late > this.scheduled && now < this.stopAt) {
       const spb = this.spb(p);
-      for (const e of heldAt(p, this.scheduled, late, MUSIC_REENTER_MIN_S / spb)) if (audible(e, this.intensity)) this.schedule(e, now, e.beats * spb);
+      for (const e of heldAt(p, this.scheduled, late, MUSIC_REENTER_MIN_S / spb)) if (audible(e, this.gateAt(p, e.beat))) this.schedule(e, now, e.beats * spb);
     }
     // Up to the horizon, phrase by phrase: the tempo is re-read at each phrase start.
     for (;;) {
@@ -304,8 +325,18 @@ export class Sequencer implements VoiceOwner {
   private scheduleSpan(p: Piece, from: number, to: number, now: number): void {
     const spb = this.spb(p);
     for (const e of eventsInWindow(p, from, to)) {
-      if (audible(e, this.intensity)) this.schedule(e, Math.max(now, this.timeOf(p, e.beat)), e.beats * spb);
+      if (audible(e, this.gateAt(p, e.beat))) this.schedule(e, Math.max(now, this.timeOf(p, e.beat)), e.beats * spb);
     }
+  }
+
+  /** The layer gate for a note at `beat`: re-latched when a new bar starts, fixed inside it. */
+  private gateAt(p: Piece, beat: number): number {
+    const bar = Math.floor((beat + BAR_SLACK) / p.bpb);
+    if (bar !== this.gateBar) {
+      this.gateBar = bar;
+      this.gate = latchGate(this.gate, this.intensity);
+    }
+    return this.gate;
   }
 
   /** Unwires the instrument channels (the sequencer is done). */

@@ -43,6 +43,8 @@ export interface Piece {
   readonly age: AgeId;
   readonly bpm: number;
   readonly beats: number;
+  /** Beats per bar (the layers are gated bar by bar). */
+  readonly bpb: number;
   readonly loop: boolean;
   readonly events: readonly NoteEvent[];
   /** Beats where a phrase starts, ascending, the first 0 (the tempo may change there and only there). */
@@ -219,5 +221,5 @@ export function composePiece(track: MusicTrack, age: AgeId, seed: number): Piece
     arrange(ctx);
     layers(ctx);
   }
-  return { track, age, bpm: plan.bpm, beats, loop: plan.loop, events: score.done(), phrases: phraseStarts(bars) };
+  return { track, age, bpm: plan.bpm, beats, bpb: plan.bpb, loop: plan.loop, events: score.done(), phrases: phraseStarts(bars) };
 }

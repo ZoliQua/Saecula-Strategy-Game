@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  MUSIC_CALM_TOP,
   MUSIC_CROSSFADE_MS,
   MUSIC_INTENSITY,
   MUSIC_INTENSITY_RISE_MS,
+  MUSIC_LAYER_HYSTERESIS,
   MUSIC_LAYER_MIN,
   MUSIC_LAYER_VOICES,
   MUSIC_MAX_VOICES,
   MUSIC_OSTINATO_FROM,
+  MUSIC_OSTINATO_FULL,
   MUSIC_PIECE_VOICES,
   MUSIC_TEMPO_LIFT,
   MUSIC_VOICES,
@@ -17,16 +20,16 @@ import { fakeAudio } from './fakeAudio.testkit';
 import { vary } from './layers';
 import { intensityTarget, MusicDirector, smoothIntensity, type DirectorInput } from './MusicDirector';
 import { MusicPlayer } from './MusicPlayer';
-import { audible, liveVelocity, nextPhrase, Sequencer, tempoFactor } from './Sequencer';
+import { audible, latchGate, liveVelocity, nextPhrase, Sequencer, tempoFactor } from './Sequencer';
 import { rand } from './theory';
 
 const AGES: readonly AgeId[] = [1, 2, 3];
 const SEEDS = [1, 7, 42, 1234, 99991, 0xdeadbeef];
 const LEVELS = [0, 0.25, 0.5, 0.75, 1];
 
-/** Most notes sounding at once at `intensity` (release tails counted). */
+/** Most notes sounding at once at `intensity`, played at that intensity's tempo (release tails counted). */
 function peakAt(piece: Piece, intensity: number): number {
-  const spb = 60 / piece.bpm;
+  const spb = 60 / (piece.bpm * tempoFactor(intensity));
   const marks: Array<[number, number]> = [];
   for (const e of piece.events) {
     if (!audible(e, intensity)) continue;
@@ -52,10 +55,12 @@ describe('intensity layers (composer)', () => {
       for (const age of AGES) {
         for (const track of ['calm_a', 'calm_b', 'combat'] as MusicTrack[]) {
           const p = composePiece(track, age, seed);
-          const counts = LEVELS.map((k) => p.events.filter((e) => audible(e, k)).length);
+          // Calm tiers end at the busy-calm ceiling; combat climbs to 1.
+          const levels = track === 'combat' ? LEVELS : [0, 0.25, 0.5, MUSIC_CALM_TOP];
+          const counts = levels.map((k) => p.events.filter((e) => audible(e, k)).length);
           for (let i = 1; i < counts.length; i++) expect(counts[i]!, `${track}/${age}/${seed} ${counts.join(',')}`).toBeGreaterThan(counts[i - 1]!);
           // Intensity 1 is clearly busier (≥ 1.4× the notes of intensity 0).
-          expect(counts[4]! / counts[0]!).toBeGreaterThan(1.4);
+          expect(counts[counts.length - 1]! / counts[0]!).toBeGreaterThan(1.4);
         }
       }
     }
@@ -88,6 +93,25 @@ describe('intensity layers (composer)', () => {
         expect(liveVelocity(stroke, 1)).toBeCloseTo(stroke.velocity, 6);
       }
     }
+  });
+
+  it('every calm tier is reachable in a busy calm game, every combat tier in a battle', () => {
+    for (const seed of SEEDS) {
+      for (const age of AGES) {
+        const calmTop = intensityTarget(age, MUSIC_INTENSITY.movingFull, false);
+        const battleTop = intensityTarget(age, MUSIC_INTENSITY.movingFull, true);
+        for (const track of ['calm_a', 'calm_b'] as MusicTrack[]) {
+          const p = composePiece(track, age, seed);
+          for (const e of p.events) expect(e.min ?? 0, `${track}/${age}/${seed} ${e.voice}@${e.beat}`).toBeLessThanOrEqual(calmTop);
+          // The ostinato's off-beats are used in calm.
+          expect(p.events.some((e) => e.min === MUSIC_OSTINATO_FULL)).toBe(true);
+        }
+        for (const e of composePiece('combat', age, seed).events) expect(e.min ?? 0).toBeLessThanOrEqual(battleTop);
+      }
+    }
+    expect(MUSIC_CALM_TOP).toBeCloseTo(intensityTarget(1, MUSIC_INTENSITY.movingFull, false), 9);
+    // A busy calm game lifts the tempo too (not only a battle).
+    expect(tempoFactor(intensityTarget(1, MUSIC_INTENSITY.movingFull, false))).toBeGreaterThan(1.07);
   });
 
   it('the ostinato voice enters only above MUSIC_OSTINATO_FROM', () => {
@@ -179,7 +203,7 @@ describe('tempo', () => {
   });
 
   it('nextPhrase: the next start after a beat, repeating with a loop', () => {
-    const p = { track: 'combat', age: 1, bpm: 60, beats: 16, loop: true, events: [], phrases: [0, 8] } as Piece;
+    const p = { track: 'combat', age: 1, bpm: 60, beats: 16, bpb: 4, loop: true, events: [], phrases: [0, 8] } as Piece;
     expect(nextPhrase(p, 0)).toBe(8);
     expect(nextPhrase(p, 8)).toBe(16);
     expect(nextPhrase(p, 17)).toBe(24);
@@ -190,7 +214,7 @@ describe('tempo', () => {
     const fake = fakeAudio();
     const seq = new Sequencer(fake.audio, fake.ctx.destination as unknown as AudioNode);
     const events: NoteEvent[] = Array.from({ length: 16 }, (_, b) => ({ beat: b, beats: 0.5, voice: 'harpsichord', midi: 62, velocity: 0.5 }));
-    seq.play({ track: 'calm_a', age: 3, bpm: 60, beats: 16, loop: false, events, phrases: [0, 8] }, 0);
+    seq.play({ track: 'calm_a', age: 3, bpm: 60, beats: 16, bpb: 4, loop: false, events, phrases: [0, 8] }, 0);
     for (let t = 0; t <= 16; t += 0.05) {
       if (t >= 3) seq.intensity = 1;
       fake.advance(t);
@@ -204,6 +228,50 @@ describe('tempo', () => {
     // From the phrase at beat 8: 12 % faster.
     for (let b = 9; b < 16; b++) expect(starts[b]! - starts[b - 1]!).toBeCloseTo(1 / 1.12, 6);
     expect(seq.tempo).toBeCloseTo(1.12, 9);
+  });
+});
+
+describe('layer gating', () => {
+  it('latchGate: follows a rise at once, a fall only past the hysteresis', () => {
+    expect(latchGate(0.3, 0.6)).toBe(0.6);
+    expect(latchGate(0.6, 0.58)).toBe(0.6);
+    expect(latchGate(0.6, 0.6 - MUSIC_LAYER_HYSTERESIS + 0.001)).toBe(0.6);
+    expect(latchGate(0.6, 0.5)).toBeCloseTo(0.5 + MUSIC_LAYER_HYSTERESIS, 9);
+    expect(MUSIC_LAYER_HYSTERESIS).toBeCloseTo(0.05, 9);
+    // A note with min 0.5: enters at 0.5, leaves only below 0.45.
+    let gate = latchGate(0, 0.5);
+    expect(gate >= 0.5).toBe(true);
+    gate = latchGate(gate, 0.46);
+    expect(gate >= 0.5).toBe(true);
+    gate = latchGate(gate, 0.44);
+    expect(gate >= 0.5).toBe(false);
+  });
+
+  /** Start times of the layer notes (harpsichord) and the base notes (lyre) of a 4/4 test piece at 60 bpm. */
+  function run(intensityAt: (t: number) => number) {
+    const fake = fakeAudio();
+    const seq = new Sequencer(fake.audio, fake.ctx.destination as unknown as AudioNode);
+    const events: NoteEvent[] = [];
+    for (let b = 0; b < 16; b += 0.5) events.push({ beat: b, beats: 0.25, voice: 'harpsichord', midi: 64, velocity: 0.5, min: 0.5 });
+    seq.play({ track: 'calm_a', age: 3, bpm: 60, beats: 16, bpb: 4, loop: false, events, phrases: [0] }, 0);
+    for (let t = 0; t <= 16; t += 0.05) {
+      seq.intensity = intensityAt(t);
+      fake.advance(t);
+      seq.update();
+    }
+    return [...new Set(fake.sources.map((s) => s.startedAt).filter((x): x is number => x !== null))].sort((a, b) => a - b);
+  }
+
+  it('an intensity crossing a threshold mid-bar changes nothing before the next bar line', () => {
+    // Rises past 0.5 at 1.3 s (inside bar 0): the layer enters on the downbeat of bar 1 (4 s).
+    const up = run((t) => (t >= 1.3 ? 0.8 : 0.2));
+    expect(up[0]).toBeCloseTo(4, 6);
+    // Falls below 0.45 at 9.3 s (inside bar 2): the layer still plays to the end of that bar, nothing from 12 s.
+    const down = run((t) => (t >= 9.3 ? 0.2 : 0.8));
+    expect(down[down.length - 1]).toBeCloseTo(11.5, 6);
+    // Hovering around the threshold (0.47..0.52) never drops a playing layer.
+    const hover = run((t) => (t < 2 ? 0.6 : 0.47 + 0.05 * Math.abs(Math.sin(t * 7))));
+    expect(hover.length).toBe(32);
   });
 });
 
@@ -255,6 +323,20 @@ describe('intensity (MusicDirector)', () => {
     expect(d.intensity).toBeLessThan(intensityTarget(2, 0, false) + 0.02);
     d.update(t, input({ scene: 'menu' }));
     expect(d.intensity).toBe(0);
+  });
+
+  it('after a victory the intensity decays instead of dropping to 0', () => {
+    const d = new MusicDirector(3);
+    const input = (over: Partial<DirectorInput> = {}): DirectorInput => ({ scene: 'game', age: 1, combatNear: true, pieceEndsAtMs: null, movingUnits: 12, ...over });
+    let t = 0;
+    for (; t < 20_000; t += 100) d.update(t, input());
+    const top = d.intensity;
+    expect(top).toBeGreaterThan(0.9);
+    d.update(t + 100, input({ scene: 'victory' }));
+    expect(d.intensity).toBeGreaterThan(top - 0.05);
+    expect(d.intensity).toBeLessThan(top);
+    for (t += 100; t < 60_000; t += 100) d.update(t, input({ scene: 'victory' }));
+    expect(d.intensity).toBeLessThan(0.05);
   });
 });
 
