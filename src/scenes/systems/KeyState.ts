@@ -3,7 +3,8 @@ type KeyTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 /** Elements where a key press is typing, not a game command. */
 const TYPING_TAGS: ReadonlySet<string> = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
-function isTyping(target: EventTarget | null): boolean {
+/** Whether a key event from `target` is typing in a form field (no game command). */
+export function isTyping(target: EventTarget | null): boolean {
   if (target === null || typeof target !== 'object') return false;
   const node = target as { tagName?: unknown; isContentEditable?: unknown };
   return (typeof node.tagName === 'string' && TYPING_TAGS.has(node.tagName.toUpperCase())) || node.isContentEditable === true;

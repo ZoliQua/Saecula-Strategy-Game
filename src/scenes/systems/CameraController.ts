@@ -8,6 +8,7 @@ import {
 } from '../../config/constants';
 import { settingsStore } from '../../ui/settings';
 import { KeyState } from './KeyState';
+import { wheelIntent, wheelPan, wheelZoomFactor, type WheelLike } from './wheelIntent';
 
 export interface CameraControllerOptions {
   readonly edgeScroll?: boolean;
@@ -17,8 +18,9 @@ export interface CameraControllerOptions {
 
 /**
  * Handles key panning (the remappable pan keys from the settings store,
- * read every update, plus the fixed arrows), screen-edge pan, and mouse-wheel
- * zoom. The camera is clamped by Phaser's camera bounds (set by the
+ * read every update, plus the fixed arrows), screen-edge pan, and the
+ * wheel: a trackpad swipe pans, a pinch or a mouse wheel zooms around the
+ * pointer (wheelIntent, with the settings' scroll mode). The camera is clamped by Phaser's camera bounds (set by the
  * owning scene), so no extra clamp logic is needed here.
  */
 export class CameraController {
@@ -92,31 +94,32 @@ export class CameraController {
     }
   }
 
-  private onWheel(
-    _pointer: Phaser.Input.Pointer,
-    _over: unknown[],
-    _dx: number,
-    dy: number,
-  ): void {
-    const worldPoint = this.camera.getWorldPoint(
-      this.scene.input.activePointer.x,
-      this.scene.input.activePointer.y,
-    );
-    const factor = dy > 0 ? 1 / 1.1 : 1.1;
-    const newZoom = Phaser.Math.Clamp(
-      this.camera.zoom * factor,
-      MIN_ZOOM,
-      MAX_ZOOM,
-    );
+  private readonly onWheel = (pointer: Phaser.Input.Pointer, _over: unknown[], dx: number, dy: number): void => {
+    const native = pointer.event as Partial<WheelLike> | undefined;
+    const e: WheelLike = {
+      deltaX: native?.deltaX ?? dx,
+      deltaY: native?.deltaY ?? dy,
+      deltaMode: native?.deltaMode ?? 0,
+      ctrlKey: native?.ctrlKey ?? false,
+    };
+    if (wheelIntent(e, settingsStore.getState().controls.scrollMode) === 'pan') {
+      const pan = wheelPan(e, this.camera.zoom);
+      this.camera.scrollX += pan.dx;
+      this.camera.scrollY += pan.dy;
+      return;
+    }
+    this.zoomAround(this.scene.input.activePointer.x, this.scene.input.activePointer.y, wheelZoomFactor(e));
+  };
+
+  /** Multiplies the zoom by `factor` (within MIN_ZOOM..MAX_ZOOM), keeping the world point under screen (x, y) in place. */
+  private zoomAround(x: number, y: number, factor: number): void {
+    const before = this.camera.getWorldPoint(x, y);
+    const newZoom = Phaser.Math.Clamp(this.camera.zoom * factor, MIN_ZOOM, MAX_ZOOM);
     if (newZoom === this.camera.zoom) return;
     this.camera.setZoom(newZoom);
-
-    const afterPoint = this.camera.getWorldPoint(
-      this.scene.input.activePointer.x,
-      this.scene.input.activePointer.y,
-    );
-    this.camera.scrollX += worldPoint.x - afterPoint.x;
-    this.camera.scrollY += worldPoint.y - afterPoint.y;
+    const after = this.camera.getWorldPoint(x, y);
+    this.camera.scrollX += before.x - after.x;
+    this.camera.scrollY += before.y - after.y;
   }
 
   destroy(): void {

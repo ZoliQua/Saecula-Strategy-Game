@@ -35,6 +35,8 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     forceSetTimeOut: true,
   },
   autoFocus: false,
+  // A trackpad pinch is a ctrl wheel: without preventDefault on the canvas the browser would zoom the page too.
+  input: { mouse: { preventDefaultWheel: true } },
   scene: [
     BootScene,
     PreloadScene,

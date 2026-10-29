@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_KEYS } from './keymap';
+import { DEFAULT_KEYS, rebind, validBindings } from './keymap';
 import { createSettingsStore, DEFAULT_SETTINGS, loadSettings, saveSettings, SETTINGS_KEY } from './settings';
 
 const memory = (blob: string | null = null) => {
@@ -107,4 +107,55 @@ describe('settings', () => {
     expect(store.getState().rebind('panUp', { code: 'Tab', label: 'TAB' })).toEqual({ ok: false, reason: 'reserved' });
     expect(store.getState().keys).toEqual(DEFAULT_KEYS);
   });
+
+  it('an M6 v1 blob without controls (and without the command keys) loads with the defaults', () => {
+    const m6 = { volume: { master: 40, music: 60, sfx: 80, notifications: 80 }, muted: false, keys: { ...DEFAULT_PAN_KEYS_ONLY, panUp: { code: 'KeyI', label: 'I' } } };
+    const s = loadSettings(memory(JSON.stringify(m6)));
+    expect(s.controls).toEqual({ commandGesture: 'ctrl', scrollMode: 'auto' });
+    expect(s.keys.panUp.code).toBe('KeyI');
+    expect(s.keys.deleteBuilding).toEqual(DEFAULT_KEYS.deleteBuilding);
+    expect(s.keys.scorePanel).toEqual(DEFAULT_KEYS.scorePanel);
+    expect(s.volume.master).toBe(40);
+  });
+
+  it('an M6 blob whose pan key sits on a new default command key keeps it; the command key takes the freed key', () => {
+    const s = loadSettings(memory(JSON.stringify({ keys: { ...DEFAULT_PAN_KEYS_ONLY, panUp: { code: 'KeyH', label: 'H' } } })));
+    expect(s.keys.panUp).toEqual({ code: 'KeyH', label: 'H' });
+    expect(s.keys.home).toEqual(DEFAULT_KEYS.panUp);
+    expect(validBindings(s.keys)).toBe(true);
+  });
+
+  it('a full stored key map loads back exactly', () => {
+    const r = rebind(DEFAULT_KEYS, 'techTree', { code: 'KeyH', label: 'H' });
+    const r2 = r.ok ? rebind(r.keys, 'panUp', { code: 'KeyT', label: 'T' }) : r;
+    expect(r2.ok).toBe(true);
+    if (!r2.ok) return;
+    expect(loadSettings(memory(JSON.stringify({ keys: r2.keys }))).keys).toEqual(r2.keys);
+  });
+
+  it('a broken controls field falls back per field', () => {
+    const s = loadSettings(memory(JSON.stringify({ controls: { commandGesture: 'meta', scrollMode: 'sideways' } })));
+    expect(s.controls).toEqual({ commandGesture: 'meta', scrollMode: 'auto' });
+    expect(loadSettings(memory(JSON.stringify({ controls: 7 }))).controls).toEqual(DEFAULT_SETTINGS.controls);
+  });
+
+  it('setControls persists, merges the patch, and a reset restores both tabs', () => {
+    const storage = memory();
+    const store = createSettingsStore(storage);
+    store.getState().setControls({ commandGesture: 'alt' });
+    store.getState().setControls({ scrollMode: 'pan' });
+    expect(store.getState().controls).toEqual({ commandGesture: 'alt', scrollMode: 'pan' });
+    expect(loadSettings(storage).controls).toEqual({ commandGesture: 'alt', scrollMode: 'pan' });
+    store.getState().rebind('home', { code: 'KeyJ', label: 'J' });
+    store.getState().resetDefaults();
+    expect(store.getState().controls).toEqual(DEFAULT_SETTINGS.controls);
+    expect(store.getState().keys).toEqual(DEFAULT_KEYS);
+  });
 });
+
+const DEFAULT_PAN_KEYS_ONLY = {
+  panUp: DEFAULT_KEYS.panUp,
+  panDown: DEFAULT_KEYS.panDown,
+  panLeft: DEFAULT_KEYS.panLeft,
+  panRight: DEFAULT_KEYS.panRight,
+};

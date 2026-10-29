@@ -6,8 +6,10 @@ import type { TileCoord } from '../../iso/coordinates';
 import { tileEquals } from '../../iso/coordinates';
 import { pickTile } from '../../iso/picking';
 import type { TileMap } from '../../map/TileMap';
+import { settingsStore } from '../../ui/settings';
 import { uiStore } from '../../ui/store';
 import type { BuildPlacement } from './BuildPlacement';
+import { clickKind, type ClickKind } from './commandGesture';
 import type { OrderIssuer } from './OrderIssuer';
 
 const DRAG_THRESHOLD_PX = 8;
@@ -19,7 +21,7 @@ interface DragStart {
   screenY: number;
 }
 
-/** Pointer handling: hover, click selection, drag-select, orders, placement. */
+/** Pointer handling: hover, click selection, drag-select, orders (right button or the command gesture), placement. */
 export class PointerInput {
   private dragStart: DragStart | null = null;
   private dragRect: Phaser.GameObjects.Rectangle | null = null;
@@ -110,29 +112,39 @@ export class PointerInput {
     }
   }
 
+  /** Select or command: the right button, or a left click with the settings' gesture modifier, commands. */
+  private clickKind(pointer: Phaser.Input.Pointer): ClickKind {
+    const e = pointer.event;
+    const gesture = settingsStore.getState().controls.commandGesture;
+    if (e instanceof MouseEvent) return clickKind(e, gesture);
+    // A touch: Phaser's flags (a touch is the primary button).
+    return pointer.rightButtonDown() ? 'command' : pointer.leftButtonDown() ? 'select' : 'other';
+  }
+
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     if (this.isPointerOverHud(pointer)) return;
     const tile = this.pick(pointer);
+    const kind = this.clickKind(pointer);
     const placement = uiStore.getState().placementBuilding;
     if (placement) {
-      if (pointer.rightButtonDown()) {
+      if (kind === 'command') {
         this.placement.cancelWallLine();
         uiStore.getState().setPlacementBuilding(null);
         return;
       }
-      if (pointer.leftButtonDown() && tile) {
+      if (kind === 'select' && tile) {
         if (this.placement.isLineType(placement)) this.placement.beginWallLine(tile);
         else this.placement.tryPlaceBuilding(tile, placement);
       }
       return;
     }
-    if (pointer.leftButtonDown()) {
+    if (kind === 'select') {
       const world = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
       this.dragStart = { sx: world.x, sy: world.y, screenX: pointer.x, screenY: pointer.y };
       // Single-click selection fires on pointer UP (so drag-select is
       // possible). We still clear the tile outline here.
       this.tileMap.setSelectedTile(tile);
-    } else if (pointer.rightButtonDown() && tile) {
+    } else if (kind === 'command' && tile) {
       this.orders.issueOrders(tile);
     }
   }

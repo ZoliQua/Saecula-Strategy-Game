@@ -10,6 +10,7 @@ import { refundFor, siteProgress } from '../../game/refund';
 import type { Resources } from '../../types';
 import { requestDeleteSelected } from '../../ui/deleteConfirm';
 import { onCommand } from '../../ui/events';
+import { onKeyAction } from './KeyActions';
 
 export interface DeleteResult {
   readonly ok: boolean;
@@ -59,9 +60,8 @@ export function deleteSelectedBuilding(world: EcsWorld, buildingId: number, play
 }
 
 /**
- * The delete key's handler. Auto-repeat is ignored: holding the key
- * would otherwise arm and confirm in one press. Task 3's `deleteBuilding`
- * key action must ignore repeats the same way.
+ * The `deleteBuilding` key's handler. Auto-repeat is ignored: holding
+ * the key would otherwise arm and confirm in one press.
  */
 export function deleteKeyHandler(humanId: number): (event?: { repeat?: boolean }) => void {
   return (event) => {
@@ -72,18 +72,14 @@ export function deleteKeyHandler(humanId: number): (event?: { repeat?: boolean }
 
 /**
  * Wires deletion for the human: the HUD's delete command (refund into
- * the UI wallet) and the Delete key, which presses the selection
- * panel's delete button (arm, then confirm). Unwired on scene shutdown.
+ * the UI wallet) and the rebindable `deleteBuilding` key, which presses
+ * the selection panel's delete button (arm, then confirm). Unwired on
+ * scene shutdown.
  */
 export function wireBuildingDeletion(scene: Phaser.Scene, world: EcsWorld, humanId: number): void {
   const unsub = onCommand((cmd) => {
     if (cmd.type === 'delete-building') deleteSelectedBuilding(world, cmd.buildingId, humanId, uiWallet());
   });
-  // Temporary key: Task 3 moves this onto the rebindable `deleteBuilding` key action.
-  const onKey = deleteKeyHandler(humanId);
-  scene.input.keyboard?.on('keydown-DELETE', onKey);
-  scene.events.once('shutdown', () => {
-    unsub();
-    scene.input.keyboard?.off('keydown-DELETE', onKey);
-  });
+  onKeyAction(scene, 'deleteBuilding', deleteKeyHandler(humanId));
+  scene.events.once('shutdown', unsub);
 }

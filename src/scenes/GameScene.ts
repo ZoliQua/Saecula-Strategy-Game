@@ -22,13 +22,11 @@ import { TileMap } from '../map/TileMap';
 import { Loading } from '../ui/screens/Loading';
 import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
-import { BuildPlacement } from './game/BuildPlacement';
-import { wireBuildingDeletion } from './game/BuildingDeletion';
+import type { BuildPlacement } from './game/BuildPlacement';
 import { MatchArt, type LoadArt } from './game/MatchArt';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
-import { OrderIssuer } from './game/OrderIssuer';
-import { PointerInput } from './game/PointerInput';
+import { wirePlayerInput } from './game/PlayerInputWiring';
 import { openPause } from './game/PauseWiring';
 import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
@@ -228,25 +226,17 @@ export class GameScene extends Phaser.Scene {
 
     this.launchHud();
 
-    const orders = new OrderIssuer(this.world, this.runner.selection);
-    // The placement ghost reads the hover tile from the pointer handler.
-    let pointer: PointerInput | null = null;
-    this.placement = new BuildPlacement(
-      this,
-      this.world,
+    const human = this.players.human();
+    this.placement = wirePlayerInput(this, {
+      world: this.world,
       mapData,
-      this.runner.selection,
-      () => pointer?.getHoverTile() ?? null,
-      () => this.players.human()?.age ?? 1,
-      this.players.human()?.id ?? 1,
-      this.players.human()?.civ ?? DEFAULT_CIV,
-    );
-    pointer = new PointerInput(this, this.tileMap, this.runner.selection, this.placement, orders, () =>
-      openPause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage),
-    );
-    pointer.register();
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => pointer?.unregister());
-    wireBuildingDeletion(this, this.world, this.players.human()?.id ?? 1);
+      tileMap: this.tileMap,
+      selection: this.runner.selection,
+      humanId: human?.id ?? 1,
+      civ: human?.civ ?? DEFAULT_CIV,
+      age: () => this.players.human()?.age ?? 1,
+      onIdleEscape: () => openPause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage),
+    });
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
   }
 

@@ -51,4 +51,37 @@ describe('CameraController', () => {
       expect(scene.input.listenerCount('wheel') + scene.input.listenerCount('pointermove')).toBe(0);
     }
   });
+
+  it('a trackpad swipe pans the camera; a mouse notch and a pinch zoom it around the pointer', () => {
+    const scene = fakeScene(listenerTarget());
+    const cam = {
+      zoom: 1,
+      scrollX: 0,
+      scrollY: 0,
+      setZoom(z: number) {
+        this.zoom = z;
+      },
+      getWorldPoint(x: number, y: number) {
+        return { x: this.scrollX + x / this.zoom, y: this.scrollY + y / this.zoom };
+      },
+    };
+    const s = { ...scene, cameras: { main: cam }, input: Object.assign(scene.input, { activePointer: { x: 100, y: 50 } }) };
+    const ctl = new CameraController(s as unknown as Phaser.Scene, { keyTarget: listenerTarget() });
+    const wheel = (o: object) => {
+      const event = { deltaX: 0, deltaY: 0, deltaMode: 0, ctrlKey: false, ...o };
+      s.input.emit('wheel', { x: 100, y: 50, event }, [], event.deltaX, event.deltaY);
+    };
+    wheel({ deltaX: 3, deltaY: 1.5 });
+    expect(cam).toMatchObject({ zoom: 1, scrollX: 3, scrollY: 1.5 });
+    wheel({ deltaY: -100 });
+    expect(cam.zoom).toBeCloseTo(1.1);
+    // The world point under the pointer stays put.
+    const p = cam.getWorldPoint(100, 50);
+    expect(p.x).toBeCloseTo(103);
+    expect(p.y).toBeCloseTo(51.5);
+    wheel({ deltaY: 5, ctrlKey: true });
+    expect(cam.zoom).toBeCloseTo(1.1 * Math.exp(-0.05));
+    scene.events.emit('shutdown');
+    void ctl;
+  });
 });

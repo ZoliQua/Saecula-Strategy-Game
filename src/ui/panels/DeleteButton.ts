@@ -3,11 +3,9 @@ import { refundPercent } from '../../game/refund';
 import { hu } from '../../i18n/hu';
 import { pressDelete } from '../deleteConfirm';
 import { el } from '../dom';
+import { settingsStore } from '../settings';
 import { icons } from '../icons';
 import type { SelectedEntityInfo } from '../store';
-
-/** Label of the delete key in the tooltip (Task 3 passes the bound key's label). */
-const DELETE_KEY_LABEL = 'Delete';
 
 /**
  * The selection panel's "Törlés" button for the human's own buildings,
@@ -41,12 +39,14 @@ export class DeleteButton {
     const pct = own ? refundPercent(sel.constructionProgress ?? null) : 0;
     const armed = own && armedId === sel.id;
     const last = own && sel.lastTownCenter === true;
-    const key = own ? `${sel.id}:${pct}:${armed}:${last}` : 'none';
+    // The tooltip names the key as bound now (the settings card may have moved it).
+    const keyLabel = settingsStore.getState().keys.deleteBuilding.label;
+    const key = own ? `${sel.id}:${pct}:${armed}:${last}:${keyLabel}` : 'none';
     if (key === this.shownKey) return;
     this.shownKey = key;
     this.row.hidden = !own;
     this.button.classList.toggle('armed', armed);
     this.label.textContent = armed ? (last ? hu.hud.deleteConfirmLast : hu.hud.deleteConfirm(pct)) : hu.hud.deleteBuilding(pct);
-    this.button.title = hu.hud.deleteTip(pct, DELETE_KEY_LABEL);
+    this.button.title = hu.hud.deleteTip(pct, keyLabel);
   }
 }

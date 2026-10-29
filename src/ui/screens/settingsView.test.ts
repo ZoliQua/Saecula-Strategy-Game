@@ -17,4 +17,8 @@ describe('rebindNotice', () => {
     expect(rebindNotice(rebind(DEFAULT_KEYS, 'panUp', { code: 'KeyI', label: 'I' }))).toBeNull();
     expect(rebindNotice(rebind(DEFAULT_KEYS, 'panUp', { code: 'KeyW', label: 'W' }))).toBeNull();
   });
+
+  it('Tab on another action says it belongs to the score panel', () => {
+    expect(rebindNotice(rebind(DEFAULT_KEYS, 'home', { code: 'Tab', label: 'Tab' }), 'Tab')).toEqual({ text: hu.settings.reservedTab, tone: 'error' });
+  });
 });

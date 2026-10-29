@@ -47,6 +47,21 @@ export const DEFAULT_PAN_KEYS = {
   panLeft: { code: 'KeyA', label: 'A' },
   panRight: { code: 'KeyD', label: 'D' },
 } as const;
+/** The command keys before any remapping (M7): none clashes with the pan keys. Tab is reserved for anything else. */
+export const DEFAULT_COMMAND_KEYS = {
+  home: { code: 'KeyH', label: 'H' },
+  scorePanel: { code: 'Tab', label: 'Tab' },
+  villagerPanel: { code: 'KeyV', label: 'V' },
+  techTree: { code: 'KeyT', label: 'T' },
+  deleteBuilding: { code: 'Delete', label: 'Delete' },
+} as const;
+/** Controls before any change: the left click with Ctrl gives a command, and the wheel tells a trackpad from a mouse. */
+export const DEFAULT_CONTROLS = { commandGesture: 'ctrl', scrollMode: 'auto' } as const;
+/** Mouse-wheel / pinch zoom: factor exp(-deltaY * rate), at most one wheel notch (WHEEL_ZOOM_STEP) per event. */
+export const WHEEL_ZOOM_RATE = 0.01;
+export const WHEEL_ZOOM_STEP = 1.1;
+/** A pixel-mode wheel delta below this (with no deltaX and an integer value) still reads as a trackpad in 'auto'. */
+export const TRACKPAD_DELTA_MAX = 40;
 /** The fixed secondary camera pan (always active, never remappable). */
 export const ARROW_PAN_CODES = { panUp: 'ArrowUp', panDown: 'ArrowDown', panLeft: 'ArrowLeft', panRight: 'ArrowRight' } as const;
 /**

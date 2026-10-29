@@ -181,8 +181,9 @@ export const hu = {
       2: 'Beléptél a Középkorba!',
       3: 'Beléptél a Felvilágosodás korába!',
     },
-    /** `keys`: the camera pan keys as bound (keymap.keysHint), e.g. 'WASD'. */
-    controls: (keys: string) => `${keys}: kamera · Görgő: zoom · Jobb klikk: parancs`,
+    /** `keys`: the camera pan keys as bound (keymap.keysHint), e.g. 'WASD'; `gesture`: the command gesture's key (null: none). */
+    controls: (keys: string, gesture: string | null) =>
+      `${keys}: kamera · Görgő / csípés: zoom · Jobb klikk${gesture === null ? '' : ` vagy ${gesture}+klikk`}: parancs`,
     wonderClock: (t: string) => `Csoda: ${t}`,
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
@@ -303,16 +304,44 @@ export const hu = {
     volumes: { master: 'Fő hangerő', music: 'Zene', sfx: 'Hangeffektek', notifications: 'Értesítések' },
     mute: 'Némítás',
     keys: 'Billentyűk',
-    actions: { panUp: 'Kamera fel', panDown: 'Kamera le', panLeft: 'Kamera balra', panRight: 'Kamera jobbra' },
+    tabs: { audio: 'Hang', controls: 'Irányítás' },
+    mouse: 'Egér és érintőpad',
+    actions: {
+      panUp: 'Kamera fel',
+      panDown: 'Kamera le',
+      panLeft: 'Kamera balra',
+      panRight: 'Kamera jobbra',
+      home: 'Ugrás haza',
+      scorePanel: 'Pontszám panel',
+      villagerPanel: 'Falusiak panel',
+      techTree: 'Fejlődési fa',
+      deleteBuilding: 'Épület törlése',
+    },
+    keyGroups: { camera: 'Kamera', commands: 'Parancsok' },
+    /** The command gesture: which modifier turns a left click into a command. */
+    gesture: 'Parancs bal klikkel',
+    gestureHint: 'A jobb gomb mindig parancsot ad; ezzel a módosítóval a bal klikk is (és nem jelöl ki).',
+    gestures: { ctrl: 'Ctrl', meta: 'Cmd ⌘', alt: 'Alt ⌥', none: 'Nincs' },
+    /** The gesture's key in the HUD hint (null: no gesture). */
+    gestureKey: { ctrl: 'Ctrl', meta: 'Cmd', alt: 'Alt', none: null } as Record<'ctrl' | 'meta' | 'alt' | 'none', string | null>,
+    scroll: 'Görgetés',
+    scrollHint: {
+      auto: 'Érintőpad: két ujjal mozgat, csípéssel nagyít · Egér görgője: nagyít',
+      zoom: 'A görgetés mindig nagyít (Mac egérhez)',
+      pan: 'A görgetés mindig mozgat; nagyítás csípéssel',
+    },
+    scrollModes: { auto: 'Automatikus', zoom: 'Nagyítás', pan: 'Mozgatás' },
     pressKey: 'Nyomj meg egy billentyűt… (Esc: mégse)',
     reserved: 'Ez a billentyű foglalt (Esc, nyilak, módosítók)',
     swapped: (a: string) => `Csere: a(z) „${a}” megkapta a korábbi billentyűt`,
     fixedKeys: 'Esc: szünet · Nyilak: kamera (fix)',
+    /** Tab is reserved for every action but the score panel. */
+    reservedTab: 'A Tab csak a pontszám panelé lehet',
     reset: 'Alapértelmezés',
     resetDone: 'Az alapértelmezett beállítások visszaállítva',
     notSaved: 'A beállítások nem menthetők — csak erre a munkamenetre érvényesek',
     /** Keycap labels for keys whose `key` prints nothing useful (by KeyboardEvent.code). */
-    keyNames: { Space: 'Szóköz' } as Record<string, string>,
+    keyNames: { Space: 'Szóköz', Tab: 'Tab', Delete: 'Delete', Backspace: 'Backspace' } as Record<string, string>,
   },
   common: {
     yes: 'Igen',

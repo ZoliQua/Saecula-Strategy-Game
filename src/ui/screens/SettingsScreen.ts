@@ -1,82 +1,72 @@
 import { audio } from '../../audio/AudioManager';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
-import { bindingFromEvent, KEY_ACTIONS, type KeyAction } from '../keymap';
-import { settingsStore, VOLUME_CHANNELS, type SettingsStore, type VolumeChannel } from '../settings';
+import { settingsStore, type SettingsStore } from '../settings';
 import { bindModalKeys, GLYPHS } from './modalKeys';
-import { rebindNotice, type SettingsNotice } from './settingsView';
+import { arrowStep } from './radioNav';
+import { SettingsAudioTab } from './SettingsAudioTab';
+import { SettingsControlsTab } from './SettingsControlsTab';
+import type { SettingsNotice } from './settingsView';
 import '../hud.css';
 import '../screens.css';
 import '../pause.css';
 import '../settings.css';
 
-const ICONS = {
-  speaker: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4Z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.5a8 8 0 0 1 0 11"/></svg>`,
-  muted: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4Z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg>`,
-  keyboard: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="6" width="18.4" height="12" rx="2.2"/><path d="M6.5 9.8h.01M9.8 9.8h.01M13.1 9.8h.01M16.4 9.8h.01M7.5 14.2h9"/></svg>`,
-  lock: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
-  reset: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>`,
-  arrows: { panUp: 'M12 18V6M7 11l5-5 5 5', panDown: 'M12 6v12M7 13l5 5 5-5', panLeft: 'M18 12H6M11 7l-5 5 5 5', panRight: 'M6 12h12M13 7l5 5-5 5' },
-} as const;
+type TabId = 'audio' | 'controls';
+const TAB_IDS: readonly TabId[] = ['audio', 'controls'];
 
-const arrowGlyph = (a: KeyAction): string =>
-  `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS.arrows[a]}"/></svg>`;
+const RESET_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>`;
 
-interface VolumeRow {
-  readonly input: HTMLInputElement;
-  readonly value: HTMLElement;
-}
-interface KeyRow {
-  readonly row: HTMLButtonElement;
-  readonly cap: HTMLElement;
+/** The tab the card opened on last (per session), so a return to the settings lands where the player was. */
+let lastTab: TabId = 'audio';
+
+interface Tab {
+  readonly button: HTMLButtonElement;
+  readonly panel: HTMLElement;
 }
 
 /**
- * The settings card (from the main menu and the pause): a slider per
- * volume channel, the mute switch, and a key row per camera pan action.
- * Every change goes straight to `settingsStore` (which persists it).
- * Clicking a key row captures the next key press; Esc then only cancels
- * the capture. Otherwise Esc goes back.
+ * The settings card (from the main menu and the pause), in two tabs:
+ * "Hang" (volumes, mute) and "Irányítás" (command gesture, scroll mode,
+ * key bindings). Every change goes straight to `settingsStore` (which
+ * persists it); the defaults button resets both tabs. While a key is
+ * being captured Esc only cancels the capture; otherwise it goes back.
  */
 export class SettingsScreen {
   private readonly root: HTMLElement;
   private readonly card: HTMLElement;
-  private readonly audio: HTMLElement;
-  private readonly muteBtn: HTMLButtonElement;
-  private readonly muteIcon: HTMLElement;
   private readonly status: HTMLElement;
   private readonly escLabel: HTMLElement;
-  private readonly volumes = new Map<VolumeChannel, VolumeRow>();
-  private readonly keyRows = new Map<KeyAction, KeyRow>();
+  private readonly audioTab: SettingsAudioTab;
+  private readonly controlsTab: SettingsControlsTab;
+  private readonly tabs = new Map<TabId, Tab>();
   private readonly unbindKeys: () => void;
   private readonly unsubscribe: () => void;
-  /** The action waiting for a key press. */
-  private capturing: KeyAction | null = null;
+  private active: TabId = lastTab;
 
   constructor(private readonly onBack: () => void) {
     audio().playSFX('ui_panel_open');
-    this.muteIcon = el('span', { class: 'set-mute-icon' });
-    this.muteBtn = el('button', { class: 'set-switch', type: 'button', role: 'switch', 'aria-checked': 'false', 'aria-label': hu.settings.mute }, el('i', {}));
-    this.muteBtn.addEventListener('click', () => this.after(() => settingsStore.getState().setMuted(!settingsStore.getState().muted)));
-    this.audio = el(
-      'section',
-      { class: 'set-section', style: '--i:0' },
-      el(
-        'header',
-        { class: 'set-section-head' },
-        el('span', { class: 'set-section-icon', html: ICONS.speaker }),
-        el('h3', {}, hu.settings.audio),
-        el('label', { class: 'set-mute' }, this.muteIcon, el('span', {}, hu.settings.mute), this.muteBtn),
-      ),
-      el('div', { class: 'set-panel set-volumes' }, ...VOLUME_CHANNELS.map((ch) => this.volumeRow(ch))),
-    );
-    const keys = el(
-      'section',
-      { class: 'set-section', style: '--i:1' },
-      el('header', { class: 'set-section-head' }, el('span', { class: 'set-section-icon', html: ICONS.keyboard }), el('h3', {}, hu.settings.keys)),
-      el('div', { class: 'set-keys' }, ...KEY_ACTIONS.map((a) => this.keyRow(a))),
-      el('p', { class: 'set-fixed' }, el('span', { class: 'set-fixed-icon', html: ICONS.lock }), hu.settings.fixedKeys),
-    );
+    const after = (change: () => void): void => this.after(change);
+    this.audioTab = new SettingsAudioTab(after);
+    this.controlsTab = new SettingsControlsTab({
+      after,
+      notice: (n) => this.notice(n),
+      capturing: (on) => {
+        this.escLabel.textContent = on ? hu.common.cancel : hu.common.back;
+      },
+    });
+    const tablist = el('div', { class: 'set-tabs', role: 'tablist', 'aria-label': hu.settings.title });
+    const panels = el('div', { class: 'set-body set-panels' });
+    for (const id of TAB_IDS) {
+      const panel = el('div', { class: 'set-tabpanel', role: 'tabpanel', id: `set-panel-${id}`, 'aria-labelledby': `set-tab-${id}` }, id === 'audio' ? this.audioTab.root : this.controlsTab.root);
+      const button = el('button', { class: 'set-tab', type: 'button', role: 'tab', id: `set-tab-${id}`, 'aria-controls': `set-panel-${id}` }, hu.settings.tabs[id]);
+      button.addEventListener('click', () => this.show(id));
+      button.addEventListener('keydown', (e) => this.onTabKey(e, id));
+      tablist.append(button);
+      panels.append(panel);
+      this.tabs.set(id, { button, panel });
+    }
+    tablist.append(el('i', { class: 'set-tab-thumb' }));
     this.status = el('div', { class: 'slots-status set-status', role: 'status', 'aria-live': 'polite' });
     const back = el(
       'button',
@@ -85,7 +75,7 @@ export class SettingsScreen {
       el('span', {}, hu.common.back),
     );
     back.addEventListener('click', () => this.back());
-    const reset = el('button', { class: 'btn btn-ghost set-reset', type: 'button' }, el('span', { class: 'arrow', html: ICONS.reset }), el('span', {}, hu.settings.reset));
+    const reset = el('button', { class: 'btn btn-ghost set-reset', type: 'button' }, el('span', { class: 'arrow', html: RESET_ICON }), el('span', {}, hu.settings.reset));
     reset.addEventListener('click', () => this.reset());
     this.escLabel = el('span', {}, hu.common.back);
     this.card = el(
@@ -98,73 +88,69 @@ export class SettingsScreen {
         el('h2', { class: 'pause-title' }, hu.settings.title),
         el('div', { class: 'pause-ornament', 'aria-hidden': 'true' }, el('span', {}), el('i', {}), el('span', {})),
       ),
-      el('div', { class: 'set-body' }, this.audio, keys),
+      tablist,
+      panels,
       this.status,
       el('div', { class: 'slots-foot set-foot' }, back, el('div', { class: 'pause-foot' }, el('kbd', {}, 'Esc'), this.escLabel), reset),
     );
     this.root = el('div', { class: 'screen pause-layer' }, this.card);
     uiRoot().append(this.root);
     this.unbindKeys = bindModalKeys(this.card, () => this.back());
-    // Using any other control (a slider, the switch) ends a capture, so its own keys work again.
-    this.card.addEventListener('pointerdown', this.onOutsideCapture);
-    this.card.addEventListener('focusin', this.onOutsideCapture);
     this.unsubscribe = settingsStore.subscribe((s) => this.sync(s));
     this.sync(settingsStore.getState());
-    this.volumes.get('master')?.input.focus({ preventScroll: true });
+    this.show(this.active, false);
+    if (this.active === 'audio') this.audioTab.focusFirst();
+    else this.tabs.get('controls')?.button.focus({ preventScroll: true });
   }
 
   /** Plays the exit animation (the owner removes the card shortly after). */
   leave(): void {
-    this.stopCapture();
+    this.controlsTab.stopCapture();
     this.root.classList.add('leaving');
     this.root.inert = true;
     this.unbindKeys();
   }
 
   destroy(): void {
-    this.stopCapture();
+    this.controlsTab.stopCapture();
     this.unbindKeys();
     this.unsubscribe();
     this.root.remove();
   }
 
-  private volumeRow(ch: VolumeChannel): HTMLElement {
-    const id = `set-vol-${ch}`;
-    const input = el('input', { id, class: 'set-range', type: 'range', min: 0, max: 100, step: 1 });
-    input.addEventListener('input', () => this.after(() => settingsStore.getState().setVolume(ch, Number(input.value))));
-    const value = el('output', { class: 'set-value', for: id });
-    this.volumes.set(ch, { input, value });
-    return el('div', { class: `set-volume${ch === 'master' ? ' master' : ''}` }, el('label', { class: 'set-label', for: id }, hu.settings.volumes[ch]), input, value);
+  private show(id: TabId, sound = true): void {
+    if (this.controlsTab.isCapturing) {
+      this.controlsTab.stopCapture();
+      this.notice(null);
+    }
+    if (sound && id !== this.active) audio().playSFX('ui_click');
+    this.active = id;
+    lastTab = id;
+    this.card.style.setProperty('--tab', String(TAB_IDS.indexOf(id)));
+    for (const [tid, { button, panel }] of this.tabs) {
+      const on = tid === id;
+      button.setAttribute('aria-selected', String(on));
+      button.tabIndex = on ? 0 : -1;
+      panel.classList.toggle('active', on);
+      // The hidden panel is out of reach (display none, inert for bindModalKeys' Tab cycle).
+      panel.inert = !on;
+      panel.setAttribute('aria-hidden', String(!on));
+    }
   }
 
-  private keyRow(action: KeyAction): HTMLElement {
-    const cap = el('kbd', { class: 'keycap' });
-    const row = el(
-      'button',
-      { class: 'set-key', type: 'button' },
-      el('span', { class: 'set-key-icon', html: arrowGlyph(action) }),
-      el('span', { class: 'set-key-label' }, hu.settings.actions[action]),
-      cap,
-    );
-    row.addEventListener('click', () => (this.capturing === action ? this.stopCapture() : this.startCapture(action)));
-    this.keyRows.set(action, { row, cap });
-    return row;
+  private onTabKey(e: KeyboardEvent, from: TabId): void {
+    const dir = arrowStep(e.key);
+    if (dir === 0) return;
+    e.preventDefault();
+    const next = TAB_IDS[(TAB_IDS.indexOf(from) + dir + TAB_IDS.length) % TAB_IDS.length] ?? from;
+    this.show(next);
+    this.tabs.get(next)?.button.focus();
   }
 
-  /** Mirrors the store into the controls (after any change, including a reset). */
+  /** Mirrors the store into both tabs (after any change, including a reset). */
   private sync(s: SettingsStore): void {
-    for (const [ch, { input, value }] of this.volumes) {
-      const v = s.volume[ch];
-      if (input.value !== String(v)) input.value = String(v);
-      input.style.setProperty('--fill', `${v}%`);
-      value.textContent = `${v}%`;
-    }
-    this.muteBtn.setAttribute('aria-checked', String(s.muted));
-    this.muteIcon.innerHTML = s.muted ? ICONS.muted : ICONS.speaker;
-    this.audio.classList.toggle('muted', s.muted);
-    for (const [action, { cap }] of this.keyRows) {
-      if (this.capturing !== action) cap.textContent = s.keys[action].label;
-    }
+    this.audioTab.sync(s);
+    this.controlsTab.sync(s);
   }
 
   /** Runs a store change; a change storage refused is still applied, and the card says it holds for this session only. */
@@ -173,82 +159,16 @@ export class SettingsScreen {
     if (!settingsStore.getState().persisted) this.notice({ text: hu.settings.notSaved, tone: 'error' });
   }
 
-  private startCapture(action: KeyAction): void {
-    this.stopCapture();
-    this.capturing = action;
-    const row = this.keyRows.get(action);
-    row?.row.classList.add('capturing');
-    if (row) row.cap.textContent = '…';
-    this.escLabel.textContent = hu.common.cancel;
-    this.notice({ text: hu.settings.pressKey, tone: 'info' });
-    // Capture phase on window, ahead of the card's Esc, KeyState and Phaser: the press is the binding, nothing else.
-    window.addEventListener('keydown', this.onCaptureKey, true);
-  }
-
-  private stopCapture(): void {
-    if (this.capturing === null) return;
-    window.removeEventListener('keydown', this.onCaptureKey, true);
-    const row = this.keyRows.get(this.capturing);
-    row?.row.classList.remove('capturing', 'refused');
-    this.capturing = null;
-    this.escLabel.textContent = hu.common.back;
-    this.sync(settingsStore.getState());
-  }
-
-  private readonly onCaptureKey = (e: KeyboardEvent): void => {
-    const action = this.capturing;
-    if (action === null) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    // An IME composition is not a key choice.
-    if (e.repeat || e.isComposing || e.key === 'Process') return;
-    if (e.code === 'Escape') {
-      this.stopCapture();
-      this.notice(null);
-      return;
-    }
-    const result = settingsStore.getState().rebind(action, bindingFromEvent(e));
-    if (!result.ok) {
-      // A reserved key: stay in capture mode, and shake the row.
-      const row = this.keyRows.get(action)?.row;
-      row?.classList.remove('refused');
-      void row?.offsetWidth;
-      row?.classList.add('refused');
-      this.notice(rebindNotice(result));
-      return;
-    }
-    this.stopCapture();
-    for (const a of result.swappedWith === undefined ? [action] : [action, result.swappedWith]) this.flash(a);
-    this.notice(settingsStore.getState().persisted ? rebindNotice(result) : { text: hu.settings.notSaved, tone: 'error' });
-  };
-
-  private readonly onOutsideCapture = (e: Event): void => {
-    if (this.capturing === null) return;
-    const row = this.keyRows.get(this.capturing)?.row;
-    if (row && e.target instanceof Node && row.contains(e.target)) return;
-    this.stopCapture();
-    this.notice(null);
-  };
-
-  /** A short amber pop on a keycap that just changed. */
-  private flash(action: KeyAction): void {
-    const cap = this.keyRows.get(action)?.cap;
-    if (!cap) return;
-    cap.classList.remove('bound');
-    void cap.offsetWidth;
-    cap.classList.add('bound');
-  }
-
   private reset(): void {
-    this.stopCapture();
+    this.controlsTab.stopCapture();
     this.after(() => settingsStore.getState().resetDefaults());
     if (settingsStore.getState().persisted) this.notice({ text: hu.settings.resetDone, tone: 'ok' });
-    for (const a of KEY_ACTIONS) this.flash(a);
+    this.controlsTab.flashAll();
   }
 
   private back(): void {
-    if (this.capturing !== null) {
-      this.stopCapture();
+    if (this.controlsTab.isCapturing) {
+      this.controlsTab.stopCapture();
       this.notice(null);
     }
     this.onBack();

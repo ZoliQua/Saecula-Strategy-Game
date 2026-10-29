@@ -48,8 +48,9 @@ export class SelectionPanel {
     }
     // Only rebuild when the shown data changes, so clicks on queue items
     // aren't lost to a re-render between pointerdown and click.
-    // The idle hint names the current pan keys, so a rebind (made while paused) shows on the next render.
-    const keysLabel = keysHint(settingsStore.getState().keys);
+    // The idle hint names the current pan keys and command gesture, so a change (made while paused) shows on the next render.
+    const settings = settingsStore.getState();
+    const keysLabel = hu.hud.controls(keysHint(settings.keys), hu.settings.gestureKey[settings.controls.commandGesture]);
     const key = `${JSON.stringify(sel)}#${state.selectionCount}#${state.researchedTechs.length}#${keysLabel}`;
     if (key === this.bodyKey) return;
     this.bodyKey = key;
@@ -74,7 +75,7 @@ export class SelectionPanel {
       return [
         el('div', { class: 'sel-head' }, el('span', { class: 'sel-name' }, hu.hud.noSelection)),
         el('p', { class: 'sel-hint' }, hu.hud.noSelectionHint),
-        el('p', { class: 'sel-hint', style: 'color:var(--ink-3)' }, hu.hud.controls(keysLabel)),
+        el('p', { class: 'sel-hint', style: 'color:var(--ink-3)' }, keysLabel),
       ];
     }
     if (sel.kind === 'resource') {
