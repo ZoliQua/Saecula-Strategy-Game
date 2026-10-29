@@ -39,6 +39,7 @@ function rec(over: { at: string; outcome: MatchRecord['outcome']; civ?: MatchRec
   const total = over.score ?? 0;
   return {
     v: 1,
+    matchId: `m-${over.at}`,
     createdAt: over.at,
     setup,
     outcome: over.outcome,
@@ -56,9 +57,10 @@ function rec(over: { at: string; outcome: MatchRecord['outcome']; civ?: MatchRec
 describe('buildMatchRecord', () => {
   it('records the setup, players, final stats, score breakdown and timeline of a decided match', () => {
     const { world, players, stats, setup } = fixture();
-    const r = buildMatchRecord({ createdAt: AT, setup, players: players.all(), stats, world, durationMs: 754_321, end: { kind: 'victory', winnerId: 1, cause: 'conquest' } });
+    const r = buildMatchRecord({ matchId: 'match-1', createdAt: AT, setup, players: players.all(), stats, world, durationMs: 754_321, end: { kind: 'victory', winnerId: 1, cause: 'conquest' } });
     expect(r).toMatchObject({
       v: 1,
+      matchId: 'match-1',
       createdAt: '2026-10-29T12:00:00.000Z',
       outcome: 'victory',
       cause: 'conquest',
@@ -80,7 +82,7 @@ describe('buildMatchRecord', () => {
 
   it('an abandoned match has no cause and no winner', () => {
     const { world, players, stats, setup } = fixture();
-    const r = buildMatchRecord({ createdAt: AT, setup, players: players.all(), stats, world, durationMs: 1000, end: { kind: 'abandoned' } });
+    const r = buildMatchRecord({ matchId: 'match-1', createdAt: AT, setup, players: players.all(), stats, world, durationMs: 1000, end: { kind: 'abandoned' } });
     expect(r.outcome).toBe('abandoned');
     expect(r.cause).toBeNull();
     expect(r.players.map((p) => p.result)).toEqual(['standing', 'standing', 'defeated']);
@@ -88,7 +90,7 @@ describe('buildMatchRecord', () => {
 
   it('a defeat records the decided winner', () => {
     const { world, players, stats, setup } = fixture();
-    const r = buildMatchRecord({ createdAt: AT, setup, players: players.all(), stats, world, durationMs: 1000, end: { kind: 'defeat', winnerId: 2, cause: 'wonder' } });
+    const r = buildMatchRecord({ matchId: 'match-1', createdAt: AT, setup, players: players.all(), stats, world, durationMs: 1000, end: { kind: 'defeat', winnerId: 2, cause: 'wonder' } });
     expect([r.outcome, r.cause, r.players[1]!.result]).toEqual(['defeat', 'wonder', 'winner']);
   });
 });

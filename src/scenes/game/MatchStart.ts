@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { defaultSetupConfig, matchCivs, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { newMatchId } from '../../game/matchId';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
 import type { RestoredMatch } from '../../save/deserializer';
@@ -17,6 +18,8 @@ import type { SystemRunner, SystemRunnerOptions } from './SystemRunner';
 export type MatchStart = { kind: 'new'; generated: GeneratedGame } | { kind: 'load'; restored: RestoredMatch };
 
 export interface PreparedMatch {
+  /** The match's stable id: new for a new match, the save's for a loaded one. */
+  readonly matchId: string;
   readonly setup: GameSetupConfig;
   readonly players: PlayerManager;
   readonly start: MatchStart;
@@ -43,14 +46,14 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
       (id) => players.get(id)?.civ ?? DEFAULT_CIV,
     );
     const art: LoadArt = { spans: civAgeSpans(players), buildings };
-    return { ok: true, match: { setup: restored.setup, players, start: { kind: 'load', restored }, art } };
+    return { ok: true, match: { matchId: restored.matchId, setup: restored.setup, players, start: { kind: 'load', restored }, art } };
   }
   const setup = withSetup(defaultSetupConfig(), data ?? {});
   const civs = matchCivs(setup);
   const generated = tryGenerateGameMap(setup);
   // No valid map for this seed: back to the setup card, with the choices kept and a message.
   if (!generated) return { ok: false, back: { config: setup, notice: hu.setup.mapFailed } };
-  return { ok: true, match: { setup, players: createPlayers(civs.human, civs.ais), start: { kind: 'new', generated } } };
+  return { ok: true, match: { matchId: newMatchId(), setup, players: createPlayers(civs.human, civs.ais), start: { kind: 'new', generated } } };
 }
 
 /**

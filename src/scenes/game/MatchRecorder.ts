@@ -13,11 +13,14 @@ export interface MatchLogWriter {
 }
 
 /**
- * Writes the running match to the local match log once (M7 Decision 11):
- * when the game-over screen appears, or as 'abandoned' when the player
- * leaves from the pause ("Kilépés a főmenübe", or a load over the match). A match whose game time never moved (a save
- * loaded and left at once) writes nothing. The record is built
- * synchronously, before the scene goes; the write itself runs on.
+ * Writes the running match to the local match log once per session (M7
+ * Decision 11): when the game-over screen appears, or as 'abandoned' when
+ * the player leaves from the pause ("Kilépés a főmenübe", or a load over
+ * the match). The log keys records by match id, so a resumed match's
+ * later end replaces the record of its earlier session. A session whose
+ * game time never moved (a save loaded and left at once) writes nothing.
+ * The record is built synchronously, before the scene goes; the write
+ * itself runs on.
  */
 export class MatchRecorder {
   private written = false;
@@ -30,9 +33,9 @@ export class MatchRecorder {
   ) {}
 
   /** The browser match log of a live match. */
-  static forMatch(m: { setup: GameSetupConfig; world: EcsWorld; players: PlayerManager; stats: MatchStats; startMs: number; now: () => number }): MatchRecorder {
+  static forMatch(m: { matchId: string; setup: GameSetupConfig; world: EcsWorld; players: PlayerManager; stats: MatchStats; startMs: number; now: () => number }): MatchRecorder {
     const build = (end: MatchEnd, durationMs: number): MatchRecord =>
-      buildMatchRecord({ createdAt: new Date(), setup: m.setup, players: m.players.all(), stats: m.stats, world: m.world, durationMs, end });
+      buildMatchRecord({ matchId: m.matchId, createdAt: new Date(), setup: m.setup, players: m.players.all(), stats: m.stats, world: m.world, durationMs, end });
     return new MatchRecorder(new MatchLog(browserMatchStore()), build, m.startMs, m.now);
   }
 

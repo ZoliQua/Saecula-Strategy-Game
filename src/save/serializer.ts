@@ -14,6 +14,8 @@ import { SCHEMA_VERSION, type EntityComponents, type SaveData, type SavedPlayer 
 
 /** Everything a save is written from (the live game and the headless match both provide it). */
 export interface MatchState {
+  /** The match's stable id (newMatchId at a new game, then carried by every save). */
+  matchId: string;
   setup: GameSetupConfig;
   world: EcsWorld;
   players: PlayerManager;
@@ -92,6 +94,7 @@ export function serializeMatch(state: MatchState, now: Date = new Date()): SaveD
   return {
     schemaVersion: SCHEMA_VERSION,
     createdAt: now.toISOString(),
+    matchId: state.matchId,
     gameTimeMs: state.gameTimeMs,
     setup: { ...setup },
     meta: {

@@ -18,8 +18,22 @@ describe('v1 → v2 migration', () => {
     expect(out['stats']).toEqual({ players: { '1': zeroStats(), '2': zeroStats(), '4': zeroStats() }, timeline: [] });
     expect(migrate({ schemaVersion: 1, players: [{ id: 1 }] })).toEqual({
       ok: true,
-      data: { schemaVersion: 2, players: [{ id: 1 }], stats: { players: { '1': zeroStats() }, timeline: [] } },
+      data: { schemaVersion: 2, players: [{ id: 1 }], stats: { players: { '1': zeroStats() }, timeline: [] }, matchId: expect.any(String) as unknown },
     });
+  });
+
+  it('gives the match an id: the same for the same v1 save (one match log record however often it is loaded)', () => {
+    const at = '2026-10-20T10:00:00.000Z';
+    const a = v1ToV2({ schemaVersion: 1, createdAt: at, setup: { seed: 9 }, players: [] })['matchId'];
+    const b = v1ToV2({ schemaVersion: 1, createdAt: at, setup: { seed: 9 }, players: [] })['matchId'];
+    const other = v1ToV2({ schemaVersion: 1, createdAt: '2026-10-20T10:05:00.000Z', setup: { seed: 9 }, players: [] })['matchId'];
+    expect(typeof a).toBe('string');
+    expect(a).toBe(b);
+    expect(other).not.toBe(a);
+    // Without a createdAt there is nothing to derive it from: a fresh random id.
+    const random = v1ToV2({ schemaVersion: 1 })['matchId'];
+    expect(typeof random).toBe('string');
+    expect(random).not.toBe(v1ToV2({ schemaVersion: 1 })['matchId']);
   });
 
   it('a save without players still migrates (zod then rejects it as corrupt)', () => {
@@ -33,6 +47,7 @@ describe('v1 → v2 migration', () => {
     if (!parsed.ok) return;
     const save = parsed.save;
     expect(save.schemaVersion).toBe(2);
+    expect(save.matchId).toBe(`v1-${v1Save.setup.seed}-${v1Save.createdAt}`);
     expect(Object.keys(save.stats.players)).toEqual(save.players.map((p) => String(p.id)));
     expect(Object.values(save.stats.players).every((s) => s.gathered === 0 && s.ageUpAtMs.length === 0)).toBe(true);
 

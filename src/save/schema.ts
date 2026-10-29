@@ -185,6 +185,8 @@ export const SaveDataSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
     createdAt: z.string().datetime(),
+    /** The match's stable id (src/game/matchId.ts): the same in every save of one match; the match log's key. */
+    matchId: z.string().min(1).max(64),
     gameTimeMs: nonNeg,
     setup: GameSetupConfigSchema,
     /** Derived from `setup` and the players, for slot lists. */

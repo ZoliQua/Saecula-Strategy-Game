@@ -13,6 +13,8 @@ import type { MatchState } from './serializer';
 
 /** A save turned back into live match state; the caller builds the systems and AIs on it. */
 export interface RestoredMatch {
+  /** The saved match's id (the match log keeps one record per id). */
+  matchId: string;
   setup: GameSetupConfig;
   players: PlayerManager;
   world: EcsWorld;
@@ -78,6 +80,7 @@ export function restoreMatch(save: SaveData): RestoredMatch {
   const stats = new MatchStats(world, players, save.gameTimeMs);
   stats.restore(save.stats);
   return {
+    matchId: save.matchId,
     setup: { ...save.setup },
     players,
     world,

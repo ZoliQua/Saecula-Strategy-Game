@@ -56,6 +56,7 @@ export class GameScene extends Phaser.Scene {
   private victoryChecker!: VictoryChecker;
   private hudSync!: HudSync;
   private setup!: GameSetupConfig;
+  private matchId = '';
   private matchSave: MatchSave | null = null;
   private recorder: MatchRecorder | null = null;
   private readonly storage = new SaveStorage(browserSaveStore());
@@ -87,7 +88,7 @@ export class GameScene extends Phaser.Scene {
     const prepared = prepareMatch(data);
     if (!prepared.ok) return this.backToMenu(prepared.back);
     const { start, art } = prepared.match;
-    this.setup = prepared.match.setup;
+    ({ setup: this.setup, matchId: this.matchId } = prepared.match);
     this.players = prepared.match.players;
     uiStore.getState().setCiv(this.players.human()?.civ ?? DEFAULT_CIV);
     // Only once the match will run (the menu keeps player 1's colour): each civ's bases in its base owner's colour.
@@ -226,7 +227,7 @@ export class GameScene extends Phaser.Scene {
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
     this.matchSave = new MatchSave(() => this.captureMatch(), this.storage, this.gameElapsedMs);
-    this.recorder = MatchRecorder.forMatch({ setup: this.setup, world: this.world, players: this.players, stats: this.runner.stats, startMs: this.gameElapsedMs, now: () => this.gameElapsedMs });
+    this.recorder = MatchRecorder.forMatch({ matchId: this.matchId, setup: this.setup, world: this.world, players: this.players, stats: this.runner.stats, startMs: this.gameElapsedMs, now: () => this.gameElapsedMs });
 
     this.launchHud();
 
@@ -348,6 +349,7 @@ export class GameScene extends Phaser.Scene {
   /** The live match for a save (serializeMatch). */
   private captureMatch(): MatchState {
     return liveMatchState({
+      matchId: this.matchId,
       setup: this.setup,
       world: this.world,
       players: this.players,

@@ -22,6 +22,7 @@ beforeAll(() => {
   const match = savableMatch();
   match.run(5_000, STEP_MS);
   state = {
+    matchId: match.matchId,
     setup: match.setup,
     world: match.world,
     players: match.players,

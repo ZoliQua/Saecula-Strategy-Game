@@ -10,6 +10,10 @@ describe('save round trip', () => {
     match.run(6 * MIN, STEP_MS);
     const s1 = match.snapshot(FIXED_DATE);
     expect(s1.schemaVersion).toBe(2);
+    // The match id is saved and kept through every resume (the match log's key).
+    expect(s1.matchId).toBe(match.matchId);
+    expect(s1.matchId.length).toBeGreaterThan(0);
+    expect(resumeHeadlessMatch(s1).matchId).toBe(s1.matchId);
     // Six minutes: six timeline samples, and the AIs have gathered.
     expect(s1.stats.timeline.map((t) => t.tMs)).toEqual([1, 2, 3, 4, 5, 6].map((m) => m * MIN));
     expect(s1.stats.players['2']!.gathered).toBeGreaterThan(0);

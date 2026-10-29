@@ -6,7 +6,7 @@ import type { SaveData } from '../../save/schema';
 import { saveKey, SaveStorage, type KeyValueStore } from '../../save/storage';
 import type { MatchEnd, MatchRecord } from '../../stats/matchRecord';
 import { MatchRecorder } from './MatchRecorder';
-import { startFromSlot } from './MatchStart';
+import { prepareMatch, startFromSlot } from './MatchStart';
 
 let save: SaveData;
 beforeAll(() => {
@@ -38,7 +38,7 @@ function recorder(played: boolean) {
   const written: MatchEnd['kind'][] = [];
   const build = (end: MatchEnd, durationMs: number): MatchRecord => {
     const setup = defaultSetupConfig(1);
-    return { v: 1, createdAt: FIXED_DATE.toISOString(), setup, outcome: end.kind, cause: null, durationMs, map: { template: setup.template, mapSize: setup.mapSize, tiles: 96 }, players: [], timeline: [] };
+    return { v: 1, matchId: 'm', createdAt: FIXED_DATE.toISOString(), setup, outcome: end.kind, cause: null, durationMs, map: { template: setup.template, mapSize: setup.mapSize, tiles: 96 }, players: [], timeline: [] };
   };
   const rec = new MatchRecorder({ append: (r) => (written.push(r.outcome), Promise.resolve(true)) }, build, 1000, () => (played ? 5000 : 1000));
   return { rec, written };
@@ -72,5 +72,13 @@ describe('a load from the pause over the running match (Decision 11)', () => {
       const ok = await startFromSlot(scene, new SaveStorage(store(slots)), 1, (m) => errors.push(m), () => rec.abandon());
       expect([ok, started, written, errors.length]).toEqual([false, [], [], 1]);
     }
+  });
+});
+
+describe('the match id across a load', () => {
+  it('a loaded match keeps the match id of its save (one match log record per match)', () => {
+    const prepared = prepareMatch({ load: save });
+    expect(prepared.ok).toBe(true);
+    if (prepared.ok) expect(prepared.match.matchId).toBe(save.matchId);
   });
 });

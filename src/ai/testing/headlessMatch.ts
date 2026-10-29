@@ -62,9 +62,13 @@ export interface HeadlessMatchOptions {
   readonly wonderVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
+  /** The match id its saves carry (default `headless-<seed>`, so equal runs save equal). */
+  readonly matchId?: string;
 }
 
 export interface HeadlessMatch {
+  /** The match id (saved; a resumed match keeps it). */
+  readonly matchId: string;
   readonly world: EcsWorld;
   readonly map: MapData;
   readonly players: PlayerManager;
@@ -127,6 +131,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const human = players.human();
   const humanAi = options.humanStrategy && human ? new AIPlayer(human, options.humanStrategy) : null;
   return assemble({
+    matchId: options.matchId ?? `headless-${options.seed}`,
     setup,
     world,
     map,
@@ -157,6 +162,7 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
     states: r.aiStates,
   });
   return assemble({
+    matchId: r.matchId,
     setup: r.setup,
     world: r.world,
     map: r.mapData,
@@ -173,6 +179,7 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
 }
 
 interface MatchParts {
+  readonly matchId: string;
   readonly setup: GameSetupConfig;
   readonly world: EcsWorld;
   readonly map: MapData;
@@ -234,6 +241,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     stats.update(dt);
   };
   return {
+    matchId: parts.matchId,
     world,
     map,
     players,
@@ -245,7 +253,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
       if (humanAi) throw new Error('A headless match with an AI-driven human cannot be saved');
       const fogs = new Map<number, FogOfWarData>();
       for (const ai of ais) if (ai.fog) fogs.set(ai.player.id, ai.fog);
-      const state: MatchState = { setup, world, players, mapData: map, fogs, ais, gameTimeMs: now, camera: parts.camera, lightPhase: parts.lightPhase, stats };
+      const state: MatchState = { matchId: parts.matchId, setup, world, players, mapData: map, fogs, ais, gameTimeMs: now, camera: parts.camera, lightPhase: parts.lightPhase, stats };
       return serializeMatch(state, date);
     },
     run(totalMs, stepMs, onStep) {

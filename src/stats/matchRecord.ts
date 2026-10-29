@@ -37,7 +37,9 @@ export interface MatchRecordPlayer {
 export interface MatchRecord {
   /** The record format. */
   v: 1;
-  /** When the record was written (ISO); also its key. */
+  /** The match's stable id (src/game/matchId.ts), kept in its saves; the record's key, so a resumed match overwrites its earlier record. */
+  matchId: string;
+  /** When the record was (last) written (ISO); the log is ordered and trimmed by it. */
   createdAt: string;
   setup: GameSetupConfig;
   outcome: MatchOutcome;
@@ -56,6 +58,7 @@ const breakdown = z.object({ economy: count, military: count, buildings: count, 
 export const MatchRecordSchema = z
   .object({
     v: z.literal(1),
+    matchId: z.string().min(1).max(64),
     createdAt: z.string().datetime(),
     setup: GameSetupConfigSchema,
     outcome: enumOf<MatchOutcome>(['victory', 'defeat', 'abandoned']),
@@ -84,10 +87,14 @@ export const MatchRecordSchema = z
 
 export type MatchRecordSchemaCheck = Assert<Exact<z.infer<typeof MatchRecordSchema>, Loose<MatchRecord>>>;
 
+/** A stored record: the M7 dev build wrote records without `matchId` (keyed by createdAt); MatchLog fills it from the key. */
+export const StoredMatchRecordSchema = MatchRecordSchema.extend({ matchId: MatchRecordSchema.shape.matchId.optional() });
+
 /** How the match ended, as GameScene knows it. */
 export type MatchEnd = { kind: 'victory' | 'defeat'; winnerId: number | null; cause: VictoryCause } | { kind: 'abandoned' };
 
 export interface MatchRecordInput {
+  matchId: string;
   createdAt: Date;
   setup: GameSetupConfig;
   players: readonly Player[];
@@ -98,11 +105,12 @@ export interface MatchRecordInput {
 }
 
 /** The log record of the match as it stands now (deep copies; nothing live is kept). */
-export function buildMatchRecord({ createdAt, setup, players, stats, world, durationMs, end }: MatchRecordInput): MatchRecord {
+export function buildMatchRecord({ matchId, createdAt, setup, players, stats, world, durationMs, end }: MatchRecordInput): MatchRecord {
   const winnerId = end.kind === 'abandoned' ? null : end.winnerId;
   const rows = gameOverRows(players, winnerId, setup.difficulty);
   return {
     v: 1,
+    matchId,
     createdAt: createdAt.toISOString(),
     setup: { ...setup },
     outcome: end.kind,
