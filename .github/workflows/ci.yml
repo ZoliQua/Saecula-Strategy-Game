@@ -11,6 +11,8 @@ permissions:
 jobs:
   check:
     name: Lint, typecheck, test, build
+    # The art pin tests hash procedural draw logs, and some differ in the last
+    # floating-point bits on Linux x64; the pins were recorded on macOS arm64.
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
