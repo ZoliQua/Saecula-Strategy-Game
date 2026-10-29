@@ -2,17 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { MUSIC_PIECE_VOICES, MUSIC_VOICES } from '../../config/audio';
 import type { AgeId } from '../../types';
 import { composePiece, modeOf, pieceSeconds, type MusicTrack, type Piece, type VoiceId } from './composer';
+import { audible } from './Sequencer';
 import { allowedPitchClasses, isPitched } from './theory';
 
 const AGES: readonly AgeId[] = [1, 2, 3];
 const TRACKS: readonly MusicTrack[] = ['menu', 'calm_a', 'calm_b', 'combat', 'victory', 'defeat'];
 const SEEDS = [1, 7, 42, 1234, 99991, 0xdeadbeef];
 
-/** Most notes sounding at once, counting each voice's release tail. */
+/** Most notes of the base layer (intensity 0) sounding at once, counting each voice's release tail (the layers: dynamics.test.ts). */
 function peakPolyphony(piece: Piece): number {
   const spb = 60 / piece.bpm;
   const marks: Array<[number, number]> = [];
   for (const e of piece.events) {
+    if (!audible(e, 0)) continue;
     const start = e.beat * spb;
     marks.push([start, 1], [start + e.beats * spb + MUSIC_VOICES[e.voice].tailS, -1]);
   }
@@ -55,7 +57,7 @@ describe('composePiece', () => {
     }
   });
 
-  it('age voice sets are disjoint across ages 1-3', () => {
+  it('age voice sets are disjoint across ages 1-3 (the low tom is the shared percussion layer)', () => {
     const used = new Map<AgeId, Set<VoiceId>>(AGES.map((a) => [a, new Set<VoiceId>()]));
     for (const seed of SEEDS) {
       for (const age of AGES) {
@@ -64,8 +66,12 @@ describe('composePiece', () => {
         }
       }
     }
+    for (const age of AGES) {
+      expect(used.get(age)?.has('tom')).toBe(true);
+      used.get(age)?.delete('tom');
+    }
     expect([...(used.get(1) ?? [])].sort()).toEqual(['aulos', 'frameDrum', 'lyre']);
-    expect([...(used.get(2) ?? [])].sort()).toEqual(['bell', 'drone', 'recorder', 'tabor']);
+    expect([...(used.get(2) ?? [])].sort()).toEqual(['bell', 'citole', 'drone', 'recorder', 'tabor']);
     expect([...(used.get(3) ?? [])].sort()).toEqual(['flute', 'harpsichord', 'strings', 'timpani']);
     const menu = new Set(composePiece('menu', 1, 5).events.map((e) => e.voice));
     expect([...menu].sort()).toEqual(['harp', 'pad']);
@@ -135,18 +141,23 @@ describe('composePiece', () => {
     }
   });
 
-  it('melodies move mostly by step and resolve leaps', () => {
+  it('melodies move mostly by step and resolve leaps (an octave leap of the phrase variation aside)', () => {
     for (const seed of SEEDS) {
       for (const age of AGES) {
         const melodyVoice = { 1: 'aulos', 2: 'recorder', 3: 'flute' }[age];
         const notes = composePiece('calm_b', age, seed).events.filter((e) => e.voice === melodyVoice);
         let steps = 0;
         let big = 0;
+        let octaves = 0;
         for (let i = 1; i < notes.length; i++) {
           const d = Math.abs(notes[i]!.midi - notes[i - 1]!.midi);
           if (d <= 2) steps++;
-          if (d > 9) big++;
+          // An octave leap (a note's second half an octave away) and the move on from it are the variation's.
+          if (d === 12) octaves++;
+          else if (d > 9 && !(i > 1 && Math.abs(notes[i - 1]!.midi - notes[i - 2]!.midi) === 12)) big++;
         }
+        // At most one octave leap (up and back) per repeated section.
+        expect(octaves).toBeLessThanOrEqual(6);
         expect(steps / (notes.length - 1)).toBeGreaterThan(0.45);
         expect(big).toBeLessThanOrEqual(notes.length * 0.05);
       }

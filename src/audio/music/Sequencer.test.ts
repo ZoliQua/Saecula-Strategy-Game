@@ -7,7 +7,7 @@ import { eventsInWindow, heldAt, pickSteal, Sequencer, VoicePool } from './Seque
 const note = (beat: number): NoteEvent => ({ beat, beats: 0.5, voice: 'lyre', midi: 62, velocity: 0.5 });
 
 function piece(loop: boolean): Piece {
-  return { track: 'calm_a', age: 1, bpm: 120, beats: 8, loop, events: [note(0), note(1.5), note(4), note(7.75)] };
+  return { track: 'calm_a', age: 1, bpm: 120, beats: 8, loop, events: [note(0), note(1.5), note(4), note(7.75)], phrases: [0] };
 }
 
 describe('eventsInWindow', () => {
@@ -103,7 +103,7 @@ describe('Sequencer after a stall', () => {
     const seq = new Sequencer(fake.audio, fake.ctx.destination as unknown as AudioNode);
     const drone: NoteEvent = { beat: 1, beats: 30, voice: 'drone', midi: 50, velocity: 0.6 };
     const missed = [2, 3, 4, 5].map((b) => ({ ...note(b), voice: 'lyre' as const }));
-    seq.play({ track: 'calm_a', age: 2, bpm: 60, beats: 40, loop: false, events: [note(0), drone, ...missed] }, 0);
+    seq.play({ track: 'calm_a', age: 2, bpm: 60, beats: 40, loop: false, events: [note(0), drone, ...missed], phrases: [0] }, 0);
     seq.update();
     const before = seq.played;
     // The tab was hidden from 0.1 s to 8 s: the drone (1–31 s) and the lyre notes (2–5 s) were missed.

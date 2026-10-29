@@ -20,8 +20,8 @@ export interface Mode {
   readonly tonic: number;
 }
 
-/** Instruments without a pitch: their `midi` selects a stroke (low = a deep stroke). */
-const UNPITCHED: ReadonlySet<string> = new Set(['frameDrum', 'tabor']);
+/** Instruments without a pitch: their `midi` selects a stroke (low = a deep stroke), or the tom's drum tuning. */
+const UNPITCHED: ReadonlySet<string> = new Set(['frameDrum', 'tabor', 'tom']);
 
 export function isPitched(voice: string): boolean {
   return !UNPITCHED.has(voice);

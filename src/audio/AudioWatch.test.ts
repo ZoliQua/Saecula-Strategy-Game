@@ -268,4 +268,17 @@ describe('AudioWatch', () => {
       expect(limiter.active).toBeLessThanOrEqual(SFX_GLOBAL_VOICES);
     }
   });
+
+  it('movingUnits counts the human\'s living units walking a path', () => {
+    const { world, w } = setup();
+    const walker = (playerId: number, path: TileCoord[], extra: Partial<Entity> = {}) =>
+      world.add({ ...unit(world, 3, 3, playerId), movable: { speed: 1, path, progress: 0, facing: 'S' }, ...extra });
+    walker(HUMAN, [{ tx: 4, ty: 3 }]);
+    walker(HUMAN, [{ tx: 4, ty: 3 }, { tx: 5, ty: 3 }]);
+    walker(HUMAN, []);
+    walker(2, [{ tx: 4, ty: 3 }]);
+    walker(HUMAN, [{ tx: 4, ty: 3 }], { dying: { ttlMs: 500 } });
+    w.update(0);
+    expect(w.movingUnits()).toBe(2);
+  });
 });

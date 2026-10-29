@@ -85,8 +85,10 @@ export const MASTER_LIMITER = { thresholdDb: -12, kneeDb: 10, ratio: 6, attackS:
 
 /** How far ahead of the audio clock the sequencer schedules notes, in seconds. */
 export const MUSIC_LOOKAHEAD_S = 0.1;
-/** Most music notes one piece is written for (release tails counted): the composer stays under it. */
+/** Most music notes one piece's base layer is written for (release tails counted): the composer stays under it. */
 export const MUSIC_PIECE_VOICES = 12;
+/** Notes the intensity layers (pulse, ostinato) may add over MUSIC_PIECE_VOICES at intensity 1 (still under MUSIC_MAX_VOICES; a crossfade steals from the outgoing piece first). */
+export const MUSIC_LAYER_VOICES = 3;
 /** Most music notes sounding at once over both buses (a crossfade overlaps two pieces); the sequencers share it. */
 export const MUSIC_MAX_VOICES = 16;
 /** Crossfade between calm pieces, into and out of combat, and to the menu, in ms. */
@@ -120,8 +122,9 @@ export const MUSIC_BUS_LEVEL = 2.5;
 
 /**
  * The music instruments (VoiceId) by age — Roman: lyre, aulos, frameDrum;
- * medieval: drone, recorder, tabor, bell; early modern: harpsichord,
- * strings, timpani, flute; menu: pad, harp. Per instrument: note level, stereo position, release tail after the
+ * medieval: drone, recorder, tabor, bell, citole (the ostinato); early
+ * modern: harpsichord, strings, timpani, flute; menu: pad, harp. The low
+ * tom is the shared percussion layer of every age (M7 Decision 12). Per instrument: note level, stereo position, release tail after the
  * note's end (s) and reverb send. Melody voices sit in front, harmony
  * spread left and right, percussion low and dry.
  */
@@ -139,4 +142,41 @@ export const MUSIC_VOICES = {
   flute: { level: 0.15, pan: 0.1, tailS: 0.22, send: 0.55 },
   pad: { level: 0.06, pan: 0, tailS: 2.7, send: 0.7 },
   harp: { level: 0.15, pan: -0.15, tailS: 1.1, send: 0.6 },
+  citole: { level: 0.1, pan: 0.35, tailS: 0.2, send: 0.45 },
+  tom: { level: 0.32, pan: -0.1, tailS: 0.2, send: 0.2 },
 } as const satisfies Record<string, { level: number; pan: number; tailS: number; send: number }>;
+
+/*
+ * Dynamic music (M7 Decision 12): an intensity 0..1 drives the note
+ * density, a percussion layer, an ostinato and a tempo lift.
+ */
+
+/**
+ * The intensity target: an age base, plus the share of the human's units
+ * in motion (full at `movingFull` units), plus `battle` while the combat
+ * music plays; clamped to 0..1.
+ */
+export const MUSIC_INTENSITY = {
+  ageBase: { 1: 0.1, 2: 0.15, 3: 0.2 } as const satisfies Record<AgeId, number>,
+  movingWeight: 0.4,
+  movingFull: 12,
+  battle: 0.55,
+} as const;
+/** Smoothing of the intensity (time constants, ms): it rises in a few seconds and settles slower. */
+export const MUSIC_INTENSITY_RISE_MS = 2500;
+export const MUSIC_INTENSITY_FALL_MS = 8000;
+/** At intensity 1 the tempo is this share faster (applied at phrase starts only). */
+export const MUSIC_TEMPO_LIFT = 0.12;
+/** The tempo lift moves in steps of this share (no audible drift between phrases). */
+export const MUSIC_TEMPO_STEP = 0.01;
+/** The percussion layer's live gain: `lo` at intensity 0, 1 at intensity 1. */
+export const MUSIC_PULSE_LIVE_LO = 0.5;
+/** The percussion layer as written: quiet in calm pieces, full in combat. */
+export const MUSIC_PULSE_LEVEL = { calm: 0.55, combat: 0.85 } as const;
+/** The ostinato voice enters above this intensity (its off-beats from MUSIC_OSTINATO_FULL). */
+export const MUSIC_OSTINATO_FROM = 0.5;
+export const MUSIC_OSTINATO_FULL = 0.75;
+/** Every layer note needs at least this intensity: at intensity 0 a piece is its base arrangement alone. */
+export const MUSIC_LAYER_MIN = 0.1;
+/** Seeded phrase variation in repeated sections: chance per repeat of a syncopation (rhythmic displacement) and of an octave leap. */
+export const MUSIC_VARIATION = { displace: 0.5, octave: 0.35 } as const;

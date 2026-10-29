@@ -1,4 +1,11 @@
-import { MUSIC_COMBAT_HOLD_MS, MUSIC_CROSSFADE_MS, MUSIC_STINGER_FADE_MS } from '../../config/audio';
+import {
+  MUSIC_COMBAT_HOLD_MS,
+  MUSIC_CROSSFADE_MS,
+  MUSIC_INTENSITY,
+  MUSIC_INTENSITY_FALL_MS,
+  MUSIC_INTENSITY_RISE_MS,
+  MUSIC_STINGER_FADE_MS,
+} from '../../config/audio';
 import type { AgeId } from '../../types';
 import type { MusicTrack } from './composer';
 
@@ -11,6 +18,22 @@ export interface DirectorInput {
   readonly combatNear: boolean;
   /** When the playing piece ends (same clock as `nowMs`), or null (looping / none). */
   readonly pieceEndsAtMs: number | null;
+  /** The human's units in motion this frame (0 when unknown). */
+  readonly movingUnits?: number;
+}
+
+/** The intensity the music heads for: the age's base, the human's units in motion, and a battle; 0..1. */
+export function intensityTarget(age: AgeId, movingUnits: number, battle: boolean): number {
+  const moving = Math.min(1, Math.max(0, movingUnits) / MUSIC_INTENSITY.movingFull);
+  const t = MUSIC_INTENSITY.ageBase[age] + MUSIC_INTENSITY.movingWeight * moving + (battle ? MUSIC_INTENSITY.battle : 0);
+  return Math.min(1, Math.max(0, t));
+}
+
+/** One smoothing step towards `target` over `dtMs` (faster up than down). */
+export function smoothIntensity(current: number, target: number, dtMs: number): number {
+  if (!(dtMs > 0)) return current;
+  const tau = target > current ? MUSIC_INTENSITY_RISE_MS : MUSIC_INTENSITY_FALL_MS;
+  return target + (current - target) * Math.exp(-dtMs / tau);
 }
 
 export interface MusicCommand {
@@ -33,8 +56,18 @@ export class MusicDirector {
   private lastCalm: 'calm_a' | 'calm_b' | null = null;
   private lastCombatMs = Number.NEGATIVE_INFINITY;
   private switches = 0;
+  private level = 0;
+  private lastMs: number | null = null;
 
   constructor(private readonly seed: number) {}
+
+  /**
+   * The music's intensity, 0..1, smoothed: it drives the layers, the
+   * percussion level and the tempo lift (Decision 12). 0 outside a match.
+   */
+  get intensity(): number {
+    return this.level;
+  }
 
   /** The current track (null before the first command). */
   get current(): MusicTrack | null {
@@ -43,6 +76,25 @@ export class MusicDirector {
 
   /** A command when the music should change, otherwise null. */
   update(nowMs: number, input: DirectorInput): MusicCommand | null {
+    const cmd = this.choose(nowMs, input);
+    this.follow(nowMs, input);
+    return cmd;
+  }
+
+  /** The intensity follows the game; a match starts from its target (no swell at the first piece). */
+  private follow(nowMs: number, input: DirectorInput): void {
+    const dt = this.lastMs === null ? 0 : nowMs - this.lastMs;
+    this.lastMs = nowMs;
+    if (input.scene !== 'game') {
+      this.level = 0;
+      this.lastMs = null;
+      return;
+    }
+    const target = intensityTarget(input.age, input.movingUnits ?? 0, this.track === 'combat');
+    this.level = dt === 0 && this.level === 0 ? target : smoothIntensity(this.level, target, dt);
+  }
+
+  private choose(nowMs: number, input: DirectorInput): MusicCommand | null {
     const { scene } = input;
     if (scene === 'menu') return this.track === 'menu' ? null : this.to('menu', input.age, MUSIC_CROSSFADE_MS);
     if (scene === 'victory' || scene === 'defeat') {

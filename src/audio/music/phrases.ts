@@ -1,5 +1,5 @@
 import { MUSIC_HUMANIZE_MS } from '../../config/audio';
-import type { NoteEvent, VoiceId } from './composer';
+import type { LayerTag, NoteEvent, VoiceId } from './composer';
 import { degreeToMidi, isChordTone, mod, semitones, type Mode, type Rand } from './theory';
 
 /**
@@ -313,12 +313,13 @@ export class Score {
     this.jitterBeats = (MUSIC_HUMANIZE_MS / 1000) * (bpm / 60);
   }
 
-  /** A note; `beat` 0 stays exact (the piece starts on time). */
-  add(beat: number, beats: number, voice: VoiceId, midi: number, velocity: number): void {
+  /** A note; `beat` 0 stays exact (the piece starts on time). A `layer` note plays only from its intensity on. */
+  add(beat: number, beats: number, voice: VoiceId, midi: number, velocity: number, layer?: LayerTag): void {
     const at = beat <= 0 ? 0 : Math.max(0, beat + this.r.signed() * this.jitterBeats);
     if (at >= this.length || beats <= 0) return;
     const v = Math.min(1, Math.max(0.05, velocity));
-    this.events.push({ beat: at, beats, voice, midi: Math.round(midi), velocity: Math.round(v * 1000) / 1000 });
+    const e: NoteEvent = { beat: at, beats, voice, midi: Math.round(midi), velocity: Math.round(v * 1000) / 1000 };
+    this.events.push(layer && (layer.min !== undefined || layer.pulse) ? { ...e, ...layer } : e);
   }
 
   /**

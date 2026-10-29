@@ -1,6 +1,7 @@
 import { MUSIC_CALM_BPM, MUSIC_VOICES, MUSIC_COMBAT_BPM_FACTOR, MUSIC_MENU_BPM, MUSIC_STINGER_SECONDS } from '../../config/audio';
 import type { AgeId } from '../../types';
 import { arrange, type Arrangement, type PieceKind } from './arrangers';
+import { layers, vary } from './layers';
 import { stinger } from './stingers';
 import { ornament, moveLine, Score, writePeriod, type BarPlan, type LineNote, type Meter } from './phrases';
 import { rand, subSeed, type Mode, type ModeName, type Rand } from './theory';
@@ -25,6 +26,16 @@ export interface NoteEvent {
   readonly voice: VoiceId;
   readonly midi: number;
   readonly velocity: number;
+  /** The intensity this note needs to play (an intensity layer); absent: always. */
+  readonly min?: number;
+  /** Part of the percussion layer: its level follows the intensity live. */
+  readonly pulse?: true;
+}
+
+/** How a note of a layer plays: from which intensity, and whether it is the percussion layer. */
+export interface LayerTag {
+  readonly min?: number;
+  readonly pulse?: true;
 }
 
 export interface Piece {
@@ -34,6 +45,8 @@ export interface Piece {
   readonly beats: number;
   readonly loop: boolean;
   readonly events: readonly NoteEvent[];
+  /** Beats where a phrase starts, ascending, the first 0 (the tempo may change there and only there). */
+  readonly phrases: readonly number[];
 }
 
 
@@ -120,8 +133,11 @@ function buildForm(sections: readonly Letter[], chords: Readonly<Record<Letter, 
   return bars;
 }
 
+/** The melodies' range in scale degrees. */
+const MELODY_REGISTER = [-2, 9] as const;
+
 /** The melody of every section: each letter is written once, its repeats are ornamented copies. */
-function melodies(r: Rand, mode: Mode, bars: readonly BarPlan[], bpb: Meter, density: number, velocity: number): LineNote[][] {
+function melodies(r: Rand, v: Rand, mode: Mode, bars: readonly BarPlan[], bpb: Meter, density: number, velocity: number): LineNote[][] {
   const out: LineNote[][] = [];
   const first: Partial<Record<Letter, { line: LineNote[]; start: number }>> = {};
   for (let i = 0; i < bars.length; i++) {
@@ -132,11 +148,11 @@ function melodies(r: Rand, mode: Mode, bars: readonly BarPlan[], bpb: Meter, den
     if (!seed) {
       const start = letter === 'A' ? r.pick([0, 2, 4]) : 4;
       const style = { start, peak: Math.min(9, start + (letter === 'A' ? r.int(4, 6) : r.int(3, 5))) };
-      const line = writePeriod(r, mode, bars.slice(i, i + 8), { bpb, density: letter === 'B' ? Math.min(1, density + 0.2) : density, ...style, register: [-2, 9], velocity });
+      const line = writePeriod(r, mode, bars.slice(i, i + 8), { bpb, density: letter === 'B' ? Math.min(1, density + 0.2) : density, ...style, register: MELODY_REGISTER, velocity });
       first[letter] = { line, start: bar.start };
       out.push(line);
     } else {
-      out.push(moveLine(ornament(r, seed.line, 0.25 + 0.15 * bar.repeat), bar.start - seed.start));
+      out.push(moveLine(vary(v, ornament(r, seed.line, 0.25 + 0.15 * bar.repeat), bpb, MELODY_REGISTER), bar.start - seed.start));
     }
   }
   return out;
@@ -169,6 +185,11 @@ function planFor(kind: PieceKind, age: AgeId, r: Rand): Plan {
   return { bpb: ageMeter, bpm, sections: [], intro: bars, outro: 0, loop: false, density: 0.5 };
 }
 
+/** Beats where a phrase starts: the first bar, each 4-bar phrase, and the first intro / outro bar. */
+function phraseStarts(bars: readonly BarPlan[]): number[] {
+  return bars.filter((b, i) => i === 0 || b.phraseBar === 0 || (b.phraseBar === -1 && bars[i - 1]?.section !== b.section)).map((b) => b.start);
+}
+
 /** A piece for `track` in `age`; the same arguments always write the same piece. */
 export function composePiece(track: MusicTrack, age: AgeId, seed: number): Piece {
   const kind: PieceKind = track === 'calm_a' || track === 'calm_b' ? 'calm' : track;
@@ -189,9 +210,14 @@ export function composePiece(track: MusicTrack, age: AgeId, seed: number): Piece
     bpb: plan.bpb,
     bars,
     score,
-    melodies: kind === 'victory' || kind === 'defeat' ? [] : melodies(r, mode, bars, plan.bpb, plan.density, kind === 'combat' ? 0.7 : 0.62),
+    melodies:
+      kind === 'victory' || kind === 'defeat' ? [] : melodies(r, rand(subSeed(seed, `vary:${track}`)), mode, bars, plan.bpb, plan.density, kind === 'combat' ? 0.7 : 0.62),
   };
-  if (kind === 'victory' || kind === 'defeat') stinger(ctx);
-  else arrange(ctx);
-  return { track, age, bpm: plan.bpm, beats, loop: plan.loop, events: score.done() };
+  if (kind === 'victory' || kind === 'defeat') {
+    stinger(ctx);
+  } else {
+    arrange(ctx);
+    layers(ctx);
+  }
+  return { track, age, bpm: plan.bpm, beats, loop: plan.loop, events: score.done(), phrases: phraseStarts(bars) };
 }

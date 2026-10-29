@@ -211,9 +211,9 @@ export class AudioManager implements AudioSink {
     this.graph?.music.setScene(scene, matchSeed);
   }
 
-  /** Per game frame: the human's age and whether fighting is near the camera. */
-  feedMusic(age: AgeId, combatNear: boolean): void {
-    this.graph?.music.feed(age, combatNear);
+  /** Per game frame: the human's age, whether fighting is near the camera, and the human's units in motion (the music's intensity). */
+  feedMusic(age: AgeId, combatNear: boolean, movingUnits = 0): void {
+    this.graph?.music.feed(age, combatNear, movingUnits);
   }
 
   /** Puts a decoded buffer under a key (a CC0 OGG replacing a generated sound or music track). */

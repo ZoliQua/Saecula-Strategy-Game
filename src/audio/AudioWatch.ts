@@ -38,6 +38,7 @@ function queries(world: EcsWorld) {
     sites: world.with('underConstruction', 'position'),
     health: world.with('health', 'position'),
     gatherers: world.with('gatherer', 'position'),
+    movers: world.with('unit', 'movable', 'owner'),
   };
 }
 
@@ -53,7 +54,8 @@ function soundTile(e: Entity & { position: TileCoord }): TileCoord {
  * events: shots and impacts, blows, damage, deaths, construction,
  * gathering, and the human's notifications. Positions are entity tiles;
  * the sink applies falloff and fog. `combatNear()` reports hp loss close
- * to the camera this frame (the combat music trigger, Task 9).
+ * to the camera this frame (the combat music trigger, Task 9), and
+ * `movingUnits()` the human's units on the move (the music's intensity).
  */
 export class AudioWatch {
   private readonly hp = new Map<Entity, number>();
@@ -66,8 +68,10 @@ export class AudioWatch {
   private readonly blasts: { x: number; y: number; r: number }[] = [];
   private readonly health: ReturnType<typeof queries>['health'];
   private readonly gatherers: ReturnType<typeof queries>['gatherers'];
+  private readonly movers: ReturnType<typeof queries>['movers'];
   private lastAttackNotice = -Infinity;
   private near = false;
+  private moving = 0;
 
   constructor(
     world: EcsWorld,
@@ -75,9 +79,10 @@ export class AudioWatch {
     private readonly humanId: number | undefined,
     private readonly camera: () => TileCoord,
   ) {
-    const { shots, dying, sites, health, gatherers } = queries(world);
+    const { shots, dying, sites, health, gatherers, movers } = queries(world);
     this.health = health;
     this.gatherers = gatherers;
+    this.movers = movers;
     this.unsubscribe.push(
       shots.onEntityAdded.subscribe((e) => this.onFired(e.projectile)),
       shots.onEntityRemoved.subscribe((e) => this.onLanded(e.projectile)),
@@ -137,6 +142,14 @@ export class AudioWatch {
     }
     this.shotTargets.clear();
     this.blasts.length = 0;
+    this.moving = 0;
+    if (this.humanId === undefined) return;
+    for (const e of this.movers) if (e.owner.playerId === this.humanId && e.movable.path.length > 0 && !e.dying) this.moving++;
+  }
+
+  /** The human's living units walking a path in the last update (the music's intensity). */
+  movingUnits(): number {
+    return this.moving;
   }
 
   /** True when hp was lost within COMBAT_MUSIC_RADIUS of the camera in the last update. */

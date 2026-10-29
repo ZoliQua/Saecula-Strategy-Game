@@ -275,7 +275,7 @@ export class SystemRunner {
     this.combatFx.update();
     this.updateListener();
     this.audioWatch.update(time);
-    audio().feedMusic(this.humanAge(), this.audioWatch.combatNear());
+    audio().feedMusic(this.humanAge(), this.audioWatch.combatNear(), this.audioWatch.movingUnits());
   }
 
   /** The tile under the camera centre (the audio listener). */

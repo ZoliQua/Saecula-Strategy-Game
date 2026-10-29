@@ -21,6 +21,9 @@ export interface MusicStats {
   readonly stolen: number;
   /** Seed of the piece playing (game pieces mix in the match seed; the menu's is fixed). */
   readonly seed: number | null;
+  /** The music's intensity (0..1) and the tempo factor of the phrase playing. */
+  readonly intensity: number;
+  readonly tempo: number;
   /** Main-thread time of the music per update (director, composing, scheduling), in ms. */
   readonly schedMs: { readonly frames: number; readonly avg: number; readonly max: number };
 }
@@ -77,6 +80,10 @@ export class MusicPlayer {
   private playerAge: AgeId = 1;
   /** Fighting near the camera since the last update (latched: the game feeds it after the step that reads it). */
   private combat = false;
+  /** The human's units in motion (the latest game frame). */
+  private moving = 0;
+  /** A fixed intensity (dev audition and renders), or null to follow the director. */
+  private heldIntensity: number | null = null;
   private played = 0;
   private frames = 0;
   private totalMs = 0;
@@ -108,10 +115,21 @@ export class MusicPlayer {
     if (matchSeed !== undefined) this.matchSeed = matchSeed >>> 0;
   }
 
-  /** Per game frame: the human's age, and whether fighting is near the camera. */
-  feed(age: AgeId, combatNear: boolean): void {
+  /** Per game frame: the human's age, whether fighting is near the camera, and how many of the human's units move. */
+  feed(age: AgeId, combatNear: boolean, movingUnits = 0): void {
     this.playerAge = age;
     if (combatNear) this.combat = true;
+    this.moving = movingUnits;
+  }
+
+  /** Holds the intensity at `level` (0..1; dev audition and renders), or lets it follow the game again (null). */
+  holdIntensity(level: number | null): void {
+    this.heldIntensity = level === null ? null : Math.min(1, Math.max(0, level));
+  }
+
+  /** The intensity the sequencers play at. */
+  private intensity(): number {
+    return this.heldIntensity ?? this.director.intensity;
   }
 
   /** Crossfades to `track` (the director calls this; the dev console may too). */
@@ -144,6 +162,7 @@ export class MusicPlayer {
       next.source = { node, gain, endsAt: node.loop ? null : at + buffer.duration };
     } else {
       const seq = new Sequencer(ctx, next.dry, next.wet, this.pool);
+      seq.intensity = this.intensity();
       seq.play(composePiece(track, age, seed), at);
       next.seq = seq;
     }
@@ -165,12 +184,15 @@ export class MusicPlayer {
         age: this.playerAge,
         combatNear: this.combat,
         pieceEndsAtMs: end === null ? null : nowMs + (end - this.ctx.currentTime) * 1000,
+        movingUnits: this.moving,
       });
       // The menu theme is the same every visit; game pieces differ per match.
       if (cmd) this.play(cmd.track, cmd.crossfadeMs, cmd.age, cmd.track === 'menu' ? MUSIC_SEED : (Math.imul(cmd.seed ^ this.matchSeed, 0x9e3779b1) ^ this.matchSeed) >>> 0);
     }
     this.combat = false;
+    const intensity = this.intensity();
     for (const bus of this.buses) {
+      if (bus.seq) bus.seq.intensity = intensity;
       bus.seq?.update();
       if (bus !== this.buses[this.active] && bus.seq?.finished()) this.retire(bus);
     }
@@ -203,6 +225,8 @@ export class MusicPlayer {
       played,
       stolen: this.pool.stolen,
       seed: this.seed,
+      intensity: this.intensity(),
+      tempo: this.buses[this.active].seq?.tempo ?? 1,
       schedMs: { frames: this.frames, avg: this.frames ? this.totalMs / this.frames : 0, max: this.maxMs },
     };
   }

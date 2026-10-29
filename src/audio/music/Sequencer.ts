@@ -1,4 +1,12 @@
-import { MUSIC_LOOKAHEAD_S, MUSIC_MAX_VOICES, MUSIC_REENTER_MIN_S, MUSIC_VOICES } from '../../config/audio';
+import {
+  MUSIC_LOOKAHEAD_S,
+  MUSIC_MAX_VOICES,
+  MUSIC_PULSE_LIVE_LO,
+  MUSIC_REENTER_MIN_S,
+  MUSIC_TEMPO_LIFT,
+  MUSIC_TEMPO_STEP,
+  MUSIC_VOICES,
+} from '../../config/audio';
 import type { NoteEvent, Piece, VoiceId } from './composer';
 import { playNote, type Voice } from './instruments';
 
@@ -37,6 +45,37 @@ export function eventsInWindow(piece: Piece, fromBeat: number, toBeat: number): 
   const len = piece.beats;
   for (let k = Math.max(0, Math.floor(fromBeat / len)); k * len < toBeat; k++) take(k * len);
   return out;
+}
+
+/** Whether a note plays at `intensity` (a layer note needs its `min`). */
+export function audible(e: NoteEvent, intensity: number): boolean {
+  return (e.min ?? 0) <= intensity;
+}
+
+/** A note's velocity at `intensity`: the percussion layer grows from MUSIC_PULSE_LIVE_LO to full. */
+export function liveVelocity(e: NoteEvent, intensity: number): number {
+  if (!e.pulse) return e.velocity;
+  const k = Math.min(1, Math.max(0, intensity));
+  return e.velocity * (MUSIC_PULSE_LIVE_LO + (1 - MUSIC_PULSE_LIVE_LO) * k);
+}
+
+/** The tempo factor at `intensity`: up to 1 + MUSIC_TEMPO_LIFT, in MUSIC_TEMPO_STEP steps. */
+export function tempoFactor(intensity: number): number {
+  const k = Math.min(1, Math.max(0, intensity));
+  const steps = Math.round((MUSIC_TEMPO_LIFT * k) / MUSIC_TEMPO_STEP);
+  return 1 + Math.min(MUSIC_TEMPO_LIFT, steps * MUSIC_TEMPO_STEP);
+}
+
+/** The first phrase start after `beat` (a looping piece's phrases repeat every `piece.beats`); Infinity when none. */
+export function nextPhrase(piece: Piece, beat: number): number {
+  const starts = piece.phrases.length > 0 ? piece.phrases : [0];
+  if (!piece.loop) return starts.find((b) => b > beat) ?? Number.POSITIVE_INFINITY;
+  const len = piece.beats;
+  const k = Math.floor(beat / len);
+  for (const period of [k, k + 1]) {
+    for (const b of starts) if (b + period * len > beat) return b + period * len;
+  }
+  return Number.POSITIVE_INFINITY;
 }
 
 /** A note missed by more than this (a hidden tab, a long frame) is skipped, not played late. */
@@ -143,11 +182,18 @@ export class VoicePool {
  * starting within the next MUSIC_LOOKAHEAD_S, within a voice budget
  * shared with the other bus (VoicePool). After a stall, missed notes are
  * skipped and long held ones re-enter. `stop` ends the scheduling at a
- * time and releases whatever still sounds then.
+ * time and releases whatever still sounds then. The intensity (M7) picks
+ * the layer notes that play and the percussion layer's level live, and
+ * the tempo at each phrase start (never inside a phrase).
  */
 export class Sequencer implements VoiceOwner {
   private piece: Piece | null = null;
-  private startTime = 0;
+  /** The tempo is piecewise: `anchorBeat` sounds at `anchorTime`, at `factor` × the piece's bpm from there. */
+  private anchorTime = 0;
+  private anchorBeat = 0;
+  private factor = 1;
+  /** The music's intensity, 0..1 (MusicDirector). */
+  intensity = 0;
   /** Beats scheduled so far (exclusive), from the piece start. */
   private scheduled = 0;
   private stopAt = Number.POSITIVE_INFINITY;
@@ -168,9 +214,31 @@ export class Sequencer implements VoiceOwner {
 
   play(piece: Piece, atTime: number): void {
     this.piece = piece;
-    this.startTime = atTime;
+    this.anchorTime = atTime;
+    this.anchorBeat = 0;
+    this.factor = tempoFactor(this.intensity);
     this.scheduled = 0;
     this.stopAt = Number.POSITIVE_INFINITY;
+  }
+
+  /** The tempo factor of the phrase playing (1 = the piece's bpm). */
+  get tempo(): number {
+    return this.factor;
+  }
+
+  /** Seconds per beat now. */
+  private spb(p: Piece): number {
+    return 60 / (p.bpm * this.factor);
+  }
+
+  /** The audio-clock time of `beat` at the current tempo. */
+  private timeOf(p: Piece, beat: number): number {
+    return this.anchorTime + (beat - this.anchorBeat) * this.spb(p);
+  }
+
+  /** The beat sounding at audio-clock `time` at the current tempo. */
+  private beatAt(p: Piece, time: number): number {
+    return this.anchorBeat + (time - this.anchorTime) / this.spb(p);
   }
 
   /** The piece is stopping (fading out): its notes give way first at the voice cap. */
@@ -187,7 +255,7 @@ export class Sequencer implements VoiceOwner {
   endTime(): number | null {
     const p = this.piece;
     if (!p || p.loop || this.stopAt !== Number.POSITIVE_INFINITY) return null;
-    return this.startTime + (p.beats * 60) / p.bpm;
+    return this.timeOf(p, p.beats);
   }
 
   /** Nothing more will sound: the piece ended or was stopped, and every note has stopped. */
@@ -209,18 +277,35 @@ export class Sequencer implements VoiceOwner {
     this.voices = this.voices.filter((v) => v.end > now);
     const p = this.piece;
     if (!p) return;
-    const spb = 60 / p.bpm;
     const horizon = Math.min(now + MUSIC_LOOKAHEAD_S, this.stopAt);
     // Missed notes (the tab was hidden) are skipped, not played as a burst; long held ones re-enter.
-    const late = (now - LATE_S - this.startTime) / spb;
-    const from = Math.max(this.scheduled, late);
-    const to = (horizon - this.startTime) / spb;
-    if (to <= from) return;
+    const late = this.beatAt(p, now - LATE_S);
+    let from = Math.max(this.scheduled, late);
+    if (this.beatAt(p, horizon) <= from) return;
     if (late > this.scheduled && now < this.stopAt) {
-      for (const e of heldAt(p, this.scheduled, late, MUSIC_REENTER_MIN_S / spb)) this.schedule(e, now, e.beats * spb);
+      const spb = this.spb(p);
+      for (const e of heldAt(p, this.scheduled, late, MUSIC_REENTER_MIN_S / spb)) if (audible(e, this.intensity)) this.schedule(e, now, e.beats * spb);
     }
-    for (const e of eventsInWindow(p, from, to)) this.schedule(e, Math.max(now, this.startTime + e.beat * spb), e.beats * spb);
-    this.scheduled = to;
+    // Up to the horizon, phrase by phrase: the tempo is re-read at each phrase start.
+    for (;;) {
+      const to = this.beatAt(p, horizon);
+      const phrase = nextPhrase(p, this.anchorBeat);
+      const end = Math.min(to, phrase);
+      if (end > from) this.scheduleSpan(p, from, end, now);
+      from = Math.max(from, end);
+      if (phrase > to) break;
+      this.anchorTime = this.timeOf(p, phrase);
+      this.anchorBeat = phrase;
+      this.factor = tempoFactor(this.intensity);
+    }
+    this.scheduled = from;
+  }
+
+  private scheduleSpan(p: Piece, from: number, to: number, now: number): void {
+    const spb = this.spb(p);
+    for (const e of eventsInWindow(p, from, to)) {
+      if (audible(e, this.intensity)) this.schedule(e, Math.max(now, this.timeOf(p, e.beat)), e.beats * spb);
+    }
   }
 
   /** Unwires the instrument channels (the sequencer is done). */
@@ -233,7 +318,7 @@ export class Sequencer implements VoiceOwner {
 
   private schedule(e: NoteEvent, at: number, dur: number): void {
     this.pool.admit(this.ctx.currentTime, at);
-    const voice = playNote(this.ctx, this.channel(e.voice), e.voice, e.midi, e.velocity, at, dur);
+    const voice = playNote(this.ctx, this.channel(e.voice), e.voice, e.midi, liveVelocity(e, this.intensity), at, dur);
     // Scheduled during a fade-out: it lets go when the piece stops.
     if (this.stopAt !== Number.POSITIVE_INFINITY) voice.release(this.stopAt);
     this.voices.push(voice);

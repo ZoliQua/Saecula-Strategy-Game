@@ -200,8 +200,10 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
   switch (voice) {
     case 'lyre':
     case 'harp':
+    case 'citole':
     case 'harpsichord': {
-      const harpsichord = voice === 'harpsichord';
+      // The citole (a medieval plucked fiddle) is a brighter, drier lyre.
+      const harpsichord = voice === 'harpsichord' || voice === 'citole';
       const main = n.osc(voice === 'harp' ? 'triangle' : 'sawtooth', f, harpsichord ? 0 : -3);
       const upper = n.osc(harpsichord ? 'sawtooth' : 'sine', f * 2, 3);
       const upperGain = n.gain(harpsichord ? 0.22 : 0.25);
@@ -210,7 +212,7 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       main.connect(lp);
       upper.connect(upperGain).connect(lp);
       lp.connect(n.amp);
-      const decay = voice === 'harp' ? 0.9 : harpsichord ? 0.45 : 0.6;
+      const decay = voice === 'harp' ? 0.9 : voice === 'citole' ? 0.3 : harpsichord ? 0.45 : 0.6;
       pluck(g, t, level, harpsichord ? 0.002 : 0.004, decay, off, harpsichord ? 0.03 : 0.09);
       return n.done(t, off + tail, off);
     }
@@ -277,6 +279,20 @@ export function playNote(ctx: BaseAudioContext, dest: AudioNode, voice: VoiceId,
       thump.connect(lp).connect(thumpGain).connect(n.amp);
       pluck(g, t, level, 0.004, 0.45, t + tail, 0.2);
       return n.done(t, t + tail + 0.5, t);
+    }
+    case 'tom': {
+      // A low tom: a falling sine body tuned by `midi` (an octave below it), a soft skin noise.
+      const pitch = hz(midi - 12);
+      const body = n.osc('sine', pitch * 1.6);
+      body.frequency.setTargetAtTime(pitch, t, 0.035);
+      const skin = n.noise();
+      const band = n.filter('bandpass', 700, 0.8);
+      const skinGain = n.gain(0.3);
+      skinGain.gain.setTargetAtTime(0, t + 0.002, 0.02);
+      body.connect(n.amp);
+      skin.connect(band).connect(skinGain).connect(n.amp);
+      pluck(g, t, level, 0.003, 0.16, t + tail, 0.06);
+      return n.done(t, t + tail + 0.1, t);
     }
     case 'frameDrum':
     case 'tabor': {

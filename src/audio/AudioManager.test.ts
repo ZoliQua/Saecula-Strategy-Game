@@ -344,6 +344,22 @@ describe('AudioManager', () => {
     expect(loop?.loop).toBe(true);
   });
 
+  it('music: the human\'s units in motion raise the intensity', () => {
+    const h = fakeHost(false);
+    const m = readyManager(h);
+    m.setMusicScene('game');
+    m.feedMusic(1, false, 0);
+    m.update(16);
+    const still = m.stats().music?.intensity ?? 0;
+    expect(still).toBeGreaterThan(0);
+    for (let i = 0; i < 300; i++) {
+      clock += 16;
+      m.feedMusic(1, false, 20);
+      m.update(16);
+    }
+    expect(m.stats().music?.intensity ?? 0).toBeGreaterThan(still + 0.1);
+  });
+
   it('music: a victory stinger replaces the game music', () => {
     const h = fakeHost(false);
     const m = readyManager(h);
