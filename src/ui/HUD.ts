@@ -12,6 +12,7 @@ import { SelectionPanel } from './panels/SelectionPanel';
 import { SidePanel } from './panels/SidePanel';
 import { WonderTimers } from './panels/WonderTimers';
 import type { Minimap } from './Minimap';
+import { guardPageZoom } from './pageZoomGuard';
 import { settingsStore } from './settings';
 import { uiStore, type UiStore } from './store';
 import './hud.css';
@@ -50,6 +51,8 @@ export class Hud {
   private readonly wonderTimers = new WonderTimers();
   private readonly side = new SidePanel();
   private readonly dockWatch: ResizeObserver | null;
+  /** Removes the page-zoom guard (a pinch over a HUD card must not zoom the browser page). */
+  private readonly unguardZoom: () => void;
   private readonly ageChip: HTMLElement;
   private readonly clock: HTMLElement;
   private readonly hint: HTMLElement;
@@ -107,6 +110,7 @@ export class Hud {
     const right = el('div', { class: 'hud-right' }, this.wonderTimers.root, this.side.root);
     this.root = el('div', { class: 'hud' }, top, right, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
+    this.unguardZoom = guardPageZoom(uiRoot(), document);
     // The right column ends above the build panel, however tall its grid grows.
     this.dockWatch = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.fitDock());
     this.dockWatch?.observe(this.commands.root);
@@ -180,6 +184,7 @@ export class Hud {
 
   destroy(): void {
     if (noticeSink === this.notice) noticeSink = null;
+    this.unguardZoom();
     this.unsubscribe();
     this.unsubscribeAge();
     this.unsubscribeResearch();
