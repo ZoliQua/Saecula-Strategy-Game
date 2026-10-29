@@ -432,8 +432,7 @@ IsoRTS/
 │       │   ├── buildings/{civ}/{age}/{building_type}.png
 │       │   ├── terrain/
 │       │   └── ui/
-│       ├── stats/                   ← pontszám, meccs-statisztika, játéknapló (IndexedDB)
-    ├── audio/
+│       ├── audio/
 │       └── data/
 │           ├── civs.json        ← nép-specifikus beállítások
 │           ├── units.json       ← egység statisztikák
@@ -511,6 +510,7 @@ IsoRTS/
     │   ├── deserializer.ts      ← JSON → ECS
     │   ├── storage.ts           ← localforage wrapper
     │   └── migrations/          ← verzió-migrációk
+    ├── stats/                   ← pontszám, meccs-statisztika, játéknapló (IndexedDB)
     ├── audio/
     │   ├── AudioManager.ts      ← hangkezelő: zene, SFX, hangerő-csatornák, pozicionális hang
     │   ├── sfx/                 ← procedurális hangeffektek (szintézis, katalógus, hangkorlát)
