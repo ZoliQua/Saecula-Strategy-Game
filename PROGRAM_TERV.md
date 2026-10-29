@@ -1,4 +1,4 @@
-# PROGRAM_TERV.md — IsoRTS részletes fejlesztési terv
+# PROGRAM_TERV.md — Saecula részletes fejlesztési terv
 
 > Ez a dokumentum a CLAUDE.md kiegészítése. A CLAUDE.md rögzíti, **mit**
 > építünk (scope + architektúra). Ez a dokumentum rögzíti, **hogyan** és
@@ -8,7 +8,7 @@
 > különálló Claude Code session-ben elvégezhető. A task végén ellenőrizd
 > az acceptance criteria pontokat. Ha valami nem illik, kérdezz vissza.
 
-**Munkacím:** IsoRTS
+**Név:** Saecula (korábbi munkacím: IsoRTS)
 **Tervezett időkeret:** 5-8 hónap part-time
 **Utolsó frissítés:** 2026-04-21
 
