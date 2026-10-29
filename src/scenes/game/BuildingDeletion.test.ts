@@ -7,7 +7,10 @@ import type { Wallet } from '../../ecs/research';
 import { gameEvents } from '../../game/events';
 import { computePopulation } from '../../game/population';
 import type { Resources } from '../../types';
-import { deleteBuilding, deleteSelectedBuilding } from './BuildingDeletion';
+import { UNIT_SPECS } from '../../ecs/archetypes/unit';
+import { TECH_SPECS } from '../../game/technologies';
+import { resetUiStore, uiStore } from '../../ui/store';
+import { deleteBuilding, deleteKeyHandler, deleteSelectedBuilding } from './BuildingDeletion';
 
 function wallet(start: Resources = { food: 0, wood: 0, gold: 0 }): Wallet & { value: Resources } {
   const w = {
@@ -90,5 +93,40 @@ describe('deleting own buildings (M7 decision 6)', () => {
     expect(own.dying).toBeDefined();
     expect(own.selectable!.selected).toBe(false);
     expect(deleteSelectedBuilding(sim.world, 99999, 1, wallet()).ok).toBe(false);
+  });
+
+  it('refunds the queued units at full cost and the research in progress before the building goes', () => {
+    const sim = createMiniSim(32);
+    const tc = createBuilding(sim.world, { type: 'town_center', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: sim.map });
+    tc.trainingQueue!.entries.push(
+      { unitType: 'villager', elapsed: 3, totalTime: 10 },
+      { unitType: 'villager', elapsed: 0, totalTime: 10 },
+    );
+    const smith = createBuilding(sim.world, { type: 'blacksmith', origin: { tx: 12, ty: 4 }, playerId: 1, mapData: sim.map });
+    sim.world.addComponent(smith, 'research', { techId: 'armor_1', elapsed: 5, totalTime: 30 });
+    const w = wallet();
+    deleteBuilding(sim.world, tc, 1, w);
+    const v = UNIT_SPECS.villager.cost;
+    expect(w.value).toEqual({ food: 2 * v.food, wood: 2 * v.wood, gold: 2 * v.gold });
+    expect(tc.trainingQueue!.entries).toHaveLength(0);
+    const w2 = wallet();
+    deleteBuilding(sim.world, smith, 1, w2);
+    expect(w2.value).toEqual(TECH_SPECS.armor_1.cost);
+    expect(smith.research).toBeUndefined();
+  });
+});
+
+describe('the delete key', () => {
+  it('ignores auto-repeat, so holding the key cannot confirm its own arm', () => {
+    resetUiStore();
+    uiStore.getState().setSelectedEntity({
+      kind: 'building', id: 3, ownerId: 1, buildingType: 'house', civ: 'hungarian', hp: { current: 1, max: 1 }, tile: { tx: 0, ty: 0 },
+    });
+    const onKey = deleteKeyHandler(1);
+    onKey({ repeat: false });
+    expect(uiStore.getState().deleteArmedId).toBe(3);
+    onKey({ repeat: true });
+    onKey({ repeat: true });
+    expect(uiStore.getState().deleteArmedId).toBe(3);
   });
 });

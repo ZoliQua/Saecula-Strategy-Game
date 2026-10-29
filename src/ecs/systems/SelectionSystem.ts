@@ -4,7 +4,7 @@ import { footprintDepth, tileDepth } from '../../iso/depth';
 import { DEFAULT_CIV } from '../../config/civs';
 import type { CivId } from '../../types';
 import { uiStore } from '../../ui/store';
-import { infoKey, toSelectedInfo, type SelectableWithPos } from './selectedInfo';
+import { infoKey, isLastTownCenter, toSelectedInfo, type SelectableWithPos } from './selectedInfo';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { BUILDING_DEPTH_OFFSET, buildingOutlineDepth } from './renderPlacement';
@@ -157,6 +157,7 @@ export class SelectionSystem {
     // frame churns Zustand subscribers and triggers a full HUD render.
     const primary = selected[0] as SelectableWithPos;
     const info = toSelectedInfo(primary, this.civOf);
+    if (info?.kind === 'building' && isLastTownCenter(this.world, primary)) info.lastTownCenter = true;
     const key = `${infoKey(info)}#${selected.length}`;
     if (key !== this.lastInfoKey) {
       uiStore.getState().setSelectedEntity(info, selected.length);

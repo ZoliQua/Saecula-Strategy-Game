@@ -4,6 +4,7 @@ import type { SelectedEntityInfo } from '../../ui/store';
 import { techsForBuilding } from '../../game/technologies';
 import { UNIT_SPECS } from '../archetypes/unit';
 import type { Entity } from '../components';
+import type { EcsWorld } from '../world';
 
 /* HUD snapshot of the primary selection: pure ECS entity → store shape (kept Phaser-free for tests). */
 
@@ -26,7 +27,8 @@ export function infoKey(info: SelectedEntityInfo | null): string {
     const tr = (info.trainable ?? []).join(',');
     const cp = info.constructionProgress === undefined ? '-' : Math.round(info.constructionProgress * 100);
     const rs = info.research ? `${info.research.techId}@${Math.round(info.research.progress * 100)}` : '-';
-    return `b:${info.id}:${info.ownerId}:${info.civ}:${info.textureKey ?? '-'}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}`;
+    const last = info.lastTownCenter ? 'L' : '-';
+    return `b:${info.id}:${info.ownerId}:${info.civ}:${info.textureKey ?? '-'}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}:${last}`;
   }
   return `r:${info.id}:${info.amount}/${info.maxAmount}`;
 }
@@ -96,4 +98,18 @@ export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: numb
     return info;
   }
   return null;
+}
+
+/**
+ * True when `building` is a town centre and its owner has no other
+ * standing (non-dying, finished or not) town centre: losing it is a
+ * conquest defeat (VictoryChecker).
+ */
+export function isLastTownCenter(world: EcsWorld, building: Entity): boolean {
+  if (building.building?.type !== 'town_center' || building.dying) return false;
+  const owner = building.owner?.playerId;
+  for (const e of world.with('building', 'owner')) {
+    if (e !== building && e.building.type === 'town_center' && e.owner.playerId === owner && !e.dying) return false;
+  }
+  return true;
 }

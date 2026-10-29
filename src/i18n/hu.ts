@@ -191,10 +191,13 @@ export const hu = {
     deleteBuilding: (pct: number) => (pct > 0 ? `Törlés · +${pct} %` : 'Törlés'),
     /** The armed button, waiting for the confirming second press. */
     deleteConfirm: (pct: number) => (pct > 0 ? `Biztosan? · +${pct} %` : 'Biztosan törlöd?'),
-    deleteTip: (pct: number) =>
+    /** Armed on the owner's only town centre: deleting it loses the match. */
+    deleteConfirmLast: 'Utolsó városháza – vereség!',
+    /** `key`: the delete key's label as bound. */
+    deleteTip: (pct: number, key: string) =>
       pct > 0
-        ? `Az épület lebontása, az ára ${pct} %-a visszajár. Kattints kétszer (vagy Delete).`
-        : 'Az épület lebontása, visszatérítés nélkül. Kattints kétszer (vagy Delete).',
+        ? `Az épület lebontása, az ára ${pct} %-a visszajár. Kattints kétszer (vagy ${key}).`
+        : `Az épület lebontása, visszatérítés nélkül. Kattints kétszer (vagy ${key}).`,
   },
   resourceNodes: {
     food: 'Bogyós bokor',

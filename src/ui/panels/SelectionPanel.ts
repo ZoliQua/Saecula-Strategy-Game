@@ -33,7 +33,8 @@ export class SelectionPanel {
   constructor(private readonly textures: Phaser.Textures.TextureManager) {
     this.portrait = el('div', { class: 'portrait empty' });
     this.body = el('div', { class: 'sel-body' });
-    this.root = el('div', { class: 'glass selection anim-in' }, this.portrait, this.body, this.deleteButton.root);
+    const main = el('div', { class: 'sel-main' }, this.body, this.deleteButton.row);
+    this.root = el('div', { class: 'glass selection anim-in' }, this.portrait, main);
   }
 
   render(state: UiStore): void {

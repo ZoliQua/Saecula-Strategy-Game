@@ -2,6 +2,8 @@ export const TILE_WIDTH = 64;
 export const TILE_HEIGHT = 32;
 
 export const MAX_PLAYERS = 6;
+/** The human's player id (PlayerManager gives the human id 1; AIs follow from 2). */
+export const HUMAN_PLAYER_ID = 1;
 
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;

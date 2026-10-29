@@ -4,7 +4,8 @@ import { MapData } from '../map/MapData';
 import { TERRAIN } from '../map/TerrainTypes';
 import { uiStore } from '../ui/store';
 import { createBuilding } from './archetypes/building';
-import { queueUnit, type TrainAccount } from './queueUnit';
+import { UNIT_SPECS } from './archetypes/unit';
+import { cancelQueuedUnit, queueUnit, type TrainAccount } from './queueUnit';
 import { playerWallet } from './research';
 import { createEcsWorld } from './world';
 
@@ -53,5 +54,18 @@ describe('queueUnit', () => {
     pop = { current: 5, cap: 5 };
     player.resources = { food: 500, wood: 500, gold: 500 };
     expect(queueUnit(barracks, 'swordsman', 1, account).reason).toBe('pop-cap');
+  });
+});
+
+describe('cancelQueuedUnit', () => {
+  it('removes the entry and refunds its full cost into the wallet', () => {
+    const trainer = { trainingQueue: { entries: [{ unitType: 'villager' as const, elapsed: 4, totalTime: 10 }], maxQueue: 5 } };
+    let value = { food: 0, wood: 0, gold: 0 };
+    const wallet = { get: () => value, set: (n: typeof value) => void (value = { ...n }) };
+    expect(cancelQueuedUnit(trainer, 0, wallet)).toBe(true);
+    expect(trainer.trainingQueue.entries).toHaveLength(0);
+    expect(value).toEqual(UNIT_SPECS.villager.cost);
+    expect(cancelQueuedUnit(trainer, 0, wallet)).toBe(false);
+    expect(value).toEqual(UNIT_SPECS.villager.cost);
   });
 });

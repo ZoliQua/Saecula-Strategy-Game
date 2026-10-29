@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
-import { infoKey, toSelectedInfo } from './selectedInfo';
+import { MapData } from '../../map/MapData';
+import { TERRAIN } from '../../map/TerrainTypes';
+import { createBuilding } from '../archetypes/building';
+import { createEcsWorld } from '../world';
+import { infoKey, isLastTownCenter, toSelectedInfo } from './selectedInfo';
 
 const civOf = (playerId: number): CivId => (playerId === 2 ? 'english' : 'hungarian');
 
@@ -64,5 +68,21 @@ describe('toSelectedInfo', () => {
     if (before?.kind === 'building') {
       expect(infoKey({ ...before, civ: 'english' })).not.toBe(infoKey(before));
     }
+  });
+});
+
+describe('isLastTownCenter', () => {
+  it('is true only for the owner\'s only standing town centre', () => {
+    const map = new MapData(32, 32, TERRAIN.grass);
+    const world = createEcsWorld();
+    const a = createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 1, mapData: map });
+    const house = createBuilding(world, { type: 'house', origin: { tx: 10, ty: 2 }, playerId: 1, mapData: map });
+    createBuilding(world, { type: 'town_center', origin: { tx: 20, ty: 20 }, playerId: 2, mapData: map });
+    expect(isLastTownCenter(world, a)).toBe(true);
+    expect(isLastTownCenter(world, house)).toBe(false);
+    const b = createBuilding(world, { type: 'town_center', origin: { tx: 10, ty: 10 }, playerId: 1, mapData: map, underConstruction: true });
+    expect(isLastTownCenter(world, a)).toBe(false);
+    world.addComponent(b, 'dying', { ttlMs: 100 });
+    expect(isLastTownCenter(world, a)).toBe(true);
   });
 });

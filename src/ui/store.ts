@@ -40,6 +40,8 @@ export interface SelectedBuildingInfo {
   hp: { current: number; max: number };
   tile: { tx: number; ty: number };
   constructionProgress?: number;
+  /** The owner's only standing town centre: deleting it loses the match (SelectionSystem). */
+  lastTownCenter?: boolean;
   trainable?: readonly UnitType[];
   queue?: readonly TrainingEntryInfo[];
   /** Technologies this building type researches. */
@@ -129,8 +131,13 @@ export function createUiStore(): StoreApi<UiStore> {
     setCiv: (civ) => set({ civ }),
     setResearchedTechs: (techs) => set({ researchedTechs: techs }),
     setUniqueBuilt: (types) => set({ uniqueBuilt: types }),
+    // A different selection disarms a pending delete (a refresh of the same entity keeps it).
     setSelectedEntity: (info, count) =>
-      set({ selectedEntity: info, selectionCount: count ?? (info ? 1 : 0) }),
+      set((state) => ({
+        selectedEntity: info,
+        selectionCount: count ?? (info ? 1 : 0),
+        deleteArmedId: info && info.id === state.deleteArmedId ? state.deleteArmedId : null,
+      })),
     setPlacementBuilding: (type) => set({ placementBuilding: type, wallPreview: null }),
     setWallPreview: (preview) => set({ wallPreview: preview }),
     setGameTime: (ms) => set({ gameTimeMs: ms }),

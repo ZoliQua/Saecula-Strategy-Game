@@ -8,7 +8,7 @@ import { browserSaveStore } from '../save/browserStore';
 import type { MatchState } from '../save/serializer';
 import { SaveStorage, type SlotId } from '../save/storage';
 import { VictoryChecker } from '../game/VictoryChecker';
-import { queueUnit } from '../ecs/queueUnit';
+import { cancelQueuedUnit, queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
@@ -275,9 +275,7 @@ export class GameScene extends Phaser.Scene {
         }
       } else if (cmd.type === 'cancel-queue') {
         const trainer = find(cmd.trainerId);
-        if (trainer?.trainingQueue) {
-          trainer.trainingQueue.entries.splice(cmd.index, 1);
-        }
+        if (trainer && trainer.owner?.playerId === human?.id) cancelQueuedUnit(trainer, cmd.index, uiWallet());
       } else if (cmd.type === 'research') {
         const building = find(cmd.buildingId);
         if (building && human && building.owner?.playerId === human.id) {

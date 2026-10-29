@@ -74,3 +74,19 @@ export function queueUnit(
   });
   return { ok: true };
 }
+
+/**
+ * Removes training entry `index` from `trainer` and returns the unit's
+ * full cost to `wallet` (it was paid up front by queueUnit). False when
+ * there is no such entry.
+ */
+export function cancelQueuedUnit(trainer: Pick<Entity, 'trainingQueue'>, index: number, wallet: Wallet): boolean {
+  const entries = trainer.trainingQueue?.entries;
+  const entry = entries?.[index];
+  if (!entries || !entry) return false;
+  entries.splice(index, 1);
+  const cost = UNIT_SPECS[entry.unitType].cost;
+  const have = wallet.get();
+  wallet.set({ food: have.food + cost.food, wood: have.wood + cost.wood, gold: have.gold + cost.gold });
+  return true;
+}

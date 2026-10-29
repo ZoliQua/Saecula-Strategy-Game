@@ -52,3 +52,16 @@ describe('delete confirmation (press to arm, press again within 3 s to delete)',
     expect(sent).toEqual([{ type: 'delete-building', buildingId: 3 }]);
   });
 });
+
+describe('the armed delete follows the selection', () => {
+  it('a new selection disarms; a refresh of the same building keeps the arm', () => {
+    resetUiStore();
+    const base = { kind: 'building', ownerId: 1, hp: { current: 1, max: 1 }, tile: { tx: 0, ty: 0 }, buildingType: 'house', civ: 'hungarian' } as const;
+    uiStore.getState().setSelectedEntity({ ...base, id: 3 });
+    uiStore.getState().setDeleteArmed(3);
+    uiStore.getState().setSelectedEntity({ ...base, id: 3, hp: { current: 1, max: 2 } });
+    expect(uiStore.getState().deleteArmedId).toBe(3);
+    uiStore.getState().setSelectedEntity({ ...base, id: 4 });
+    expect(uiStore.getState().deleteArmedId).toBeNull();
+  });
+});
