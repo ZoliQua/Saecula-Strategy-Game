@@ -1,3 +1,4 @@
+import type { VillagerActivity } from '../stats/villagerActivity';
 import type { TechId, UnitType } from '../types';
 
 /**
@@ -11,7 +12,13 @@ export type GameCommand =
   | { type: 'cancel-queue'; trainerId: number; index: number }
   | { type: 'research'; buildingId: number; techId: TechId }
   | { type: 'cancel-research'; buildingId: number }
-  | { type: 'delete-building'; buildingId: number };
+  | { type: 'delete-building'; buildingId: number }
+  /** The camera to the human's next town centre (the Haza button). */
+  | { type: 'camera-home' }
+  /** One wheel notch of zoom around the screen centre (the minimap's ± buttons): 1 in, -1 out. */
+  | { type: 'camera-zoom'; dir: 1 | -1 }
+  /** Select exactly the human's villagers doing `activity` (a side panel row). */
+  | { type: 'select-villagers'; activity: VillagerActivity };
 
 type Listener = (cmd: GameCommand) => void;
 

@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CIV } from '../config/civs';
 import type { WonderClockInfo } from '../game/wonderClocks';
+import type { VillagerActivity } from '../stats/villagerActivity';
 import type {
   AgeId,
   BuildingType,
@@ -63,6 +64,24 @@ export type SelectedEntityInfo =
   | SelectedBuildingInfo
   | SelectedResourceInfo;
 
+/** One row of the side panel's score view (HudSync, once a second). */
+export interface ScoreRowInfo {
+  playerId: number;
+  civ: CivId;
+  color: number;
+  isHuman: boolean;
+  score: number;
+  defeated: boolean;
+}
+
+export type SidePanelView = 'score' | 'villagers';
+
+/** The right-edge side panel: shown or folded to its tab, and which view (display state, never saved). */
+export interface SidePanelState {
+  open: boolean;
+  view: SidePanelView;
+}
+
 export interface UiState {
   resources: Resources;
   population: Population;
@@ -85,6 +104,11 @@ export interface UiState {
   wonders: readonly WonderClockInfo[];
   /** Building whose delete button is armed (the next press deletes it), or null. */
   deleteArmedId: number | null;
+  sidePanel: SidePanelState;
+  /** Every player's score, highest first. */
+  scores: readonly ScoreRowInfo[];
+  /** The human's villagers per activity. */
+  villagerCounts: Readonly<Record<VillagerActivity, number>>;
 }
 
 export interface UiActions {
@@ -100,6 +124,12 @@ export interface UiActions {
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
   setDeleteArmed: (id: number | null) => void;
+  /** Opens the side panel on `view`. */
+  showSidePanel: (view: SidePanelView) => void;
+  /** Folds an open panel to its tab, or opens a folded one on its last view. */
+  toggleSidePanel: () => void;
+  setScores: (rows: readonly ScoreRowInfo[]) => void;
+  setVillagerCounts: (counts: Readonly<Record<VillagerActivity, number>>) => void;
 }
 
 export type UiStore = UiState & UiActions;
@@ -118,6 +148,9 @@ const INITIAL: UiState = {
   gameTimeMs: 0,
   wonders: [],
   deleteArmedId: null,
+  sidePanel: { open: true, view: 'score' },
+  scores: [],
+  villagerCounts: { food: 0, wood: 0, gold: 0, build: 0, idle: 0, other: 0 },
 };
 
 export function createUiStore(): StoreApi<UiStore> {
@@ -143,6 +176,10 @@ export function createUiStore(): StoreApi<UiStore> {
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
     setDeleteArmed: (id) => set({ deleteArmedId: id }),
+    showSidePanel: (view) => set({ sidePanel: { open: true, view } }),
+    toggleSidePanel: () => set((state) => ({ sidePanel: { ...state.sidePanel, open: !state.sidePanel.open } })),
+    setScores: (rows) => set({ scores: rows }),
+    setVillagerCounts: (counts) => set({ villagerCounts: counts }),
   }));
 }
 
@@ -161,6 +198,9 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     gameTimeMs: 0,
     wonders: [],
     deleteArmedId: null,
+    sidePanel: { ...INITIAL.sidePanel },
+    scores: [],
+    villagerCounts: { ...INITIAL.villagerCounts },
   });
 }
 

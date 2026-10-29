@@ -4,12 +4,15 @@ import { gameEvents } from '../game/events';
 import { hu } from '../i18n/hu';
 import type { AgeId } from '../types';
 import { el, formatClock, uiRoot } from './dom';
+import { dispatchCommand } from './events';
 import { icons } from './icons';
 import { CommandPanel } from './panels/CommandPanel';
 import { ResourceBar } from './panels/ResourceBar';
 import { SelectionPanel } from './panels/SelectionPanel';
+import { SidePanel } from './panels/SidePanel';
 import { WonderTimers } from './panels/WonderTimers';
 import type { Minimap } from './Minimap';
+import { settingsStore } from './settings';
 import { uiStore, type UiStore } from './store';
 import './hud.css';
 
@@ -45,6 +48,8 @@ export class Hud {
   private readonly selection: SelectionPanel;
   private readonly commands: CommandPanel;
   private readonly wonderTimers = new WonderTimers();
+  private readonly side = new SidePanel();
+  private readonly dockWatch: ResizeObserver | null;
   private readonly ageChip: HTMLElement;
   private readonly clock: HTMLElement;
   private readonly hint: HTMLElement;
@@ -77,6 +82,7 @@ export class Hud {
         el('span', { class: 'brand-mark', html: icons.mark }),
         el('span', { class: 'brand-name' }, hu.title),
         this.ageChip,
+        hudButton('home-btn', icons.home, () => dispatchCommand({ type: 'camera-home' }), () => hu.hud.homeTip(settingsStore.getState().keys.home.label), hu.hud.home),
       ),
       this.resources.root,
       el('div', { class: 'glass clock anim-in' }, el('span', { html: icons.clock }), this.clock),
@@ -84,12 +90,26 @@ export class Hud {
     const minimapCard = el(
       'div',
       { class: 'glass minimap anim-in' },
-      el('div', { class: 'panel-title' }, el('span', {}, hu.hud.minimap)),
+      el(
+        'div',
+        { class: 'panel-title' },
+        el('span', {}, hu.hud.minimap),
+        el(
+          'span',
+          { class: 'mm-zoom' },
+          hudButton('', icons.minus, () => dispatchCommand({ type: 'camera-zoom', dir: -1 }), () => hu.hud.zoomOut),
+          hudButton('', icons.plus, () => dispatchCommand({ type: 'camera-zoom', dir: 1 }), () => hu.hud.zoomIn),
+        ),
+      ),
       this.minimapSlot,
     );
     const bottom = el('div', { class: 'hud-bottom' }, minimapCard, this.selection.root, this.commands.root);
-    this.root = el('div', { class: 'hud' }, top, this.wonderTimers.root, this.hint, this.toasts, bottom);
+    const right = el('div', { class: 'hud-right' }, this.wonderTimers.root, this.side.root);
+    this.root = el('div', { class: 'hud' }, top, right, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
+    // The right column ends above the build panel, however tall its grid grows.
+    this.dockWatch = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.fitDock());
+    this.dockWatch?.observe(this.commands.root);
     noticeSink = this.notice;
 
     this.render(uiStore.getState());
@@ -112,6 +132,11 @@ export class Hud {
       offCompleted();
       offLost();
     };
+  }
+
+  /** Room the bottom-right build panel takes (its height, the dock margin and a gap), for the right column. */
+  private fitDock(): void {
+    this.root.style.setProperty('--dock-h', `${this.commands.root.offsetHeight + 14 + 12}px`);
   }
 
   attachMinimap(minimap: Minimap): void {
@@ -140,6 +165,7 @@ export class Hud {
     this.selection.render(state);
     this.commands.render(state);
     this.wonderTimers.render(state);
+    this.side.render(state);
     this.ageChip.textContent = AGE_NAME[state.currentAge];
     this.clock.textContent = formatClock(state.gameTimeMs);
     if (state.placementBuilding) {
@@ -159,10 +185,27 @@ export class Hud {
     this.unsubscribeResearch();
     this.unsubscribeWonders();
     this.wonderTimers.destroy();
+    this.dockWatch?.disconnect();
+    this.side.destroy();
     this.minimap?.destroy();
     this.resources.destroy();
     this.selection.destroy();
     this.commands.destroy();
     this.root.remove();
   }
+}
+
+/** A small HUD icon button (with an optional label); its tooltip is read on hover, so it names keys as bound now. */
+function hudButton(cls: string, icon: string, onPress: () => void, tip: () => string, label?: string): HTMLButtonElement {
+  const button = el('button', { class: cls, type: 'button' }, el('span', { html: icon }), label === undefined ? null : el('span', {}, label));
+  button.title = tip();
+  button.setAttribute('aria-label', label ?? tip());
+  button.addEventListener('mouseenter', () => (button.title = tip()));
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // A focused button would keep a focus ring and take Space / Enter meant for the game.
+    button.blur();
+    onPress();
+  });
+  return button;
 }

@@ -5,7 +5,9 @@ import {
   CAMERA_SPEED,
   MAX_ZOOM,
   MIN_ZOOM,
+  WHEEL_ZOOM_STEP,
 } from '../../config/constants';
+import { tileToScreen, type TileCoord } from '../../iso/coordinates';
 import { settingsStore } from '../../ui/settings';
 import { KeyState } from './KeyState';
 import { wheelIntent, wheelPan, wheelZoomFactor, type WheelLike } from './wheelIntent';
@@ -110,6 +112,17 @@ export class CameraController {
     }
     this.zoomAround(this.scene.input.activePointer.x, this.scene.input.activePointer.y, wheelZoomFactor(e));
   };
+
+  /** Centres the view on `tile` (fractional tiles allowed: a footprint's middle). */
+  centerOnTile(tile: TileCoord): void {
+    const { sx, sy } = tileToScreen(tile);
+    this.camera.centerOn(sx, sy);
+  }
+
+  /** One wheel notch of zoom around the screen centre: `dir` 1 in, -1 out (within MIN_ZOOM..MAX_ZOOM). */
+  zoomStep(dir: 1 | -1): void {
+    this.zoomAround(this.camera.width / 2, this.camera.height / 2, dir === 1 ? WHEEL_ZOOM_STEP : 1 / WHEEL_ZOOM_STEP);
+  }
 
   /** Multiplies the zoom by `factor` (within MIN_ZOOM..MAX_ZOOM), keeping the world point under screen (x, y) in place. */
   private zoomAround(x: number, y: number, factor: number): void {

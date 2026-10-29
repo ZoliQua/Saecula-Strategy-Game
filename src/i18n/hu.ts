@@ -138,6 +138,27 @@ export const hu = {
     wall: 'Fal',
     wonder: 'Csoda',
   },
+  /** The right-edge side panel (M7): scores and villager activity. */
+  side: {
+    score: 'Pontszám',
+    villagers: 'Falusiak',
+    you: 'Te',
+    defeated: 'Legyőzve',
+    /** `key`: the score panel key as bound. */
+    collapse: (key: string) => `Panel összecsukása (${key})`,
+    expand: (key: string) => `Pontszám és falusiak (${key})`,
+    activity: {
+      food: 'Étel',
+      wood: 'Fa',
+      gold: 'Arany',
+      build: 'Építés',
+      idle: 'Tétlen',
+      other: 'Egyéb',
+    },
+    selectRow: (n: number, what: string) => `${n} falusi kijelölése (${what.toLowerCase()})`,
+    total: (n: number) => `${n} falusi összesen`,
+    leader: 'Vezet',
+  },
   hud: {
     noSelection: 'Nincs kijelölés',
     noSelectionHint: 'Kattints egy egységre vagy épületre, vagy húzz keretet több egységhez.',
@@ -155,6 +176,13 @@ export const hu = {
     train: 'Kiképzés',
     commands: 'Parancsok',
     minimap: 'Térkép',
+    /** The Haza button (top-left); `key`: the home key as bound. */
+    home: 'Haza',
+    homeTip: (key: string) => `Vissza a városházához (${key}) · több városháza között lépked`,
+    zoomIn: 'Nagyítás',
+    zoomOut: 'Kicsinyítés',
+    /** The top bar's population counter opens the side panel's villager view. */
+    populationTip: 'Népesség · kattints: mit csinálnak a falusiak',
     underConstruction: 'Építés alatt',
     enemy: 'Ellenség',
     selectedMore: 'további kijelölve',

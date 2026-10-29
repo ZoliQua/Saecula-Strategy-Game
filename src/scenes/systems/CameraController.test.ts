@@ -84,4 +84,39 @@ describe('CameraController', () => {
     scene.events.emit('shutdown');
     void ctl;
   });
+
+  it('zoomStep zooms one notch around the screen centre within the limits; centerOnTile centres on the tile', () => {
+    const scene = fakeScene(listenerTarget());
+    const cam = {
+      zoom: 1,
+      scrollX: 0,
+      scrollY: 0,
+      width: 1280,
+      height: 720,
+      centred: null as { x: number; y: number } | null,
+      setZoom(z: number) {
+        this.zoom = z;
+      },
+      centerOn(x: number, y: number) {
+        this.centred = { x, y };
+      },
+      getWorldPoint(x: number, y: number) {
+        return { x: this.scrollX + x / this.zoom, y: this.scrollY + y / this.zoom };
+      },
+    };
+    const s = { ...scene, cameras: { main: cam } };
+    const ctl = new CameraController(s as unknown as Phaser.Scene, { keyTarget: listenerTarget() });
+    ctl.zoomStep(1);
+    expect(cam.zoom).toBeCloseTo(1.1);
+    const c = cam.getWorldPoint(640, 360);
+    expect(c.x).toBeCloseTo(640);
+    expect(c.y).toBeCloseTo(360);
+    for (let i = 0; i < 20; i++) ctl.zoomStep(1);
+    expect(cam.zoom).toBe(2);
+    for (let i = 0; i < 40; i++) ctl.zoomStep(-1);
+    expect(cam.zoom).toBe(0.5);
+    ctl.centerOnTile({ tx: 11, ty: 6 });
+    expect(cam.centred).toEqual({ x: (11 - 6) * 32, y: (11 + 6) * 16 });
+    scene.events.emit('shutdown');
+  });
 });

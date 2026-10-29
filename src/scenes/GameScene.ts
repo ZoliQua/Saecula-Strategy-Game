@@ -30,6 +30,7 @@ import { wirePlayerInput } from './game/PlayerInputWiring';
 import { openPause } from './game/PauseWiring';
 import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
+import { wireHudControls } from './game/HudControls';
 import { liveMatchState, MatchSave } from './game/MatchSave';
 import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
 import { prepareMatch, runnerFor, startFromSlot, type MatchStart, type MenuReturn } from './game/MatchStart';
@@ -218,7 +219,7 @@ export class GameScene extends Phaser.Scene {
 
     const wonderHoldMs = config.victory === 'conquest_wonder' ? WONDER_HOLD_MS : null;
     this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs);
-    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs);
+    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats);
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
@@ -238,6 +239,7 @@ export class GameScene extends Phaser.Scene {
       age: () => this.players.human()?.age ?? 1,
       onIdleEscape: () => openPause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage),
     });
+    wireHudControls(this, { world: this.world, selection: this.runner.selection, camera: cameraController, humanId: human?.id ?? 1 });
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);
   }
 
@@ -351,6 +353,7 @@ export class GameScene extends Phaser.Scene {
       gameTimeMs: this.gameElapsedMs,
       camera: cameraView(this.cameras.main),
       lightPhase: this.lighting.getPhase(),
+      stats: this.runner.stats,
     });
   }
 

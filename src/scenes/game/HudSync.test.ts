@@ -7,6 +7,8 @@ import { PlayerManager } from '../../game/PlayerManager';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { resetUiStore, uiStore } from '../../ui/store';
+import { createVillager } from '../../ecs/archetypes/villager';
+import { MatchStats } from '../../stats/MatchStats';
 import { HudSync } from './HudSync';
 
 function setup() {
@@ -34,5 +36,22 @@ describe('HudSync', () => {
     expect(uiStore.getState().wonders).toEqual([
       { entityId: wonder.id, playerId: 1, color: players.get(1)!.color, remainingMs: WONDER_HOLD_MS - 60_000 },
     ]);
+  });
+
+  it("publishes every player's score, highest first, and the human's villager counts", () => {
+    const { world, players } = setup();
+    const stats = new MatchStats(world, players);
+    createVillager(world, { tile: { tx: 15, ty: 15 } });
+    createVillager(world, { tile: { tx: 16, ty: 15 }, playerId: 2 });
+    players.get(2)!.age = 3;
+    players.get(2)!.defeated = true;
+    new HudSync(world, players, null, stats).secondTick();
+    const s = uiStore.getState();
+    // The human's finished Wonder: 5000 / 10 = 500; player 2 in age 3: 800.
+    expect(s.scores.map((r) => [r.playerId, r.score, r.defeated, r.isHuman])).toEqual([
+      [2, 800, true, false],
+      [1, 500, false, true],
+    ]);
+    expect(s.villagerCounts).toEqual({ food: 0, wood: 0, gold: 0, build: 0, idle: 1, other: 0 });
   });
 });

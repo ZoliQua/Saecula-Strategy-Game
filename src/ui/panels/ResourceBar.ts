@@ -2,7 +2,7 @@ import { hu } from '../../i18n/hu';
 import type { ResourceType } from '../../types';
 import { el } from '../dom';
 import { icons } from '../icons';
-import type { UiStore } from '../store';
+import { uiStore, type UiStore } from '../store';
 
 const RESOURCES: readonly ResourceType[] = ['food', 'wood', 'gold'];
 const COUNT_MS = 450;
@@ -16,7 +16,7 @@ interface Counter {
   start: number;
 }
 
-/** Top resource pill: animated counters with +/- feedback. */
+/** Top resource pill: animated counters with +/- feedback; the population counter opens the villager view. */
 export class ResourceBar {
   readonly root: HTMLElement;
   private readonly counters = new Map<ResourceType, Counter>();
@@ -41,9 +41,19 @@ export class ResourceBar {
     }
     this.popText = el('span', { class: 'res-val' }, '0/0');
     this.popMeter = el('span', { class: 'pop-meter' }, el('i'));
-    this.root.append(
-      el('div', { class: 'res', title: hu.hud.population }, el('span', { class: 'res-icon', html: icons.pop }), this.popText, this.popMeter),
+    // The population counter opens the side panel on the villager view.
+    const pop = el(
+      'div',
+      { class: 'res pop-btn', title: hu.hud.populationTip, role: 'button' },
+      el('span', { class: 'res-icon', html: icons.pop }),
+      this.popText,
+      this.popMeter,
     );
+    pop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      uiStore.getState().showSidePanel('villagers');
+    });
+    this.root.append(pop);
   }
 
   render(state: UiStore): void {
