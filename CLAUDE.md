@@ -432,7 +432,8 @@ IsoRTS/
 │       │   ├── buildings/{civ}/{age}/{building_type}.png
 │       │   ├── terrain/
 │       │   └── ui/
-│       ├── audio/
+│       ├── stats/                   ← pontszám, meccs-statisztika, játéknapló (IndexedDB)
+    ├── audio/
 │       └── data/
 │           ├── civs.json        ← nép-specifikus beállítások
 │           ├── units.json       ← egység statisztikák
@@ -793,6 +794,61 @@ bontjuk, minden fázis végén játszható (vagy legalább futó) build.
   egy 128×128-as, 6 játékosos mentés betöltése ~8 s; nézetmérettől függetlenül:
   legfeljebb 292 entitás (6 játékos), bundle 0,71 MB gzip, a fenti mentés 0,44 MB
   JSON, mentése ~6–11 ms.
+
+### M7 — Playtest-javítások és kezelhetőség
+Az első teljes játék (2026-10-29) hibalistája és kérései. Ág: `feat/M7-playtest`.
+- **Beragadó egységek (hiba):** egység sosem kerülhet tartósan járhatatlan
+  mezőre. Épületalap lerakásakor a területén álló egységek a legközelebbi
+  szabad mezőre lépnek; a mozgó egység, amelynek következő lépése közben
+  járhatatlanná vált, újratervez; a járhatatlan mezőről induló útkeresés
+  előbb kilép a legközelebbi szabad mezőre. A két egymás melletti falusi
+  beragadását reprodukálni kell, és meg kell keresni a valódi okát. Egy hosszú
+  AI-szimuláció őrzi, hogy egyetlen egység sem ragad be.
+- **Segítség az építésben:** a kijelölt falusi jobb klikkje (vagy a beállított
+  parancs-gesztusa) a saját félkész épületre építésre küldi.
+- **Környezetfüggő kurzor:** a kurzor jelzi, mit tesz a kijelölt egység,
+  ha a mezőre küldöd: mozgás, fa (fejsze), arany (csákány), étel (kosár),
+  építés (kalapács), támadás (kard), tiltott hely. Saját SVG kurzorok, külső
+  fájl nélkül.
+- **Érintőpad és egér:** két ujjas húzás a térképet mozgatja, csippentés
+  (pinch, a böngészőben `ctrlKey` görgetés) nagyít; az egérgörgő nagyít.
+  A beállításban: „Görgetés”: automatikus / nagyítás / mozgatás.
+- **Irányítás a beállításokban:** a beállítás két lapra oszlik: „Hang” és
+  „Irányítás”. Az Irányításban: a parancs gesztusa (a jobb klikk mindig él,
+  mellé választható: Ctrl+klikk, alapértelmezett / Cmd+klikk / Alt+klikk /
+  nincs), a görgetés módja és az átállítható billentyűk (a kamera mellett: haza,
+  pontszám-panel, falusi-panel, fejlődési fa, épület törlése).
+- **Épület törlése:** a kijelölt saját épület törölhető (gomb a kijelölés
+  panelen, `Delete` billentyű, megerősítéssel). Félkész épületnél, legfeljebb 50 %
+  készültségig a költség egy része visszajár: `round((1 − p) × 80)` százalék, ahol
+  `p` a készültség (0 % → 80 %, 49 % → 41 %, 50 % → 40 %), erőforrásonként
+  kerekítve. 50 % fölött és kész épületnél nincs visszatérítés.
+- **Fejlődési fa:** a szünet menü „Fejlődési fa” pontja korok szerint mutatja,
+  mi mikor válik elérhetővé (épületek, egységek és melyik épület képzi őket,
+  fejlesztések, a korváltás ára); a játékos jelenlegi kora kiemelve.
+- **Jobb oldali panel (váltható):** „Pontszám” nézet — minden játékos
+  pontszáma, élőben (AoE-szokás: az ellenfelek pontszáma is látszik);
+  „Falusiak” nézet — hány falusi gyűjt ételt, fát, aranyat, hány épít, hány
+  tétlen; egy sorra kattintva azok a falusiak kijelölődnek. A felső sáv
+  népesség-számlálójára kattintva a panel a Falusiak nézetre vált.
+  Pontszám = összegyűjtött nyersanyag / 10 + elpusztított ellenséges egységek
+  és épületek ára / 10 + álló, kész saját épületek ára / 10 + korbónusz
+  (középkor 300, felvilágosodás 800). A mentés a statisztikát is tartalmazza
+  (`schemaVersion` 2, migrációval).
+- **Kamera-gombok:** „Haza” gomb (és billentyű): a nézetet a saját
+  városházára igazítja, ismételt nyomásra a következő városházára lép. A
+  térkép-panelen nagyító és kicsinyítő gomb.
+- **Játéknapló és statisztika:** minden befejezett (győzelem, vereség vagy
+  kilépés) meccs összefoglalója a helyi IndexedDB-be kerül (`isorts` /
+  `matches`, legfeljebb 200, a legrégebbi esik ki): beállítás, időtartam,
+  eredmény, játékosonkénti végső pontszám és bontása, percenkénti
+  idővonal. Főmenü „Statisztika” képernyő: korábbi meccsek, összesítések
+  (győzelmi arány, átlagos hossz, nép és nehézség szerint), JSON export.
+  Csak helyben, szerver nincs.
+- **Zene:** dinamikusabb — ritmikus réteg, a hangerő és a sűrűség a játék
+  intenzitásával nő, változatosabb frázisok és tempó.
+- Nem része: épületjavítás, egyedi egységek, multiplayer, online statisztika.
+- Keret (10.): az M6 keretei változatlanok.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
