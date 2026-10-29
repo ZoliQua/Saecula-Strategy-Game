@@ -16,6 +16,6 @@ describe('statsView', () => {
   it('the export holds every record', () => {
     const now = new Date('2026-10-29T10:00:00.000Z');
     const parsed = JSON.parse(exportPayload([], now)) as Record<string, unknown>;
-    expect(parsed).toEqual({ app: 'isorts', kind: 'match-log', version: 1, exportedAt: '2026-10-29T10:00:00.000Z', count: 0, records: [] });
+    expect(parsed).toEqual({ app: 'saecula', kind: 'match-log', version: 1, exportedAt: '2026-10-29T10:00:00.000Z', count: 0, records: [] });
   });
 });

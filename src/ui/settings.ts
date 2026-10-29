@@ -27,6 +27,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = { volume: DEFAULT_VOLUMES, muted: false, keys: DEFAULT_KEYS, controls: DEFAULT_CONTROLS };
+/** Kept from the IsoRTS working title so stored settings survive the rename (CLAUDE.md 7.6). */
 export const SETTINGS_KEY = 'isorts.settings.v1';
 
 export function clampVolume(v: number): number {
@@ -189,7 +190,7 @@ export function createSettingsStore(storage: Pick<Storage, 'getItem' | 'setItem'
  * The app's settings store. Pinned on globalThis like `uiStore`, so Vite
  * HMR re-evaluations share one instance.
  */
-const STORE_KEY = '__isorts_settingsStore__';
+const STORE_KEY = '__saecula_settingsStore__';
 interface GlobalHolder {
   [STORE_KEY]?: StoreApi<SettingsStore>;
 }

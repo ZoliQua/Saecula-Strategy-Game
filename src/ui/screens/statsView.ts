@@ -30,5 +30,5 @@ export function exportDate(now: Date): string {
 
 /** The exported JSON: every record, oldest first, with when and what it is. */
 export function exportPayload(records: readonly MatchRecord[], now: Date): string {
-  return JSON.stringify({ app: 'isorts', kind: 'match-log', version: 1, exportedAt: now.toISOString(), count: records.length, records }, null, 2);
+  return JSON.stringify({ app: 'saecula', kind: 'match-log', version: 1, exportedAt: now.toISOString(), count: records.length, records }, null, 2);
 }

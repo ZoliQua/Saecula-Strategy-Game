@@ -1,5 +1,5 @@
 export const hu = {
-  title: 'IsoRTS',
+  title: 'Saecula',
   subtitle: 'Izometrikus történelmi stratégia',
   menu: {
     newGame: 'Új játék',
@@ -13,6 +13,8 @@ export const hu = {
       'Gyűjts nyersanyagot, emelj városokat, képezz sereget — és győzd le a szomszédos népeket valós idejű csatákban.',
     comingSoon: 'Hamarosan',
     footer: 'Böngészőben fut · telepítés nélkül',
+    /** The game version in the menu footer. */
+    version: (v: string): string => `v${v}`,
     /** How many civs can be played, and how many are still to come. */
     civCount: (available: number, upcoming: number): string => (upcoming === 0 ? `${available} nép` : `${available} nép · ${upcoming} hamarosan`),
     features: (available: number, upcoming: number): string[] => ['3 történelmi kor', hu.menu.civCount(available, upcoming), 'AI ellenfelek'],
@@ -334,7 +336,7 @@ export const hu = {
     export: 'Exportálás (JSON)',
     exported: 'A meccsnapló letöltése elindult',
     /** The exported file's name (date: YYYY-MM-DD). */
-    exportFile: (date: string) => `isorts-meccsek-${date}.json`,
+    exportFile: (date: string) => `saecula-meccsek-${date}.json`,
   },
   /** The pause menu (Esc). */
   pause: {

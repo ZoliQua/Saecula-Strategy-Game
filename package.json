@@ -1,9 +1,20 @@
 {
-  "name": "isorts",
+  "name": "saecula",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "IsoRTS — izometrikus történelmi stratégiai játék",
+  "description": "Saecula — an isometric historical real-time strategy game for the browser",
+  "author": "Zoltán Dul (https://github.com/ZoliQua)",
+  "license": "MIT",
+  "homepage": "https://github.com/ZoliQua/Saecula-Strategy-Game#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZoliQua/Saecula-Strategy-Game.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ZoliQua/Saecula-Strategy-Game/issues"
+  },
+  "keywords": ["rts", "strategy-game", "isometric", "phaser", "typescript", "browser-game", "historical"],
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
