@@ -1,12 +1,12 @@
-# CLAUDE.md — Izometrikus történelmi stratégiai játék
+# CLAUDE.md — Saecula, izometrikus történelmi stratégiai játék
 
 > Ez a dokumentum Claude Code számára készült útmutató. A projekt minden
 > technikai és tartalmi döntésének itt van a forrása. Ha ellentmondás van
 > ezen dokumentum és egy ad-hoc kérés között, **kérdezz rá**, ne döntsd el
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
-**Munkacím:** `IsoRTS` (a végleges név később eldől)
-**Verzió:** 0.1 — kezdeti scope dokumentum
+**Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
+**Játékverzió:** 0.2.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -83,7 +83,7 @@ Ha a MVP stabil, ezek kerülhetnek be később (külön feature branch-ben):
   ### 2.4 Github és követés
 
   - Minden nagyobb lépésnél commit és push gitbem majd githubra.
-  - Remote repo: https://github.com/ZoliQua/Strategy-Game
+  - Remote repo: https://github.com/ZoliQua/Saecula-Strategy-Game
 
 ---
 
@@ -418,9 +418,15 @@ Cél: egy JSON, ami teljesen visszaállítja a játékot. Séma versionelt.
 ## 6. Projekt struktúra
 
 ```
-IsoRTS/
+Saecula-Strategy-Game/
 ├── CLAUDE.md                    ← ez a fájl
-├── README.md
+├── README.md / README.hu.md     ← angol és magyar leírás (tartalmuk egyezik)
+├── CHANGELOG.md / CHANGELOG.hu.md
+├── CONTRIBUTING.md / CONTRIBUTING.hu.md
+├── CODE_OF_CONDUCT.md / CODE_OF_CONDUCT.hu.md
+├── CONTRIBUTORS.md
+├── LICENSE                      ← MIT
+├── .github/                     ← CI (lint, típus, teszt, build), issue- és PR-sablonok
 ├── package.json
 ├── tsconfig.json                ← strict: true
 ├── vite.config.ts
@@ -556,9 +562,28 @@ docs/                            ← tervek és specifikációk (plans/specs)
 
 ### 7.5 Git
 
-- Branch: `main` + feature branchek (`feat/pathfinding`, `fix/depth-sort`).
+- Branch: `main` (alapértelmezett, mindent tartalmaz) + feature branchek
+  (`feat/pathfinding`, `fix/depth-sort`), mindig a `main`-ből indítva.
 - Commit: conventional commits (`feat:`, `fix:`, `refactor:`, `docs:`).
 - Minden feature branch PR-ban megy main-be (még ha szólómunka is).
+
+### 7.6 Verziózás és a név
+
+- **Név:** a játék neve **Saecula**; a felhasználónak látható minden helyen
+  (cím, főmenü, HUD, export-fájlnév, dokumentumok) ez szerepel, a `hu.title`
+  az egyetlen forrás a UI-ban.
+- **Belső tároló-kulcsok maradnak** (`isorts` IndexedDB, `isorts.settings.v1`
+  localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
+  és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
+- **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.2.0**.
+- A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
+  `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
+- Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
+  formátum), `package.json` verzió, `chore(release): vX.Y.Z` commit a
+  `main`-en, `vX.Y.Z` git tag és GitHub release a changelog szakaszával.
+- A dokumentumok angolul és magyarul is megvannak (`*.md` és `*.hu.md`);
+  változáskor mindkettőt frissíteni kell.
 
 ---
 
@@ -969,4 +994,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-29. Zoli projekt, `IsoRTS` munkacím.*
+*Utolsó frissítés: 2026-10-29. Zoli projekt — Saecula, v0.2.0.*
