@@ -1,0 +1,40 @@
+name: 🐞 Bug report · Hibajelentés
+description: Something in the game does not work as expected. · Valami nem úgy működik a játékban, ahogy kellene.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting! English or Hungarian are both fine. · Köszönjük a jelentést! Írhatsz angolul vagy magyarul is.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? · Mi történt?
+      description: What did you do, what did you expect, and what happened instead? · Mit csináltál, mit vártál, és mi történt helyette?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce · Hogyan idézhető elő?
+      placeholder: |
+        1. New game, Meadow, medium map · Új játék, Mezőség, közepes térkép
+        2. …
+  - type: input
+    id: version
+    attributes:
+      label: Game version · Játékverzió
+      description: Shown at the bottom of the main menu. · A főmenü alján látható.
+      placeholder: v0.2.0
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Browser and OS · Böngésző és operációs rendszer
+      placeholder: Chrome 140, macOS 26
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots, console output · Képernyőkép, konzol-kimenet
+      description: Drag images here; paste errors from the browser console (F12). · Húzd ide a képeket; a böngésző konzoljának (F12) hibáit másold be.

@@ -1,0 +1,18 @@
+name: 💡 Idea or feedback · Ötlet vagy visszajelzés
+description: Suggest an improvement or share playtest notes. · Javasolj fejlesztést, vagy oszd meg a tesztjáték tapasztalatait.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The game's scope is fixed in CLAUDE.md (section 1.2 lists what is deliberately out of scope). · A játék terjedelmét a CLAUDE.md rögzíti (az 1.2 szakasz sorolja fel, mi nem része szándékosan).
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like? · Mit szeretnél?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why? What moment in the game made you want it? · Miért? A játék melyik pillanatában hiányzott?
