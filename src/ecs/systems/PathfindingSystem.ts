@@ -43,7 +43,7 @@ export class PathfindingSystem {
       return true;
     }
     if (!this.paths.take()) return false;
-    const path = findPathToNearest(this.mapData, entity.position, target, escapeRulesAt(this.world, entity.position));
+    const path = findPathToNearest(this.mapData, entity.position, target, escapeRulesAt(this.world, entity.position, this.mapData));
     if (!path || path.length < 2) {
       this.world.removeComponent(entity as Entity, 'moveIntent');
       return true;

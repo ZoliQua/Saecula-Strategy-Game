@@ -12,6 +12,13 @@ export interface EscapeRules {
   crossable(tx: number, ty: number): boolean;
   /** A blocked corner that a step out of an exit-less pocket may cut (never a wall segment). */
   cuttable(tx: number, ty: number): boolean;
+  /**
+   * Last resort, for a start on blocked ground only: when nothing `crossable`
+   * leads to a free tile (the whole ring is blocked), these tiles may be
+   * crossed too (neighbouring building footprints; never a wall segment or
+   * impassable terrain). Absent: no last resort.
+   */
+  lastResort?(tx: number, ty: number): boolean;
 }
 
 /** No crossing at all: a unit can only leave its own blocked tile onto a free neighbour. */
@@ -29,7 +36,9 @@ export const STRICT_ESCAPE: EscapeRules = { crossable: () => false, cuttable: ()
  *
  * Among the possible exits the nearest one from which `toward` can be
  * reached wins; otherwise the nearest one that has a step onward, then the
- * nearest at all. Null when there is no exit (the plain search then fails).
+ * nearest at all. A blocked start with no exit tries again also crossing
+ * `rules.lastResort` tiles. Null when there is no exit (the plain search
+ * then fails).
  * Returns the steps from `start` (included) to the exit.
  */
 export function escapeSteps(
@@ -43,12 +52,29 @@ export function escapeSteps(
   if (start.tx < 0 || start.ty < 0 || start.tx >= w || start.ty >= h) return null;
   const startFree = map.isPassable(start.tx, start.ty);
   if (startFree && hasExit(map, start.tx, start.ty)) return null;
+  const steps = searchExit(map, start, startFree, rules, (tx, ty) => rules.crossable(tx, ty), toward);
+  const last = rules.lastResort;
+  if (steps || startFree || !last) return steps;
+  return searchExit(map, start, startFree, rules, (tx, ty) => rules.crossable(tx, ty) || last.call(rules, tx, ty), toward);
+}
+
+/** The breadth-first search of escapeSteps, crossing blocked tiles where `cross` allows. */
+function searchExit(
+  map: MapData,
+  start: TileCoord,
+  startFree: boolean,
+  rules: EscapeRules,
+  cross: (tx: number, ty: number) => boolean,
+  toward: TileCoord | undefined,
+): TileCoord[] | null {
+  const w = map.width;
+  const h = map.height;
   const parent = new Int32Array(w * h).fill(-1);
   const origin = start.ty * w + start.tx;
   parent[origin] = origin;
   const queue: number[] = [origin];
   const exits: number[] = [];
-  const free = (tx: number, ty: number) => map.isPassable(tx, ty) || rules.crossable(tx, ty);
+  const free = (tx: number, ty: number) => map.isPassable(tx, ty) || cross(tx, ty);
   for (let head = 0; head < queue.length; head++) {
     const idx = queue[head]!;
     const tx = idx % w;
@@ -65,7 +91,7 @@ export function escapeSteps(
         if (dx !== 0 && dy !== 0 && (!corner(tx + dx, ty) || !corner(tx, ty + dy))) continue;
         parent[n] = idx;
         exits.push(n);
-      } else if (!startFree && rules.crossable(nx, ny)) {
+      } else if (!startFree && cross(nx, ny)) {
         parent[n] = idx;
         queue.push(n);
       }

@@ -180,7 +180,7 @@ export class CombatSystem {
     // Every tile in reach blocked (e.g. ringed by walls): head for the target itself;
     // findPathToNearest stops at the closest reachable tile.
     const goal = findAdjacentToTarget(this.mapData, target, a.position, a.attacker.range) ?? target.position;
-    const path = findPathToNearest(this.mapData, a.position, goal, escapeRulesAt(this.world, a.position));
+    const path = findPathToNearest(this.mapData, a.position, goal, escapeRulesAt(this.world, a.position, this.mapData));
     if (!path || path.length < 2) {
       // Walled off and already as close as possible: breach, or retry later (not every tick).
       if (this.tryBreach(a, target)) return;

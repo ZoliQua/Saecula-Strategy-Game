@@ -4,7 +4,9 @@ import { TERRAIN } from '../map/TerrainTypes';
 import { createBuilding } from './archetypes/building';
 import { createVillager } from './archetypes/villager';
 import { createWall } from './archetypes/wall';
+import { findPath } from '../map/pathfinding';
 import { evictUnitsFrom } from './evict';
+import { escapeRulesAt } from './escapeRules';
 import { onFootprintRing } from './footprint';
 import { createEcsWorld } from './world';
 
@@ -103,5 +105,77 @@ describe('evictUnitsFrom never sends a unit through another structure (fix round
     world.addComponent(v, 'buildCommand', { targetId: site.id! });
     place(world, map);
     expect(v.movable!.path.at(-1)!.ty).toBe(11);
+  });
+});
+
+describe('evictUnitsFrom, last resort: a footprint whose whole ring is blocked (final review)', () => {
+  const ORIGIN = { tx: 8, ty: 9 };
+  const SIZE = { width: 3, height: 3 };
+  /** Houses (any owner) on every tile of the ring around a 3×3 at (8,9): x 7..11, y 8..12. */
+  function enclosedByHouses() {
+    const world = createEcsWorld();
+    const map = new MapData(32, 32, TERRAIN.grass);
+    const houses: [number, number, number][] = [
+      [6, 7, 1], [8, 7, 2], [10, 7, 1],
+      [6, 12, 2], [8, 12, 1], [10, 12, 2],
+      [6, 9, 1], [6, 11, 2], [11, 9, 2], [11, 11, 1],
+    ];
+    for (const [tx, ty, playerId] of houses) createBuilding(world, { type: 'house', origin: { tx, ty }, playerId, mapData: map });
+    return { world, map };
+  }
+  const ringBlocked = (map: MapData) => {
+    for (let y = 8; y <= 12; y++) for (let x = 7; x <= 11; x++) if (onFootprintRing({ tx: x, ty: y }, ORIGIN, SIZE) && map.isPassable(x, y)) return false;
+    return true;
+  };
+
+  it('a unit enclosed by houses crosses a neighbouring house to the nearest free tile', () => {
+    const { world, map } = enclosedByHouses();
+    const v = createVillager(world, { tile: { tx: 9, ty: 10 } });
+    createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
+    expect(ringBlocked(map)).toBe(true);
+    evictUnitsFrom(world, map, ORIGIN, SIZE);
+    const path = v.movable!.path;
+    expect(path.length).toBeGreaterThan(0);
+    const end = path.at(-1)!;
+    expect(map.isPassable(end.tx, end.ty)).toBe(true);
+    // Everything before the exit is blocked ground (the barracks, then one house); nothing longer than needed.
+    expect(path.slice(0, -1).every((t) => !map.isPassable(t.tx, t.ty))).toBe(true);
+    expect(path.length).toBeLessThanOrEqual(3);
+  });
+
+  it('a unit standing there later re-plans out the same way (escapeRulesAt), and reaches its goal', () => {
+    const { world, map } = enclosedByHouses();
+    createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map });
+    const path = findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map));
+    expect(path?.at(-1)).toEqual({ tx: 25, ty: 25 });
+  });
+
+  it('a unit enclosed by wall segments stays (walls are never crossed; documented limit)', () => {
+    const world = createEcsWorld();
+    const map = new MapData(32, 32, TERRAIN.grass);
+    for (let y = 8; y <= 12; y++) for (let x = 7; x <= 11; x++) {
+      if (onFootprintRing({ tx: x, ty: y }, ORIGIN, SIZE)) createWall(world, { tile: { tx: x, ty: y }, playerId: 2, mapData: map });
+    }
+    const v = createVillager(world, { tile: { tx: 9, ty: 10 } });
+    createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
+    evictUnitsFrom(world, map, ORIGIN, SIZE);
+    expect(v.movable!.path).toEqual([]);
+    expect(findPath(map, { tx: 9, ty: 10 }, { tx: 25, ty: 25 }, escapeRulesAt(world, { tx: 9, ty: 10 }, map))).toBeNull();
+  });
+
+  it('a ring of houses and water: the house is crossed, the water never', () => {
+    const world = createEcsWorld();
+    const map = new MapData(32, 32, TERRAIN.grass);
+    // Water everywhere around but a house at (6,9) on the west side, with free grass beyond it at x=5.
+    for (let y = 6; y <= 14; y++) for (let x = 6; x <= 13; x++) map.setTile(x, y, TERRAIN.water);
+    for (const [x, y] of [[6, 9], [7, 9], [6, 10], [7, 10]] as const) map.setTile(x, y, TERRAIN.grass);
+    for (let y = 9; y <= 11; y++) for (let x = 8; x <= 10; x++) map.setTile(x, y, TERRAIN.grass);
+    createBuilding(world, { type: 'house', origin: { tx: 6, ty: 9 }, playerId: 2, mapData: map });
+    const v = createVillager(world, { tile: { tx: 9, ty: 10 } });
+    createBuilding(world, { type: 'barracks', origin: ORIGIN, playerId: 1, mapData: map, underConstruction: true });
+    evictUnitsFrom(world, map, ORIGIN, SIZE);
+    const path = v.movable!.path;
+    expect(path.at(-1)!.tx).toBe(5);
+    expect(path.every((t) => map.getTile(t.tx, t.ty) !== TERRAIN.water)).toBe(true);
   });
 });

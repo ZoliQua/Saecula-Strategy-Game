@@ -12,7 +12,9 @@ import type { EcsWorld } from './world';
  * whoever owns it: its `movable.path` crosses only that footprint and leaves
  * onto a free tile of its ring, preferring one from which the unit's
  * destination or order target can be reached (never through a neighbouring
- * building or wall). A unit that was walking somewhere gets the way to its
+ * building or wall). Only when that ring is blocked all round does it cross
+ * a neighbouring building (any owner's; never a wall segment or impassable
+ * terrain) to the nearest free tile; walled in all round, it stays. A unit that was walking somewhere gets the way to its
  * destination through that tile. Orders (build command, gather target,
  * attack) are kept, so a builder evicted from its own site steps out and
  * builds.
@@ -24,7 +26,7 @@ import type { EcsWorld } from './world';
  * escape itself is a flood over the footprint alone.
  */
 export function evictUnitsFrom(world: EcsWorld, map: MapData, origin: TileCoord, footprint: FootprintSize): void {
-  const rules = footprintEscape(origin, footprint);
+  const rules = footprintEscape(origin, footprint, world, map);
   for (const e of world.with('position', 'movable', 'unit')) {
     if (e.dying || !insideFootprint(e.position, origin, footprint)) continue;
     const destination = e.movable.path.at(-1);

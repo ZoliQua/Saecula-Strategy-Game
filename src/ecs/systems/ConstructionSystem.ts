@@ -154,7 +154,7 @@ export class ConstructionSystem {
     const goal = findAdjacent(this.mapData, site, b.position);
     if (goal && !this.paths.take()) return;
     // A picked tile that is cut off (a hole in a forest) falls back to the nearest reachable ring tile.
-    const escape = escapeRulesAt(this.world, b.position);
+    const escape = escapeRulesAt(this.world, b.position, this.mapData);
     const path = goal
       ? (findPath(this.mapData, b.position, goal, escape) ??
         findPathToAny(this.mapData, b.position, (tx, ty) => isAdjacentToFootprint({ tx, ty }, site), escape))
