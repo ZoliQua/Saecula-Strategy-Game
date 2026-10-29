@@ -66,6 +66,21 @@ describe('MatchLog', () => {
     expect(records.map((r) => [r.matchId, r.outcome, r.durationMs])).toEqual([['same', 'victory', 300_000]]);
   });
 
+  it('an abandon never overwrites a decided result of the same match; a later decided result does', async () => {
+    const store = memoryStore();
+    const log = new MatchLog(store);
+    await log.append(record(5, { matchId: 'same', outcome: 'victory', durationMs: 300_000 }));
+    // The won match's earlier save loaded, played and left from the pause.
+    expect(await log.append(record(9, { matchId: 'same', outcome: 'abandoned', cause: null, durationMs: 200_000 }))).toBe(true);
+    expect((await log.readAll()).records.map((r) => [r.outcome, r.durationMs])).toEqual([['victory', 300_000]]);
+    await log.append(record(12, { matchId: 'same', outcome: 'defeat', durationMs: 400_000 }));
+    expect((await log.readAll()).records.map((r) => [r.outcome, r.durationMs])).toEqual([['defeat', 400_000]]);
+    // An unreadable earlier record is replaced by anything.
+    store.data.set(matchKey('broken'), '{nope');
+    await log.append(record(13, { matchId: 'broken', outcome: 'abandoned', cause: null }));
+    expect((await log.readAll()).records.map((r) => r.matchId)).toEqual(['same', 'broken']);
+  });
+
   it('two different matches are two records', async () => {
     const store = memoryStore();
     const log = new MatchLog(store);

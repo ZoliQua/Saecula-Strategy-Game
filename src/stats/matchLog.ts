@@ -51,7 +51,8 @@ function byAge(a: Entry, b: Entry): number {
  * The local match log (M7 Decision 11): one JSON record per match in a
  * key-value store (IndexedDB 'isorts' / 'matches' in the browser), keyed
  * by the match id, so a later end of the same match (resumed from a
- * save) replaces its earlier record. At most `cap` records; the oldest
+ * save) replaces its earlier record, except that an abandon never replaces
+ * a decided result. At most `cap` records; the oldest
  * by createdAt (unreadable ones first) are dropped. Nothing here throws:
  * a missing or failing store is reported as unavailable.
  */
@@ -61,10 +62,32 @@ export class MatchLog {
     private readonly cap = MATCH_LOG_CAP,
   ) {}
 
-  /** Writes `record`, then trims the log to the cap. False when it could not be written. */
-  async append(record: MatchRecord): Promise<boolean> {
+  /** The last queued write (append runs one at a time). */
+  private writes: Promise<void> = Promise.resolve();
+
+  /**
+   * Writes `record`, then trims the log to the cap. An 'abandoned' record
+   * never replaces a decided ('victory' / 'defeat') record of the same
+   * match: the decided result is kept (true). False when it could not be written.
+   */
+  append(record: MatchRecord): Promise<boolean> {
+    // One write at a time: an abandon's read-then-write must not interleave with a decided write.
+    const next = this.writes.then(() => this.write(record));
+    this.writes = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  private async write(record: MatchRecord): Promise<boolean> {
     if (!this.store) return false;
     try {
+      if (record.outcome === 'abandoned') {
+        const key = matchKey(record.matchId);
+        const earlier = parseRecord(key, await this.store.getItem(key).catch(() => null));
+        if (earlier && earlier.outcome !== 'abandoned') return true;
+      }
       await this.store.setItem(matchKey(record.matchId), JSON.stringify(record));
     } catch {
       return false;
