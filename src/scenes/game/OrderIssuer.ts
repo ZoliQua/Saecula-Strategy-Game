@@ -4,7 +4,10 @@ import { insideFootprint } from '../../ecs/footprint';
 import { clearUnitOrders } from '../../ecs/orders';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
+import { HUMAN_PLAYER_ID } from '../../config/constants';
+import { canViewerSee } from '../../ecs/systems/renderPlacement';
 import type { TileCoord } from '../../iso/coordinates';
+import type { FogOfWarData } from '../../map/FogOfWarData';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
@@ -12,13 +15,27 @@ export interface OrderTarget {
   readonly entity: Entity | null;
 }
 
+/** Whether the commanding player can see an enemy (never-seen enemies are no target). */
+export type CanSee = (target: Entity) => boolean;
+
+/** The human's fog as a CanSee: exactly what the renderer shows (canViewerSee). */
+export function fogCanSee(fog: FogOfWarData, viewerId: number): CanSee {
+  return (e) => canViewerSee(e, fog, viewerId);
+}
+
+/** Whose side a command is resolved from: the first selected own unit (the cursor uses the same), else null. */
+export function orderActor(selected: readonly Entity[], humanId: number): Entity | null {
+  return selected.find((e) => e.unit !== undefined && e.owner?.playerId === humanId && !e.dying) ?? null;
+}
+
 /**
  * The targeting rule of a command on `tile` (shared with the cursor): an
- * enemy unit or building first, then one of `actor`'s own buildings under
- * construction (not dying), then a resource node; otherwise nothing.
+ * enemy unit or building the player can see (`canSee`, default all)
+ * first, then one of `actor`'s own buildings under construction (not
+ * dying), then a resource node; otherwise nothing.
  */
-export function resolveOrderTarget(world: EcsWorld, tile: TileCoord, actor: Entity): OrderTarget {
-  const enemy = findEnemyAt(world, tile, actor);
+export function resolveOrderTarget(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: CanSee = () => true): OrderTarget {
+  const enemy = findEnemyAt(world, tile, actor, canSee);
   if (enemy) return { kind: 'enemy', entity: enemy };
   const site = findOwnSiteAt(world, tile, actor);
   if (site) return { kind: 'ownSite', entity: site };
@@ -27,22 +44,36 @@ export function resolveOrderTarget(world: EcsWorld, tile: TileCoord, actor: Enti
   return { kind: 'none', entity: null };
 }
 
-/** Translates a right-click on a tile into move / attack / gather / help-build orders. */
+export interface OrderIssuerOptions {
+  readonly humanId?: number;
+  /** The human's fog (fogCanSee): a fogged enemy is no target, the units just move there. */
+  readonly canSee?: CanSee;
+}
+
+/** Translates a command (right-click or the gesture) on a tile into move / attack / gather / help-build orders. */
 export class OrderIssuer {
+  private readonly humanId: number;
+  private readonly canSee: CanSee;
+
   constructor(
     private readonly world: EcsWorld,
     private readonly selection: SelectionSystem,
     private readonly sounds: AudioSink = audio(),
-  ) {}
+    options: OrderIssuerOptions = {},
+  ) {
+    this.humanId = options.humanId ?? HUMAN_PLAYER_ID;
+    this.canSee = options.canSee ?? (() => true);
+  }
 
   issueOrders(tile: TileCoord): void {
     const selectedAll = this.selection.getAllSelected();
-    if (selectedAll.length === 0) return;
-    const first = selectedAll[0]!;
-    const target = resolveOrderTarget(this.world, tile, first);
+    const actor = orderActor(selectedAll, this.humanId);
+    // Only the human's units take orders (a selected building or enemy does not).
+    if (!actor) return;
+    const target = resolveOrderTarget(this.world, tile, actor, this.canSee);
     let ordered: 'unit_move' | 'unit_attack' | null = null;
     for (const entity of selectedAll) {
-      if (entity.owner?.playerId !== 1) continue;
+      if (entity.owner?.playerId !== this.humanId || entity.unit === undefined) continue;
       // Any new right-click order overrides whatever the unit was
       // doing — clear gather state + build command so the villager
       // actually listens.
@@ -79,11 +110,11 @@ function covers(e: Entity, tile: TileCoord): boolean {
   return e.position.tx === tile.tx && e.position.ty === tile.ty;
 }
 
-function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity | null {
+function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: CanSee): Entity | null {
   const actorPlayer = actor.owner?.playerId;
   if (actorPlayer === undefined) return null;
   for (const c of world.with('position', 'owner', 'health')) {
-    if (c.owner.playerId !== actorPlayer && covers(c, tile)) return c;
+    if (c.owner.playerId !== actorPlayer && covers(c, tile) && canSee(c)) return c;
   }
   return null;
 }

@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
+import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';
 import { BuildPlacement } from './BuildPlacement';
 import { wireBuildingDeletion } from './BuildingDeletion';
 import { wireCursor } from './CursorWiring';
-import { OrderIssuer } from './OrderIssuer';
+import { fogCanSee, OrderIssuer } from './OrderIssuer';
 import { PointerInput } from './PointerInput';
 
 export interface PlayerInputDeps {
@@ -15,6 +16,8 @@ export interface PlayerInputDeps {
   readonly mapData: MapData;
   readonly tileMap: TileMap;
   readonly selection: SelectionSystem;
+  /** The human's fog: fogged enemies are no command target (nor cursor). */
+  readonly fog: FogOfWarData;
   readonly humanId: number;
   readonly civ: CivId;
   readonly age: () => AgeId;
@@ -30,7 +33,8 @@ export interface PlayerInputDeps {
  * ghost the scene updates each frame.
  */
 export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildPlacement {
-  const orders = new OrderIssuer(d.world, d.selection);
+  const canSee = fogCanSee(d.fog, d.humanId);
+  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee });
   // The placement ghost and the cursor read the hover tile from the pointer handler.
   let pointer: PointerInput | null = null;
   const hoverTile = () => pointer?.getHoverTile() ?? null;
@@ -39,7 +43,7 @@ export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildP
   pointer.register();
   const registered = pointer;
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => registered.unregister());
-  wireCursor(scene, d.world, d.mapData, d.selection, hoverTile, d.humanId);
+  wireCursor(scene, d.world, d.mapData, d.selection, hoverTile, d.humanId, canSee);
   wireBuildingDeletion(scene, d.world, d.humanId);
   return placement;
 }

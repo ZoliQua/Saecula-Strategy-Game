@@ -232,6 +232,7 @@ export class GameScene extends Phaser.Scene {
       mapData,
       tileMap: this.tileMap,
       selection: this.runner.selection,
+      fog: this.runner.fogData,
       humanId: human?.id ?? 1,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,

@@ -45,9 +45,18 @@ export function renderScreenPos(entity: Renderable): { sx: number; sy: number } 
 
 /** Own entities always; others only on tiles the viewer currently sees. */
 export function isVisibleToViewer(entity: Renderable, fog: FogOfWarData | null, viewerPlayerId: number): boolean {
+  return canViewerSee(entity, fog, viewerPlayerId);
+}
+
+/**
+ * The one visibility rule for what the viewer is shown (the renderer) and
+ * may target (orders, cursor): own entities always; enemy / neutral ones
+ * only while their position tile (a building's origin) is visible.
+ */
+export function canViewerSee(entity: Entity, fog: FogOfWarData | null, viewerPlayerId: number): boolean {
   if (!fog) return true;
   if (entity.owner?.playerId === viewerPlayerId) return true;
-  // Enemy / neutral — only render on tiles that are currently visible.
+  if (!entity.position) return false;
   return fog.isVisible(entity.position.tx, entity.position.ty);
 }
 
