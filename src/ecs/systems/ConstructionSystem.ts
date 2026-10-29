@@ -2,10 +2,11 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
-import { findPath } from '../../map/pathfinding';
+import { findPath, findPathToAny } from '../../map/pathfinding';
 import { FARM_BALANCE, REPATH_RETRY_MS, TRAINER_BUILDINGS } from '../../config/balance';
 import { BUILDING_SPECS, towerAttacker } from '../archetypes/building';
 import type { Entity } from '../components';
+import { onFootprintRing } from '../footprint';
 import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
 
@@ -57,7 +58,8 @@ export class ConstructionSystem {
         this.world.removeComponent(b as Entity, 'buildCommand');
         continue;
       }
-      if (!isAdjacentToFootprint(b.position, site)) {
+      // A builder on blocked ground (another foundation laid over it) steps out first.
+      if (!isAdjacentToFootprint(b.position, site) || !this.mapData.isPassable(b.position.tx, b.position.ty)) {
         if (b.movable.path.length === 0) {
           this.walkToSite(b, site);
         }
@@ -146,7 +148,10 @@ export class ConstructionSystem {
     if ((this.repathAt.get(b) ?? 0) > this.nowMs) return;
     const goal = findAdjacent(this.mapData, site, b.position);
     if (goal && !this.paths.take()) return;
-    const path = goal ? findPath(this.mapData, b.position, goal) : null;
+    // A picked tile that is cut off (a hole in a forest) falls back to the nearest reachable ring tile.
+    const path = goal
+      ? (findPath(this.mapData, b.position, goal) ?? findPathToAny(this.mapData, b.position, (tx, ty) => isAdjacentToFootprint({ tx, ty }, site)))
+      : null;
     if (!path) {
       this.repathAt.set(b, this.nowMs + REPATH_RETRY_MS);
       return;
@@ -156,13 +161,9 @@ export class ConstructionSystem {
   }
 }
 
+/** On the ring of tiles around the footprint (not inside it: a builder on its own site steps out first). */
 function isAdjacentToFootprint(v: TileCoord, site: Site): boolean {
-  const { width, height } = site.building.footprint;
-  const x0 = site.position.tx - 1;
-  const y0 = site.position.ty - 1;
-  const x1 = site.position.tx + width;
-  const y1 = site.position.ty + height;
-  return v.tx >= x0 && v.tx <= x1 && v.ty >= y0 && v.ty <= y1;
+  return onFootprintRing(v, site.position, site.building.footprint);
 }
 
 function findAdjacent(

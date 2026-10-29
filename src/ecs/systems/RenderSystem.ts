@@ -27,7 +27,7 @@ import { BUILDING_DEATH_TTL_MS } from '../../config/balance';
 import { collapseHeightScale } from './buildingFx/damageMath';
 import { siteAlpha, sitePlateAlpha, siteShownHeight } from './buildingFx/siteLook';
 import { applyDying, isVisibleToViewer, renderDepth, renderScreenPos, styleAge, type Renderable } from './renderPlacement';
-import { unitAnimState } from './unitAnim';
+import { siteLookup, unitAnimState } from './unitAnim';
 import { WallBanners } from './wallJoins/WallBanners';
 import { WallJoinIndex } from './wallJoins/WallJoinIndex';
 
@@ -182,6 +182,7 @@ export class RenderSystem {
     const now = this.scene.time.now;
     pumpUnitArt(this.scene);
     let reskinBudget = RESKINS_PER_FRAME;
+    const siteOf = siteLookup(this.world);
     for (const entity of this.renderable) {
       const sprite = entity.sprite ?? this.ensureSprite(entity);
       const { sx, sy } = renderScreenPos(entity);
@@ -209,7 +210,7 @@ export class RenderSystem {
       if (site) site.setVisible(visible);
       const unit = this.units.get(entity);
       if (unit) {
-        const { anim, i, heading } = unitAnimState(entity, now);
+        const { anim, i, heading } = unitAnimState(entity, now, siteOf);
         const { slot, flip } = headingSlot(heading);
         setUnitFrame(unit, frameIndex(unitSheetLayout(unit.type), slot, anim, i), flip);
         syncTeamSprite(unit);

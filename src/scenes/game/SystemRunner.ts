@@ -127,7 +127,7 @@ export class SystemRunner {
     this.selection = new SelectionSystem(scene, world);
     this.selection.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
-    this.movement = new MovementSystem(world, players);
+    this.movement = new MovementSystem(world, players, mapData);
     this.gathering = new GatheringSystem(world, mapData, players, this.paths);
     this.farms = new FarmRegenSystem(world);
     this.construction = new ConstructionSystem(world, mapData, this.paths);

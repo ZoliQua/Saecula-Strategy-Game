@@ -92,7 +92,9 @@ export class CombatSystem {
       return;
     }
     const dist = targetDistance(a.position, target);
-    if (dist > a.attacker.range) {
+    // A unit on blocked ground (a foundation laid over it) steps out before it fights.
+    const stranded = !!a.movable && !this.mapData.isPassable(a.position.tx, a.position.ty);
+    if (dist > a.attacker.range || stranded) {
       this.walkIntoRange(a, target);
       return;
     }

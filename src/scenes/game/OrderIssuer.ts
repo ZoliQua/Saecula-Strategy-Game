@@ -1,11 +1,33 @@
 import { audio, type AudioSink } from '../../audio/AudioManager';
 import type { Entity } from '../../ecs/components';
+import { insideFootprint } from '../../ecs/footprint';
 import { clearUnitOrders } from '../../ecs/orders';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
 
-/** Translates a right-click on a tile into move / attack / gather orders. */
+/** What a command on a tile is aimed at, from `actor`'s side. */
+export interface OrderTarget {
+  readonly kind: 'enemy' | 'ownSite' | 'resource' | 'none';
+  readonly entity: Entity | null;
+}
+
+/**
+ * The targeting rule of a command on `tile` (shared with the cursor): an
+ * enemy unit or building first, then one of `actor`'s own buildings under
+ * construction (not dying), then a resource node; otherwise nothing.
+ */
+export function resolveOrderTarget(world: EcsWorld, tile: TileCoord, actor: Entity): OrderTarget {
+  const enemy = findEnemyAt(world, tile, actor);
+  if (enemy) return { kind: 'enemy', entity: enemy };
+  const site = findOwnSiteAt(world, tile, actor);
+  if (site) return { kind: 'ownSite', entity: site };
+  const node = findResourceNodeAt(world, tile);
+  if (node) return { kind: 'resource', entity: node };
+  return { kind: 'none', entity: null };
+}
+
+/** Translates a right-click on a tile into move / attack / gather / help-build orders. */
 export class OrderIssuer {
   constructor(
     private readonly world: EcsWorld,
@@ -17,8 +39,7 @@ export class OrderIssuer {
     const selectedAll = this.selection.getAllSelected();
     if (selectedAll.length === 0) return;
     const first = selectedAll[0]!;
-    const enemy = this.findEnemyAt(tile.tx, tile.ty, first);
-    const node = enemy ? null : this.findResourceNodeAt(tile.tx, tile.ty);
+    const target = resolveOrderTarget(this.world, tile, first);
     let ordered: 'unit_move' | 'unit_attack' | null = null;
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== 1) continue;
@@ -26,17 +47,19 @@ export class OrderIssuer {
       // doing — clear gather state + build command so the villager
       // actually listens.
       clearUnitOrders(this.world, entity);
-      if (enemy && entity.attacker) {
-        this.world.addComponent(entity, 'attackIntent', {
-          targetId: enemy.id ?? 0,
-        });
+      const targetId = target.entity?.id ?? 0;
+      if (target.kind === 'enemy' && entity.attacker) {
+        this.world.addComponent(entity, 'attackIntent', { targetId });
         ordered = 'unit_attack';
         continue;
       }
-      if (node && entity.gatherer) {
-        this.world.addComponent(entity, 'gatherIntent', {
-          nodeId: node.id ?? 0,
-        });
+      if (target.kind === 'ownSite' && entity.gatherer) {
+        this.world.addComponent(entity, 'buildCommand', { targetId });
+        ordered ??= 'unit_move';
+        continue;
+      }
+      if (target.kind === 'resource' && entity.gatherer) {
+        this.world.addComponent(entity, 'gatherIntent', { nodeId: targetId });
         ordered ??= 'unit_move';
         continue;
       }
@@ -46,48 +69,36 @@ export class OrderIssuer {
     // The order's acknowledgement (UI feedback: not positional).
     if (ordered) this.sounds.playSFX(ordered);
   }
+}
 
-  private findEnemyAt(tx: number, ty: number, actor: Entity): Entity | null {
-    const actorPlayer = actor.owner?.playerId;
-    if (actorPlayer === undefined) return null;
-    const candidates = this.world.with('position', 'owner', 'health');
-    for (const c of candidates) {
-      if (c.owner.playerId === actorPlayer) continue;
-      const b = (c as Entity).building;
-      if (b) {
-        if (
-          tx >= c.position.tx &&
-          tx < c.position.tx + b.footprint.width &&
-          ty >= c.position.ty &&
-          ty < c.position.ty + b.footprint.height
-        ) {
-          return c;
-        }
-        continue;
-      }
-      if (c.position.tx === tx && c.position.ty === ty) return c;
-    }
-    return null;
-  }
+/** A unit on the tile, or a building whose footprint covers it. */
+function covers(e: Entity, tile: TileCoord): boolean {
+  if (!e.position) return false;
+  const b = e.building;
+  if (b) return insideFootprint(tile, e.position, b.footprint);
+  return e.position.tx === tile.tx && e.position.ty === tile.ty;
+}
 
-  private findResourceNodeAt(tx: number, ty: number): Entity | null {
-    const nodes = this.world.with('position', 'resourceNode');
-    for (const n of nodes) {
-      // Multi-tile building nodes (e.g. farms) match any footprint tile.
-      const b = (n as Entity).building;
-      if (b) {
-        if (
-          tx >= n.position.tx &&
-          tx < n.position.tx + b.footprint.width &&
-          ty >= n.position.ty &&
-          ty < n.position.ty + b.footprint.height
-        ) {
-          return n;
-        }
-        continue;
-      }
-      if (n.position.tx === tx && n.position.ty === ty) return n;
-    }
-    return null;
+function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity | null {
+  const actorPlayer = actor.owner?.playerId;
+  if (actorPlayer === undefined) return null;
+  for (const c of world.with('position', 'owner', 'health')) {
+    if (c.owner.playerId !== actorPlayer && covers(c, tile)) return c;
   }
+  return null;
+}
+
+function findOwnSiteAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity | null {
+  const actorPlayer = actor.owner?.playerId;
+  if (actorPlayer === undefined) return null;
+  for (const s of world.with('position', 'owner', 'building', 'underConstruction')) {
+    if (s.owner.playerId === actorPlayer && !s.dying && covers(s, tile)) return s;
+  }
+  return null;
+}
+
+function findResourceNodeAt(world: EcsWorld, tile: TileCoord): Entity | null {
+  // Multi-tile building nodes (e.g. farms) match any footprint tile.
+  for (const n of world.with('position', 'resourceNode')) if (covers(n, tile)) return n;
+  return null;
 }

@@ -7,6 +7,7 @@ import { queueUnit } from '../../ecs/queueUnit';
 import { playerWallet, startResearch } from '../../ecs/research';
 import { isTechAvailable } from '../../game/availability';
 import { createWall } from '../../ecs/archetypes/wall';
+import { evictUnitsFrom } from '../../ecs/evict';
 import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import { planWallSegments } from '../../game/wallLine';
 import { isAgeUp, TECH_SPECS } from '../../game/technologies';
@@ -146,6 +147,7 @@ export abstract class BaseStrategy implements AIStrategy {
       mapData: ctx.mapData,
       underConstruction: true,
     });
+    evictUnitsFrom(ctx.world, ctx.mapData, origin, BUILDING_SPECS[type]);
     this.assignBuilders(ctx, view, site, AI_COMMON.buildersPerSite);
     this.log.add(ctx.timeMs, 'build', type);
     return site;
@@ -171,7 +173,11 @@ export abstract class BaseStrategy implements AIStrategy {
     const plan = planWallSegments(tiles, free, Math.max(0, ctx.player.resources.wood - reserve.wood), cost.wood);
     if (plan.build.length === 0) return 0;
     ctx.player.resources = { ...ctx.player.resources, wood: ctx.player.resources.wood - cost.wood * plan.build.length };
-    const sites = plan.build.map((tile) => createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true }));
+    const sites = plan.build.map((tile) => {
+      const site = createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true });
+      evictUnitsFrom(ctx.world, ctx.mapData, tile, { width: 1, height: 1 });
+      return site;
+    });
     this.assignBuilders(ctx, view, sites[Math.floor(sites.length / 2)]!, builders);
     this.log.add(ctx.timeMs, 'build', 'wall');
     return plan.build.length;

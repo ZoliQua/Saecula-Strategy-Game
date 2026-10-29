@@ -201,7 +201,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     towers: new TowerCombatSystem(world, fogFor),
     combat: new CombatSystem(world, map, players, paths),
     projectiles: new ProjectileSystem(world, players),
-    movement: new MovementSystem(world, players),
+    movement: new MovementSystem(world, players, map),
     death: new DeathSystem(world, map),
     wonders: new WonderSystem(world, wonderVictory),
     population: new PopulationSystem(world, 1, players),

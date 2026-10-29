@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
+import { evictUnitsFrom } from '../../ecs/evict';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../../iso/art/canvas';
@@ -93,6 +94,7 @@ export class BuildPlacement {
       mapData: this.mapData,
       underConstruction: true,
     });
+    evictUnitsFrom(this.world, this.mapData, origin, { width: spec.width, height: spec.height });
     const selected = this.selection.getSelected();
     if (selected && selected.gatherer && site.id !== undefined) {
       this.world.addComponent(selected, 'buildCommand', {

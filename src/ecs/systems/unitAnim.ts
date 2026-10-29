@@ -1,6 +1,8 @@
 import { ANIM_FRAMES, WALK_CYCLE_TILES, type UnitAnim } from '../../iso/art/units/layout';
 import type { Direction } from '../../types';
 import type { Entity } from '../components';
+import { onFootprintRing } from '../footprint';
+import type { EcsWorld } from '../world';
 
 /** Total time a dying entity stays in the world (CombatSystem DEATH_TTL_MS). */
 export const DYING_MS = 900;
@@ -30,10 +32,12 @@ export interface UnitAnimState {
  *    so feet don't skate;
  *  - attacking → wind-up before the cooldown ends, strike + follow
  *    through right after a blow lands, ready stance in between;
- *  - working (gathering, building) → tool swing;
+ *  - working (gathering, building) → tool swing; with `siteOf`, a builder
+ *    swings only on the ring around its site (not while it waits for a
+ *    path, nor inside the footprint it is stepping out of);
  *  - else a slow breathing idle, desynchronised per entity.
  */
-export function unitAnimState(entity: Entity, now: number): UnitAnimState {
+export function unitAnimState(entity: Entity, now: number, siteOf?: SiteLookup): UnitAnimState {
   const heading = entity.movable?.facing ?? 'SE';
   const phase = ((entity.id ?? 0) * 397) % 10_000;
   if (entity.dying) {
@@ -50,9 +54,28 @@ export function unitAnimState(entity: Entity, now: number): UnitAnimState {
   const a = entity.attacker;
   if (a && entity.attackIntent) return { anim: 'attack', i: attackFrame(a.cooldownMs, a.cooldownRemaining), heading };
   const g = entity.gatherer;
-  const working = (!!g && g.targetNodeId !== undefined && g.carrying < g.capacity) || !!entity.buildCommand;
+  const working = (!!g && g.targetNodeId !== undefined && g.carrying < g.capacity) || isBuilding(entity, siteOf);
   if (working) return { anim: 'work', i: Math.floor((now + phase) / WORK_FRAME_MS) % ANIM_FRAMES.work, heading };
   return { anim: 'idle', i: Math.floor((now + phase) / IDLE_FRAME_MS) % ANIM_FRAMES.idle, heading };
+}
+
+/** Construction sites by id (the builders' targets). */
+export type SiteLookup = (id: number) => Entity | undefined;
+
+/** A per-frame lookup of the world's construction sites (there are few), for `unitAnimState`. */
+export function siteLookup(world: EcsWorld): SiteLookup {
+  const sites = new Map<number, Entity>();
+  for (const s of world.with('building', 'underConstruction', 'position')) if (s.id !== undefined) sites.set(s.id, s);
+  return (id) => sites.get(id);
+}
+
+function isBuilding(entity: Entity, siteOf: SiteLookup | undefined): boolean {
+  const cmd = entity.buildCommand;
+  if (!cmd) return false;
+  if (!siteOf) return true;
+  const site = siteOf(cmd.targetId);
+  if (!site?.position || !site.building || !entity.position) return false;
+  return onFootprintRing(entity.position, site.position, site.building.footprint);
 }
 
 /** Attack frame from the weapon cooldown (a blow lands when the cooldown restarts). */

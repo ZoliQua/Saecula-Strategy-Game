@@ -101,3 +101,30 @@ describe('sheet layout', () => {
     expect(frameIndex(soldier, 1, 'work', 2)).toBe(frameIndex(soldier, 1, 'attack', 2));
   });
 });
+
+describe('unitAnimState for builders (M7: no tool swing away from the site)', () => {
+  const site: Entity = { id: 7, position: { tx: 10, ty: 10 }, building: { type: 'barracks', footprint: { width: 3, height: 3 } }, underConstruction: { totalTime: 50, elapsed: 0 } };
+  const siteOf = (id: number) => (id === 7 ? site : undefined);
+  const builder = (tx: number, ty: number): Entity => ({
+    ...unit(false),
+    unit: { unitType: 'villager' },
+    position: { tx, ty },
+    buildCommand: { targetId: 7 },
+  });
+
+  it('swings the tool only on the ring around its site', () => {
+    expect(unitAnimState(builder(9, 11), 0, siteOf).anim).toBe('work');
+    expect(unitAnimState(builder(13, 13), 0, siteOf).anim).toBe('work');
+  });
+
+  it('idles when it stands away from the site or inside its footprint', () => {
+    expect(unitAnimState(builder(2, 2), 0, siteOf).anim).toBe('idle');
+    expect(unitAnimState(builder(11, 11), 0, siteOf).anim).toBe('idle');
+  });
+
+  it('walks while it moves toward the site', () => {
+    const b = builder(2, 2);
+    b.movable!.path = [{ tx: 3, ty: 3 }];
+    expect(unitAnimState(b, 0, siteOf).anim).toBe('walk');
+  });
+});

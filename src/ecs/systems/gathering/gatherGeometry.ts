@@ -1,6 +1,7 @@
 import type { TileCoord } from '../../../iso/coordinates';
 import type { MapData } from '../../../map/MapData';
 import type { Entity } from '../../components';
+import { onFootprintRing } from '../../footprint';
 import type { Dropoff, ResourceNode } from './gatherTypes';
 
 /* Tile geometry of the gather cycle: who stands next to what, and which free tile to walk to. */
@@ -12,21 +13,11 @@ export function isAdjacentToNode(v: TileCoord, node: ResourceNode): boolean {
     const dy = Math.abs(v.ty - node.position.ty);
     return dx <= 1 && dy <= 1;
   }
-  return (
-    v.tx >= node.position.tx - 1 &&
-    v.tx <= node.position.tx + b.footprint.width &&
-    v.ty >= node.position.ty - 1 &&
-    v.ty <= node.position.ty + b.footprint.height
-  );
+  return onFootprintRing(v, node.position, b.footprint);
 }
 
 export function isAdjacentToFootprint(v: TileCoord, d: Dropoff): boolean {
-  const { width, height } = d.building.footprint;
-  const x0 = d.position.tx - 1;
-  const y0 = d.position.ty - 1;
-  const x1 = d.position.tx + width;
-  const y1 = d.position.ty + height;
-  return v.tx >= x0 && v.tx <= x1 && v.ty >= y0 && v.ty <= y1;
+  return onFootprintRing(v, d.position, d.building.footprint);
 }
 
 export function findAdjacentPassable(

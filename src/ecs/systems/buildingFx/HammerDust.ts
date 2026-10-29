@@ -4,7 +4,7 @@ import { tileToScreen } from '../../../iso/coordinates';
 import type { Direction } from '../../../types';
 import type { Entity } from '../../components';
 import type { EcsWorld } from '../../world';
-import { unitAnimState } from '../unitAnim';
+import { siteLookup, unitAnimState } from '../unitAnim';
 import type { BuildingEmitters } from './BuildingEmitters';
 import { isStrike } from './damageMath';
 
@@ -45,8 +45,9 @@ export class HammerDust {
 
   update(world: EcsWorld, now: number): void {
     const v = this.scene.cameras.main.worldView;
+    const siteOf = siteLookup(world);
     for (const e of world.with('buildCommand', 'position', 'unit')) {
-      const { anim, i, heading } = unitAnimState(e, now);
+      const { anim, i, heading } = unitAnimState(e, now, siteOf);
       const frame = anim === 'work' ? i : -1;
       const prev = this.lastFrame.get(e);
       this.lastFrame.set(e, frame);

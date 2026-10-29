@@ -3,7 +3,7 @@ import { gatherRateMultiplier } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
-import { findPath } from '../../map/pathfinding';
+import { findPath, findPathToAny } from '../../map/pathfinding';
 import type { TileCoord } from '../../iso/coordinates';
 import type { ResourceType } from '../../types';
 import { uiStore } from '../../ui/store';
@@ -104,7 +104,8 @@ export class GatheringSystem {
       this.handleFull(v);
       return;
     }
-    if (isAdjacentToNode(v.position, node)) {
+    // A villager on blocked ground (a foundation laid over it) steps out before it works.
+    if (isAdjacentToNode(v.position, node) && this.onFreeGround(v)) {
       this.gather(v, node, dt);
       return;
     }
@@ -165,7 +166,7 @@ export class GatheringSystem {
       return;
     }
     g.dropoffId = dropoff.id ?? undefined;
-    if (isAdjacentToFootprint(v.position, dropoff)) {
+    if (isAdjacentToFootprint(v.position, dropoff) && this.onFreeGround(v)) {
       this.deposit(v, g.carryingType, g.carrying);
       g.carrying = 0;
       g.carryingType = null;
@@ -180,28 +181,43 @@ export class GatheringSystem {
     }
   }
 
+  private onFreeGround(v: Villager): boolean {
+    return this.mapData.isPassable(v.position.tx, v.position.ty);
+  }
+
   private walkToNode(v: Villager): void {
     const g = v.gatherer;
     if (g.targetNodeId === undefined) return;
     const node = findEntityById(this.world, g.targetNodeId) as ResourceNode | undefined;
     if (!node) return;
-    this.walkTo(v, () =>
-      (node as Entity).building
-        ? findAdjacentToBuildingNode(this.mapData, node, v.position)
-        : findAdjacentPassable(this.mapData, node.position, v.position),
+    this.walkTo(
+      v,
+      () =>
+        (node as Entity).building
+          ? findAdjacentToBuildingNode(this.mapData, node, v.position)
+          : findAdjacentPassable(this.mapData, node.position, v.position),
+      (tx, ty) => isAdjacentToNode({ tx, ty }, node),
     );
   }
 
   private walkToFootprint(v: Villager, dropoff: Dropoff): void {
-    this.walkTo(v, () => findAdjacentToFootprint(this.mapData, dropoff, v.position));
+    this.walkTo(
+      v,
+      () => findAdjacentToFootprint(this.mapData, dropoff, v.position),
+      (tx, ty) => isAdjacentToFootprint({ tx, ty }, dropoff),
+    );
   }
 
-  /** Plans a walk to `goal()` within the path budget; a failed plan backs off (see class doc). */
-  private walkTo(v: Villager, goal: () => TileCoord | null): void {
+  /**
+   * Plans a walk to `goal()` within the path budget; a failed plan backs off (see class doc).
+   * When the picked tile is cut off (a grass hole in a forest), the nearest reachable tile
+   * where `isWorkTile` holds is used instead.
+   */
+  private walkTo(v: Villager, goal: () => TileCoord | null, isWorkTile: (tx: number, ty: number) => boolean): void {
     if ((this.repathAt.get(v) ?? 0) > this.nowMs) return;
     const to = goal();
     if (to && !this.paths.take()) return;
-    const path = to ? findPath(this.mapData, v.position, to) : null;
+    const path = to ? (findPath(this.mapData, v.position, to) ?? findPathToAny(this.mapData, v.position, isWorkTile)) : null;
     if (!path) {
       this.repathAt.set(v, this.nowMs + REPATH_RETRY_MS);
       return;

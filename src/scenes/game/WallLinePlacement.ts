@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { createWall } from '../../ecs/archetypes/wall';
+import { evictUnitsFrom } from '../../ecs/evict';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { planWallSegments, wallLineTiles, type WallPlan } from '../../game/wallLine';
@@ -69,15 +70,11 @@ export class WallLinePlacement {
     const cost = BUILDING_SPECS.wall.cost;
     const state = uiStore.getState();
     state.setResources({ wood: state.resources.wood - cost.wood * plan.build.length });
-    const siteIds = plan.build.map(
-      (tile) =>
-        createWall(this.world, {
-          tile,
-          playerId: this.playerId,
-          mapData: this.mapData,
-          underConstruction: true,
-        }).id ?? -1,
-    );
+    const siteIds = plan.build.map((tile) => {
+      const site = createWall(this.world, { tile, playerId: this.playerId, mapData: this.mapData, underConstruction: true });
+      evictUnitsFrom(this.world, this.mapData, tile, { width: 1, height: 1 });
+      return site.id ?? -1;
+    });
     this.assignBuilders(siteIds);
     return plan.build.length;
   }

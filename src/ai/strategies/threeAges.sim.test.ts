@@ -19,12 +19,14 @@ const SIM_TIMEOUT_MS = 60_000;
  * Every gold piece is mined from the map (each start's two lodes,
  * START_ECONOMY): nothing is handed out. `live()` counts units, buildings and
  * projectiles (the 500 budget of CLAUDE.md §10), not resource nodes.
- * Measured (96×96, seed 3): both in age 3 by 20.87 min; foundries for both;
- * Hard's first cannon at 21.42 min (cannonballs from 21.44), the human slot's
- * at 23.63; bullets, bolts and arrows; at most 232 entities. (Seed 1, used
- * until the two-lode economy, now has the human slot's age-3 wave gut Hard's
- * economy before its foundry pays off: one cannon, never fired.) Medium and
- * Hard alone are pinned to a cannon count below.
+ * Measured (96×96, seed 3): both in age 3 by 20.89 min; foundries for both;
+ * Hard's first cannon at 22.20 min; bullets, bolts and arrows; at most 223
+ * entities. The human slot's Medium no longer gets a cannon here: since M7
+ * builders step off foundations instead of building from inside them
+ * (about 33 s of Hard's house and farm work moved), Hard's age-3 wave guts
+ * the human slot's economy at 21-22 min instead of 23-25 (before M7 its
+ * first cannon came at 23.63). Medium and Hard alone are pinned to a cannon
+ * count below.
  */
 describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Hard AI', () => {
   it('both reach age 3, fight with age-3 armies, and the world stays within the 500-entity budget', () => {
@@ -78,8 +80,7 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
     expect(seen.projectiles.has('cannonball')).toBe(true);
     expect(seen.projectiles.has('bullet')).toBe(true);
     expect(seen.age3Kinds.has('cannon')).toBe(true);
-    // Both sides save up and pay for cannons from mined gold (AI_COMMON.savesForUnits).
-    expect(cannons.get(1)!.size, 'Medium (human slot) cannons').toBeGreaterThan(0);
+    // Hard saves up and pays for cannons from mined gold (AI_COMMON.savesForUnits).
     expect(cannons.get(2)!.size, 'Hard cannons').toBeGreaterThan(0);
   }, SIM_TIMEOUT_MS);
 });
