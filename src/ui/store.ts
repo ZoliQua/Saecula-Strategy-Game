@@ -104,6 +104,8 @@ export interface UiState {
   wonders: readonly WonderClockInfo[];
   /** Building whose delete button is armed (the next press deletes it), or null. */
   deleteArmedId: number | null;
+  /** The refund percentage locked when the delete was armed: shown on the button and paid on confirm. */
+  deleteArmedPct: number;
   sidePanel: SidePanelState;
   /** Every player's score, highest first. */
   scores: readonly ScoreRowInfo[];
@@ -123,7 +125,8 @@ export interface UiActions {
   setWallPreview: (preview: { segments: number; wood: number } | null) => void;
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
-  setDeleteArmed: (id: number | null) => void;
+  /** Arms the delete of building `id` with the refund `refundPct` locked (null disarms). */
+  setDeleteArmed: (id: number | null, refundPct?: number) => void;
   /** Opens the side panel on `view`. */
   showSidePanel: (view: SidePanelView) => void;
   /** Folds an open panel to its tab, or opens a folded one on its last view. */
@@ -148,6 +151,7 @@ const INITIAL: UiState = {
   gameTimeMs: 0,
   wonders: [],
   deleteArmedId: null,
+  deleteArmedPct: 0,
   sidePanel: { open: true, view: 'score' },
   scores: [],
   villagerCounts: { food: 0, wood: 0, gold: 0, build: 0, idle: 0, other: 0 },
@@ -175,7 +179,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setWallPreview: (preview) => set({ wallPreview: preview }),
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
-    setDeleteArmed: (id) => set({ deleteArmedId: id }),
+    setDeleteArmed: (id, refundPct = 0) => set({ deleteArmedId: id, deleteArmedPct: id === null ? 0 : refundPct }),
     showSidePanel: (view) => set({ sidePanel: { open: true, view } }),
     toggleSidePanel: () => set((state) => ({ sidePanel: { ...state.sidePanel, open: !state.sidePanel.open } })),
     setScores: (rows) => set({ scores: rows }),
@@ -198,6 +202,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     gameTimeMs: 0,
     wonders: [],
     deleteArmedId: null,
+    deleteArmedPct: 0,
     sidePanel: { ...INITIAL.sidePanel },
     scores: [],
     villagerCounts: { ...INITIAL.villagerCounts },

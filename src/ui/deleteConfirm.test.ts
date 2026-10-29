@@ -17,28 +17,31 @@ describe('delete confirmation (press to arm, press again within 3 s to delete)',
     vi.useRealTimers();
   });
 
-  it('the first press arms, the second deletes', () => {
-    pressDelete(7);
+  it('the first press arms (locking the refund shown), the second deletes at that refund', () => {
+    pressDelete(7, 41);
     expect(uiStore.getState().deleteArmedId).toBe(7);
-    expect(sent).toEqual([]);
-    pressDelete(7);
-    expect(sent).toEqual([{ type: 'delete-building', buildingId: 7 }]);
+    expect(uiStore.getState().deleteArmedPct).toBe(41);
+    expect(sent).toEqual([{ type: 'arm-delete', buildingId: 7, refundPct: 41 }]);
+    // The game may lower the lock to the live rule at arm time; the command carries the lock.
+    uiStore.getState().setDeleteArmed(7, 38);
+    pressDelete(7, 20);
+    expect(sent.at(-1)).toEqual({ type: 'delete-building', buildingId: 7, refundPct: 38 });
     expect(uiStore.getState().deleteArmedId).toBeNull();
   });
 
   it('disarms after the timeout', () => {
-    pressDelete(7);
+    pressDelete(7, 0);
     vi.advanceTimersByTime(DELETE_CONFIRM_MS + 1);
     expect(uiStore.getState().deleteArmedId).toBeNull();
-    pressDelete(7);
-    expect(sent).toEqual([]);
+    pressDelete(7, 0);
+    expect(sent.filter((c) => c.type === 'delete-building')).toEqual([]);
   });
 
   it('arming another building does not delete the first', () => {
-    pressDelete(7);
-    pressDelete(8);
+    pressDelete(7, 0);
+    pressDelete(8, 0);
     expect(uiStore.getState().deleteArmedId).toBe(8);
-    expect(sent).toEqual([]);
+    expect(sent.filter((c) => c.type === 'delete-building')).toEqual([]);
   });
 
   it('the key acts on the selected own building only', () => {
@@ -46,10 +49,13 @@ describe('delete confirmation (press to arm, press again within 3 s to delete)',
     uiStore.getState().setSelectedEntity({ kind: 'building', ownerId: 2, ...base });
     requestDeleteSelected(1);
     expect(uiStore.getState().deleteArmedId).toBeNull();
-    uiStore.getState().setSelectedEntity({ kind: 'building', ownerId: 1, ...base });
+    uiStore.getState().setSelectedEntity({ kind: 'building', ownerId: 1, ...base, constructionProgress: 0.25 });
     requestDeleteSelected(1);
     requestDeleteSelected(1);
-    expect(sent).toEqual([{ type: 'delete-building', buildingId: 3 }]);
+    expect(sent).toEqual([
+      { type: 'arm-delete', buildingId: 3, refundPct: 60 },
+      { type: 'delete-building', buildingId: 3, refundPct: 60 },
+    ]);
   });
 });
 

@@ -39,7 +39,7 @@ export class SelectionPanel {
 
   render(state: UiStore): void {
     const sel = state.selectedEntity;
-    this.deleteButton.render(sel, state.deleteArmedId);
+    this.deleteButton.render(sel, state.deleteArmedId, state.deleteArmedPct);
     // The building portrait follows its age style, so a re-skin refreshes it.
     const identity = sel ? `${sel.kind}:${sel.id}:${sel.kind === 'building' ? (sel.textureKey ?? '') : ''}` : 'none';
     if (identity !== this.identity) {

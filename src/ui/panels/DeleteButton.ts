@@ -12,7 +12,7 @@ import type { SelectedEntityInfo } from '../store';
  * in its own row under the panel body. It is one persistent element updated in place (the panel body is
  * rebuilt as a site's progress ticks, which would swallow clicks). The
  * first press arms it, the second deletes (deleteConfirm); a site up to
- * half built shows its refund.
+ * half built shows its refund, which is locked (and paid) once armed.
  */
 export class DeleteButton {
   /** The action row under the panel body (in the layout flow, so it never covers the queue). */
@@ -21,6 +21,8 @@ export class DeleteButton {
   private readonly label: HTMLElement;
   private targetId: number | null = null;
   private shownKey = '';
+  /** The refund the button shows now (the HUD's, or the lock while armed). */
+  private shownPct = 0;
 
   constructor() {
     this.label = el('span', {});
@@ -29,15 +31,17 @@ export class DeleteButton {
     this.row.hidden = true;
     this.button.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (this.targetId !== null) pressDelete(this.targetId);
+      if (this.targetId !== null) pressDelete(this.targetId, this.shownPct);
     });
   }
 
-  render(sel: SelectedEntityInfo | null, armedId: number | null): void {
+  /** `armedPct`: the refund locked when the delete was armed (shown, and paid, while armed). */
+  render(sel: SelectedEntityInfo | null, armedId: number | null, armedPct: number): void {
     const own = sel?.kind === 'building' && sel.ownerId === HUMAN_PLAYER_ID && sel.hp.current > 0;
     this.targetId = own ? sel.id : null;
-    const pct = own ? refundPercent(sel.constructionProgress ?? null) : 0;
     const armed = own && armedId === sel.id;
+    const pct = armed ? armedPct : own ? refundPercent(sel.constructionProgress ?? null) : 0;
+    this.shownPct = pct;
     const last = own && sel.lastTownCenter === true;
     // The tooltip names the key as bound now (the settings card may have moved it) and the fixed ⌫.
     const keyLabel = `${settingsStore.getState().keys.deleteBuilding.label} / ${hu.settings.secondaryKeys.deleteBuilding ?? ''}`;

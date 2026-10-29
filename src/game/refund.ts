@@ -21,7 +21,12 @@ export function refundPercent(progress: number | null): number {
 
 /** What deleting a building returns: each resource of `cost` at refundPercent, rounded. */
 export function refundFor(cost: Resources, progress: number | null): Resources {
-  const pct = refundPercent(progress);
+  return refundAtPercent(cost, refundPercent(progress));
+}
+
+/** Each resource of `cost` at `percent` (clamped to [0, DELETE_REFUND.maxPercent]), rounded. */
+export function refundAtPercent(cost: Resources, percent: number): Resources {
+  const pct = Math.max(0, Math.min(DELETE_REFUND.maxPercent, percent));
   return {
     food: Math.round((cost.food * pct) / 100),
     wood: Math.round((cost.wood * pct) / 100),

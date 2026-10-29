@@ -10,7 +10,7 @@ import type { Resources } from '../../types';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { TECH_SPECS } from '../../game/technologies';
 import { resetUiStore, uiStore } from '../../ui/store';
-import { deleteBuilding, deleteKeyHandler, deleteSelectedBuilding } from './BuildingDeletion';
+import { deleteBuilding, deleteCommandHandler, deleteKeyHandler, deleteSelectedBuilding } from './BuildingDeletion';
 
 function wallet(start: Resources = { food: 0, wood: 0, gold: 0 }): Wallet & { value: Resources } {
   const w = {
@@ -128,5 +128,70 @@ describe('the delete key', () => {
     onKey({ repeat: true });
     onKey({ repeat: true });
     expect(uiStore.getState().deleteArmedId).toBe(3);
+  });
+});
+
+describe('the refund shown when armed is the refund paid (final review)', () => {
+  it('a locked percentage is paid even if the site passed half built before the confirm', () => {
+    const sim = createMiniSim(32);
+    const site = createBuilding(sim.world, { type: 'barracks', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: sim.map, underConstruction: true });
+    site.underConstruction!.elapsed = site.underConstruction!.totalTime * 0.6;
+    const cost = BUILDING_SPECS.barracks.cost;
+    expect(deleteBuilding(sim.world, site, 1, wallet(), 41).refund).toEqual({
+      food: Math.round(cost.food * 0.41),
+      wood: Math.round(cost.wood * 0.41),
+      gold: Math.round(cost.gold * 0.41),
+    });
+  });
+
+  it('a finished building pays nothing whatever the lock says', () => {
+    const sim = createMiniSim(32);
+    const house = createBuilding(sim.world, { type: 'house', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: sim.map });
+    expect(deleteBuilding(sim.world, house, 1, wallet(), 80).refund).toEqual({ food: 0, wood: 0, gold: 0 });
+  });
+
+  it('arm locks min(shown, live rule at arm time); the confirm pays the lock, not the live rule', () => {
+    resetUiStore();
+    const sim = createMiniSim(32);
+    const site = createBuilding(sim.world, { type: 'barracks', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: sim.map, underConstruction: true });
+    const uc = site.underConstruction!;
+    uc.elapsed = uc.totalTime * 0.49;
+    const w = wallet();
+    const handle = deleteCommandHandler(sim.world, 1, () => w);
+    // The HUD's progress lags (it read 30 %, i.e. 56 %); the live rule at arm time allows 41 %.
+    uiStore.getState().setDeleteArmed(site.id!, 56);
+    handle({ type: 'arm-delete', buildingId: site.id!, refundPct: 56 });
+    expect(uiStore.getState().deleteArmedPct).toBe(41);
+    // Building goes on past half built before the second press.
+    uc.elapsed = uc.totalTime * 0.55;
+    handle({ type: 'delete-building', buildingId: site.id!, refundPct: 41 });
+    const cost = BUILDING_SPECS.barracks.cost;
+    expect(w.value).toEqual({ food: Math.round(cost.food * 0.41), wood: Math.round(cost.wood * 0.41), gold: Math.round(cost.gold * 0.41) });
+    expect(site.dying).toBeDefined();
+  });
+
+  it('a shown percentage under the live rule is kept; a command claiming more than its arm is capped', () => {
+    resetUiStore();
+    const sim = createMiniSim(32);
+    const site = createBuilding(sim.world, { type: 'barracks', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: sim.map, underConstruction: true });
+    site.underConstruction!.elapsed = site.underConstruction!.totalTime * 0.1;
+    const w = wallet();
+    const handle = deleteCommandHandler(sim.world, 1, () => w);
+    uiStore.getState().setDeleteArmed(site.id!, 60);
+    handle({ type: 'arm-delete', buildingId: site.id!, refundPct: 60 });
+    expect(uiStore.getState().deleteArmedPct).toBe(60);
+    handle({ type: 'delete-building', buildingId: site.id!, refundPct: 80 });
+    const cost = BUILDING_SPECS.barracks.cost;
+    expect(w.value).toEqual({ food: Math.round(cost.food * 0.6), wood: Math.round(cost.wood * 0.6), gold: Math.round(cost.gold * 0.6) });
+  });
+
+  it('a delete without an arm pays at most the live rule', () => {
+    const sim = createMiniSim(32);
+    const site = createBuilding(sim.world, { type: 'barracks', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: sim.map, underConstruction: true });
+    site.underConstruction!.elapsed = site.underConstruction!.totalTime * 0.6;
+    const w = wallet();
+    deleteCommandHandler(sim.world, 1, () => w)({ type: 'delete-building', buildingId: site.id!, refundPct: 80 });
+    expect(w.value).toEqual({ food: 0, wood: 0, gold: 0 });
+    expect(site.dying).toBeDefined();
   });
 });

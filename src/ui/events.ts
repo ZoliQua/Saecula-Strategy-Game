@@ -12,7 +12,10 @@ export type GameCommand =
   | { type: 'cancel-queue'; trainerId: number; index: number }
   | { type: 'research'; buildingId: number; techId: TechId }
   | { type: 'cancel-research'; buildingId: number }
-  | { type: 'delete-building'; buildingId: number }
+  /** The delete button was armed showing `refundPct`; the game lowers the lock to the live rule if it must. */
+  | { type: 'arm-delete'; buildingId: number; refundPct: number }
+  /** The armed delete confirmed: pays the percentage locked at arm time. */
+  | { type: 'delete-building'; buildingId: number; refundPct: number }
   /** The camera to the human's next town centre (the Haza button). */
   | { type: 'camera-home' }
   /** One wheel notch of zoom around the screen centre (the minimap's ± buttons): 1 in, -1 out. */
