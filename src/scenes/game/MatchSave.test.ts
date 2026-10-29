@@ -103,4 +103,14 @@ describe('MatchSave', () => {
     await vi.waitFor(() => expect(notices).toEqual([hu.save.autosaved]));
     expect(store.data.has('save:auto')).toBe(true);
   });
+  it('a decided match is never autosaved, even on a 5-minute mark (final review Minor 2)', async () => {
+    notices.length = 0;
+    const store = memoryStore();
+    const saves = new MatchSave(() => state, new SaveStorage(store), 290_000);
+    saves.update(10_000, true);
+    saves.update(300_000, true);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(store.data.has('save:auto')).toBe(false);
+    expect(notices).toEqual([]);
+  });
 });

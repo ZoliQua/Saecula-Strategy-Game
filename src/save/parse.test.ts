@@ -117,4 +117,78 @@ describe('parseSave (Review Focus 2)', () => {
   it('non-JSON input never throws', () => {
     for (const raw of ['', 'undefined', '[]', '42', '{}', 42, undefined, [], () => 1]) expect(parseSave(raw).ok).toBe(false);
   });
+  describe('positions off the map → corrupt (final review Minor 1)', () => {
+    const find = (save: SaveData, has: (c: SaveData['entities'][number]['components']) => boolean): SaveData['entities'][number]['components'] => {
+      const e = save.entities.find((x) => has(x.components));
+      if (!e) throw new Error('no such entity');
+      return e.components;
+    };
+
+    it('a unit far outside the map', () => {
+      const save = copy();
+      find(save, (c) => c.unit !== undefined).position = { tx: 5000, ty: -40 };
+      expectReason(save, 'corrupt');
+    });
+
+    it('a unit just past the last tile', () => {
+      const save = copy();
+      find(save, (c) => c.unit !== undefined).position = { tx: save.map.width - 0.5, ty: 0 };
+      expectReason(save, 'corrupt');
+    });
+
+    it('a unit with an off-map move target or path tile', () => {
+      const target = copy();
+      find(target, (c) => c.unit !== undefined).moveIntent = { target: { tx: -1, ty: 3 } };
+      expectReason(target, 'corrupt');
+      const path = copy();
+      const movable = find(path, (c) => c.movable !== undefined).movable;
+      if (!movable) throw new Error('no movable');
+      movable.path = [{ tx: 1, ty: 1 }, { tx: 1, ty: path.map.height }];
+      expectReason(path, 'corrupt');
+    });
+
+    it('a town centre whose anchor is far outside the map', () => {
+      const save = copy();
+      find(save, (c) => c.building?.type === 'town_center').position = { tx: 9999, ty: 9999 };
+      expectReason(save, 'corrupt');
+    });
+
+    it('a building whose footprint runs past the map edge', () => {
+      const save = copy();
+      const c = find(save, (x) => x.building?.type === 'town_center');
+      const w = c.building?.footprint.width ?? 3;
+      c.position = { tx: save.map.width - w + 1, ty: 0 };
+      expectReason(save, 'corrupt');
+      const fits = copy();
+      find(fits, (x) => x.building?.type === 'town_center').position = { tx: fits.map.width - w, ty: 0 };
+      expect(parseSave(fits).ok).toBe(true);
+    });
+
+    it('a resource node outside the map', () => {
+      const save = copy();
+      find(save, (c) => c.resourceNode !== undefined).position = { tx: 3, ty: save.map.height + 7 };
+      expectReason(save, 'corrupt');
+    });
+
+    it('a camera outside the reachable view', () => {
+      const save = copy();
+      save.camera = { tx: -500, ty: 30, zoom: 1 };
+      expectReason(save, 'corrupt');
+      const far = copy();
+      far.camera = { tx: 1e9, ty: 1e9, zoom: 1 };
+      expectReason(far, 'corrupt');
+      const corner = copy();
+      // The view centre may sit off the diamond (the camera bounds are a padded box around it).
+      corner.camera = { tx: -2, ty: 2, zoom: 1 };
+      expect(parseSave(corner).ok).toBe(true);
+    });
+
+    it('an AI memory tile outside the map', () => {
+      const save = copy();
+      const ai = save.ai['2'];
+      if (!ai || ai.strategy.kind === 'null') throw new Error('no AI strategy');
+      ai.strategy.army.exploreGoal = { tx: 3, ty: -10 };
+      expectReason(save, 'corrupt');
+    });
+  });
 });

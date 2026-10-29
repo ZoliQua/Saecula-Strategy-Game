@@ -26,9 +26,13 @@ export class MatchSave {
     this.clock = new AutosaveClock(undefined, gameTimeMs);
   }
 
-  /** Once per game frame with the game-time delta (paused frames do not run). */
-  update(gameDeltaMs: number): void {
-    if (this.clock.tick(gameDeltaMs)) void this.write('auto', hu.save.autosaved);
+  /**
+   * Once per game frame with the game-time delta (paused frames do not
+   * run), after the victory check: once `matchDecided`, the 'auto' slot
+   * keeps the last undecided match (a save would end the moment it loads).
+   */
+  update(gameDeltaMs: number, matchDecided = false): void {
+    if (this.clock.tick(gameDeltaMs) && !matchDecided) void this.write('auto', hu.save.autosaved);
   }
 
   /** Saves the match to `slot` and shows the outcome on the HUD, unless `quiet` (the caller shows it itself). */

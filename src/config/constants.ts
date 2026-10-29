@@ -11,6 +11,8 @@ export const MAX_ZOOM = 2.0;
 
 export const CAMERA_EDGE_MARGIN = 5;
 export const CAMERA_SPEED = 600;
+/** World pixels the camera bounds reach past the map's tile-centre box (a save's camera must lie inside). */
+export const CAMERA_BOUNDS_PADDING = 200;
 
 /** Performance budget (CLAUDE.md §10): A* searches per 60 Hz frame; the rest wait in queue. */
 export const PATHFINDS_PER_FRAME = 5;

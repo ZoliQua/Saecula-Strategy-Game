@@ -1,5 +1,6 @@
 import { decodeBytes } from './base64';
 import { migrate } from './migrations';
+import { positionsOnMap } from './positions';
 import { SaveDataSchema, type SaveData } from './schema';
 
 export type ParseResult = { ok: true; save: SaveData } | { ok: false; reason: 'corrupt' | 'newer' };
@@ -17,7 +18,10 @@ function bytesFit(text: string, length: number, max = 255): boolean {
   }
 }
 
-/** What zod cannot see: byte-array lengths, unique ids, exactly one human, and records keyed by real players. */
+/**
+ * What zod cannot see: byte-array lengths, unique ids, exactly one human,
+ * records keyed by real players, and every tile on the map.
+ */
 function consistent(save: SaveData): boolean {
   const size = save.map.width * save.map.height;
   if (!bytesFit(save.map.terrain, size) || !bytesFit(save.map.blocked, size, 1)) return false;
@@ -30,7 +34,8 @@ function consistent(save: SaveData): boolean {
   if (!Object.keys(save.ai).every((id) => aiIds.has(Number(id)))) return false;
   const entityIds = new Set(save.entities.map((e) => e.id));
   if (entityIds.size !== save.entities.length) return false;
-  return save.entities.every((e) => e.id < save.nextEntityId);
+  if (!save.entities.every((e) => e.id < save.nextEntityId)) return false;
+  return positionsOnMap(save);
 }
 
 /**

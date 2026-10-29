@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
+import { CAMERA_BOUNDS_PADDING } from '../config/constants';
 import type { Difficulty, GameSetupConfig } from '../game/GameSetupConfig';
 import { decidedWinner, gameOverRows } from '../game/gameOverStats';
 import type { PlayerManager } from '../game/PlayerManager';
@@ -153,7 +154,7 @@ export class GameScene extends Phaser.Scene {
     this.lighting.shadows?.setRock(this.tileMap.rockFootprints());
 
     const bounds = this.tileMap.getWorldBounds();
-    const padding = 200;
+    const padding = CAMERA_BOUNDS_PADDING;
     this.cameras.main.setBounds(
       bounds.minX - padding,
       bounds.minY - padding,
@@ -337,7 +338,6 @@ export class GameScene extends Phaser.Scene {
     this.runner.update(time, delta);
     this.lighting.update(delta);
     this.placement.updateGhost();
-    this.matchSave?.update(delta);
 
     const prevSecond = Math.floor(this.gameElapsedMs / 1000);
     this.gameElapsedMs += delta;
@@ -346,6 +346,7 @@ export class GameScene extends Phaser.Scene {
       this.hudSync.secondTick();
     }
     this.checkVictory();
+    this.matchSave?.update(delta, this.gameOverTriggered);
     this.matchArt?.update(realDelta, frameStart);
   }
 
