@@ -14,7 +14,18 @@
   "bugs": {
     "url": "https://github.com/ZoliQua/Saecula-Strategy-Game/issues"
   },
-  "keywords": ["rts", "strategy-game", "isometric", "phaser", "typescript", "browser-game", "historical"],
+  "keywords": [
+    "rts",
+    "strategy-game",
+    "isometric",
+    "phaser",
+    "typescript",
+    "browser-game",
+    "historical"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
