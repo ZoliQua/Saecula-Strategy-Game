@@ -10,6 +10,7 @@ import { escapeRulesAt } from '../escapeRules';
 import { onFootprintRing } from '../footprint';
 import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
+import { gameEvents } from '../../game/events';
 
 /** How far (tiles) from the finished segment a builder looks for the next wall segment. */
 const CHAIN_RADIUS = 3;
@@ -90,6 +91,9 @@ export class ConstructionSystem {
     const spec = BUILDING_SPECS[site.building.type];
     this.world.removeComponent(site as Entity, 'underConstruction');
     site.health.current = site.health.max;
+    if (site.owner && site.id !== undefined) {
+      gameEvents.emit('buildingCompleted', { world: this.world, playerId: site.owner.playerId, entityId: site.id, buildingType: site.building.type });
+    }
     if (spec.dropoffAccepts && !(site as Entity).resourceDropoff) {
       this.world.addComponent(site as Entity, 'resourceDropoff', {
         accepts: spec.dropoffAccepts,

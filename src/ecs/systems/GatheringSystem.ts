@@ -21,6 +21,7 @@ import { findEntityById, findNearestDropoff, findNearestNodeOfType } from './gat
 import type { Dropoff, ResourceNode, Villager } from './gathering/gatherTypes';
 import type { EcsWorld } from '../world';
 import { TERRAIN } from '../../map/TerrainTypes';
+import { gameEvents } from '../../game/events';
 
 /**
  * Full gather cycle state machine for villagers with a `gatherer`
@@ -260,6 +261,7 @@ export class GatheringSystem {
     const ownerId = v.owner.playerId;
     const player = this.players?.get(ownerId);
     if (player) player.resources[type] += floored;
+    gameEvents.emit('resourcesDelivered', { world: this.world, playerId: ownerId, amount: floored });
     if (ownerId === 1) {
       const state = uiStore.getState();
       state.setResources({ [type]: state.resources[type] + floored });

@@ -31,6 +31,7 @@ beforeAll(() => {
     gameTimeMs: match.timeMs(),
     camera: { tx: 10, ty: 10, zoom: 1 },
     lightPhase: 0.3,
+    stats: match.stats,
   };
 });
 

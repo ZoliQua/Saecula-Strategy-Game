@@ -6,6 +6,7 @@ import type { PlayerManager } from '../../game/PlayerManager';
 import { createUnit } from '../archetypes/createUnit';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
+import { gameEvents } from '../../game/events';
 
 type Trainer = With<
   Entity,
@@ -68,6 +69,7 @@ export class TrainingSystem {
       tile: spawn,
       playerId: trainer.owner.playerId,
     });
+    gameEvents.emit('unitTrained', { world: this.world, playerId: trainer.owner.playerId, unitType: entry.unitType });
     // HP is stored state: a new unit gets the owner's HP technology once.
     if (unit.health) scaleHealth(unit.health, bonusesFor(this.players, unit).hpMultiplier);
     // PopulationSystem recomputes current/cap from world state every

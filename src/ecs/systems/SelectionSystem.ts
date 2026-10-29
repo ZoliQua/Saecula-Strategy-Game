@@ -116,6 +116,19 @@ export class SelectionSystem {
     return count;
   }
 
+  /** Selects exactly the entities with these ids (a side panel row); returns how many were selected. */
+  selectIds(ids: readonly number[]): number {
+    this.clearSelection();
+    const wanted = new Set(ids);
+    let count = 0;
+    for (const entity of this.world.with('selectable', 'position')) {
+      if (entity.id === undefined || !wanted.has(entity.id) || entity.dying) continue;
+      entity.selectable.selected = true;
+      count++;
+    }
+    return count;
+  }
+
   getAllSelected(): Entity[] {
     const out: Entity[] = [];
     for (const entity of this.world.with('selectable', 'position')) {

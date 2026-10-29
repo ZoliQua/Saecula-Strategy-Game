@@ -1,4 +1,5 @@
 import { SCHEMA_VERSION } from '../schema';
+import { v1ToV2 } from './v1ToV2';
 
 /**
  * One schema step: takes a save of version N (the key it is registered
@@ -7,8 +8,8 @@ import { SCHEMA_VERSION } from '../schema';
  */
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
-/** Migrations by from-version. Empty in v1: no save has shipped yet (M6 Decision 1). */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {};
+/** Migrations by from-version. */
+export const MIGRATIONS: Readonly<Record<number, Migration>> = { 1: v1ToV2 };
 
 export type MigrateResult = { ok: true; data: Record<string, unknown> } | { ok: false; reason: 'corrupt' | 'newer' };
 

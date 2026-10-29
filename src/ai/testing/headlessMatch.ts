@@ -32,6 +32,7 @@ import {
 import { restoreMatch } from '../../save/deserializer';
 import type { SaveData } from '../../save/schema';
 import { serializeMatch, type MatchState } from '../../save/serializer';
+import { MatchStats } from '../../stats/MatchStats';
 import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
@@ -70,6 +71,8 @@ export interface HeadlessMatch {
   readonly ais: readonly AIPlayer[];
   /** The setup a live game would have had (from the options, or the save it resumed). */
   readonly setup: GameSetupConfig;
+  /** The match statistics, counted while the match runs. */
+  readonly stats: MatchStats;
   /** Advances every gameplay system (no rendering) by `stepMs`, `totalMs / stepMs` times. */
   run(totalMs: number, stepMs: number, onStep?: (timeMs: number) => boolean | void): void;
   readonly timeMs: () => number;
@@ -135,6 +138,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     startMs: 0,
     camera: { tx: options.size / 2, ty: options.size / 2, zoom: 1 },
     lightPhase: 0,
+    stats: new MatchStats(world, players, 0),
   });
 }
 
@@ -164,6 +168,7 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
     startMs: r.gameTimeMs,
     camera: r.camera,
     lightPhase: r.lightPhase,
+    stats: r.stats,
   });
 }
 
@@ -179,11 +184,14 @@ interface MatchParts {
   readonly startMs: number;
   readonly camera: MatchState['camera'];
   readonly lightPhase: number;
+  readonly stats: MatchStats;
 }
 
 /** The systems and the step loop over a built (or restored) match. */
 function assemble(parts: MatchParts): HeadlessMatch {
-  const { setup, world, map, players, ais, humanAi, humanEnemy, enemyOf } = parts;
+  const { setup, world, map, players, ais, humanAi, humanEnemy, enemyOf, stats } = parts;
+  // Headless matches are never torn down: the world filter keeps another match's events out.
+  stats.attach();
   const human = players.human();
   const fogFor = (id: number): FogOfWarData | null =>
     (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
@@ -225,6 +233,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     for (const ai of ais) ai.update({ world, mapData: map, wonderVictory, isDefeated, enemyPlayerId: enemyOf(ai.player.id) }, dt);
     humanAi?.update({ world, mapData: map, wonderVictory, isDefeated, enemyPlayerId: humanEnemy() }, dt);
     systems.population.update();
+    stats.update(dt);
   };
   return {
     world,
@@ -232,12 +241,13 @@ function assemble(parts: MatchParts): HeadlessMatch {
     players,
     ais,
     setup,
+    stats,
     timeMs: () => now,
     snapshot(date) {
       if (humanAi) throw new Error('A headless match with an AI-driven human cannot be saved');
       const fogs = new Map<number, FogOfWarData>();
       for (const ai of ais) if (ai.fog) fogs.set(ai.player.id, ai.fog);
-      const state: MatchState = { setup, world, players, mapData: map, fogs, ais, gameTimeMs: now, camera: parts.camera, lightPhase: parts.lightPhase };
+      const state: MatchState = { setup, world, players, mapData: map, fogs, ais, gameTimeMs: now, camera: parts.camera, lightPhase: parts.lightPhase, stats };
       return serializeMatch(state, date);
     },
     run(totalMs, stepMs, onStep) {

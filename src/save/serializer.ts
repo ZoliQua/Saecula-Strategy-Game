@@ -8,6 +8,7 @@ import type { PlayerManager } from '../game/PlayerManager';
 import { computePopulation } from '../game/population';
 import type { FogOfWarData } from '../map/FogOfWarData';
 import type { MapData } from '../map/MapData';
+import type { MatchStats } from '../stats/MatchStats';
 import { encodeBytes } from './base64';
 import { SCHEMA_VERSION, type EntityComponents, type SaveData, type SavedPlayer } from './schema';
 
@@ -23,6 +24,8 @@ export interface MatchState {
   gameTimeMs: number;
   camera: { tx: number; ty: number; zoom: number };
   lightPhase: number;
+  /** The match statistics (scores, timeline). */
+  stats: MatchStats;
 }
 
 /**
@@ -113,5 +116,6 @@ export function serializeMatch(state: MatchState, now: Date = new Date()): SaveD
     ai,
     camera: { ...state.camera },
     lightPhase: state.lightPhase,
+    stats: state.stats.snapshot(),
   };
 }

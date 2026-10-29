@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PERSONALITIES } from '../config/aiPersonality';
 import type { Entity } from '../ecs/components';
+import type { MatchStatsSnapshot } from '../stats/MatchStats';
 import {
   DIFFICULTIES,
   MAP_SIZE_IDS,
@@ -34,10 +35,10 @@ import {
  * The versioned save format (CLAUDE.md §5.4, M6 Task 4). Every object
  * is strict: an unknown key is a corrupt save. Bump SCHEMA_VERSION (and
  * add a migration) for every gameplay-relevant change once a save has
- * shipped; M6 keeps v1 (Decision 1).
+ * shipped. v2 (M7): the match statistics (`stats`).
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -152,6 +153,31 @@ const PlayerSchema = z
   })
   .strict();
 
+const count = int.nonnegative();
+
+/** MatchStats.snapshot(): counters by player id and the score / population timeline (player id order). */
+export const MatchStatsSchema = z
+  .object({
+    players: z.record(
+      playerKey,
+      z
+        .object({
+          gathered: nonNeg,
+          killValue: nonNeg,
+          unitsTrained: count,
+          unitsLost: count,
+          buildingsBuilt: count,
+          buildingsLost: count,
+          ageUpAtMs: z.array(nonNeg),
+        })
+        .strict(),
+    ),
+    timeline: z.array(z.object({ tMs: nonNeg, scores: z.array(num), pops: z.array(nonNeg) }).strict()),
+  })
+  .strict();
+
+export type MatchStatsSchemaCheck = Assert<Exact<z.infer<typeof MatchStatsSchema>, Loose<MatchStatsSnapshot>>>;
+
 export const SaveDataSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
@@ -190,6 +216,7 @@ export const SaveDataSchema = z
     ai: z.record(playerKey, AIPlayerStateSchema),
     camera: z.object({ tx: num, ty: num, zoom: num.positive() }).strict(),
     lightPhase: num,
+    stats: MatchStatsSchema,
   })
   .strict();
 

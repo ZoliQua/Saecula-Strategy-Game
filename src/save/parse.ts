@@ -20,7 +20,8 @@ function bytesFit(text: string, length: number, max = 255): boolean {
 
 /**
  * What zod cannot see: byte-array lengths, unique ids, exactly one human,
- * records keyed by real players, and every tile on the map.
+ * records keyed by real players (stats by every player), timeline samples
+ * of one value per player, and every tile on the map.
  */
 function consistent(save: SaveData): boolean {
   const size = save.map.width * save.map.height;
@@ -35,6 +36,9 @@ function consistent(save: SaveData): boolean {
   const entityIds = new Set(save.entities.map((e) => e.id));
   if (entityIds.size !== save.entities.length) return false;
   if (!save.entities.every((e) => e.id < save.nextEntityId)) return false;
+  const statIds = Object.keys(save.stats.players);
+  if (statIds.length !== playerIds.size || !statIds.every((id) => playerIds.has(Number(id)))) return false;
+  if (!save.stats.timeline.every((t) => t.scores.length === playerIds.size && t.pops.length === playerIds.size)) return false;
   return positionsOnMap(save);
 }
 

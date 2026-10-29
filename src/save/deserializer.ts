@@ -6,6 +6,7 @@ import { createPlayer, type Player } from '../game/Player';
 import { PlayerManager } from '../game/PlayerManager';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
+import { MatchStats } from '../stats/MatchStats';
 import { decodeBytes } from './base64';
 import type { EntityComponents, SaveData, SavedPlayer } from './schema';
 import type { MatchState } from './serializer';
@@ -23,6 +24,8 @@ export interface RestoredMatch {
   gameTimeMs: number;
   camera: MatchState['camera'];
   lightPhase: number;
+  /** The saved statistics on the restored world and players (attach it to count on). */
+  stats: MatchStats;
 }
 
 /** A live entity from saved components (deep-copied, so the save is never aliased). */
@@ -54,7 +57,7 @@ function restoredPlayer(p: SavedPlayer): Player {
  * Rebuilds a match from a (parsed) save: a fresh world with the saved
  * entities added in saved order with their ids, entity ids continuing
  * from `nextEntityId`, the players (population is recomputed by the
- * game, not read), the map and fogs. Throws RangeError when a byte array
+ * game, not read), the map, fogs and match statistics. Throws RangeError when a byte array
  * does not fit the map; parseSave rules that out.
  */
 export function restoreMatch(save: SaveData): RestoredMatch {
@@ -71,9 +74,12 @@ export function restoreMatch(save: SaveData): RestoredMatch {
   }
   const aiStates = new Map<number, AIPlayerState>();
   for (const [id, state] of Object.entries(save.ai)) aiStates.set(Number(id), structuredClone(state));
+  const players = new PlayerManager(save.players.map(restoredPlayer));
+  const stats = new MatchStats(world, players, save.gameTimeMs);
+  stats.restore(save.stats);
   return {
     setup: { ...save.setup },
-    players: new PlayerManager(save.players.map(restoredPlayer)),
+    players,
     world,
     mapData: MapData.fromRaw(width, height, decodeBytes(save.map.terrain, size), decodeBytes(save.map.blocked, size)),
     fogs,
@@ -81,5 +87,6 @@ export function restoreMatch(save: SaveData): RestoredMatch {
     gameTimeMs: save.gameTimeMs,
     camera: { ...save.camera },
     lightPhase: save.lightPhase,
+    stats,
   };
 }

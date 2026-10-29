@@ -135,6 +135,7 @@ export class CombatSystem {
         boostArmor((target as Entity).armor ?? NO_ARMOR, bonusesFor(this.players, target as Entity)),
         (target as Entity).unit?.unitType,
       ),
+      a.owner.playerId,
     );
     if (killed) this.endTarget(a);
   }

@@ -44,6 +44,7 @@ import { keepWallKeys } from '../../iso/art/walls/commonWallPieces';
 import { screenToTile, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
+import { MatchStats } from '../../stats/MatchStats';
 import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
@@ -56,15 +57,23 @@ export interface SystemRunnerOptions {
   readonly seed: number;
   /**
    * A loaded save: every player's saved fog by id and each AI's saved state.
-   * The players' difficulty handicap and personality come from the save too.
+   * The players' difficulty handicap and personality come from the save too,
+   * and so do the match statistics.
    */
-  readonly restore?: { readonly fogs: ReadonlyMap<number, FogOfWarData>; readonly ais: ReadonlyMap<number, AIPlayerState> };
+  readonly restore?: {
+    readonly fogs: ReadonlyMap<number, FogOfWarData>;
+    readonly ais: ReadonlyMap<number, AIPlayerState>;
+    readonly stats: MatchStats;
+  };
 }
 
 /** Owns every per-frame system and ticks them in a fixed, deterministic order. */
 export class SystemRunner {
   readonly fogData: FogOfWarData;
   readonly selection: SelectionSystem;
+  /** Scores and the timeline, counted while the match runs (a save keeps them). */
+  readonly stats: MatchStats;
+  private readonly detachStats: () => void;
   private readonly render: RenderSystem;
   private readonly pathfinding: PathfindingSystem;
   private readonly movement: MovementSystem;
@@ -141,6 +150,8 @@ export class SystemRunner {
     this.wonders = new WonderSystem(world, options.wonderVictory);
     this.healthBars = new HealthBarSystem(scene, world);
     const { restore } = options;
+    this.stats = restore?.stats ?? new MatchStats(world, players, 0);
+    this.detachStats = this.stats.attach();
     const savedFog = (id: number) => restore?.fogs.get(id) ?? new FogOfWarData(mapData.width, mapData.height);
     this.fogData = savedFog(1);
     // Each AI sees through its own fog (perception, towers); scans are staggered across frames.
@@ -250,6 +261,7 @@ export class SystemRunner {
       ai.update(this.humanId === undefined ? base : { ...base, enemyPlayerId: this.humanId }, delta);
     }
     this.population.update();
+    this.stats.update(delta);
     this.fogOfWar.update(delta);
     this.tileMap.applyFog(this.fogData);
     this.render.update();
@@ -279,6 +291,7 @@ export class SystemRunner {
   }
 
   destroy(): void {
+    this.detachStats();
     this.audioWatch.destroy();
     // The match is over: the listener's fog and camera closure go with it.
     audio().clearListener();

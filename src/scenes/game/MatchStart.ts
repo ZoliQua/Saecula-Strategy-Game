@@ -87,7 +87,7 @@ export function runnerFor(start: MatchStart, setup: GameSetupConfig, make: (opti
   const options: SystemRunnerOptions = { difficulty: setup.difficulty, wonderVictory: setup.victory === 'conquest_wonder', seed: setup.seed };
   if (start.kind === 'new') return make(options);
   try {
-    return make({ ...options, restore: { fogs: start.restored.fogs, ais: start.restored.aiStates } });
+    return make({ ...options, restore: { fogs: start.restored.fogs, ais: start.restored.aiStates, stats: start.restored.stats } });
   } catch (err) {
     if (import.meta.env.DEV) console.warn('restoring the AIs failed', err);
     return null;

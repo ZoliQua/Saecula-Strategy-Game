@@ -61,6 +61,7 @@ export class ProjectileSystem {
         this.world,
         v,
         computeDamage(shot.payload, boostArmor(v.armor ?? NO_ARMOR, bonusesFor(this.players, v)), v.unit?.unitType),
+        shot.ownerId,
       );
     }
   }

@@ -162,6 +162,20 @@ export const BUILDING_DEATH_TTL_MS = 2400;
  */
 export const DELETE_REFUND = { maxPercent: 80, untilProgress: 0.5 } as const;
 
+/**
+ * Match score (M7 Decision 8, src/stats/score.ts): a tenth of the
+ * resources gathered, of the cost of enemy units and buildings destroyed
+ * and of the cost of the player's standing finished buildings, plus a
+ * flat bonus per age; the timeline is sampled every `sampleMs` of game time.
+ */
+export const SCORE_BALANCE = {
+  economyDivisor: 10,
+  militaryDivisor: 10,
+  buildingDivisor: 10,
+  ageScore: { 1: 0, 2: 300, 3: 800 },
+  sampleMs: 60_000,
+} as const;
+
 /** Buildings a player may own only one of (finished or under construction). */
 export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
 

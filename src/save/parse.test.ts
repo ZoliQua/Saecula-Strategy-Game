@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { encodeBytes } from './base64';
 import { parseSave } from './parse';
-import type { SaveData } from './schema';
+import { SCHEMA_VERSION, type SaveData } from './schema';
 import { FIXED_DATE, STEP_MS, savableMatch } from './savedMatch.testkit';
 
 /** A small real save (20 s of play) as a plain JSON object, edited per case. */
@@ -69,10 +69,25 @@ describe('parseSave (Review Focus 2)', () => {
     expectReason(blocked, 'corrupt');
   });
 
-  it('schemaVersion: 2 → newer', () => {
+  it('schemaVersion above the current → newer', () => {
     const save = copy();
-    (save as Record<string, unknown>)['schemaVersion'] = 2;
+    (save as Record<string, unknown>)['schemaVersion'] = SCHEMA_VERSION + 1;
     expectReason(save, 'newer');
+  });
+
+  it('stats missing a player, naming a stranger, or a timeline sample of the wrong width → corrupt', () => {
+    const missing = copy();
+    delete missing.stats.players['2'];
+    expectReason(missing, 'corrupt');
+    const stranger = copy();
+    stranger.stats.players['9'] = stranger.stats.players['1']!;
+    expectReason(stranger, 'corrupt');
+    const narrow = copy();
+    narrow.stats.timeline.push({ tMs: 60_000, scores: [1], pops: [1, 2, 3] });
+    expectReason(narrow, 'corrupt');
+    const negative = copy();
+    negative.stats.players['1']!.unitsLost = -1;
+    expectReason(negative, 'corrupt');
   });
 
   it('a players[].civ outside CIV_IDS → corrupt', () => {

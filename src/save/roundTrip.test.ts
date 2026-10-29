@@ -9,7 +9,10 @@ describe('save round trip', () => {
     const match = savableMatch();
     match.run(6 * MIN, STEP_MS);
     const s1 = match.snapshot(FIXED_DATE);
-    expect(s1.schemaVersion).toBe(1);
+    expect(s1.schemaVersion).toBe(2);
+    // Six minutes: six timeline samples, and the AIs have gathered.
+    expect(s1.stats.timeline.map((t) => t.tMs)).toEqual([1, 2, 3, 4, 5, 6].map((m) => m * MIN));
+    expect(s1.stats.players['2']!.gathered).toBeGreaterThan(0);
     expect(s1.entities.length).toBeGreaterThan(50);
     expect(Object.keys(s1.ai)).toEqual(['2', '3']);
     expect(s1.setup).toMatchObject({ seed: 3, aiCount: 2, mapSize: 'small', difficulty: 'medium', victory: 'conquest_wonder' });
