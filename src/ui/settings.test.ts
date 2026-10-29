@@ -153,6 +153,45 @@ describe('settings', () => {
   });
 });
 
+
+describe('settings: stored key maps (fix round 1)', () => {
+  const roundTrip = (steps: [Parameters<typeof rebind>[1], string][]) => {
+    const storage = memory();
+    const store = createSettingsStore(storage);
+    for (const [action, code] of steps) {
+      const r = store.getState().rebind(action, { code, label: code });
+      expect(r.ok, `${action} → ${code}`).toBe(true);
+    }
+    expect(loadSettings(storage).keys).toEqual(store.getState().keys);
+  };
+
+  it('villagerPanel → Q, then scorePanel → V survives a reload', () => {
+    roundTrip([
+      ['villagerPanel', 'KeyQ'],
+      ['scorePanel', 'KeyV'],
+    ]);
+  });
+
+  it('scorePanel on T after techTree moved, and on Delete after deleteBuilding moved, survive a reload', () => {
+    roundTrip([
+      ['techTree', 'KeyJ'],
+      ['scorePanel', 'KeyT'],
+    ]);
+    roundTrip([
+      ['deleteBuilding', 'KeyK'],
+      ['scorePanel', 'Delete'],
+    ]);
+  });
+
+  it('a partial blob whose given codes take several defaults still fills every action', () => {
+    const s = loadSettings(memory(JSON.stringify({ keys: { panUp: { code: 'KeyH', label: 'H' }, panDown: { code: 'KeyT', label: 'T' } } })));
+    expect(validBindings(s.keys)).toBe(true);
+    expect(s.keys.panUp.code).toBe('KeyH');
+    expect(s.keys.panDown.code).toBe('KeyT');
+    expect(s.keys.scorePanel.code).toBe('Tab');
+  });
+});
+
 const DEFAULT_PAN_KEYS_ONLY = {
   panUp: DEFAULT_KEYS.panUp,
   panDown: DEFAULT_KEYS.panDown,

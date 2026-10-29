@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CONTROLS, DEFAULT_VOLUMES } from '../config/constants';
-import { DEFAULT_KEYS, KEY_ACTIONS, rebind as rebindKeys, validBindings, type KeyAction, type KeyBinding, type KeyBindings, type RebindResult } from './keymap';
+import { DEFAULT_KEYS, KEY_ACTIONS, RESERVED_CODES, rebind as rebindKeys, validBindings, type KeyAction, type KeyBinding, type KeyBindings, type RebindResult } from './keymap';
 
 export type VolumeChannel = 'master' | 'music' | 'sfx' | 'notifications';
 export const VOLUME_CHANNELS: readonly VolumeChannel[] = ['master', 'music', 'sfx', 'notifications'];
@@ -38,26 +38,46 @@ const volume = (fallback: number) => z.number().finite().transform(clampVolume).
 const binding = z.object({ code: z.string().min(1).max(40), label: z.string().min(1).max(40) });
 
 /**
- * The stored bindings over the defaults. Missing actions (an M6 blob has
- * only the pan keys) keep their default; a stored key that a missing
- * action's default also uses wins, and that action takes the key it
- * freed (the fold is a chain of `rebind` swaps, so a full valid map comes
- * back exactly). A stored clash or reserved code cannot be repaired: the
- * defaults.
+ * The stored bindings. A map that covers every action and passes
+ * `validBindings` is taken as is. A partial one (an M6 blob has only the
+ * pan keys) keeps every given binding; each missing action takes its
+ * default if no given binding uses it, else the default of a given
+ * action that moved off it (so an M6 pan key on a new command default
+ * stays, and that command takes the freed key). A stored clash or
+ * reserved code, or no key left to give: the defaults.
  */
 function mergeKeys(stored: { readonly [A in KeyAction]?: KeyBinding | undefined }): KeyBindings {
   const given = KEY_ACTIONS.filter((a) => stored[a] !== undefined);
-  const codes = given.map((a) => stored[a]?.code);
-  if (new Set(codes).size !== codes.length) return DEFAULT_KEYS;
-  let keys = DEFAULT_KEYS;
+  const keys: Partial<Record<KeyAction, KeyBinding>> = {};
   for (const a of given) {
     const b = stored[a];
-    if (!b) continue;
-    const r = rebindKeys(keys, a, b);
-    if (!r.ok) return DEFAULT_KEYS;
-    keys = r.keys;
+    if (b) keys[a] = b;
   }
-  return validBindings(keys) ? keys : DEFAULT_KEYS;
+  if (given.length === KEY_ACTIONS.length) {
+    const full = keys as KeyBindings;
+    return validBindings(full) ? full : DEFAULT_KEYS;
+  }
+  const used = new Set(given.map((a) => stored[a]?.code));
+  if (used.size !== given.length) return DEFAULT_KEYS;
+  const displaced: KeyAction[] = [];
+  for (const a of KEY_ACTIONS) {
+    if (keys[a]) continue;
+    if (used.has(DEFAULT_KEYS[a].code)) displaced.push(a);
+    else {
+      keys[a] = DEFAULT_KEYS[a];
+      used.add(DEFAULT_KEYS[a].code);
+    }
+  }
+  // The defaults no binding holds any more, offered to the displaced actions in action order.
+  const spare = KEY_ACTIONS.map((a) => DEFAULT_KEYS[a]).filter((b) => !used.has(b.code));
+  for (const a of displaced) {
+    const i = spare.findIndex((b) => !RESERVED_CODES.has(b.code));
+    const pick = i < 0 ? undefined : spare.splice(i, 1)[0];
+    if (!pick) return DEFAULT_KEYS;
+    keys[a] = pick;
+  }
+  const merged = keys as KeyBindings;
+  return KEY_ACTIONS.every((a) => merged[a] !== undefined) && validBindings(merged) ? merged : DEFAULT_KEYS;
 }
 const keyFields = Object.fromEntries(KEY_ACTIONS.map((a) => [a, binding.optional().catch(undefined)])) as Record<
   KeyAction,
