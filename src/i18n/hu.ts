@@ -318,9 +318,29 @@ export const hu = {
     resume: 'Folytatás',
     save: 'Mentés',
     load: 'Betöltés',
+    techTree: 'Fejlődési fa',
     settings: 'Beállítások',
     quit: 'Kilépés a főmenübe',
     quitConfirm: 'Biztosan kilépsz? A nem mentett haladás elvész.',
+  },
+  /** The tech tree card (pause menu, T key). */
+  techTree: {
+    title: 'Fejlődési fa',
+    kicker: 'Mi mikor válik elérhetővé',
+    numerals: { 1: 'I', 2: 'II', 3: 'III' },
+    states: { past: 'Elért kor', current: 'Jelenlegi kor', locked: 'Zárolva' },
+    startAge: 'Kezdő kor',
+    entry: 'Korváltás a Városházán',
+    buildings: 'Új épületek',
+    training: 'Kiképzés',
+    techs: 'Fejlesztések',
+    /** Before the other trainers of a unit ("Lőtéren is"). */
+    alsoAt: 'Itt is:',
+    /** On a trainer unlocked in an earlier age. */
+    earlier: 'korábbi',
+    researched: 'Kifejlesztve',
+    noTechs: 'Nincs új fejlesztés',
+    scrollHint: 'Görgess a további tartalomért',
   },
   /** The settings card (main menu and pause). */
   settings: {

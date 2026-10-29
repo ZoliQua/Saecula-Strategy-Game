@@ -27,7 +27,7 @@ import { MatchArt, type LoadArt } from './game/MatchArt';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
 import { wirePlayerInput } from './game/PlayerInputWiring';
-import { openPause } from './game/PauseWiring';
+import { wirePause } from './game/PauseWiring';
 import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
 import { wireHudControls } from './game/HudControls';
@@ -228,6 +228,7 @@ export class GameScene extends Phaser.Scene {
     this.launchHud();
 
     const human = this.players.human();
+    const openPause = wirePause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage);
     this.placement = wirePlayerInput(this, {
       world: this.world,
       mapData,
@@ -237,7 +238,7 @@ export class GameScene extends Phaser.Scene {
       humanId: human?.id ?? 1,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
-      onIdleEscape: () => openPause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage),
+      onIdleEscape: openPause,
     });
     wireHudControls(this, { world: this.world, selection: this.runner.selection, camera: cameraController, humanId: human?.id ?? 1 });
     this.events.on(Phaser.Scenes.Events.UPDATE, this.onUpdate, this);

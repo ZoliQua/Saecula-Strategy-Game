@@ -2,10 +2,15 @@ import Phaser from 'phaser';
 import { gameEvents } from '../game/events';
 import { hu } from '../i18n/hu';
 import type { SaveStorage, SlotId } from '../save/storage';
+import type { BuildingType, UnitType } from '../types';
 import { createPauseBackdrop, PauseMenu } from '../ui/screens/PauseMenu';
 import { SaveSlots } from '../ui/screens/SaveSlots';
 import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { slotRows } from '../ui/screens/slotRows';
+import { TechTree } from '../ui/screens/TechTree';
+import { techTreeModel } from '../ui/screens/techTreeModel';
+import { uiStore } from '../ui/store';
+import { buildingThumbnail, unitThumbnail } from '../ui/thumbnails';
 import type { SaveOutcome } from './game/MatchSave';
 import { startFromSlot } from './game/MatchStart';
 
@@ -14,6 +19,8 @@ export interface PauseData {
   /** Saves the running match (MatchSave.saveTo). */
   save: (slot: SlotId) => Promise<SaveOutcome>;
   storage: SaveStorage;
+  /** The card to open on (the `techTree` key); default the pause menu. */
+  card?: 'techTree';
 }
 
 /** The exit animation before the game runs again (pause.css `.leaving`). */
@@ -22,7 +29,7 @@ const LEAVE_MS = 180;
 /**
  * The Esc pause: GameScene and HUDScene are paused (game time, AI and
  * autosave stop) under a dimmed backdrop with one card at a time, the
- * pause menu, a save / load slot list or the settings. Resume runs both again; load
+ * pause menu, a save / load slot list, the tech tree or the settings. Resume runs both again; load
  * and quit stop them instead.
  */
 export class PauseScene extends Phaser.Scene {
@@ -30,6 +37,7 @@ export class PauseScene extends Phaser.Scene {
   private menu: PauseMenu | null = null;
   private slots: SaveSlots | null = null;
   private settings: SettingsScreen | null = null;
+  private tree: TechTree | null = null;
   private leaving = false;
   private pause!: PauseData;
 
@@ -44,7 +52,8 @@ export class PauseScene extends Phaser.Scene {
     this.scene.pause('HUDScene');
     this.scene.bringToTop();
     this.backdrop = createPauseBackdrop();
-    this.showMenu();
+    if (data.card === 'techTree') this.showTechTree();
+    else this.showMenu();
     gameEvents.emit('pauseChanged', { paused: true });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.clearCard();
@@ -61,6 +70,8 @@ export class PauseScene extends Phaser.Scene {
     this.slots = null;
     this.settings?.destroy();
     this.settings = null;
+    this.tree?.destroy();
+    this.tree = null;
   }
 
   private showMenu(): void {
@@ -69,6 +80,7 @@ export class PauseScene extends Phaser.Scene {
       onResume: () => this.resumeGame(),
       onSave: () => this.showSlots('save'),
       onLoad: () => this.showSlots('load'),
+      onTechTree: () => this.showTechTree(),
       onSettings: () => this.showSettings(),
       onQuit: () => this.quit(),
     });
@@ -79,6 +91,22 @@ export class PauseScene extends Phaser.Scene {
   private showSettings(): void {
     this.clearCard();
     this.settings = new SettingsScreen(() => this.showMenu());
+  }
+
+  /**
+   * The tech tree of the human's age and civ (pictures in the current
+   * age's style, as the command panel paints them); back returns to the
+   * pause card, also when the T key opened it.
+   */
+  private showTechTree(): void {
+    this.clearCard();
+    const ui = uiStore.getState();
+    const model = techTreeModel(ui.civ, ui.currentAge, new Set(ui.researchedTechs));
+    const pictures = {
+      building: (type: BuildingType) => buildingThumbnail(this.textures, type, ui.currentAge, ui.civ),
+      unit: (type: UnitType) => unitThumbnail(type, ui.civ),
+    };
+    this.tree = new TechTree(model, pictures, () => this.showMenu());
   }
 
   /** The slot list; it shows placeholders until the slots have been read. */

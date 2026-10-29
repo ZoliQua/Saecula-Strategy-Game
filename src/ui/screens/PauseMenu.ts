@@ -10,6 +10,7 @@ export interface PauseMenuHandlers {
   onResume(): void;
   onSave(): void;
   onLoad(): void;
+  onTechTree(): void;
   onSettings(): void;
   onQuit(): void;
 }
@@ -22,7 +23,7 @@ export function createPauseBackdrop(): HTMLElement {
 }
 
 /**
- * The pause card (Esc): resume, save, load, settings and quit. Quitting
+ * The pause card (Esc): resume, save, load, tech tree, settings and quit. Quitting
  * asks for an inline confirmation inside the card. Esc resumes, or,
  * while the confirmation shows, cancels it.
  */
@@ -46,6 +47,7 @@ export class PauseMenu {
     const resume = this.action(GLYPHS.play, hu.pause.resume, 'btn-primary', () => handlers.onResume());
     const save = this.action(GLYPHS.save, hu.pause.save, 'btn-ghost', () => handlers.onSave());
     const load = this.action(GLYPHS.load, hu.pause.load, 'btn-ghost', () => handlers.onLoad());
+    const tree = this.action(GLYPHS.tree, hu.pause.techTree, 'btn-ghost', () => handlers.onTechTree());
     this.settingsBtn = this.action(GLYPHS.gear, hu.pause.settings, 'btn-ghost', () => handlers.onSettings());
     this.quitBtn = this.action(GLYPHS.door, hu.pause.quit, 'btn-ghost pause-quit', () => this.askQuit(true));
     this.actions = el(
@@ -54,6 +56,7 @@ export class PauseMenu {
       resume,
       save,
       load,
+      tree,
       this.settingsBtn,
       el('div', { class: 'pause-rule', 'aria-hidden': 'true' }),
       this.quitBtn,
