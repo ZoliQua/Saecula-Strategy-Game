@@ -83,6 +83,17 @@ describe('MatchLog', () => {
     expect(result).toEqual({ ok: true, records: [record(1)], corrupt: 3 });
   });
 
+  it('a record whose read rejects is counted as corrupt; the rest still load', async () => {
+    const store = memoryStore();
+    const log = new MatchLog(store);
+    await log.append(record(1));
+    await log.append(record(2));
+    const bad = matchKey(record(2).createdAt);
+    const getItem = store.getItem;
+    store.getItem = (key) => (key === bad ? Promise.reject(new Error('read failed')) : getItem(key));
+    expect(await log.readAll()).toEqual({ ok: true, records: [record(1)], corrupt: 1 });
+  });
+
   it('a missing or failing store reports unavailable and never throws', async () => {
     for (const log of [new MatchLog(null), new MatchLog(rejecting)]) {
       expect(await log.append(record(1))).toBe(false);

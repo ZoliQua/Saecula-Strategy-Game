@@ -231,7 +231,7 @@ export class GameScene extends Phaser.Scene {
     this.launchHud();
 
     const human = this.players.human();
-    const openPause = wirePause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage, () => this.recorder?.quit());
+    const openPause = wirePause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage, () => this.recorder?.abandon());
     this.placement = wirePlayerInput(this, {
       world: this.world,
       mapData,

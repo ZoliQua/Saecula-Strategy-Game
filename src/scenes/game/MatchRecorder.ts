@@ -14,8 +14,8 @@ export interface MatchLogWriter {
 
 /**
  * Writes the running match to the local match log once (M7 Decision 11):
- * when the game-over screen appears, or as 'abandoned' on "Kilépés a
- * főmenübe" from the pause. A match whose game time never moved (a save
+ * when the game-over screen appears, or as 'abandoned' when the player
+ * leaves from the pause ("Kilépés a főmenübe", or a load over the match). A match whose game time never moved (a save
  * loaded and left at once) writes nothing. The record is built
  * synchronously, before the scene goes; the write itself runs on.
  */
@@ -46,8 +46,8 @@ export class MatchRecorder {
     return { kind: state.kind, winnerId, cause: state.cause };
   }
 
-  /** "Kilépés a főmenübe" from the pause. */
-  quit(): void {
+  /** The player left the match from the pause: "Kilépés a főmenübe", or a load over it. */
+  abandon(): void {
     this.write({ kind: 'abandoned' });
   }
 

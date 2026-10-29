@@ -32,33 +32,33 @@ function setup(startMs: number) {
 }
 
 describe('MatchRecorder (Decision 11)', () => {
-  it('writes the game-over record once, even when a quit follows', () => {
+  it('writes the game-over record once, even when leaving from the pause follows', () => {
     const { t, written, recorder } = setup(0);
     t.ms = 90_000;
     recorder.gameOver({ kind: 'victory', winnerId: 1, cause: 'conquest' });
     recorder.gameOver({ kind: 'victory', winnerId: 1, cause: 'conquest' });
-    recorder.quit();
+    recorder.abandon();
     expect(written.map((r) => [r.outcome, r.durationMs])).toEqual([['victory', 90_000]]);
   });
 
-  it('a quit from the pause is an abandoned match', () => {
+  it('leaving from the pause is an abandoned match', () => {
     const { t, written, recorder } = setup(0);
     t.ms = 5_000;
-    recorder.quit();
-    recorder.quit();
+    recorder.abandon();
+    recorder.abandon();
     expect(written.map((r) => r.outcome)).toEqual(['abandoned']);
   });
 
   it('a loaded match left without any play writes nothing', () => {
     const { written, recorder } = setup(600_000);
-    recorder.quit();
+    recorder.abandon();
     expect(written).toEqual([]);
   });
 
   it('a loaded match played on is recorded with its whole game time', () => {
     const { t, written, recorder } = setup(600_000);
     t.ms = 600_016;
-    recorder.quit();
+    recorder.abandon();
     expect(written.map((r) => r.durationMs)).toEqual([600_016]);
   });
 
@@ -67,7 +67,7 @@ describe('MatchRecorder (Decision 11)', () => {
     const recorder = new MatchRecorder({ append: () => Promise.resolve(true) }, () => {
       throw new Error('boom');
     }, 0, () => 10);
-    expect(() => recorder.quit()).not.toThrow();
+    expect(() => recorder.abandon()).not.toThrow();
     warn.mockRestore();
   });
 });

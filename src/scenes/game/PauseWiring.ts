@@ -13,21 +13,21 @@ export function openPause(
   scene: Phaser.Scene,
   save: (slot: SlotId) => Promise<SaveOutcome>,
   storage: SaveStorage,
-  onQuit: () => void,
+  onAbandon: () => void,
   card?: PauseData['card'],
 ): void {
   if (scene.scene.isActive('PauseScene') || !scene.scene.isActive()) return;
-  scene.scene.launch('PauseScene', { save, storage, onQuit, ...(card ? { card } : {}) } satisfies PauseData);
+  scene.scene.launch('PauseScene', { save, storage, onAbandon, ...(card ? { card } : {}) } satisfies PauseData);
 }
 
 /**
  * Wires the pause's ways in: the `techTree` key opens it straight on the
- * tech tree card. `onQuit` runs on "Kilépés a főmenübe" (the match log).
+ * tech tree card. `onAbandon` runs when the player leaves the match from the pause (the match log).
  * Returns the plain opener (the idle Esc).
  */
-export function wirePause(scene: Phaser.Scene, save: (slot: SlotId) => Promise<SaveOutcome>, storage: SaveStorage, onQuit: () => void): () => void {
+export function wirePause(scene: Phaser.Scene, save: (slot: SlotId) => Promise<SaveOutcome>, storage: SaveStorage, onAbandon: () => void): () => void {
   onKeyAction(scene, 'techTree', (e) => {
-    if (!e.repeat) openPause(scene, save, storage, onQuit, 'techTree');
+    if (!e.repeat) openPause(scene, save, storage, onAbandon, 'techTree');
   });
-  return () => openPause(scene, save, storage, onQuit);
+  return () => openPause(scene, save, storage, onAbandon);
 }

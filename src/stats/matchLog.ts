@@ -67,7 +67,9 @@ export class MatchLog {
       const records: MatchRecord[] = [];
       let corrupt = 0;
       for (const key of keys) {
-        const record = parseRecord(await this.store.getItem(key));
+        // One unreadable record is skipped as corrupt; only a failing key listing makes the log unavailable.
+        const raw = await this.store.getItem(key).catch(() => null);
+        const record = parseRecord(raw);
         if (record) records.push(record);
         else corrupt++;
       }

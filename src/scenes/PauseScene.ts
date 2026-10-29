@@ -19,8 +19,8 @@ export interface PauseData {
   /** Saves the running match (MatchSave.saveTo). */
   save: (slot: SlotId) => Promise<SaveOutcome>;
   storage: SaveStorage;
-  /** Runs on "Kilépés a főmenübe", before the match stops (the match log's 'abandoned' record). */
-  onQuit: () => void;
+  /** Runs when the player leaves the match: "Kilépés a főmenübe", or a load over it (the match log's 'abandoned' record). */
+  onAbandon: () => void;
   /** The card to open on (the `techTree` key); default the pause menu. */
   card?: 'techTree';
 }
@@ -139,7 +139,7 @@ export class PauseScene extends Phaser.Scene {
   /** Loads over the paused match: GameScene restarts on the save (startFromSlot), and the pause goes. */
   private async loadFrom(slots: SaveSlots, slot: SlotId): Promise<void> {
     const { storage } = this.pause;
-    const started = await startFromSlot(this.scene.get('GameScene'), storage, slot, (message) => slots.notice(message, 'error'));
+    const started = await startFromSlot(this.scene.get('GameScene'), storage, slot, (message) => slots.notice(message, 'error'), this.pause.onAbandon);
     if (started) {
       this.scene.stop();
       return;
@@ -161,7 +161,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private quit(): void {
-    this.pause.onQuit();
+    this.pause.onAbandon();
     this.scene.stop('GameScene');
     this.scene.stop('HUDScene');
     this.scene.start('MainMenuScene');

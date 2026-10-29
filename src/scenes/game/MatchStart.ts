@@ -64,6 +64,8 @@ export async function startFromSlot(
   storage: SaveStorage,
   slot: SlotId,
   onError: (message: string) => void = showHudNotice,
+  /** Runs once the save is read and the match will be replaced (the pause logs the replaced match). */
+  beforeReplace?: () => void,
 ): Promise<boolean> {
   const result = await storage.read(slot);
   // The player may have left the match (menu, game over) while the slot was read.
@@ -72,6 +74,7 @@ export async function startFromSlot(
     onError(readErrorText(result.reason));
     return false;
   }
+  beforeReplace?.();
   // The new match launches its own HUD; the old one must not sit over the loading card.
   scene.scene.stop('HUDScene');
   scene.scene.start('GameScene', { load: result.save } satisfies LoadRequest);
