@@ -170,17 +170,11 @@ describe('parseSave (Review Focus 2)', () => {
       expectReason(save, 'corrupt');
     });
 
-    it('a camera outside the reachable view', () => {
+    it('accepts a camera far off the map (view state only; Phaser clamps it on load)', () => {
+      // A view wider than twice the camera bounds puts the clamped centre outside them (ultrawide at zoom 0.5).
       const save = copy();
-      save.camera = { tx: -500, ty: 30, zoom: 1 };
-      expectReason(save, 'corrupt');
-      const far = copy();
-      far.camera = { tx: 1e9, ty: 1e9, zoom: 1 };
-      expectReason(far, 'corrupt');
-      const corner = copy();
-      // The view centre may sit off the diamond (the camera bounds are a padded box around it).
-      corner.camera = { tx: -2, ty: 2, zoom: 1 };
-      expect(parseSave(corner).ok).toBe(true);
+      save.camera = { tx: -500, ty: 30, zoom: 0.5 };
+      expect(parseSave(save).ok).toBe(true);
     });
 
     it('an AI memory tile outside the map', () => {

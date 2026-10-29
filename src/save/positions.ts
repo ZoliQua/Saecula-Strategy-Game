@@ -1,6 +1,4 @@
-import { CAMERA_BOUNDS_PADDING } from '../config/constants';
-import { tileToScreen, type TileCoord } from '../iso/coordinates';
-import { mapWorldBounds } from '../map/worldBounds';
+import type { TileCoord } from '../iso/coordinates';
 import type { SaveData } from './schema';
 
 /*
@@ -39,25 +37,15 @@ function footprintOnMap(position: TileCoord, footprint: Size | undefined, size: 
   return onMap({ tx: position.tx + footprint.width - 1, ty: position.ty + footprint.height - 1 }, size);
 }
 
-/** Whether the camera centre is inside the camera bounds GameScene sets: the map's screen box plus padding. */
-function cameraReachable(camera: SaveData['camera'], size: Size): boolean {
-  const b = mapWorldBounds(size.width, size.height);
-  const { sx, sy } = tileToScreen(camera);
-  const pad = CAMERA_BOUNDS_PADDING;
-  return sx >= b.minX - pad && sx <= b.maxX + pad && sy >= b.minY - pad && sy <= b.maxY + pad;
-}
-
 /**
  * Whether every tile a save holds is on its map: each entity's position,
- * move target and path, a building's whole footprint, every tile in the
- * AI state (remembered buildings with their footprints, goals, threats),
- * and the camera centre within its reachable box.
+ * move target and path, a building's whole footprint, and every tile in
+ * the AI state (remembered buildings with their footprints, goals,
+ * threats). The camera is not checked: it is view state, Phaser clamps it
+ * on load, and a view wider than twice the camera bounds legitimately
+ * keeps its centre outside them.
  */
 export function positionsOnMap(save: SaveData): boolean {
   const size = save.map;
-  return (
-    save.entities.every((e) => allOnMap(e.components, size)) &&
-    Object.values(save.ai).every((state) => allOnMap(state, size)) &&
-    cameraReachable(save.camera, size)
-  );
+  return save.entities.every((e) => allOnMap(e.components, size)) && Object.values(save.ai).every((state) => allOnMap(state, size));
 }
