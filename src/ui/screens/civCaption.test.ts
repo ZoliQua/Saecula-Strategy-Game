@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AVAILABLE_CIVS, CIV_DEFS } from '../../config/civs';
+import { CIV_BONUS } from '../../config/balance';
 import { hu } from '../../i18n/hu';
 import { civCaption } from './civCaption';
 
@@ -24,5 +25,13 @@ describe('civCaption', () => {
       expect(c.srText).toContain(c.uniqueLine);
       expect(c.srText).toContain(c.bonusLine);
     }
+  });
+
+  it('formats the bonus percentage from CIV_BONUS', () => {
+    const pct = (f: number) => `${Math.round(f * 100)}%`;
+    expect(civCaption('hungarian').bonusLine).toContain(pct(CIV_BONUS.cavalrySpeed));
+    expect(civCaption('english').bonusLine).toContain(pct(CIV_BONUS.farmFood));
+    expect(civCaption('finnish').bonusLine).toContain(pct(CIV_BONUS.infantrySpeed));
+    expect(civCaption('italian').bonusLine).toContain(pct(CIV_BONUS.buildSpeed));
   });
 });

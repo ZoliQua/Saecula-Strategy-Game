@@ -1,3 +1,8 @@
+import { CIV_BONUS } from '../config/balance';
+
+/** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
+const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
+
 export const hu = {
   title: 'Saecula',
   subtitle: 'Izometrikus történelmi stratégia',
@@ -61,16 +66,16 @@ export const hu = {
       russian: 'Gerendaházak, sátortetős tornyok, aranyló hagymakupolák',
       finnish: 'Tőzegtetős faházak, gránitvár harangtoronnyal, vörös deszkaházak',
     },
-    /** The permanent bonus of each civ, one line under its description (M8). */
+    /** The permanent bonus of each civ, one line under its description (M8); percentages come from CIV_BONUS. */
     civBonus: {
-      hungarian: 'Lovas egységek +10% sebesség',
-      english: 'Farmok +15% étel',
-      german: 'Épületek +15% életerő',
-      french: 'Istállói egységek +15% életerő',
-      spanish: 'Aranygyűjtés +15%',
-      italian: 'Építés 15%-kal gyorsabb',
-      russian: 'Fagyűjtés +15%',
-      finnish: 'Gyalogság +10% sebesség',
+      hungarian: `Lovas egységek +${pct(CIV_BONUS.cavalrySpeed)} sebesség`,
+      english: `Farmok +${pct(CIV_BONUS.farmFood)} étel`,
+      german: `Épületek +${pct(CIV_BONUS.buildingHp)} életerő`,
+      french: `Istállói egységek +${pct(CIV_BONUS.stableHp)} életerő`,
+      spanish: `Aranygyűjtés +${pct(CIV_BONUS.goldGather)}`,
+      italian: `Építés ${pct(CIV_BONUS.buildSpeed)}-kal gyorsabb`,
+      russian: `Fagyűjtés +${pct(CIV_BONUS.woodGather)}`,
+      finnish: `Gyalogság +${pct(CIV_BONUS.infantrySpeed)} sebesség`,
     },
     /** The unique unit line; `replaced` is the base unit's name (lower-cased here, "az" before a vowel). */
     uniqueUnit: (unit: string, replaced: string) => {
