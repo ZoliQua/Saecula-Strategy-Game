@@ -1,4 +1,4 @@
-import type { BuildingType, TechId, UnitType } from '../types';
+import type { BaseUnitType, BuildingType, TechId } from '../types';
 import type { CounterTuning, GatherWeights, Span } from './aiBalance';
 
 /**
@@ -20,7 +20,7 @@ export interface MediumTuning {
   readonly attackWave: number;
   readonly firstAttackMs: Span;
   readonly pressure: {
-    readonly unit: UnitType;
+    readonly unit: BaseUnitType;
     readonly minArmy: number;
     readonly leadMs: number;
     /** While the squad is short, villager training waits (food goes to the raiders first). */
@@ -39,7 +39,7 @@ export interface MediumTuning {
   readonly scouts: number;
   readonly scoutRetrainMs: number;
   readonly techPriority: readonly TechId[];
-  readonly armyByAge: readonly Partial<Record<UnitType, number>>[];
+  readonly armyByAge: readonly Partial<Record<BaseUnitType, number>>[];
   readonly militaryBuildings: readonly (readonly BuildingType[])[];
   /** Counter-unit reaction to sightings. */
   readonly counters: CounterTuning;

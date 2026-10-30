@@ -4,7 +4,8 @@ import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { isUnitAvailable } from '../../game/availability';
 import { TECH_SPECS } from '../../game/technologies';
-import type { BuildingType, Resources, TechId, UnitType } from '../../types';
+import { baseUnitType, civUnitType } from '../../game/civUnits';
+import { BASE_UNIT_TYPES, type BaseUnitType, type BuildingType, type Resources, type TechId } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { ArmyControl } from '../ArmyControl';
 import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
@@ -284,14 +285,14 @@ export class MediumStrategy extends BaseStrategy {
   private keepScouting(ctx: AIContext, view: WorldView): void {
     if (this.explorers(view).length >= this.explorersWanted()) return;
     if (ctx.timeMs - this.lastScoutMs < this.tune.scoutRetrainMs) return;
-    const queued = view.buildings.some((b) => b.trainingQueue?.entries.some((e) => e.unitType === 'scout'));
+    const queued = view.buildings.some((b) => b.trainingQueue?.entries.some((e) => baseUnitType(e.unitType) === 'scout'));
     if (!queued && this.train(ctx, view, 'scout', 1)) this.lastScoutMs = ctx.timeMs;
   }
 
   /** Mix for the current age, countered against what has been seen, limited to what is unlocked. */
   protected armyMix(ctx: AIContext, view: WorldView): ReturnType<typeof counterMix> {
     const base = this.tune.armyByAge[ctx.player.age] ?? {};
-    const allowed = (Object.keys(UNIT_SPECS) as UnitType[]).filter(
+    const allowed = BASE_UNIT_TYPES.filter(
       (t) => t !== 'villager' && t !== 'scout' && isUnitAvailable(t, ctx.player.age),
     );
     return counterMix(base, view.enemySightings, allowed, this.tune.counters);
@@ -303,14 +304,15 @@ export class MediumStrategy extends BaseStrategy {
     const mix = this.armyMix(ctx, view);
     const reserve = this.reserve(ctx, view);
     const counts = countByType(view.military);
-    const trainable = (t: UnitType) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0;
+    const trainable = (t: BaseUnitType) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0;
     for (let i = 0; i < this.tune.trainPerDecision; i++) {
       // A cannon the army is short of is saved for (while gold can still come in): the other units only spend what lies above its cost.
       // Gold nodes it would mine (not inside a known enemy base): with none, saving for a cannon never ends.
       const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits, workableNodes(view, 'gold').length);
-      const saving = goal ? reserveForGoal(goal, ctx.player.resources, UNIT_SPECS[goal].cost, reserve, AI_COMMON.savesForUnits) : reserve;
+      const cost = (t: BaseUnitType) => UNIT_SPECS[civUnitType(ctx.player.civ, t)].cost;
+      const saving = goal ? reserveForGoal(goal, ctx.player.resources, cost(goal), reserve, AI_COMMON.savesForUnits) : reserve;
       const type = nextUnitToTrain(mix, counts, (t) => trainable(t)
-        && canAfford(ctx.player.resources, UNIT_SPECS[t].cost, t === goal ? reserve : saving));
+        && canAfford(ctx.player.resources, cost(t), t === goal ? reserve : saving));
       if (!type || !this.train(ctx, view, type, this.tune.militaryQueue, type === goal ? reserve : saving)) return;
       counts[type] = (counts[type] ?? 0) + 1;
     }
@@ -319,7 +321,7 @@ export class MediumStrategy extends BaseStrategy {
   /** Base under attack and outnumbered: cheapest available infantry, no savings kept. */
   private trainDefenders(ctx: AIContext, view: WorldView): void {
     if (view.military.length >= Math.min(view.threats.length, this.tune.minDefenders * 2)) return;
-    const type: UnitType = isUnitAvailable('pikeman', ctx.player.age) ? 'pikeman' : 'swordsman';
+    const type: BaseUnitType = isUnitAvailable('pikeman', ctx.player.age) ? 'pikeman' : 'swordsman';
     this.train(ctx, view, type, this.tune.militaryQueue);
   }
 

@@ -1,5 +1,6 @@
 import { AI_COMMON } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
+import { baseUnitType } from '../game/civUnits';
 import type { TileCoord } from '../iso/coordinates';
 import type { BuildingType, Population, ResourceType } from '../types';
 import { chebyshev } from './decisions/gathering';
@@ -92,7 +93,7 @@ export function unstaffedSite(view: WorldView): Entity | undefined {
   for (const v of view.villagers) if (v.buildCommand) staffed.add(v.buildCommand.targetId);
   const home = baseAnchor(view);
   // Scouts count: they hunt lone builders. Villagers do not.
-  const armed = view.visibleEnemyUnits.filter((u) => u.attacker !== undefined && u.unit?.unitType !== 'villager');
+  const armed = view.visibleEnemyUnits.filter((u) => u.attacker !== undefined && !!u.unit && baseUnitType(u.unit.unitType) !== 'villager');
   return view.buildings.find((b) => {
     if (!b.underConstruction || b.building?.type === 'wall' || b.id === undefined || staffed.has(b.id) || !b.position) return false;
     // Camps and other drop-offs serve their resource wherever it lies; any other site far out is left.

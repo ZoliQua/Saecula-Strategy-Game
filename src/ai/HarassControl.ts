@@ -1,6 +1,7 @@
 import { AI_COMMON, type HardTuning } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
+import { baseUnitType } from '../game/civUnits';
 import type { TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
@@ -100,16 +101,16 @@ export class HarassControl {
     const centre = groupCentre(members)!;
     const enemies = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
     const near = (e: Entity) => !!e.position && chebyshev(e.position, centre) <= AI_COMMON.engageRadius;
-    const armed = enemies.filter((e) => near(e) && e.attacker && e.unit?.unitType !== 'villager').length;
+    const armed = enemies.filter((e) => near(e) && e.attacker && !!e.unit && baseUnitType(e.unit.unitType) !== 'villager').length;
     const towerInRange = view.visibleEnemyBuildings.some((b) => b.building?.type === 'tower' && near(b));
     if (towerInRange || raidOutnumbered(members.length, armed, this.tune.retreatRatio)) {
       return this.end(ctx, view, members, 'retreat');
     }
-    const villagers = enemies.filter((e) => near(e) && e.unit?.unitType === 'villager' && !e.dying);
+    const villagers = enemies.filter((e) => near(e) && !!e.unit && baseUnitType(e.unit.unitType) === 'villager' && !e.dying);
     if (villagers.length > 0) {
       for (const u of members) {
         const current = u.attackIntent ? view.byId.get(u.attackIntent.targetId) : undefined;
-        if (current && !current.dying && current.unit?.unitType === 'villager') continue;
+        if (current && !current.dying && current.unit && baseUnitType(current.unit.unitType) === 'villager') continue;
         const prey = nearest(villagers, u.position!);
         if (prey?.id === undefined) continue;
         clearUnitOrders(ctx.world, u);

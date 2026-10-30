@@ -1,9 +1,10 @@
 import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS } from '../../config/balance';
 import { AI_COUNTERS, AI_MEDIUM, type CounterTuning } from '../../config/aiBalance';
-import type { Resources, UnitType } from '../../types';
+import { baseUnitType } from '../../game/civUnits';
+import type { BaseUnitType, Resources, UnitType } from '../../types';
 import { canAfford } from '../economy';
 
-export type ArmyMix = Readonly<Partial<Record<UnitType, number>>>;
+export type ArmyMix = Readonly<Partial<Record<BaseUnitType, number>>>;
 type Sightings = Readonly<Partial<Record<UnitType, number>>>;
 
 /** Sighting share of each counter-relevant class (cavalry, archers, melee infantry). */
@@ -13,6 +14,7 @@ export function enemyClassShares(seen: Sightings): Record<keyof typeof AI_COUNTE
   let archers = 0;
   let infantry = 0;
   for (const [type, n] of Object.entries(seen) as [UnitType, number][]) {
+    // Exact types: only a real scout is left out; a cossack counts as cavalry.
     if (type === 'villager' || type === 'scout' || n <= 0) continue;
     total += n;
     if (CAVALRY_CLASS.includes(type)) cavalry += n;
@@ -34,10 +36,10 @@ export function enemyClassShares(seen: Sightings): Record<keyof typeof AI_COUNTE
 export function counterMix(
   base: ArmyMix,
   seen: Sightings,
-  allowed: readonly UnitType[],
+  allowed: readonly BaseUnitType[],
   tuning: CounterTuning = AI_MEDIUM.counters,
 ): ArmyMix {
-  const mix: Partial<Record<UnitType, number>> = {};
+  const mix: Partial<Record<BaseUnitType, number>> = {};
   for (const t of allowed) if ((base[t] ?? 0) > 0) mix[t] = base[t]!;
   const shares = enemyClassShares(seen);
   for (const cls of Object.keys(shares) as (keyof typeof shares)[]) {
@@ -50,7 +52,7 @@ export function counterMix(
   }
   const sum = Object.values(mix).reduce((s, n) => s + n, 0);
   if (sum <= 0) return {};
-  for (const t of Object.keys(mix) as UnitType[]) mix[t] = mix[t]! / sum;
+  for (const t of Object.keys(mix) as BaseUnitType[]) mix[t] = mix[t]! / sum;
   return mix;
 }
 
@@ -60,13 +62,13 @@ export function counterMix(
  */
 export function nextUnitToTrain(
   mix: ArmyMix,
-  counts: Readonly<Partial<Record<UnitType, number>>>,
-  canTrain: (type: UnitType) => boolean,
-): UnitType | null {
+  counts: Readonly<Partial<Record<BaseUnitType, number>>>,
+  canTrain: (type: BaseUnitType) => boolean,
+): BaseUnitType | null {
   const total = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0) + 1;
-  let best: UnitType | null = null;
+  let best: BaseUnitType | null = null;
   let bestDeficit = -Infinity;
-  for (const [type, share] of Object.entries(mix) as [UnitType, number][]) {
+  for (const [type, share] of Object.entries(mix) as [BaseUnitType, number][]) {
     if (share <= 0 || !canTrain(type)) continue;
     const deficit = share * total - (counts[type] ?? 0);
     if (deficit > bestDeficit) {
@@ -86,11 +88,11 @@ export function nextUnitToTrain(
  */
 export function savedForUnit(
   mix: ArmyMix,
-  counts: Readonly<Partial<Record<UnitType, number>>>,
-  canTrain: (type: UnitType) => boolean,
-  savesFor: readonly UnitType[],
+  counts: Readonly<Partial<Record<BaseUnitType, number>>>,
+  canTrain: (type: BaseUnitType) => boolean,
+  savesFor: readonly BaseUnitType[],
   goldNodesKnown: number,
-): UnitType | null {
+): BaseUnitType | null {
   if (goldNodesKnown === 0) return null;
   const total = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0) + 1;
   return savesFor.find((t) => (mix[t] ?? 0) * total - (counts[t] ?? 0) >= 1 && canTrain(t)) ?? null;
@@ -104,22 +106,23 @@ export function savedForUnit(
  * spending the gold and the cannon never comes.
  */
 export function reserveForGoal(
-  goal: UnitType | null,
+  goal: BaseUnitType | null,
   have: Resources,
   cost: Resources,
   reserve: Resources,
-  savesFor: readonly UnitType[],
+  savesFor: readonly BaseUnitType[],
 ): Resources {
   if (!goal || !savesFor.includes(goal) || canAfford(have, cost, reserve)) return reserve;
   return { food: reserve.food + cost.food, wood: reserve.wood + cost.wood, gold: reserve.gold + cost.gold };
 }
 
-/** Counts units by type. */
-export function countByType(units: Iterable<{ unit?: { unitType: UnitType } }>): Partial<Record<UnitType, number>> {
-  const out: Partial<Record<UnitType, number>> = {};
+/** Counts units by base type (a civ's unique unit counts in the slot it replaces). */
+export function countByType(units: Iterable<{ unit?: { unitType: UnitType } }>): Partial<Record<BaseUnitType, number>> {
+  const out: Partial<Record<BaseUnitType, number>> = {};
   for (const u of units) {
     if (!u.unit) continue;
-    out[u.unit.unitType] = (out[u.unit.unitType] ?? 0) + 1;
+    const t = baseUnitType(u.unit.unitType);
+    out[t] = (out[t] ?? 0) + 1;
   }
   return out;
 }

@@ -60,7 +60,7 @@ export function decayedPeak(previous: number, now: number, elapsedMs: number, de
   return Math.max(now, previous * Math.pow(decayPerMin, elapsedMs / 60_000));
 }
 
-/** Enemy military seen: sightings of everything but villagers and scouts. */
+/** Enemy military seen: sightings of everything but villagers and scouts (exact types: a cossack counts). */
 export function enemyArmySeen(sightings: Readonly<Partial<Record<UnitType, number>>>): number {
   let n = 0;
   for (const [type, count] of Object.entries(sightings) as [UnitType, number][]) {

@@ -1,4 +1,4 @@
-import type { UnitType } from '../types';
+import type { BaseUnitType } from '../types';
 import { AI_MEDIUM, type MediumTuning } from './aiMedium';
 
 /** Stance switching thresholds (Hard AI, see ai/decisions/stance.ts). */
@@ -54,7 +54,7 @@ export interface HardTuning extends MediumTuning {
     readonly notBeforeMs: number;
     readonly cooldownMs: number;
     /** Raiders per raid, in order of preference; at least `minSize` go. */
-    readonly units: readonly UnitType[];
+    readonly units: readonly BaseUnitType[];
     readonly size: number;
     readonly minSize: number;
     readonly clusterRadius: number;

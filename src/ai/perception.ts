@@ -2,7 +2,8 @@ import { AI_COMMON } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import type { TileCoord } from '../iso/coordinates';
 import { FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
-import type { BuildingType, ResourceType, UnitType } from '../types';
+import { baseUnitType } from '../game/civUnits';
+import type { BuildingType, CivId, ResourceType, UnitType } from '../types';
 import type { AIContext } from './AIPlayer';
 import { copyKnown, copyTile, type PerceptionState } from './strategyState';
 
@@ -26,6 +27,8 @@ export interface VillagerSighting {
 /** Everything one AI knows this tick. Own entities are always known; the rest only through its fog. */
 export interface WorldView {
   readonly playerId: number;
+  /** The AI's own civ (decides which unit fills each base slot it trains). */
+  readonly civ: CivId;
   readonly byId: ReadonlyMap<number, Entity>;
   readonly townCenter: Entity | undefined;
   /** Own standing buildings (sites included). */
@@ -44,7 +47,10 @@ export interface WorldView {
   readonly resources: Readonly<Record<ResourceType, readonly Entity[]>>;
   /** Hostile fighting units (not scouts or villagers passing by) seen near the base right now. */
   readonly threats: readonly Entity[];
-  /** Decaying memory of enemy unit sightings by type. */
+  /**
+   * Decaying memory of enemy unit sightings by exact type: a unique unit keeps its own key (a
+   * cossack is a fighter, not a scout); counter classes and ages come from the type's balance.
+   */
   readonly enemySightings: Readonly<Partial<Record<UnitType, number>>>;
   /** Last place each enemy villager was seen (forgotten after AI_COMMON.villagerMemoryMs). */
   readonly enemyVillagers: readonly VillagerSighting[];
@@ -132,15 +138,15 @@ export class Perception {
         if (e.building) {
           buildings.push(e);
           if (e.building.type === 'town_center' && !e.underConstruction) townCenter ??= e;
-        } else if (e.unit?.unitType === 'villager') villagers.push(e);
-        else if (e.unit?.unitType === 'scout') scouts.push(e);
+        } else if (e.unit && baseUnitType(e.unit.unitType) === 'villager') villagers.push(e);
+        else if (e.unit && baseUnitType(e.unit.unitType) === 'scout') scouts.push(e);
         else if (e.unit && e.attacker) military.push(e);
         continue;
       }
       if (!isHostile(e.owner.playerId, me) || !isEntityVisible(fog, placed)) continue;
       if (e.unit) {
         visibleEnemyUnits.push(e);
-        if (e.unit.unitType === 'villager' && e.id !== undefined) {
+        if (baseUnitType(e.unit.unitType) === 'villager' && e.id !== undefined) {
           this.villagerMemory.set(e.id, { id: e.id, ownerId: e.owner.playerId, position: { ...e.position }, seenAtMs: ctx.timeMs });
         }
       } else if (e.building && e.id !== undefined) {
@@ -160,6 +166,7 @@ export class Perception {
     const home = [...buildings];
     return {
       playerId: me,
+      civ: ctx.player.civ,
       byId,
       townCenter,
       buildings,
@@ -216,6 +223,7 @@ export class Perception {
 
 /** A unit that counts as an attack on the base: armed, and neither a villager nor a scout. */
 function isArmed(u: Entity): boolean {
+  // Exact types on purpose: only a real scout is harmless; a cossack (in the scout slot) fights.
   const type = u.unit?.unitType;
   return u.attacker !== undefined && type !== 'villager' && type !== 'scout';
 }

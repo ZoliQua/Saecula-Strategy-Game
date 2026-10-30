@@ -2,7 +2,8 @@ import { AI_HARD, type HardTuning } from '../../config/aiBalance';
 import type { Entity } from '../../ecs/components';
 import { isUnitAvailable } from '../../game/availability';
 import type { TileCoord } from '../../iso/coordinates';
-import type { UnitType } from '../../types';
+import { baseUnitType } from '../../game/civUnits';
+import type { BaseUnitType } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { groupCentre } from '../decisions/combat';
 import { chebyshev } from '../decisions/gathering';
@@ -229,8 +230,8 @@ export class HardStrategy extends MediumStrategy {
     const prefer = this.hard.harass.units;
     return [...view.military, ...view.scouts]
       .filter((u) => !explorers.has(u) && !this.army.inWave(u) && !this.isReserved(u) && !u.attackIntent)
-      .filter((u) => u.unit && prefer.includes(u.unit.unitType))
-      .sort((a, b) => prefer.indexOf(a.unit!.unitType) - prefer.indexOf(b.unit!.unitType))
+      .filter((u) => u.unit && prefer.includes(baseUnitType(u.unit.unitType)))
+      .sort((a, b) => prefer.indexOf(baseUnitType(a.unit!.unitType)) - prefer.indexOf(baseUnitType(b.unit!.unitType)))
       .slice(0, this.hard.harass.size);
   }
 
@@ -248,7 +249,7 @@ export class HardStrategy extends MediumStrategy {
     if (unit) this.train(ctx, view, unit, this.tune.militaryQueue, this.reserve(ctx, view));
   }
 
-  private raiderToTrain(ctx: AIContext, view: WorldView): UnitType | null {
+  private raiderToTrain(ctx: AIContext, view: WorldView): BaseUnitType | null {
     return this.hard.harass.units.find(
       (t) => isUnitAvailable(t, ctx.player.age) && this.trainersFor(view, t, this.tune.militaryQueue).length > 0,
     ) ?? null;
