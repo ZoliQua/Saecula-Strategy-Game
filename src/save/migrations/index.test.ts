@@ -3,9 +3,9 @@ import { SCHEMA_VERSION } from '../schema';
 import { MIGRATIONS, migrate, type Migration } from './index';
 
 describe('save migrations', () => {
-  it('v2 has the one v1→v2 step', () => {
-    expect(SCHEMA_VERSION).toBe(2);
-    expect(Object.keys(MIGRATIONS)).toEqual(['1']);
+  it('v3 has the v1→v2 and v2→v3 steps', () => {
+    expect(SCHEMA_VERSION).toBe(3);
+    expect(Object.keys(MIGRATIONS)).toEqual(['1', '2']);
   });
 
   it('current version passes through', () => {

@@ -35,10 +35,10 @@ import {
  * The versioned save format (CLAUDE.md §5.4, M6 Task 4). Every object
  * is strict: an unknown key is a corrupt save. Bump SCHEMA_VERSION (and
  * add a migration) for every gameplay-relevant change once a save has
- * shipped. v2 (M7): the match statistics (`stats`).
+ * shipped. v2 (M7): the match statistics (`stats`). v3 (M8): the unit-type enum gains the unique units.
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
