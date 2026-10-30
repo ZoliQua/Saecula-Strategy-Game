@@ -195,7 +195,9 @@ hozzáadhatunk:
 - 1 egyedi bónusz / nép (pl. olasz: +10% építési sebesség)
 - 1 egyedi épület / nép
 
-A MVP-ben ezek nincsenek, minden nép statisztikailag azonos.
+A MVP-ben ezek nincsenek, minden nép statisztikailag azonos. Az M8-tól
+minden népnek van 1 egyedi egysége és 1 népbónusza (lásd 9. szekció, M8);
+egyedi épület továbbra sincs.
 
 ### 4.4 Egységek
 
@@ -217,7 +219,8 @@ Felvilágosodás:
 - `cannon` — Ágyú. Épület-romboló, lassú.
 - `cavalry` — Lovasság. Gyors mozgó közelharci.
 
-**Egyedi (nép-specifikus) egységek:** MVP-ben nincsenek. Későbbi fázis.
+**Egyedi (nép-specifikus) egységek:** MVP-ben nincsenek. Az M8-ban
+népenként egy, amely a nép egyik alap egységét váltja le (lásd M8).
 
 ### 4.5 Épületek
 
@@ -887,6 +890,48 @@ Az első teljes játék (2026-10-29) hibalistája és kérései. Ág: `feat/M7-p
   legfeljebb 329 entitás (6 játékos), bundle 0,73 MB gzip, a fenti mentés
   0,44 MB JSON (`schemaVersion` 2), mentése ~6–15 ms; a hosszú AI-szimulációk
   (`src/ai/strategies`) 25 s alatt futnak le.
+
+### M8 — Egyedi egységek és népbónuszok
+A 4.3 első két pontja. Ág: `feat/M8-unique-units`. Változat: 0.3.0.
+- **Leváltás, nem bővítés:** minden nép egyedi egysége a nép egyik alap
+  egységét váltja le — ugyanabban az épületben, ugyanabban a korban képzik,
+  és az a nép az alap egységet nem képezheti. Népenként így 10 egységlap
+  marad, a textúra-keret (10.) nem nő. Az AI a hadsereg-keverékben az alap
+  egység helyett a nép saját változatát képzi.
+- **Egyedi egységek** (új `UnitType`, saját statisztika a `balance.ts`-ben,
+  saját kinézet a nép `units/<nép>/` mappájában, legalább egy erős sziluett-jel):
+
+  | Nép | Egység (`UnitType`) | Leváltja | Kor | Szerep |
+  |---|---|---|---|---|
+  | Magyar | Huszár (`hussar`) | `knight` | 2 | gyorsabb, olcsóbb, könnyebb páncél; portyázó |
+  | Angol | Hosszúíjász (`longbowman`) | `crossbowman` | 2 | +2 lőtáv, kicsit lassabb képzés |
+  | Német | Landsknecht (`landsknecht`) | `pikeman` | 2 | kétkezes kard, több HP és támadás, lovasság elleni bónusz marad, aranyba kerül |
+  | Francia | Királyi muskétás (`mousquetaire`) | `musketeer` | 3 | erősebb lövés, gyorsabb |
+  | Spanyol | Konkvisztádor (`conquistador`) | `cavalry` | 3 | morion sisak, nagy páncél |
+  | Olasz | Légiós (`legionary`) | `swordsman` | 1 | scutum, nagy védelem nyíl ellen |
+  | Orosz | Kozák (`cossack`) | `scout` | 1 | papaha, saska; erősebb, végig hasznos portyázó |
+  | Finn | Sissi (`sissi`) | `archer` | 1 | gyorsabb, nagyobb látótáv, kicsit kisebb lőtáv |
+
+  Az egyedi egység az alap egység osztályaiba tartozik (lovas, gyalogos,
+  nyíl-egység), így a fejlesztések és a bónuszsebzések rá is hatnak. Új
+  képesség (roham, rejtőzés stb.) nincs.
+- **Népbónuszok** (állandó, a meglévő fejlesztés-hatásokkal egy úton
+  számolva, `src/game/modifiers.ts`):
+  magyar — lovas egységek +10 % sebesség; angol — farm +15 % étel;
+  német — épületek +15 % HP; francia — istállóban képzett egységek +15 % HP;
+  spanyol — aranygyűjtés +15 %; olasz — építés +15 % gyorsabb;
+  orosz — fagyűjtés +15 %; finn — gyalogság +10 % sebesség.
+- **UI:** a nép-választó, a fejlődési fa és a képző gombok a nép egyedi
+  egységét mutatják; a nép-választó egy sorban a bónuszt is. Minden szöveg
+  a `hu.ts`-ben.
+- **Mentés:** `schemaVersion` 3, migrációval (a régi mentés egységei
+  megmaradnak, akkor is, ha a népük azóta mást képez).
+- **Tesztek:** rögzítő tesztek (draw-log hash) az új egységkinézetekre;
+  a régi kinézetek rögzítései változatlanok; egy hosszú AI-szimuláció őrzi,
+  hogy mind a 8 nép AI-ja képzi a saját egységét és az alapot nem.
+- Nem része: egyedi épületek, új egység-képességek, népenként második
+  egyedi egység.
+- Keret (10.): az M7 keretei változatlanok.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
