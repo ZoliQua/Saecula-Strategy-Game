@@ -186,7 +186,7 @@ export class TechTree {
       el(
         'span',
         { class: 'tree-bld-text' },
-        el('span', { class: 'tree-name' }, hu.units[u.type]),
+        el('span', { class: 'tree-name' }, hu.units[u.type], u.unique ? el('span', { class: 'tree-unique' }, hu.techTree.unique) : null),
         this.cost(u.cost),
         also ? el('span', { class: 'tree-also' }, also) : null,
       ),

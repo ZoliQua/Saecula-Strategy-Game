@@ -61,6 +61,23 @@ export const hu = {
       russian: 'Gerendaházak, sátortetős tornyok, aranyló hagymakupolák',
       finnish: 'Tőzegtetős faházak, gránitvár harangtoronnyal, vörös deszkaházak',
     },
+    /** The permanent bonus of each civ, one line under its description (M8). */
+    civBonus: {
+      hungarian: 'Lovas egységek +10% sebesség',
+      english: 'Farmok +15% étel',
+      german: 'Épületek +15% életerő',
+      french: 'Istállói egységek +15% életerő',
+      spanish: 'Aranygyűjtés +15%',
+      italian: 'Építés +15% gyorsabb',
+      russian: 'Fagyűjtés +15%',
+      finnish: 'Gyalogság +10% sebesség',
+    },
+    /** The unique unit line; `replaced` is the base unit's name (lower-cased here, "az" before a vowel). */
+    uniqueUnit: (unit: string, replaced: string) => {
+      const name = replaced.toLocaleLowerCase('hu');
+      const article = /^[aáeéiíoóöőuúüű]/.test(name) ? 'az' : 'a';
+      return `Egyedi egység: ${unit} (${article} ${name} helyett)`;
+    },
     aiCivs: 'Ellenfelek népe',
     aiCivMixed: 'Vegyes',
     aiCivMixedSub: 'véletlen',
@@ -382,6 +399,8 @@ export const hu = {
     alsoAt: 'Itt is:',
     /** On a trainer unlocked in an earlier age. */
     earlier: 'korábbi',
+    /** Badge on a civ's unique unit. */
+    unique: 'egyedi',
     researched: 'Kifejlesztve',
     noTechs: 'Nincs új fejlesztés',
     scrollHint: 'Görgess a további tartalomért',

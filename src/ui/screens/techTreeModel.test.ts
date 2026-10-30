@@ -1,11 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { BUILDING_BALANCE, TECH_BALANCE, UNIT_BALANCE } from '../../config/balance';
+import { civUnitTypes } from '../../game/civUnits';
 import { TECH_SPECS } from '../../game/technologies';
-import type { AgeId, BuildingType, TechId, UnitType } from '../../types';
+import type { AgeId, BuildingType, TechId } from '../../types';
 import { techTreeModel } from './techTreeModel';
 
 const ALL_BUILDINGS = Object.keys(BUILDING_BALANCE) as BuildingType[];
-const ALL_UNITS = Object.keys(UNIT_BALANCE) as UnitType[];
+
+describe('techTreeModel civ roster', () => {
+  const units = (civ: Parameters<typeof techTreeModel>[0]) => techTreeModel(civ, 3).columns.flatMap((c) => c.units);
+
+  it('lists the Russian cossack in place of the scout, marked unique', () => {
+    const u = units('russian');
+    expect(u.map((x) => x.type)).toContain('cossack');
+    expect(u.map((x) => x.type)).not.toContain('scout');
+    expect(u.find((x) => x.type === 'cossack')?.unique).toBe(true);
+    expect(u.find((x) => x.type === 'villager')?.unique).toBe(false);
+  });
+
+  it('lists exactly ten units per civ', () => {
+    expect(units('finnish')).toHaveLength(10);
+  });
+});
 
 describe('techTreeModel', () => {
   const model = techTreeModel('hungarian', 2);
@@ -23,7 +39,7 @@ describe('techTreeModel', () => {
 
   it('lists every unit exactly once, in its unlocking age', () => {
     const seen = model.columns.flatMap((c) => c.units.map((u) => ({ type: u.type, age: c.age })));
-    expect(seen.map((s) => s.type).sort()).toEqual([...ALL_UNITS].sort());
+    expect(seen.map((s) => s.type).sort()).toEqual([...civUnitTypes('hungarian')].sort());
     for (const s of seen) expect(s.age).toBe(UNIT_BALANCE[s.type].age);
   });
 
