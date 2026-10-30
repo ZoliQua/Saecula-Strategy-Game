@@ -3,12 +3,13 @@ import { canCivTrain } from '../../game/civUnits';
 import type { queueUnit as QueueUnitFn } from '../../ecs/queueUnit';
 
 /** Every unit an AI asks queueUnit for, with the owner's civ (so a refused, civ-locked try shows too). */
-const attempts = vi.hoisted(() => [] as { civ: CivId; type: UnitType }[]);
+const attempts = vi.hoisted(() => [] as { civ: CivId; type: UnitType; ok: boolean }[]);
 vi.mock('../../ecs/queueUnit', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../ecs/queueUnit')>();
   const queueUnit: typeof QueueUnitFn = (trainer, type, owner, account) => {
-    attempts.push({ civ: owner.civ, type });
-    return real.queueUnit(trainer, type, owner, account);
+    const result = real.queueUnit(trainer, type, owner, account);
+    attempts.push({ civ: owner.civ, type, ok: result.ok });
+    return result;
   };
   return { ...real, queueUnit };
 });
@@ -146,6 +147,13 @@ describe('AI civ roster (M8)', () => {
       }
       for (const a of attempts) if (!canCivTrain(a.civ, a.type)) offenders.push(`${a.civ} tried ${a.type}`);
       expect(attempts.length).toBeGreaterThan(0);
+      // Every civ's AI trains its own unique unit (queued successfully at least once), not just the age-1 ones.
+      if (difficulty !== 'easy') {
+        const missing = ALL_CIVS.filter(
+          (civ) => !attempts.some((a) => a.ok && a.civ === civ && a.type === CIV_DEFS[civ].uniqueUnit),
+        );
+        expect(missing, `${difficulty}: civs that never queued their unique unit`).toEqual([]);
+      }
       expect([...new Set(offenders)]).toEqual([]);
     }, 120_000);
   }
