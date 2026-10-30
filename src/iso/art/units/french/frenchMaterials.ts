@@ -32,8 +32,8 @@ export const FRENCH_M = {
   bronze: { color: 0xc59b52, metal: 0.85 } as Material,
   /** Pale gilt bronze gun (the Hungarian gun is a darker bronze, the English iron, the German blackened iron). */
   barrel: { color: 0xc9a65a, metal: 0.9, bands: { count: 3, color: 0x8a6a2c, width: 0.12 } } as Material,
-  /** Casaque of the King's Musketeers (M8): team cloth bearing a white cross (no field: the cloth shows round it). */
-  casaque: { color: 0xffffff, team: true, charge: { cross: 0xf4f1e8, front: 0.1, panel: 0.7, bar: 0.22, armAt: 0.6, arm: 0.1 } } as Material,
+  /** White cross of the King's Musketeers' casaque (M8), front and back. */
+  cross: { color: 0xf6f3ea } as Material,
   /** Buff leather of the bandolier. */
   buff: { color: 0x9a7448 } as Material,
   /** Light chestnut of the cuirassiers' horses. */

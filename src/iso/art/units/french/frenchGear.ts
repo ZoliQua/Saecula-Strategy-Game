@@ -14,7 +14,7 @@ const F = FRENCH_M;
  * worn athwart and the cuirassier's crested helm with its long black
  * horsehair mane (Lumières). The knight's heater shield bears a gold
  * fleur-de-lis on the team field. The King's Musketeer (M8) wears the
- * plumed cavalier hat and the bandolier. Registered in gearRegistry.ts.
+ * plumed cavalier hat, the casaque's cross and the bandolier. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -126,36 +126,53 @@ export function fleurShield(fig: Figure, hand: V3, T: Xform): void {
   }
 }
 
-/** Cavalier hat (M8): a broad felt brim cocked up on the left, a low crown with a gilt band, a white ostrich plume sweeping back over the brim. */
+/**
+ * Cavalier hat (M8): a broad flat felt brim with a gilt edge, its left
+ * side turned up against a low crown, and a big white ostrich plume
+ * rising from the turned-up side and sweeping over the crown and back.
+ */
 export function cavalier(fig: Figure, hc: V3, axes: Axes): void {
   const [f, l, u] = axes;
   const hp = (p: V3): V3 => at(hc, axes, p);
   fig.sphere(hp([-0.4, 0, 1.4]), 6.75, F.felt, { n: u, at: hp([0, 0, 1.2]) });
-  fig.cone(hp([-0.4, 0, 2.0]), hp([-0.6, 0, 8.6]), 6.7, 5.9, F.felt);
-  fig.sphere(hp([-0.6, 0, 7.6]), 5.9, F.felt, { n: u, at: hp([0, 0, 8.4]) });
-  fig.cone(hp([-0.4, 0, 2.6]), hp([-0.4, 0, 4.0]), 6.85, 6.75, M.gold);
-  // The brim, cocked up on the left side.
-  const bu = rotate(u, f, 0.3);
-  const bc = hp([0, 0.6, 2.6]);
-  fig.cone(bc, madd(bc, bu, 0.7), 10.8, 10.4, F.felt);
-  fig.capsule(madd(madd(bc, l, 9.6), bu, 0.5), madd(madd(madd(bc, l, 7.9), f, 4.7), bu, 0.5), 0.6, M.gold);
-  // Ostrich plume from the cocked side, curling back and down past the brim.
-  const pts: V3[] = [hp([1.6, 5.6, 6.6]), hp([-1.6, 7.4, 10.2]), hp([-6.6, 6.6, 10.6]), hp([-10.8, 4.6, 7.2]), hp([-12.0, 3.0, 3.2])];
-  const r = [2.3, 2.1, 1.8, 1.4];
-  for (let k = 0; k < 4; k++) fig.cone(pts[k]!, pts[k + 1]!, r[k]!, r[k + 1] ?? 1.0, F.white);
+  fig.cone(hp([-0.4, 0, 2.0]), hp([-0.5, 0, 6.4]), 6.7, 6.2, F.felt);
+  fig.sphere(hp([-0.5, 0, 5.2]), 6.2, F.felt, { n: u, at: hp([0, 0, 6.2]) });
+  fig.cone(hp([-0.4, 0, 2.6]), hp([-0.4, 0, 3.8]), 6.85, 6.8, M.gold);
+  // Flat brim with a gilt edge; the left side turned up against the crown.
+  const bc = hp([0, -0.8, 2.4]);
+  fig.cone(bc, madd(bc, u, 0.6), 10.6, 10.4, F.felt);
+  fig.cone(madd(bc, u, 0.05), madd(bc, u, 0.55), 11.0, 10.8, M.gold, { n: scale(l, -1), at: madd(bc, l, 4.0) });
+  const up: Axes = [f, rotate(l, f, -1.15), rotate(u, f, -1.15)];
+  const flap = hp([-0.4, 7.4, 6.0]);
+  fig.ellipsoid(flap, up, [7.6, 0.7, 4.0], F.felt, { n: up[2], at: madd(flap, up[2], -0.4) });
+  fig.capsule(madd(madd(flap, up[0], -6.6), up[2], 3.6), madd(madd(flap, up[0], 6.6), up[2], 3.6), 0.55, M.gold);
+  fig.sphere(madd(flap, l, 0.8), 1.4, F.white);
+  // The plume: rising from the turned-up side, sweeping over the crown and down the back.
+  const pts: V3[] = [hp([2.4, 6.6, 7.0]), hp([0.6, 6.0, 12.6]), hp([-4.4, 3.2, 13.8]), hp([-9.6, 0.4, 10.6]), hp([-11.6, -1.4, 5.6])];
+  const r = [3.0, 3.0, 2.7, 2.2];
+  for (let k = 0; k < 4; k++) fig.cone(pts[k]!, pts[k + 1]!, r[k]!, r[k + 1] ?? 1.6, F.white);
+  fig.sphere(pts[4]!, 1.7, F.white);
 }
 
-/** Bandolier (M8): a buff belt over the left shoulder with its hanging powder charges, and a falling white lace collar. */
-const bandolier: BackItemPainter = (fig, torso, T) => {
-  fig.ellipsoid(torso([0.6, 0, 13.6]), [T.x, T.y, T.z], [4.0, 6.3, 1.1], F.white);
-  fig.capsule(torso([3.4, 4.8, 12.6]), torso([4.4, -4.4, 2.4]), 0.95, F.buff);
-  fig.capsule(torso([-3.6, 4.8, 12.6]), torso([-4.0, -4.6, 2.4]), 0.95, F.buff);
-  for (const t of [0.3, 0.45, 0.6, 0.75]) {
-    const p = torso([3.4 + 1.0 * t + 0.9, 4.8 - 9.2 * t, 12.6 - 10.2 * t]);
-    fig.capsule(p, madd(p, T.z, -2.2), 0.75, M.darkWood);
-    fig.sphere(p, 0.55, M.brass);
+/**
+ * Casaque gear (M8): the white cross of the King's Musketeers standing
+ * proud of the team cloth front and back — thin discs through the
+ * torso that only break its surface where the cross lies — then the
+ * falling lace collar and a buff bandolier over the left shoulder with
+ * its hanging powder charges.
+ */
+const casaque: BackItemPainter = (fig, torso, T) => {
+  const axes: Axes = [T.x, T.y, T.z];
+  fig.ellipsoid(torso([0, 0, 7.4]), axes, [5.0, 2.0, 7.8], F.cross);
+  fig.ellipsoid(torso([0, 0, 9.2]), axes, [5.3, 5.6, 1.9], F.cross);
+  fig.ellipsoid(torso([0.4, 0, 13.9]), axes, [3.4, 5.4, 0.9], F.white);
+  fig.capsule(torso([3.0, 5.2, 12.8]), torso([4.4, -4.6, 2.6]), 0.75, F.buff);
+  fig.capsule(torso([-3.2, 5.2, 12.8]), torso([-4.2, -4.6, 2.6]), 0.75, F.buff);
+  for (const t of [0.62, 0.74, 0.86]) {
+    const p = torso([3.0 + 1.4 * t + 0.6, 5.2 - 9.8 * t, 12.8 - 10.2 * t]);
+    fig.capsule(p, madd(p, T.z, -2.0), 0.7, M.darkWood);
+    fig.sphere(p, 0.5, M.brass);
   }
-  fig.ellipsoid(torso([2.6, -5.4, 0.8]), [T.x, T.y, T.z], [1.3, 1.1, 2.0], M.darkLeather);
 };
 
 export const FRENCH_HATS = {
@@ -166,6 +183,6 @@ export const FRENCH_HATS = {
   cavalier: { draw: cavalier, coversHead: false },
 } satisfies Record<string, HatDef>;
 
-export const FRENCH_BACK_ITEMS = { bandolier } satisfies Record<string, BackItemPainter>;
+export const FRENCH_BACK_ITEMS = { casaque } satisfies Record<string, BackItemPainter>;
 
 export const FRENCH_SHIELDS = { gaulShield, fleurShield } satisfies Record<string, ShieldPainter>;

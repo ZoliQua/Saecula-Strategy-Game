@@ -322,11 +322,8 @@ export class FrameRaster {
       const w = ch.edge === undefined ? 0 : (ch.edgeWidth ?? 0);
       if (front > ch.front && across < ch.panel) {
         const onCross = across < ch.bar || Math.abs((this.band[i] ?? 0) - ch.armAt) < ch.arm;
-        const fill = onCross ? ch.cross : ch.field;
-        if (fill !== undefined) {
-          c = fill;
-          this.banded = true;
-        }
+        c = onCross ? ch.cross : ch.field;
+        this.banded = true;
       } else if (w > 0 && front > ch.front - w && across < ch.panel + w) {
         // The dark edge rings the field on the cloth outside it, so the field and the cross keep their full size.
         c = ch.edge ?? c;

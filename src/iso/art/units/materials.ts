@@ -28,8 +28,7 @@ export interface Material {
  * cloth's rim / sides / back stay the owner's colour.
  */
 export interface Charge {
-  /** Field colour; omitted, the cloth itself shows round the cross (a cross on team cloth). */
-  readonly field?: number;
+  readonly field: number;
   readonly cross: number;
   /** The field covers l1 > front (a high value leaves a team rim round the edge). */
   readonly front: number;
