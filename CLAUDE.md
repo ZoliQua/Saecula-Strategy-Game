@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.2.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.3.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -579,7 +579,7 @@ docs/                            ← tervek és specifikációk (plans/specs)
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.2.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.3.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -932,6 +932,18 @@ A 4.3 első két pontja. Ág: `feat/M8-unique-units`. Változat: 0.3.0.
 - Nem része: egyedi épületek, új egység-képességek, népenként második
   egyedi egység.
 - Keret (10.): az M7 keretei változatlanok.
+- **Állapot (2026-10-30):** kész — nyolc egyedi egység (a leváltott alap egység
+  helyett), nyolc népbónusz, az AI saját egységet képez, nép-választó, fejlődési
+  fa és képző gombok az egyedi egységgel, `schemaVersion` 3 migrációval. Mérve —
+  textúra-memória (a teljes 1728×963-as böngészőablakban, 1,2-es és 0,5-ös
+  nagyítás; népenként a saját lista): 6 különböző nép 248,7 MB, a hat legnehezebb
+  nép 246,6 MB, az M4 két népes eset 161,4 MB (M7: 245,9 / 243,5 / 158,5 MB; a
+  különbség jórészt a nagyobb nézet terep-gyorsítótára: 25,7–25,9 MB a 23,1 MB
+  helyett), az egységlapok száma változatlan (60); képkocka-CPU p95 7,9–8,1 ms
+  hanggal (96×96, 4 játékos; M7: 7,1–8,0 ms); bundle 0,72 MB gzip (M7: 0,72 MB).
+  Böngésző-smoke: magyar huszár az istállóban, olasz légiós a laktanyában
+  képezhető és harcol, a fejlődési fa „egyedi” jelvényt mutat, a v2 (M7) mentés
+  hibátlanul betöltődik.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1039,4 +1051,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-29. Zoli projekt — Saecula, v0.2.0.*
+*Utolsó frissítés: 2026-10-30. Zoli projekt — Saecula, v0.3.0.*

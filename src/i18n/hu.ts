@@ -68,7 +68,7 @@ export const hu = {
       german: 'Épületek +15% életerő',
       french: 'Istállói egységek +15% életerő',
       spanish: 'Aranygyűjtés +15%',
-      italian: 'Építés +15% gyorsabb',
+      italian: 'Építés 15%-kal gyorsabb',
       russian: 'Fagyűjtés +15%',
       finnish: 'Gyalogság +10% sebesség',
     },

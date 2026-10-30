@@ -12,6 +12,33 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.3.0] — 2026-10-30
+
+Minden népnek van egyedi egysége és állandó bónusza (M8 mérföldkő).
+
+### Új
+
+- **Egyedi egységek**: minden nép az egyik alap egységét a sajátjára váltja
+  le, ugyanabban az épületben és korban képezve: magyar huszár (a lovagot
+  váltja le), angol hosszúíjász (számszeríjász), német landsknecht
+  (lándzsás), francia királyi muskétás (muskétás), spanyol konkvisztádor
+  (könnyűlovas), olasz légiós (kardforgató), orosz kozák (felderítő) és finn
+  sissi (íjász). Mindnek saját statisztikája és jellegzetes sziluettje van.
+  A nép a leváltott egységet nem képezheti, így a textúra-keret nem nő. Az AI
+  a nép saját egységét képzi.
+- **Népbónuszok**: magyar lovas egységek +10% sebesség, angol farm +15% étel,
+  német épületek +15% HP, francia istállóban képzett egységek +15% HP,
+  spanyol aranygyűjtés +15%, olasz építés 15%-kal gyorsabb, orosz fagyűjtés
+  +15%, finn gyalogság +10% sebesség.
+- A nép-választó, a fejlődési fa („egyedi” jelvénnyel) és a képző gombok a nép
+  egyedi egységét mutatják; a választó a bónuszt is.
+
+### Változott
+
+- A mentés `schemaVersion` értéke 3. A régi mentések automatikus
+  migrációval töltődnek be, egységeik megmaradnak akkor is, ha a népük
+  azóta mást képez.
+
 ## [0.2.0] — 2026-10-29
 
 Az első kiadás **Saecula** néven: nyolc nép, mentés, hang, és az első teljes
@@ -102,6 +129,7 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/releases/tag/v0.1.0

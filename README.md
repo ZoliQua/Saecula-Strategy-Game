@@ -44,6 +44,9 @@ in English and Hungarian.
   Florence, St Basil's, Petäjävesi…).
 - ⚔️ **Ten unit types** — villagers, scouts, swordsmen, archers, knights,
   pikemen, crossbowmen, musketeers, cannons and cavalry.
+- 🎖️ **Unique units and bonuses** — every nation replaces one base unit with
+  its own (hussar, longbowman, landsknecht, mousquetaire, conquistador,
+  legionary, cossack, sissi) and has a permanent bonus.
 - 🤖 **AI rivals** — four difficulty levels (Easy to Master) and three
   personalities (rusher, economist, defender), with no cheating.
 - 🗺️ **Five map types** — Meadow, Wilderness, Islands, Fortress and Random, in
@@ -127,7 +130,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.2.0**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.3.0**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
@@ -136,6 +139,7 @@ each version contains.
 | M4–M5 | Eight nations with their own architecture | ✅ 0.2.0 |
 | M6 | Save/load, audio, Wonder victory, Master AI | ✅ 0.2.0 |
 | M7 | Playtest fixes, controls, scores, statistics | ✅ 0.2.0 |
+| M8 | Unique units and nation bonuses | ✅ 0.3.0 |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, campaigns.

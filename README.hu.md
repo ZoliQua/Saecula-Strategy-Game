@@ -43,6 +43,9 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
   Petäjävesi…).
 - ⚔️ **Tíz egységtípus** — falusi, felderítő, kardforgató, íjász, lovag,
   lándzsás, számszeríjász, muskétás, ágyú és könnyűlovas.
+- 🎖️ **Egyedi egységek és bónuszok** — minden nép egyik alap egységét a
+  sajátjára váltja (huszár, hosszúíjász, landsknecht, királyi muskétás,
+  konkvisztádor, légiós, kozák, sissi), és állandó bónusza van.
 - 🤖 **AI ellenfelek** — négy nehézségi szint (Könnyűtől Mesteriig) és három
   személyiség (rohamozó, gazdálkodó, védekező), csalás nélkül.
 - 🗺️ **Öt térképtípus** — Mezőség, Vadon, Szigetek, Erődítmény és Véletlen,
@@ -126,7 +129,7 @@ megjelenítik. A teljes architektúra, a scope és a konvenciók a
 
 ## Állapot és ütemterv
 
-A Saecula jelenlegi verziója **0.2.0**. Az egyes verziók tartalmát a
+A Saecula jelenlegi verziója **0.3.0**. Az egyes verziók tartalmát a
 [változásnapló](CHANGELOG.hu.md) sorolja fel.
 
 | Mérföldkő | Tartalom | Állapot |
@@ -135,6 +138,7 @@ A Saecula jelenlegi verziója **0.2.0**. Az egyes verziók tartalmát a
 | M4–M5 | Nyolc nép saját építészettel | ✅ 0.2.0 |
 | M6 | Mentés, hang, Csoda-győzelem, Mesteri AI | ✅ 0.2.0 |
 | M7 | Playtest-javítások, irányítás, pontszám, statisztika | ✅ 0.2.0 |
+| M8 | Egyedi egységek és népbónuszok | ✅ 0.3.0 |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, kampány.
