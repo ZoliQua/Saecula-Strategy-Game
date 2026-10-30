@@ -7,4 +7,4 @@ import { pinUniqueUnit } from '../../testing/pinnedArt.testkit';
  * changes, with the reason in the commit.
  */
 
-pinUniqueUnit('finnish', 'sissi', { pixels: '28ffb9a11171ce5a', geometry: '79f4af6aed4d4150' });
+pinUniqueUnit('finnish', 'sissi', { pixels: '1ffa89e553b09ab6', geometry: 'f779c43040b1a1a2' });

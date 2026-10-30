@@ -125,20 +125,20 @@ export const berdysh: BackItemPainter = (fig, at, T) => {
 };
 
 /**
- * Papakha (M8): a tall, straight-sided drum of shaggy black sheepskin,
- * a little wider at the top, its flat crown covered in team cloth
- * crossed by silver galloon.
+ * Papakha (M8): a tall, straight-sided drum of shaggy black sheepskin
+ * worn from the brow up, a little wider at the top, its flat crown
+ * covered in team cloth crossed by silver galloon.
  */
 export function papakha(fig: Figure, hc: V3, axes: Axes): void {
   const [f, l] = axes;
   const hp = (p: V3): V3 => at(hc, axes, p);
-  fig.cone(hp([-0.3, 0, -0.6]), hp([-0.5, 0, 10.6]), 7.4, 8.3, R.blackFur);
-  // Shaggy rolls round the drum, so the outline is tufted, not a smooth cylinder.
-  for (const [z, r] of [[1.4, 8.0], [4.8, 8.2], [8.2, 8.6]] as const) {
-    fig.ellipsoid(hp([-0.4, 0, z]), axes, [r, r, 1.5], R.blackFur);
+  // The drum sits on the head from the brow up, flaring a little to a shaggy rim.
+  fig.cone(hp([-0.4, 0, 2.2]), hp([-0.6, 0, 11.2]), 6.7, 7.4, R.blackFur);
+  for (const [z, r] of [[3.4, 7.0], [6.6, 7.2], [9.8, 7.6]] as const) {
+    fig.ellipsoid(hp([-0.5, 0, z]), axes, [r, r, 1.4], R.blackFur);
   }
-  fig.ellipsoid(hp([-0.5, 0, 10.6]), axes, [7.6, 7.6, 1.1], M.team);
-  for (const d of [f, l]) fig.capsule(madd(hp([-0.5, 0, 11.6]), d, 6.7), madd(hp([-0.5, 0, 11.6]), d, -6.7), 0.45, R.silver);
+  fig.ellipsoid(hp([-0.6, 0, 11.2]), axes, [6.9, 6.9, 1.0], M.team);
+  for (const d of [f, l]) fig.capsule(madd(hp([-0.6, 0, 12.1]), d, 6.1), madd(hp([-0.6, 0, 12.1]), d, -6.1), 0.45, R.silver);
 }
 
 /**

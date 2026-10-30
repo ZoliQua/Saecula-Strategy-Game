@@ -39,6 +39,10 @@ export const FINNISH_M = {
   snow: { color: 0xe9e6dc } as Material,
   /** Birch bark of the sissi's quiver. */
   birchBark: { color: 0xd8d0be, bands: { count: 4, color: 0x3a3430, width: 0.1 } } as Material,
+  /** Birch wood of the sissi's short bow. */
+  bowWood: { color: 0x9a6a3a } as Material,
+  /** Pine boards of the sissi's skis. */
+  skiWood: { color: 0x8a6438 } as Material,
   /** Grey wool mittens. */
   mitten: { color: 0x6e6a66 } as Material,
   /** Chestnut Finnhorses with flaxen manes. */

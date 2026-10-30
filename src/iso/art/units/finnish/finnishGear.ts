@@ -1,7 +1,7 @@
 import { drawBow } from '../baseGear';
 import { axesAlong, type Axes, type Figure } from '../figure';
 import type { BackItemPainter, HatDef, ShieldPainter, WeaponStyleDef } from '../gear';
-import { M, type Material } from '../materials';
+import { M } from '../materials';
 import { madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { FINNISH_M } from './finnishMaterials';
 
@@ -100,21 +100,21 @@ export function crossShield(fig: Figure, hand: V3, T: Xform): void {
 }
 
 /**
- * Snow hood (M8): a loose white hood drawn up to a soft point that
- * falls back, a ruff of grey fur round the face opening, and the hood's
- * shoulder cape.
+ * Snow hood (M8): a loose white hood drawn up into a tall point that
+ * flops back at its tip, and a close trim of dark fur round the face
+ * opening.
  */
 export function snowHood(fig: Figure, hc: V3, axes: Axes): void {
   const [f, l, u] = axes;
   const hp = (p: V3): V3 => at(hc, axes, p);
   fig.sphere(hp([-1.4, 0, 1.2]), 7.6, F.snow, { n: scale(f, -1), at: hp([3.6, 0, 0]) });
-  // The point: drawn up and back, flopping over behind the crown.
-  fig.cone(hp([-2.0, 0, 5.0]), hp([-3.8, 0, 12.6]), 4.6, 1.6, F.snow);
-  fig.cone(hp([-3.8, 0, 12.6]), hp([-6.6, 0, 12.4]), 1.6, 0.5, F.snow);
-  // Fur ruff round the face opening.
-  for (let k = 0; k < 10; k++) {
-    const a = (k / 10) * Math.PI * 2;
-    fig.sphere(madd(madd(hp([3.6, 0, 0.4]), l, 5.5 * Math.cos(a)), u, 6.2 * Math.sin(a)), 1.5, F.greyFur);
+  // The point: drawn up tall and leaning back, its tip flopping over.
+  fig.cone(hp([-1.6, 0, 4.2]), hp([-3.2, 0, 16.4]), 5.4, 1.3, F.snow);
+  fig.cone(hp([-3.2, 0, 16.4]), hp([-6.0, 0, 15.6]), 1.3, 0.5, F.snow);
+  // Fur trim round the face opening: small close tufts, a dark ring.
+  for (let k = 0; k < 16; k++) {
+    const a = (k / 16) * Math.PI * 2;
+    fig.sphere(madd(madd(hp([3.9, 0, 0.4]), l, 5.3 * Math.cos(a)), u, 6.0 * Math.sin(a)), 1.15, F.fur);
   }
 }
 
@@ -123,17 +123,29 @@ const TORSO = { c: 7.8, a: 4.3, b: 6.1, h: 8.2 } as const;
 
 /**
  * Snow cloak (M8): a white cloak hung from the shoulders down the back
- * to the hips, its hem edged with grey fur, open at the front over the
- * team tunic; a team sash
- * knotted at the left hip with its ends hanging; a short birch-bark
- * quiver at the right hip.
+ * to the hips, its hem edged with fur, open at the front over the team
+ * tunic; a pair of long skis slung across the back, their curled tips
+ * standing up beside the hood; a team sash knotted at the left hip with
+ * its ends hanging; a short birch-bark quiver at the right hip.
  */
 const snowCloak: BackItemPainter = (fig, torso, T) => {
   const axes: Axes = [T.x, T.y, T.z];
-  // The cloak: a shell behind the body from the shoulders to the hips.
-  fig.ellipsoid(torso([-1.2, 0, 8.6]), axes, [TORSO.a + 1.0, TORSO.b + 1.3, 7.6], F.snow, { n: scale(T.x, -1), at: torso([-0.6, 0, 0]) });
-  // Grey fur along the cloak's hem.
-  fig.ellipsoid(torso([-1.2, 0, 1.6]), axes, [TORSO.a + 1.15, TORSO.b + 1.45, 1.0], F.greyFur, { n: scale(T.x, -1), at: torso([-0.6, 0, 0]) });
+  const back = { n: scale(T.x, -1), at: torso([-0.6, 0, 0]) };
+  // The cloak: a shell behind the body from the shoulders to the hips, its hem edged with fur.
+  fig.ellipsoid(torso([-1.2, 0, 8.6]), axes, [TORSO.a + 1.0, TORSO.b + 1.3, 7.6], F.snow, back);
+  fig.ellipsoid(torso([-1.2, 0, 1.6]), axes, [TORSO.a + 1.15, TORSO.b + 1.45, 1.0], F.fur, back);
+  // Skis: two long narrow boards slung across the back, from the left hip up past the right
+  // shoulder, their curled tips standing up beside the hood.
+  for (const dy of [0, -2.2]) {
+    const foot = torso([-7.4, 5.4 + dy, -7.0]);
+    const top = torso([-7.4, -4.6 + dy, 32.0]);
+    const along = norm([top[0] - foot[0], top[1] - foot[1], top[2] - foot[2]]);
+    const mid: V3 = [(foot[0] + top[0]) / 2, (foot[1] + top[1]) / 2, (foot[2] + top[2]) / 2];
+    const half = Math.hypot(top[0] - foot[0], top[1] - foot[1], top[2] - foot[2]) / 2;
+    fig.box(mid, axesAlong(along, T.x), [half, 0.4, 1.15], F.skiWood);
+    fig.capsule(top, madd(madd(top, along, 2.0), T.x, -2.0), 0.8, F.skiWood);
+  }
+  fig.capsule(torso([-6.6, 3.2, 8.0]), torso([-6.6, -3.2, 8.0]), 0.5, M.darkLeather);
   // The sash: a team band round the waist, its knot and two ends on the left hip.
   fig.ellipsoid(torso([0, 0, 3.8]), axes, [TORSO.a + 0.55, TORSO.b + 0.3, 1.5], M.team);
   fig.sphere(torso([2.0, 5.6, 3.6]), 1.6, M.team);
@@ -147,7 +159,7 @@ const snowCloak: BackItemPainter = (fig, torso, T) => {
 };
 
 /** Short bow of the forest fighters: a short, deep-drawn birch bow. */
-const SHORT_BOW = { half: 9.6, bend: 3.9, thick: 1.4, wood: { color: 0x9a6a3a } as Material } as const;
+const SHORT_BOW = { half: 9.6, bend: 3.9, thick: 1.4, wood: F.bowWood } as const;
 
 export const FINNISH_HATS = {
   furCap: { draw: furCap, coversHead: false },
