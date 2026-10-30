@@ -28,8 +28,9 @@ export class BuildPlacement {
     private readonly getAge: () => AgeId,
     private readonly playerId: number,
     private readonly civ: CivId,
+    private readonly getHpMultiplier: () => number = () => 1,
   ) {
-    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId, getAge, civ);
+    this.walls = new WallLinePlacement(scene, world, mapData, selection, playerId, getAge, civ, getHpMultiplier);
   }
 
   /** Walls are laid by dragging a line instead of a single click. */
@@ -94,6 +95,7 @@ export class BuildPlacement {
       playerId: this.playerId,
       mapData: this.mapData,
       underConstruction: true,
+      hpMultiplier: this.getHpMultiplier(),
     });
     evictUnitsFrom(this.world, this.mapData, origin, { width: spec.width, height: spec.height });
     // Every selected own villager drops its work and builds the new site.

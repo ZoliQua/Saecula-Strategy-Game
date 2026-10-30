@@ -1,3 +1,4 @@
+import { buildingHpMultiplier } from '../../game/modifiers';
 import { AI_COMMON, AI_PLACEMENT, type Span } from '../../config/aiBalance';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
@@ -146,6 +147,7 @@ export abstract class BaseStrategy implements AIStrategy {
       playerId: ctx.player.id,
       mapData: ctx.mapData,
       underConstruction: true,
+      hpMultiplier: buildingHpMultiplier(ctx.player),
     });
     evictUnitsFrom(ctx.world, ctx.mapData, origin, BUILDING_SPECS[type]);
     this.assignBuilders(ctx, view, site, AI_COMMON.buildersPerSite);
@@ -174,7 +176,7 @@ export abstract class BaseStrategy implements AIStrategy {
     if (plan.build.length === 0) return 0;
     ctx.player.resources = { ...ctx.player.resources, wood: ctx.player.resources.wood - cost.wood * plan.build.length };
     const sites = plan.build.map((tile) => {
-      const site = createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true });
+      const site = createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true, hpMultiplier: buildingHpMultiplier(ctx.player) });
       evictUnitsFrom(ctx.world, ctx.mapData, tile, { width: 1, height: 1 });
       return site;
     });

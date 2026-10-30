@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { TECH_SPECS } from './technologies';
-import { effectiveUnitStats, gatherMultiplier, houseBonus, scaleHealth, unitBonuses } from './modifiers';
+import {
+  buildingHpMultiplier,
+  buildSpeedMultiplier,
+  effectiveUnitStats,
+  gatherMultiplier,
+  houseBonus,
+  scaleHealth,
+  unitBonuses,
+} from './modifiers';
 import { createPlayer } from './Player';
-import type { TechId } from '../types';
+import type { CivId, TechId } from '../types';
 
-const having = (...techs: TechId[]) => createPlayer({ id: 1, researched: new Set(techs) });
+// A bare Researched view (no civ): civ bonuses stay out of the technology tests.
+const having = (...techs: TechId[]) => ({ researched: new Set(techs) });
 
 describe('modifiers', () => {
   it('changes nothing without technologies', () => {
@@ -104,5 +113,60 @@ describe('modifiers', () => {
       expect(spec.time).toBeGreaterThan(0);
     }
     expect(Object.keys(TECH_SPECS)).toHaveLength(22);
+  });
+});
+
+describe('civ bonuses', () => {
+  const civ = (id: CivId, ...techs: TechId[]) => createPlayer({ id: 1, civ: id, researched: new Set(techs) });
+
+  it('civ bonus applies with no technology researched', () => {
+    const hu = civ('hungarian');
+    expect(unitBonuses(hu, 'scout').speedMultiplier).toBeCloseTo(1.1, 10);
+    expect(unitBonuses(hu, 'hussar').speedMultiplier).toBeCloseTo(1.1, 10);
+    expect(unitBonuses(hu, 'archer').speedMultiplier).toBe(1);
+  });
+
+  it('Finnish infantry (including the sissi) is faster, cavalry is not', () => {
+    const fi = civ('finnish');
+    expect(unitBonuses(fi, 'sissi').speedMultiplier).toBeCloseTo(1.1, 10);
+    expect(unitBonuses(fi, 'swordsman').speedMultiplier).toBeCloseTo(1.1, 10);
+    expect(unitBonuses(fi, 'knight').speedMultiplier).toBe(1);
+  });
+
+  it('French stable units get more HP, barracks units do not', () => {
+    const fr = civ('french');
+    expect(unitBonuses(fr, 'knight').hpMultiplier).toBeCloseTo(1.15, 10);
+    expect(unitBonuses(fr, 'conquistador').hpMultiplier).toBeCloseTo(1.15, 10);
+    expect(unitBonuses(fr, 'scout').hpMultiplier).toBe(1);
+  });
+
+  it('English food gathering stacks multiplicatively with crop rotation', () => {
+    expect(gatherMultiplier(civ('english'), 'food')).toBeCloseTo(1.15, 10);
+    const withTech = gatherMultiplier(civ('english', 'crop_rotation'), 'food');
+    expect(withTech).toBeCloseTo(1.15 * gatherMultiplier(civ('hungarian', 'crop_rotation'), 'food'), 10);
+    expect(gatherMultiplier(civ('english'), 'wood')).toBe(1);
+  });
+
+  it('Spanish gold and Russian wood gathering are boosted', () => {
+    expect(gatherMultiplier(civ('spanish'), 'gold')).toBeCloseTo(1.15, 10);
+    expect(gatherMultiplier(civ('russian'), 'wood')).toBeCloseTo(1.15, 10);
+  });
+
+  it('German buildings get more HP, others do not', () => {
+    expect(buildingHpMultiplier(civ('german'))).toBeCloseTo(1.15, 10);
+    expect(buildingHpMultiplier(civ('hungarian'))).toBe(1);
+  });
+
+  it('Italian builders are faster, others are not', () => {
+    expect(buildSpeedMultiplier(civ('italian'))).toBeCloseTo(1.15, 10);
+    expect(buildSpeedMultiplier(civ('german'))).toBe(1);
+  });
+
+  it('a player without a civ behaves exactly as before', () => {
+    const bare = { researched: new Set<TechId>() };
+    expect(unitBonuses(bare, 'scout').speedMultiplier).toBe(1);
+    expect(gatherMultiplier(bare, 'food')).toBe(1);
+    expect(buildingHpMultiplier(bare)).toBe(1);
+    expect(buildSpeedMultiplier(bare)).toBe(1);
   });
 });

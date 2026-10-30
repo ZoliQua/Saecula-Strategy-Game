@@ -1,3 +1,4 @@
+import { buildingHpMultiplier } from '../game/modifiers';
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
 import { CAMERA_BOUNDS_PADDING } from '../config/constants';
@@ -242,6 +243,10 @@ export class GameScene extends Phaser.Scene {
       humanId: human?.id ?? 1,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
+      buildingHp: () => {
+        const p = this.players.human();
+        return p ? buildingHpMultiplier(p) : 1;
+      },
       onIdleEscape: openPause,
     });
     wireHudControls(this, { world: this.world, selection: this.runner.selection, camera: cameraController, humanId: human?.id ?? 1 });

@@ -79,14 +79,14 @@ describe('technology effects in systems', () => {
   it('movement speed follows infantry march for infantry only', () => {
     const { world, players } = setup(['infantry_march']);
     const sword = createUnit(world, { type: 'swordsman', tile: { tx: 0, ty: 0 }, playerId: 1 });
-    const knight = createUnit(world, { type: 'knight', tile: { tx: 0, ty: 1 }, playerId: 1 });
+    const other = createUnit(world, { type: 'cannon', tile: { tx: 0, ty: 1 }, playerId: 1 });
     sword.movable!.path = [{ tx: 5, ty: 0 }];
-    knight.movable!.path = [{ tx: 5, ty: 1 }];
+    other.movable!.path = [{ tx: 5, ty: 1 }];
     sword.movable!.speed = 1;
-    knight.movable!.speed = 1;
+    other.movable!.speed = 1;
     new MovementSystem(world, players).update(500);
     expect(sword.movable!.progress).toBeCloseTo(0.55, 5);
-    expect(knight.movable!.progress).toBeCloseTo(0.5, 5);
+    expect(other.movable!.progress).toBeCloseTo(0.5, 5);
   });
 
   it('artisan guilds add +2 cap per finished house and no more than once', () => {

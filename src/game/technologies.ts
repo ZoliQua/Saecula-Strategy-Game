@@ -15,7 +15,15 @@ export type TechEffect =
   /** + fraction on the speed of the infantry class. */
   | { readonly kind: 'infantrySpeed'; readonly bonus: number }
   /** + fraction on the HP of the cavalry class. */
-  | { readonly kind: 'cavalryHp'; readonly bonus: number };
+  | { readonly kind: 'cavalryHp'; readonly bonus: number }
+  /** + fraction on the speed of the cavalry class (civ bonus). */
+  | { readonly kind: 'cavalrySpeed'; readonly bonus: number }
+  /** + fraction on the HP of units trained at the stable, at spawn (civ bonus). */
+  | { readonly kind: 'stableHp'; readonly bonus: number }
+  /** + fraction on the maximum HP of new buildings (civ bonus). */
+  | { readonly kind: 'buildingHp'; readonly bonus: number }
+  /** + fraction on builder speed (civ bonus). */
+  | { readonly kind: 'buildSpeed'; readonly bonus: number };
 
 export interface TechSpec {
   readonly id: TechId;

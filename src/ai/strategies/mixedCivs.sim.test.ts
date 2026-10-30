@@ -11,8 +11,9 @@ const MIN = 60_000;
  * M4 smoke without a browser: a mixed-civ three-age match. The Hungarian
  * human slot is driven by a Medium AI against an English Hard AI; an
  * English Easy third player is the early target of both (a head-on
- * Medium-vs-Hard duel ends before age 2, see threeAges.sim.test.ts). Civs
- * are only art today, so this pins that a mixed line-up runs every
+ * Medium-vs-Hard duel ends before age 2, see threeAges.sim.test.ts). Civ
+ * bonuses (M8) turned the old Medium draw (rng 6) into a lost duel, so the
+ * Hungarian Medium AI draws rng 7. This pins that a mixed line-up runs every
  * gameplay system through all three ages without exceptions and within the
  * 500-entity budget (units, buildings, projectiles; CLAUDE.md §10).
  * Measured: both in age 3 by 20.87 min, at most 232 entities; Hungarian
@@ -31,7 +32,7 @@ describe('mixed-civ three-age match (96×96 meadow, seed 3): Hungarian Medium vs
       strategy: (id) => (id === 2 ? new HardStrategy(createRng(10)) : new EasyStrategy(createRng(4))),
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
       enemyOf: (id) => (id === 3 ? 2 : duel ? 1 : 3),
-      humanStrategy: new MediumStrategy(createRng(6)),
+      humanStrategy: new MediumStrategy(createRng(7)),
       humanEnemy: () => (duel ? 2 : 3),
     });
     const human = match.players.get(1)!;

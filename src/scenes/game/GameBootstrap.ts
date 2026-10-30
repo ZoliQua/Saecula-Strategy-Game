@@ -1,3 +1,4 @@
+import { buildingHpMultiplier } from '../../game/modifiers';
 import { createBuilding } from '../../ecs/archetypes/building';
 import {
   createResourceNode,
@@ -75,6 +76,7 @@ export function spawnStartingEntities(
       origin: townCenterOrigin(start),
       playerId: player.id,
       mapData,
+      hpMultiplier: buildingHpMultiplier(player),
     });
     for (const tile of villagerSpawnTiles(start)) createVillager(world, { tile, playerId: player.id });
   });
@@ -91,6 +93,6 @@ export function spawnPresetWalls(
   for (const wall of walls) {
     const player = all[wall.playerIndex];
     if (!player) throw new RangeError(`no player for wall slot ${wall.playerIndex}`);
-    createWall(world, { tile: wall.tile, playerId: player.id, mapData, underConstruction: false, minStyleAge: wall.minStyleAge });
+    createWall(world, { tile: wall.tile, playerId: player.id, mapData, underConstruction: false, minStyleAge: wall.minStyleAge, hpMultiplier: buildingHpMultiplier(player) });
   }
 }

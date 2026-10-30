@@ -1,4 +1,6 @@
+import type { TechEffect } from '../game/technologies';
 import type { AgeId, CivId, UniqueUnitType } from '../types';
+import { CIV_BONUS } from './balance';
 
 /**
  * Civ registry (CLAUDE.md §4.2, M4 design decision 1): which civs can be
@@ -78,6 +80,8 @@ export interface CivDef {
   readonly heraldry: Heraldry;
   /** The unit this civ trains in place of the base unit it replaces (M8). */
   readonly uniqueUnit: UniqueUnitType;
+  /** The permanent civ bonus, active from the first second (M8). */
+  readonly bonus: TechEffect;
 }
 
 export const CIV_IDS: readonly CivId[] = [
@@ -108,6 +112,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'hungarian',
     heraldry: { primary: 0xc8202e, secondary: 0xf2efe6, accent: 0x2e7d3a },
     uniqueUnit: 'hussar',
+    bonus: { kind: 'cavalrySpeed', bonus: CIV_BONUS.cavalrySpeed },
   },
   // St George's cross: white field, red cross. Romano-British, Tudor and Georgian buildings, walls and towers; English unit liveries.
   english: {
@@ -117,6 +122,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'english',
     heraldry: { primary: 0xf2efe6, secondary: 0xc8202e, accent: 0x1f2f5a },
     uniqueUnit: 'longbowman',
+    bonus: { kind: 'gather', resource: 'food', bonus: CIV_BONUS.farmFood },
   },
   // Black eagle on gold, red. Limes / Fachwerk / Backstein buildings; Limes palisade, Backstein curtain and red sandstone star fort; German unit liveries.
   german: {
@@ -126,6 +132,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'german',
     heraldry: { primary: 0x1a1a1a, secondary: 0xd4a017, accent: 0xb3202a },
     uniqueUnit: 'landsknecht',
+    bonus: { kind: 'buildingHp', bonus: CIV_BONUS.buildingHp },
   },
   // Gold fleurs-de-lis on royal blue. Gallo-Roman / Loire Gothic / Classicisme buildings; murus gallicus, pepperpot-towered curtain and Vauban trace; French unit liveries.
   french: {
@@ -135,6 +142,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'french',
     heraldry: { primary: 0x1f3c88, secondary: 0xe8c547, accent: 0xf2efe6 },
     uniqueUnit: 'mousquetaire',
+    bonus: { kind: 'stableHp', bonus: CIV_BONUS.stableHp },
   },
   // Castile and León: gold castle on red. Hispania / Mudéjar / Colonial buildings; Celtiberian dry stone, tapial with stepped merlons and a whitewashed garita bastion; Spanish unit liveries.
   spanish: {
@@ -144,6 +152,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'spanish',
     heraldry: { primary: 0xc0262d, secondary: 0xf1bf00, accent: 0x7a1f1f },
     uniqueUnit: 'conquistador',
+    bonus: { kind: 'gather', resource: 'gold', bonus: CIV_BONUS.goldGather },
   },
   // Tricolour: green, white, red. Etruria / Comune / Rinascimento buildings; Servian tufa wall, Ghibelline brick curtain and brick trace italienne; Italian unit liveries.
   italian: {
@@ -153,6 +162,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'italian',
     heraldry: { primary: 0x2e7d3a, secondary: 0xf2efe6, accent: 0xc8202e },
     uniqueUnit: 'legionary',
+    bonus: { kind: 'buildSpeed', bonus: CIV_BONUS.buildSpeed },
   },
   // St Andrew's saltire: white, blue, red. Log gorod / Muscovite / Petrine buildings; log wall on a rampart, gorodnya cribs with tented log towers and a whitewashed kremlin; Russian unit liveries.
   russian: {
@@ -162,6 +172,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'russian',
     heraldry: { primary: 0xf2efe6, secondary: 0x1f4fa0, accent: 0xc8202e },
     uniqueUnit: 'cossack',
+    bonus: { kind: 'gather', resource: 'wood', bonus: CIV_BONUS.woodGather },
   },
   // Nordic cross: white, blue, grey. Turf homestead / greystone / Gustavian buildings; granite hill fort, boulder curtain with shingle-coned round towers and a turf-topped granite bastion trace; Finnish unit liveries.
   finnish: {
@@ -171,6 +182,7 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     unitLook: 'finnish',
     heraldry: { primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 },
     uniqueUnit: 'sissi',
+    bonus: { kind: 'infantrySpeed', bonus: CIV_BONUS.infantrySpeed },
   },
 };
 
