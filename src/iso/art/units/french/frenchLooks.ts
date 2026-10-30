@@ -109,7 +109,7 @@ export const FRENCH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
     human: {
       hat: 'cavalier',
       body: M.team,
-      skirt: { mat: M.team, length: 8.5 },
+      skirt: { mat: M.team, length: 10 },
       sleeves: M.team,
       legs: F.navy,
       boots: M.leather,

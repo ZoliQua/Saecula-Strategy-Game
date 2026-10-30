@@ -154,21 +154,53 @@ export function cavalier(fig: Figure, hc: V3, axes: Axes): void {
   fig.sphere(pts[4]!, 1.7, F.white);
 }
 
+/** The torso garment's ellipsoid (humanoid.ts drawHuman), in torso-local units. */
+const TORSO = { c: 7.8, a: 4.3, b: 6.1, h: 8.2 } as const;
+/** How far the casaque's cross plates stand off the torso (centre), and their half thickness. */
+const CROSS_LIFT = 0.6;
+const CROSS_HALF = 0.75;
+
 /**
- * Casaque gear (M8): the white cross of the King's Musketeers standing
- * proud of the team cloth front and back — thin discs through the
- * torso that only break its surface where the cross lies — then the
- * falling lace collar and a buff bandolier over the left shoulder with
- * its hanging powder charges.
+ * Casaque gear (M8): the white cross of the King's Musketeers, front and
+ * back, as plates bent round the torso and standing proud of the team
+ * cloth (the casaque is worn over the bandolier, so the cross covers its
+ * strap); a small falling lace collar above the cross; the buff
+ * bandolier over the left shoulder, its powder charges hanging at the
+ * right hip below the cross arm.
  */
 const casaque: BackItemPainter = (fig, torso, T) => {
-  const axes: Axes = [T.x, T.y, T.z];
-  fig.ellipsoid(torso([0, 0, 7.4]), axes, [5.0, 2.0, 7.8], F.cross);
-  fig.ellipsoid(torso([0, 0, 9.2]), axes, [5.3, 5.6, 1.9], F.cross);
-  fig.ellipsoid(torso([0.4, 0, 13.9]), axes, [3.4, 5.4, 0.9], F.white);
+  const dir = (d: V3): V3 => norm(add(add(scale(T.x, d[0]), scale(T.y, d[1])), scale(T.z, d[2])));
+  const lifted = (k: number) => 1 + (CROSS_LIFT / TORSO.a) * k;
+  for (const side of [1, -1]) {
+    // Upright bar: plates along the torso's front (or back) meridian.
+    const bar = (phi: number): V3 => [side * TORSO.a * lifted(1) * Math.cos(phi), 0, TORSO.c + (TORSO.h + CROSS_LIFT) * Math.sin(phi)];
+    for (let k = 0; k < 5; k++) {
+      const p0 = bar(-0.5 + k * 0.26);
+      const p1 = bar(-0.5 + (k + 1) * 0.26);
+      const along = dir([p1[0] - p0[0], 0, p1[2] - p0[2]]);
+      const mid: V3 = [(p0[0] + p1[0]) / 2, 0, (p0[2] + p1[2]) / 2];
+      const len = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]);
+      const normal = dir([mid[0] / TORSO.a ** 2, 0, (mid[2] - TORSO.c) / TORSO.h ** 2]);
+      fig.box(torso(mid), axesAlong(along, normal), [len / 2 + 0.15, CROSS_HALF, 1.6], F.cross);
+    }
+    // Cross arm: plates round the torso at chest height.
+    const z = 10.0;
+    const k = Math.sqrt(1 - ((z - TORSO.c) / TORSO.h) ** 2);
+    const arm = (t: number): V3 => [side * (TORSO.a * k + CROSS_LIFT) * Math.cos(t), (TORSO.b * k + CROSS_LIFT) * Math.sin(t), z];
+    for (let n = 0; n < 4; n++) {
+      const p0 = arm(-0.7 + n * 0.35);
+      const p1 = arm(-0.7 + (n + 1) * 0.35);
+      const along = dir([p1[0] - p0[0], p1[1] - p0[1], 0]);
+      const mid: V3 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, z];
+      const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+      const normal = dir([mid[0] / TORSO.a ** 2, mid[1] / TORSO.b ** 2, 0]);
+      fig.box(torso(mid), axesAlong(along, normal), [len / 2 + 0.15, CROSS_HALF, 1.45], F.cross);
+    }
+  }
+  fig.ellipsoid(torso([0.3, 0, 14.6]), [T.x, T.y, T.z], [3.0, 5.0, 0.8], F.white);
   fig.capsule(torso([3.0, 5.2, 12.8]), torso([4.4, -4.6, 2.6]), 0.75, F.buff);
   fig.capsule(torso([-3.2, 5.2, 12.8]), torso([-4.2, -4.6, 2.6]), 0.75, F.buff);
-  for (const t of [0.62, 0.74, 0.86]) {
+  for (const t of [0.76, 0.88, 1.0]) {
     const p = torso([3.0 + 1.4 * t + 0.6, 5.2 - 9.8 * t, 12.8 - 10.2 * t]);
     fig.capsule(p, madd(p, T.z, -2.0), 0.7, M.darkWood);
     fig.sphere(p, 0.5, M.brass);
