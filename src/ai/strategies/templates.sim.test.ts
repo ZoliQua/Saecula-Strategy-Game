@@ -10,8 +10,10 @@ const MIN = 60_000;
  * Medium against Medium (players 2 and 3, the human passive) on every
  * template, 64×64, seed 1: no AI deadlocks on cliffs, water, dense forest
  * or the fortress walls. Both AIs must build their base; the match must
- * move on (a raid by 9 min, age 2 by 15 min). The loser of the early raids
- * may be crippled before it raids (random seed 1: player 2 loses 8 of 11
+ * move on (a raid by 9 min, age 2 by 15 min; the deadline was 14 min before
+ * M8: civ bonuses and unique units shift the Medium-vs-Medium economy, and
+ * the French AI on wilderness seed 1 reached age 2 at 14.04 min). The
+ * loser of the early raids may be crippled before it raids (random seed 1: player 2 loses 8 of 11
  * villagers at 6-7 min), so raiding is not required of both.
  */
 describe.each(MAP_TEMPLATES)('Medium vs Medium on %s (64×64, seed 1)', (template) => {

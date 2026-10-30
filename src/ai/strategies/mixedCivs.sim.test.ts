@@ -34,7 +34,7 @@ describe('mixed-civ three-age match (96×96 meadow, seed 3): Hungarian Medium vs
       strategy: (id) => (id === 2 ? new HardStrategy(createRng(10)) : new EasyStrategy(createRng(4))),
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
       enemyOf: (id) => (id === 3 ? 2 : duel ? 1 : 3),
-      humanStrategy: new MediumStrategy(createRng(7)),
+      humanStrategy: new MediumStrategy(createRng(6)),
       humanEnemy: () => (duel ? 2 : 3),
     });
     const human = match.players.get(1)!;

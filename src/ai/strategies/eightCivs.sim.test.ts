@@ -34,8 +34,8 @@ const SIM_TIMEOUT_MS = 90_000;
  * 27.6 min; about 13 s. Run B — age 3 at 18.00 (EN), 18.39 (FI); foundries
  * and cannons for both; sissis; the first cannonball only at 32.95 min
  * (14.6 min into the late phase: longbowmen and sissis keep the duel
- * long), hence its 16-minute late window; at most 226 entities; ends at
- * 34.4 min; about 12 s. PRINT_SIM=1 prints the figures.
+ * long), hence its late phase that runs until the first cannonball (at least 6 and at most 20 minutes in); at most 226 entities; ends at
+ * 32.95 min (the first cannonball); about 12 s. PRINT_SIM=1 prints the figures.
  */
 
 interface Slot {
@@ -75,8 +75,12 @@ interface RunResult {
   readonly wallMs: number;
 }
 
-/** Plays a 6-player 96×96 meadow match with `slots` (slot 0 is the human, driven by an AI). */
-function play(seed: number, slots: readonly Slot[], lateMin = 6): RunResult {
+/**
+ * Plays a 6-player 96×96 meadow match with `slots` (slot 0 is the human, driven by an AI). The late phase lasts
+ * `lateMin` minutes; with `stopAtFirstCannonball` it ends early, once a cannonball has flown at least 6 minutes
+ * into it, and `lateMin` is only the hard cap.
+ */
+function play(seed: number, slots: readonly Slot[], lateMin = 6, stopAtFirstCannonball = false): RunResult {
   const t0 = performance.now();
   let late = false;
   const [human, ...ais] = slots;
@@ -108,13 +112,16 @@ function play(seed: number, slots: readonly Slot[], lateMin = 6): RunResult {
   let maxEntities = 0;
   let firstCannonballAt = Infinity;
   let lateAt = Infinity;
+  let tick = 0;
   match.run(45 * MIN, 100, (t) => {
+    // The fielded-types scan is the costly part; every 10th tick is plenty for "ever fielded".
+    const sampleFielded = tick++ % 10 === 0;
     maxEntities = Math.max(maxEntities, live());
     for (const p of match.players.all()) if (p.age >= 3 && !age3At.has(p.id)) age3At.set(p.id, t);
     for (const e of match.world.entities) {
       if (e.projectile?.kind === 'cannonball' && firstCannonballAt === Infinity) firstCannonballAt = t;
       if (e.unit?.unitType === 'cannon') cannonOwners.add(e.owner?.playerId ?? 0);
-      if (e.unit && e.owner) {
+      if (sampleFielded && e.unit && e.owner) {
         const types = fielded.get(e.owner.playerId) ?? new Set<UnitType>();
         fielded.set(e.owner.playerId, types.add(e.unit.unitType));
       }
@@ -124,7 +131,9 @@ function play(seed: number, slots: readonly Slot[], lateMin = 6): RunResult {
       late = true;
       lateAt = t;
     }
-    return late && t >= lateAt + lateMin * MIN;
+    if (!late) return false;
+    if (stopAtFirstCannonball && firstCannonballAt < Infinity && t >= lateAt + 6 * MIN) return true;
+    return t >= lateAt + lateMin * MIN;
   });
   return {
     civs: match.players.all().map((p) => p.civ),
@@ -190,6 +199,6 @@ describe('eight-civ headless matches (96×96 meadow, 6 players each)', () => {
       { civ: 'french', difficulty: 'easy', early: [1, 2], late: [1, 2] },
       { civ: 'spanish', difficulty: 'easy', early: [2, 1], late: [2, 1] },
     ];
-    expectRun(play(3, slots, 16), slots);
+    expectRun(play(3, slots, 20, true), slots);
   }, SIM_TIMEOUT_MS);
 });

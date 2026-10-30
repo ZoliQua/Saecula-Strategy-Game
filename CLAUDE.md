@@ -940,7 +940,7 @@ A 4.3 első két pontja. Ág: `feat/M8-unique-units`. Változat: 0.3.0.
   nép 246,6 MB, az M4 két népes eset 161,4 MB (M7: 245,9 / 243,5 / 158,5 MB; a
   különbség jórészt a nagyobb nézet terep-gyorsítótára: 25,7–25,9 MB a 23,1 MB
   helyett), az egységlapok száma változatlan (60); képkocka-CPU p95 7,9–8,1 ms
-  hanggal (96×96, 4 játékos; M7: 7,1–8,0 ms); bundle 0,72 MB gzip (M7: 0,72 MB).
+  hanggal (96×96, 4 játékos; M7: 7,1–8,0 ms); bundle 0,74 MB gzip (M7: 0,73 MB).
   Böngésző-smoke: magyar huszár az istállóban, olasz légiós a laktanyában
   képezhető és harcol, a fejlődési fa „egyedi” jelvényt mutat, a v2 (M7) mentés
   hibátlanul betöltődik.

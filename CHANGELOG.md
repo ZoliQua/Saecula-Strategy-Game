@@ -31,7 +31,7 @@ Every nation now fields a unique unit and carries a permanent bonus
   food, German buildings +15% HP, French stable-trained units +15% HP,
   Spanish gold gathering +15%, Italian construction 15% faster, Russian wood
   gathering +15%, Finnish infantry +10% speed.
-- The nation picker, the tech tree (with an “unique” badge) and the training
+- The nation picker, the tech tree (with a “unique” badge) and the training
   buttons show each nation's unique unit; the picker also shows the bonus.
 
 ### Changed
