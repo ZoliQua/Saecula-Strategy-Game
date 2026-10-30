@@ -13,8 +13,10 @@ const S = SPANISH_M;
  * leather adarga of the jinetes and the Castilian infantry, bearing the
  * castle of Castile (Reconquista), the crested morion with its upturned
  * boat-shaped brim and the tercio's broad-brimmed chambergo with its
- * plume (Siglo de las Luces reaching back to the tercios). Registered in
- * gearRegistry.ts.
+ * plume (Siglo de las Luces reaching back to the tercios). The
+ * conquistador (M8) wears a gilt-banded morion under a tall comb with a
+ * red and white plume, and carries the straight cup-hilted espada.
+ * Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -123,14 +125,56 @@ function falcata(fig: Figure, at: (k: number) => V3, d: V3, side: V3): void {
   fig.cone(p, madd(p, side, 1.4), 0.8, 0.05, M.steel);
 }
 
+/**
+ * Conquistador's morion (M8): the tercio morion's boat brim drawn up
+ * higher into its points, a gilt etched band round the bowl, a taller
+ * comb, and a red and white plume rising from a socket at the back of
+ * the comb and tossing back over the nape.
+ */
+export function plumedMorion(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l, u] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.ellipsoid(hp([-0.3, 0, 2.2]), axes, [7.4, 6.9, 6.4], M.steel, { n: u, at: hp([0, 0, 0.2]) });
+  fig.cone(hp([-0.3, 0, 2.2]), hp([-0.3, 0, 3.6]), 7.45, 7.0, S.gilt);
+  fig.ellipsoid(hp([-0.3, 0, 0.4]), axes, [10.8, 8.2, 0.9], M.steel);
+  for (const s of [1, -1]) fig.cone(hp([s * 8.4 - 0.3, 0, 0.6]), hp([s * 12.8 - 0.3, 0, 6.0]), 2.5, 0.4, M.steel);
+  // The comb: taller than the tercio's, a gilt edge along its crest.
+  fig.ellipsoid(hp([-0.3, 0, 6.0]), [f, l, u], [6.8, 0.8, 7.0], M.steel, { n: u, at: hp([0, 0, 4.0]) });
+  const crest = (t: number): V3 => hp([-0.3 + 6.9 * Math.cos(t), 0, 6.0 + 7.1 * Math.sin(t)]);
+  for (let k = 0; k < 5; k++) fig.capsule(crest(0.5 + k * 0.43), crest(0.5 + (k + 1) * 0.43), 0.5, S.gilt);
+  // The plume: a socket at the back of the comb, the feathers rising and tossing back, red over white.
+  const root = hp([-5.6, 0, 9.0]);
+  fig.capsule(hp([-6.2, 0, 5.4]), root, 0.8, S.gilt);
+  const pts: V3[] = [root, hp([-6.8, 0, 15.6]), hp([-11.2, 0, 17.4]), hp([-14.6, 0, 13.0])];
+  const r = [1.9, 2.6, 2.4, 1.2];
+  for (let k = 0; k < 3; k++) fig.cone(pts[k]!, pts[k + 1]!, r[k]!, r[k + 1]!, S.plume);
+  for (const s of [1, -1]) {
+    const side = (p: V3): V3 => madd(p, l, s * 1.6);
+    fig.cone(side(hp([-5.8, 0, 10.4])), side(hp([-8.6, 0, 15.8])), 1.3, 1.9, S.plumeRed);
+    fig.cone(side(hp([-8.6, 0, 15.8])), side(hp([-12.4, 0, 14.6])), 1.9, 0.6, S.plumeRed);
+  }
+}
+
+/** Espada: a long straight double-edged blade, a cup hilt (a small steel bowl over the hand) and swept quillons. */
+function espada(fig: Figure, at: (k: number) => V3, d: V3, side: V3): void {
+  fig.capsule(at(-1.8), at(1.2), 0.8, M.darkLeather);
+  fig.sphere(at(-2.4), 1.2, M.steel);
+  fig.sphere(at(1.4), 2.3, M.steel, { n: scale(d, -1), at: at(1.0) });
+  fig.capsule(madd(at(1.8), side, -3.8), madd(at(1.6), side, 3.8), 0.5, M.steel);
+  fig.cone(at(2.0), at(16.6), 0.95, 0.6, M.steel);
+  fig.cone(at(16.6), at(18.4), 0.6, 0.05, M.steel);
+}
+
 export const SPANISH_HATS = {
   iberianHelm: { draw: iberianHelm, coversHead: false },
   morion: { draw: morion, coversHead: false },
   chambergo: { draw: chambergo, coversHead: false },
+  plumedMorion: { draw: plumedMorion, coversHead: false },
 } satisfies Record<string, HatDef>;
 
 export const SPANISH_SHIELDS = { caetra, adarga } satisfies Record<string, ShieldPainter>;
 
 export const SPANISH_WEAPON_STYLES = {
   falcata: { kind: 'gladius', draw: (fig, w, d, side) => falcata(fig, (k) => madd(w.at, d, k), d, side) },
+  espada: { kind: 'sabre', draw: (fig, w, d, side) => espada(fig, (k) => madd(w.at, d, k), d, side) },
 } satisfies Record<string, WeaponStyleDef>;

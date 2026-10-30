@@ -14,7 +14,9 @@ const I = ITALIAN_M;
  * (the communes), and the wide-brimmed hat with a cascade of dark cock
  * feathers over its side (the Enlightenment's light infantry). The
  * knight's shield and the pavise bear the tricolour pales, outlined
- * dark. Registered in gearRegistry.ts.
+ * dark. The legionary (M8) wears the Imperial galea with its transverse
+ * crest and the cingulum's studded apron, and carries the great curved
+ * scutum bearing the winged thunderbolt. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -114,12 +116,84 @@ export const pavise: BackItemPainter = (fig, at, T) => {
   pales(fig, e, axesAlong(back, T.y), 0.7, 2.3, 6.6);
 };
 
+/**
+ * Imperial galea (M8): a steel bowl with a brass brow band and a
+ * forehead ridge, a broad neck guard sloping out over the nape, hinged
+ * cheek pieces, and a tall team-coloured crest worn athwart, from ear to
+ * ear (the centurion's), standing on a brass holder.
+ */
+export function transverseGalea(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l, u] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  // Neck guard first: a broad flat lip out over the nape.
+  const nape: Axes = [rotate(f, l, 0.45), l, rotate(u, l, 0.45)];
+  fig.ellipsoid(hp([-5.6, 0, -1.6]), nape, [3.6, 7.6, 0.9], M.steel);
+  fig.sphere(hp([-0.3, 0, 0.9]), 6.95, M.steel, { n: norm(add(u, scale(f, 0.5))), at: hp([0, 0, -0.4]) });
+  fig.cone(hp([-0.3, 0, 0.2]), hp([-0.3, 0, 1.3]), 7.2, 7.05, M.brass);
+  fig.box(hp([6.2, 0, 3.0]), axes, [0.6, 4.4, 0.45], M.brass);
+  for (const s of [1, -1]) {
+    fig.box(hp([2.4, s * 5.8, -2.6]), axes, [2.4, 0.6, 3.3], M.steel);
+    fig.sphere(hp([2.4, s * 6.4, -2.4]), 0.55, M.brass);
+  }
+  // The crest: a half-disc athwart the crown, on a brass holder.
+  fig.capsule(hp([-0.4, 4.6, 6.6]), hp([-0.4, -4.6, 6.6]), 0.8, M.brass);
+  fig.ellipsoid(hp([-0.4, 0, 6.6]), axes, [1.8, 10.2, 7.4], M.team, { n: u, at: hp([0, 0, 6.8]) });
+  fig.ellipsoid(hp([-0.4, 0, 6.6]), axes, [1.4, 10.6, 0.9], M.brass);
+}
+
+/**
+ * Legionary's scutum (M8): a tall rectangle curved round the body, its
+ * board covered in team-dyed leather front and back, a round brass boss, and the winged
+ * thunderbolt of the legions raised on it in gold — a zig-zag bolt
+ * through the boss and a spread wing to each side — over a slightly
+ * larger dark copy so it reads on a yellow team.
+ */
+export function legionScutum(fig: Figure, hand: V3, T: Xform): void {
+  const { face, axes, c } = shieldFrame(hand, T, 1.4);
+  const [, across, up] = axes;
+  const H = 12.0;
+  // Three curved panels, the centre and the two wings bent back round the body; a deeper
+  // backing behind each gives the board its edge (the covering is team leather all round).
+  const panels: Array<[number, number]> = [[-1, -0.55], [0, 0], [1, -0.55]];
+  for (const [s, bend] of panels) {
+    const dirAcross = norm(add(across, scale(face, s * bend * 0.8)));
+    const pc = madd(madd(c, across, s * 5.4), face, -Math.abs(s) * 1.5);
+    const pa = axesAlong(norm(add(face, scale(across, -s * 0.5))), dirAcross);
+    fig.box(pc, s === 0 ? axes : [pa[0], dirAcross, up], [0.8, s === 0 ? 3.2 : 2.6, H], M.team);
+    fig.box(madd(pc, face, -0.3), s === 0 ? axes : [pa[0], dirAcross, up], [0.6, s === 0 ? 3.3 : 2.8, H + 0.5], M.team);
+  }
+  // Emblem-local point: across a, up b, d in front of the centre panel.
+  const e = (a: number, b: number, d: number): V3 => madd(madd(madd(c, face, d), across, a), up, b);
+  const bent = (a: number, b: number, d: number): V3 => madd(e(a, b, d), face, -Math.max(0, Math.abs(a) - 3.0) * 0.55);
+  for (const [mat, d, g] of [[I.boltEdge, 0.9, 0.35], [I.bolt, 1.35, 0]] as const) {
+    // The bolt: a zig-zag from top to bottom through the boss.
+    const zig: Array<[number, number]> = [[0.6, 8.8], [-1.2, 4.6], [1.0, 2.2], [-1.0, -2.2], [1.2, -4.6], [-0.6, -8.8]];
+    for (let k = 0; k < zig.length - 1; k++) fig.capsule(e(zig[k]![0], zig[k]![1], d), e(zig[k + 1]![0], zig[k + 1]![1], d), 0.65 + g, mat);
+    // The wings: three feathers each side, spread up and out from the boss.
+    for (const s of [1, -1]) {
+      for (const [ea, eb, r] of [[7.0, 5.2, 0.9], [7.4, 2.4, 0.8], [6.8, -0.2, 0.7]] as const) {
+        fig.capsule(bent(s * 2.2, 0.8, d), bent(s * ea, eb, d), r + g, mat);
+      }
+    }
+  }
+  fig.sphere(madd(c, face, 1.2), 2.2, M.brass);
+}
+
+/** Cingulum (M8): a brass-studded belt with its apron of four studded leather straps hanging at the front. */
+export const cingulum: BackItemPainter = (fig, at) => {
+  for (const y of [-1.8, -0.6, 0.6, 1.8]) {
+    fig.capsule(at([4.9, y, 3.0]), at([5.5, y * 1.05, -4.6]), 0.42, M.darkLeather);
+    for (const z of [1.2, -1.2, -3.6]) fig.sphere(at([5.2 + (3.0 - z) * 0.03, y, z]), 0.45, M.brass);
+  }
+};
+
 export const ITALIAN_HATS = {
   samniteHelm: { draw: samniteHelm, coversHead: false },
   barbute: { draw: barbute, coversHead: true },
   cappello: { draw: cappello, coversHead: false },
+  transverseGalea: { draw: transverseGalea, coversHead: false },
 } satisfies Record<string, HatDef>;
 
-export const ITALIAN_SHIELDS = { tricoloreShield } satisfies Record<string, ShieldPainter>;
+export const ITALIAN_SHIELDS = { tricoloreShield, legionScutum } satisfies Record<string, ShieldPainter>;
 
-export const ITALIAN_BACK_ITEMS = { pavise } satisfies Record<string, BackItemPainter>;
+export const ITALIAN_BACK_ITEMS = { pavise, cingulum } satisfies Record<string, BackItemPainter>;

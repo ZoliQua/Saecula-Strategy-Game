@@ -30,6 +30,11 @@ export const ITALIAN_M = {
   board: { color: 0x6b4a2e } as Material,
   /** Ruddy Venetian gun-bronze (the Hungarian gun is a yellower bronze, the Spanish verdigris, the French gilt). */
   barrel: { color: 0xa8653a, metal: 0.8, bands: { count: 3, color: 0x5e3420, width: 0.13 } } as Material,
+  /** Lorica segmentata (M8): bright steel hoops, dark lines where they overlap. */
+  segmentata: { color: 0xb8bcc2, metal: 0.85, bands: { count: 6, color: 0x4a4e56, width: 0.1 } } as Material,
+  /** Gold of the legion's winged thunderbolt, and its dark outline. */
+  bolt: { color: 0xeac24a, metal: 0.4 } as Material,
+  boltEdge: { color: 0x2a2016 } as Material,
   /** Black (morello) horses of the condottieri and dragoons. */
   morello: { color: 0x2f2a28 } as Material,
 } as const;

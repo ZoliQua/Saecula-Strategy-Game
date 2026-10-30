@@ -1,5 +1,5 @@
 import { axesAlong, type Axes, type Figure } from '../figure';
-import type { BackItemPainter, HatDef, ShieldPainter } from '../gear';
+import type { BackItemPainter, HatDef, ShieldPainter, WeaponStyleDef } from '../gear';
 import { M } from '../materials';
 import { add, madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { RUSSIAN_M } from './russianMaterials';
@@ -14,8 +14,10 @@ const R = RUSSIAN_M;
  * crimson-rimmed teardrop shield (Muscovy), and the Streltsy's
  * fur-trimmed kolpak with the berdysh, a crescent-bladed poleaxe,
  * slung on the back (the Enlightenment). The shield bears the St
- * Andrew's saltire on a small badge outlined dark. Registered in
- * gearRegistry.ts.
+ * Andrew's saltire on a small badge outlined dark. The cossack (M8)
+ * wears the tall black papakha, the gazyri cartridge loops on the
+ * cherkeska's breast and a kinzhal at the belt, and carries the
+ * guardless shashka. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -122,12 +124,67 @@ export const berdysh: BackItemPainter = (fig, at, T) => {
   fig.capsule(add(blade[blade.length - 1]!, scale(side, -1.6)), blade[blade.length - 1]!, 0.5, M.darkSteel);
 };
 
+/**
+ * Papakha (M8): a tall, straight-sided drum of shaggy black sheepskin,
+ * a little wider at the top, its flat crown covered in team cloth
+ * crossed by silver galloon.
+ */
+export function papakha(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.cone(hp([-0.3, 0, -0.6]), hp([-0.5, 0, 10.6]), 7.4, 8.3, R.blackFur);
+  // Shaggy rolls round the drum, so the outline is tufted, not a smooth cylinder.
+  for (const [z, r] of [[1.4, 8.0], [4.8, 8.2], [8.2, 8.6]] as const) {
+    fig.ellipsoid(hp([-0.4, 0, z]), axes, [r, r, 1.5], R.blackFur);
+  }
+  fig.ellipsoid(hp([-0.5, 0, 10.6]), axes, [7.6, 7.6, 1.1], M.team);
+  for (const d of [f, l]) fig.capsule(madd(hp([-0.5, 0, 11.6]), d, 6.7), madd(hp([-0.5, 0, 11.6]), d, -6.7), 0.45, R.silver);
+}
+
+/**
+ * Gazyri (M8): a row of five cartridge tubes in loops on each breast of
+ * the cherkeska, their bone caps standing up, a silver-mounted kinzhal
+ * hanging at the front of the belt.
+ */
+const gazyri: BackItemPainter = (fig, torso) => {
+  for (const s of [1, -1]) {
+    // A dark pocket band, then the tubes standing slightly splayed along it.
+    fig.capsule(torso([4.5, s * 1.4, 10.0]), torso([3.1, s * 5.2, 10.6]), 1.25, R.blackFur);
+    for (let k = 0; k < 5; k++) {
+      const y = s * (1.3 + k * 0.95);
+      const x = 4.6 - (k * k) * 0.075;
+      fig.capsule(torso([x + 0.3, y, 9.4]), torso([x + 0.4, y, 12.4]), 0.5, R.bone);
+      fig.sphere(torso([x + 0.4, y, 12.7]), 0.5, R.silver);
+    }
+  }
+  // The kinzhal: a silver hilt, a black scabbard down the front of the belt.
+  fig.capsule(torso([5.2, 0.4, 5.6]), torso([5.0, 0.4, 3.4]), 0.55, R.silver);
+  fig.cone(torso([5.0, 0.4, 3.0]), torso([5.4, 0.6, -4.0]), 0.8, 0.4, M.blackBoot);
+};
+
+/** Shashka: a long, gently curved single-edged blade with no guard, the grip ending in a split pommel. */
+function shashka(fig: Figure, at: (k: number) => V3, d: V3, side: V3): void {
+  fig.capsule(at(-1.8), at(1.6), 0.8, R.horn);
+  fig.capsule(madd(at(-2.2), side, -0.7), madd(at(-2.2), side, 0.7), 0.7, R.silver);
+  let p = at(1.8);
+  for (const [len, bend] of [[5.5, 0.15], [5.5, 0.45], [5, 0.9]] as const) {
+    const q = madd(madd(p, d, len), side, bend);
+    fig.capsule(p, q, 0.75, M.steel);
+    p = q;
+  }
+}
+
 export const RUSSIAN_HATS = {
   shelom: { draw: shelom, coversHead: false },
   shishak: { draw: shishak, coversHead: false },
   kolpak: { draw: kolpak, coversHead: false },
+  papakha: { draw: papakha, coversHead: false },
 } satisfies Record<string, HatDef>;
 
 export const RUSSIAN_SHIELDS = { teardropShield } satisfies Record<string, ShieldPainter>;
 
-export const RUSSIAN_BACK_ITEMS = { berdysh } satisfies Record<string, BackItemPainter>;
+export const RUSSIAN_BACK_ITEMS = { berdysh, gazyri } satisfies Record<string, BackItemPainter>;
+
+export const RUSSIAN_WEAPON_STYLES = {
+  shashka: { kind: 'sabre', draw: (fig, w, d, side) => shashka(fig, (k) => madd(w.at, d, k), d, side) },
+} satisfies Record<string, WeaponStyleDef>;

@@ -25,6 +25,16 @@ export const RUSSIAN_M = {
   haft: { color: 0x7a5a36 } as Material,
   /** Dark-patinated bronze gun with gilt rings (the Hungarian gun is a yellow bronze, the Italian ruddy, the Spanish verdigris). */
   barrel: { color: 0x5a4630, metal: 0.7, bands: { count: 3, color: 0xc89a3c, width: 0.12 } } as Material,
+  /** Black shaggy sheepskin of the cossack's papakha, and the gazyri pockets (M8). */
+  blackFur: { color: 0x1e1b1a } as Material,
+  /** Silver galloon, cartridge caps and kinzhal mounts. */
+  silver: { color: 0xc8ccd2, metal: 0.8 } as Material,
+  /** Bone of the gazyri cartridge tubes. */
+  bone: { color: 0xe4dcc4 } as Material,
+  /** Black horn grip of the shashka. */
+  horn: { color: 0x2a2420 } as Material,
+  /** Bay of the cossack's small steppe horse, its mane black. */
+  steppeBay: { color: 0x7a4a26 } as Material,
   /** Dun steppe horses of the druzhina and the dragoons. */
   dun: { color: 0xa88a5c } as Material,
 } as const;

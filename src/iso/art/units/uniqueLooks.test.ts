@@ -9,15 +9,11 @@ import { buildFigure } from './rig';
 import { sheetGeometry } from './sheet';
 
 /*
- * Unique unit art (M8 Task 5): every civ's unique unit wears its own
+ * Unique unit art (M8 Tasks 5 and 5b): every civ's unique unit wears its own
  * look, posed like the base unit it replaces (same kind), reads apart
  * from the civ's other units by its headgear, keeps team colour as the
  * owner mark, and its sheet stays within +15 % of the base unit's.
  */
-
-/** Civs whose unique unit art lands in Task 5b. */
-const LATER: ReadonlySet<CivId> = new Set(['spanish', 'italian', 'russian', 'finnish']);
-const NOW = CIV_IDS.filter((civ) => !LATER.has(civ));
 
 const uniqueOf = (civ: CivId): UnitType => CIV_DEFS[civ].uniqueUnit;
 
@@ -51,9 +47,7 @@ const sheetArea = (type: UnitType, civ: CivId): number => {
 };
 
 describe('unique unit looks', () => {
-  for (const civ of LATER) it.todo(`${civ}: has its own unique unit look (Task 5b)`);
-
-  it.each(NOW)('%s: the unique unit has its own look, of the base unit’s kind', (civ) => {
+  it.each(CIV_IDS)('%s: the unique unit has its own look, of the base unit’s kind', (civ) => {
     const type = uniqueOf(civ);
     const look = LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type];
     expect(look).toBeDefined();
@@ -61,7 +55,7 @@ describe('unique unit looks', () => {
     expect(unitLook(type, civ)).toBe(look);
   });
 
-  it.each(NOW)('%s: the unique unit’s headgear is worn by none of the civ’s other units', (civ) => {
+  it.each(CIV_IDS)('%s: the unique unit’s headgear is worn by none of the civ’s other units', (civ) => {
     const type = uniqueOf(civ);
     const hat = human(unitLook(type, civ)).hat;
     for (const other of civUnitTypes(civ)) {
@@ -70,17 +64,17 @@ describe('unique unit looks', () => {
     }
   });
 
-  it.each(NOW)('%s: keeps team colour the owner mark (vs the base unit it replaces)', (civ) => {
+  it.each(CIV_IDS)('%s: keeps team colour the owner mark (vs the base unit it replaces)', (civ) => {
     const type = uniqueOf(civ);
     expect(teamCoverage(type, civ)).toBeGreaterThanOrEqual(teamCoverage(baseUnitType(type), civ) * 0.8);
   });
 
-  it.each(NOW)('%s: the sheet stays within +15 %% of the base unit it replaces', (civ) => {
+  it.each(CIV_IDS)('%s: the sheet stays within +15 %% of the base unit it replaces', (civ) => {
     const type = uniqueOf(civ);
     expect(sheetArea(type, civ)).toBeLessThanOrEqual(sheetArea(baseUnitType(type), civ) * 1.15);
   });
 
-  it.each(NOW)('%s: rasterizes in all painted headings', (civ) => {
+  it.each(CIV_IDS)('%s: rasterizes in all painted headings', (civ) => {
     const type = uniqueOf(civ);
     for (let slot = 0; slot < PAINTED_HEADINGS.length; slot++) {
       const px = idlePixels(type, civ, slot);

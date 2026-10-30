@@ -33,6 +33,16 @@ export const SPANISH_M = {
   plume: { color: 0xf1ebdc } as Material,
   /** Verdigris-patinated bronze gun (the Hungarian gun is a brighter bronze, the French gilt, the English and German iron). */
   barrel: { color: 0x6f6c4c, metal: 0.6, bands: { count: 3, color: 0x3c3a26, width: 0.14 } } as Material,
+  /** Gilt etching of the conquistador's morion (M8). */
+  gilt: { color: 0xd8a83a, metal: 0.7 } as Material,
+  /** Red feathers of the conquistador's plume (the accent, darkened off any team red). */
+  plumeRed: { color: 0x8a1c1c } as Material,
+  /** Bright polished breastplate of the conquistador. */
+  cuirass: { color: 0xc4c8cc, metal: 0.9 } as Material,
+  /** Buff leather of the conquistador's riding boots. */
+  buffBoot: { color: 0x8a6440 } as Material,
+  /** Dark bay horse of the conquistador. */
+  bay: { color: 0x5a3622 } as Material,
   /** Andalusian grey horse of the jinetes and dragoons. */
   dapple: { color: 0xb7aea2 } as Material,
 } as const;

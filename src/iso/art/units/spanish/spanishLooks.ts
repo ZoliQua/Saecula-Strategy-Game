@@ -15,7 +15,10 @@ const S = SPANISH_M;
  * musketeers and the dragoon's plumed chambergo (age 3). Team colour
  * stays on the tunics, doublets, coats and shield faces, so ownership
  * reads first; the civ's reds are a near-black wine on the legs and a
- * small dark crest only, never a team-like red.
+ * small dark crest only, never a team-like red. The conquistador (M8,
+ * in the cavalry's slot) wears the plumed gilt morion and a bright
+ * breastplate over team sleeves, carries the cup-hilted espada and
+ * rides a dark bay under a full team caparison.
  */
 export const SPANISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   villager: {
@@ -154,6 +157,23 @@ export const SPANISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       weapon: 'sabre',
     },
     horse: { coat: S.dapple, mane: M.horse.lightMane, saddleCloth: true },
+  },
+  conquistador: {
+    kind: 'rider',
+    human: {
+      hat: 'plumedMorion',
+      body: M.team,
+      armour: S.cuirass,
+      skirt: { mat: M.team, length: 4.5 },
+      sleeves: M.team,
+      legs: S.wine,
+      boots: S.buffBoot,
+      highBoots: true,
+      belt: M.darkLeather,
+      weapon: 'sabre',
+      weaponStyle: 'espada',
+    },
+    horse: { coat: S.bay, mane: M.horse.mane, barding: true },
   },
   cannon: { kind: 'cannon', barrel: S.barrel },
 };

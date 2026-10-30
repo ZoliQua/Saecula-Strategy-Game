@@ -1,6 +1,7 @@
+import { drawBow } from '../baseGear';
 import { axesAlong, type Axes, type Figure } from '../figure';
-import type { HatDef, ShieldPainter } from '../gear';
-import { M } from '../materials';
+import type { BackItemPainter, HatDef, ShieldPainter, WeaponStyleDef } from '../gear';
+import { M, type Material } from '../materials';
 import { madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { FINNISH_M } from './finnishMaterials';
 
@@ -14,7 +15,9 @@ const F = FINNISH_M;
  * with the Nordic cross (Középkor); the hakkapeliitta's lobster-pot
  * helm — a round skull, a peak, a sliding nasal and a laminated neck
  * tail — and the musketeer's round grey karvalakki with its ear flaps
- * tied up over the crown (Felvilágosodás). Registered in
+ * tied up over the crown (Felvilágosodás). The sissi (M8) wears a
+ * white snow hood and cloak over fur, a team sash knotted at the hip,
+ * and carries a short bow with a birch-bark quiver. Registered in
  * gearRegistry.ts.
  */
 
@@ -96,11 +99,68 @@ export function crossShield(fig: Figure, hand: V3, T: Xform): void {
   fig.sphere(madd(c, face, 1.2), 0.9, M.darkSteel);
 }
 
+/**
+ * Snow hood (M8): a loose white hood drawn up to a soft point that
+ * falls back, a ruff of grey fur round the face opening, and the hood's
+ * shoulder cape.
+ */
+export function snowHood(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l, u] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.sphere(hp([-1.4, 0, 1.2]), 7.6, F.snow, { n: scale(f, -1), at: hp([3.6, 0, 0]) });
+  // The point: drawn up and back, flopping over behind the crown.
+  fig.cone(hp([-2.0, 0, 5.0]), hp([-3.8, 0, 12.6]), 4.6, 1.6, F.snow);
+  fig.cone(hp([-3.8, 0, 12.6]), hp([-6.6, 0, 12.4]), 1.6, 0.5, F.snow);
+  // Fur ruff round the face opening.
+  for (let k = 0; k < 10; k++) {
+    const a = (k / 10) * Math.PI * 2;
+    fig.sphere(madd(madd(hp([3.6, 0, 0.4]), l, 5.5 * Math.cos(a)), u, 6.2 * Math.sin(a)), 1.5, F.greyFur);
+  }
+}
+
+/** Torso garment's ellipsoid (humanoid.ts drawHuman), torso-local. */
+const TORSO = { c: 7.8, a: 4.3, b: 6.1, h: 8.2 } as const;
+
+/**
+ * Snow cloak (M8): a white cloak hung from the shoulders down the back
+ * to the hips, its hem edged with grey fur, open at the front over the
+ * team tunic; a team sash
+ * knotted at the left hip with its ends hanging; a short birch-bark
+ * quiver at the right hip.
+ */
+const snowCloak: BackItemPainter = (fig, torso, T) => {
+  const axes: Axes = [T.x, T.y, T.z];
+  // The cloak: a shell behind the body from the shoulders to the hips.
+  fig.ellipsoid(torso([-1.2, 0, 8.6]), axes, [TORSO.a + 1.0, TORSO.b + 1.3, 7.6], F.snow, { n: scale(T.x, -1), at: torso([-0.6, 0, 0]) });
+  // Grey fur along the cloak's hem.
+  fig.ellipsoid(torso([-1.2, 0, 1.6]), axes, [TORSO.a + 1.15, TORSO.b + 1.45, 1.0], F.greyFur, { n: scale(T.x, -1), at: torso([-0.6, 0, 0]) });
+  // The sash: a team band round the waist, its knot and two ends on the left hip.
+  fig.ellipsoid(torso([0, 0, 3.8]), axes, [TORSO.a + 0.55, TORSO.b + 0.3, 1.5], M.team);
+  fig.sphere(torso([2.0, 5.6, 3.6]), 1.6, M.team);
+  fig.capsule(torso([2.2, 6.0, 3.0]), torso([3.0, 6.6, -4.6]), 1.1, M.team);
+  fig.capsule(torso([1.2, 6.4, 3.0]), torso([1.0, 7.4, -3.2]), 1.0, M.team);
+  // Quiver at the right hip, its fletchings up by the ribs.
+  const q0 = torso([-0.6, -7.0, -1.8]);
+  const q1 = torso([-1.4, -7.4, 7.2]);
+  fig.capsule(q0, q1, 1.55, F.birchBark);
+  for (const [dy, dz] of [[0.6, 0.6], [-0.6, 1.0], [0, 0]] as const) fig.sphere(madd(madd(q1, T.y, dy), T.z, 1.6 + dz), 0.95, M.feather);
+};
+
+/** Short bow of the forest fighters: a short, deep-drawn birch bow. */
+const SHORT_BOW = { half: 9.6, bend: 3.9, thick: 1.4, wood: { color: 0x9a6a3a } as Material } as const;
+
 export const FINNISH_HATS = {
   furCap: { draw: furCap, coversHead: false },
   nasalHelm: { draw: nasalHelm, coversHead: false },
   lobsterPot: { draw: lobsterPot, coversHead: false },
   karvalakki: { draw: karvalakki, coversHead: false },
+  snowHood: { draw: snowHood, coversHead: true },
 } satisfies Record<string, HatDef>;
 
 export const FINNISH_SHIELDS = { limeShield, crossShield } satisfies Record<string, ShieldPainter>;
+
+export const FINNISH_BACK_ITEMS = { snowCloak } satisfies Record<string, BackItemPainter>;
+
+export const FINNISH_WEAPON_STYLES = {
+  shortBow: { kind: 'bow', draw: (fig, w, d) => drawBow(fig, w, d, SHORT_BOW.half, SHORT_BOW.bend, SHORT_BOW.thick, SHORT_BOW.wood) },
+} satisfies Record<string, WeaponStyleDef>;
