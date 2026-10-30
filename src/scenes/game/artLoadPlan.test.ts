@@ -49,6 +49,22 @@ describe('N-civ art budget (M5 Task 1)', () => {
     expect(log.some((l) => l.startsWith('wall') && l.includes(' 3 english'))).toBe(true);
   });
 
+  it('prewarms the civ’s own roster: its unique unit in place of the base unit it replaces (M8)', () => {
+    const human = prewarmUnitTypes('hungarian', 'hungarian');
+    expect(human).toContain('hussar');
+    expect(human).not.toContain('knight');
+    const aiItalian = prewarmUnitTypes('italian', 'hungarian');
+    expect(aiItalian).toContain('legionary');
+    expect(aiItalian).not.toContain('swordsman');
+  });
+
+  it('age-up jobs paint the civ’s unique unit of that age (M8)', () => {
+    const log: string[] = [];
+    ageUpArtJobs('hungarian', 2, recordingPainters(log)).forEach((j) => j());
+    expect(log).toContain('unit hussar hungarian');
+    expect(log).not.toContain('unit knight hungarian');
+  });
+
   it('age-up jobs to the last age paint its unit sheets and no wall pieces', () => {
     const log: string[] = [];
     ageUpArtJobs('english', 3, recordingPainters(log)).forEach((j) => j());

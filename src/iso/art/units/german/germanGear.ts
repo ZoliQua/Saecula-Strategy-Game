@@ -1,5 +1,5 @@
 import { axesAlong, type Axes, type Figure } from '../figure';
-import type { HatDef, ShieldPainter } from '../gear';
+import type { BackItemPainter, HatDef, ShieldPainter } from '../gear';
 import { M } from '../materials';
 import { add, madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { GERMAN_M } from './germanMaterials';
@@ -12,8 +12,9 @@ const G = GERMAN_M;
  * boss (Römerzeit), the Landsknecht's slashed beret with its sweep of
  * ostrich plumes and the knight's pot helm with the buffalo-horn crest
  * of German heraldry (Mittelalter), the spiked leather helm (Aufklärung).
- * The knight's heater shield bears the black eagle on gold. Registered
- * in gearRegistry.ts.
+ * The knight's heater shield bears the black eagle on gold. The
+ * Landsknecht unique unit (M8) wears the great plumed beret and the
+ * Katzbalger at the hip. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -45,6 +46,43 @@ export function landsknechtBeret(fig: Figure, hc: V3, axes: Axes): void {
   fig.sphere(hp([-6.2, 9.2, 15.2]), 2.1, G.plume);
   fig.sphere(hp([1.2, 6.8, 7.0]), 1.8, G.red);
 }
+
+/** One ostrich plume: a tapering sweep through `pts`, curling over at the tip. */
+function plume(fig: Figure, pts: readonly V3[], r: number, mat: typeof G.plume): void {
+  for (let k = 0; k + 1 < pts.length; k++) fig.cone(pts[k]!, pts[k + 1]!, r * (1 - 0.18 * k), r * (1 - 0.18 * (k + 1)), mat);
+  fig.sphere(pts[pts.length - 1]!, r * 0.75, mat);
+}
+
+/**
+ * The Landsknecht's great beret (M8): a huge flat cartwheel of slashed
+ * two-tone cloth cocked over one ear, a crown of ostrich plumes — white
+ * and red — curling over the brim all round. Far wider than the beret
+ * the German crossbowman wears.
+ */
+export function grandBeret(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l, u] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.sphere(hp([-0.3, 0, 1.6]), 6.6, M.team, { n: u, at: hp([0, 0, 1.4]) });
+  const tilt: Axes = [rotate(f, l, 0.1), rotate(l, f, 0.26), rotate(u, f, 0.26)];
+  fig.ellipsoid(hp([0.2, 1.8, 5.6]), tilt, [11.6, 12.6, 2.3], G.slashedWhite);
+  fig.ellipsoid(hp([0.2, 1.6, 7.0]), tilt, [5.4, 5.8, 1.6], M.team);
+  for (const [a, mat] of [[0.5, G.plume], [1.3, G.red], [2.1, G.plume], [2.9, G.red], [-0.3, G.plume]] as const) {
+    const d = norm(add(scale(f, Math.cos(a)), scale(l, Math.sin(a))));
+    const base = madd(hp([0.2, 1.6, 7.4]), d, 2.0);
+    plume(fig, [base, madd(madd(base, d, 4.2), u, 4.6), madd(madd(base, d, 8.6), u, 4.4), madd(madd(base, d, 10.6), u, 1.4)], 2.3, mat);
+  }
+}
+
+/** Katzbalger: the short broad sword with its S-shaped guard, worn across the left hip in a black scabbard. */
+const katzbalger: BackItemPainter = (fig, torso) => {
+  const hilt = torso([1.4, 6.6, 3.4]);
+  fig.capsule(hilt, torso([-3.4, 7.6, -6.4]), 1.0, G.blackLeather);
+  fig.capsule(hilt, torso([3.0, 6.3, 6.6]), 0.75, M.darkWood);
+  fig.sphere(torso([3.2, 6.25, 7.0]), 1.15, M.steel);
+  fig.capsule(torso([1.0, 4.4, 3.4]), torso([2.8, 4.2, 5.4]), 0.5, M.steel);
+  fig.capsule(torso([1.8, 8.8, 3.6]), torso([0.0, 9.0, 1.4]), 0.5, M.steel);
+  fig.capsule(torso([1.0, 4.4, 3.4]), torso([1.8, 8.8, 3.6]), 0.55, M.steel);
+};
 
 /** Pot helm (Topfhelm) under the buffalo-horn crest of German heraldry, the horns in team colour. */
 export function hornedHelm(fig: Figure, hc: V3, axes: Axes): void {
@@ -113,6 +151,9 @@ export const GERMAN_HATS = {
   landsknecht: { draw: landsknechtBeret, coversHead: false },
   hornedHelm: { draw: hornedHelm, coversHead: true },
   pickelhaube: { draw: pickelhaube, coversHead: false },
+  grandBeret: { draw: grandBeret, coversHead: false },
 } satisfies Record<string, HatDef>;
+
+export const GERMAN_BACK_ITEMS = { katzbalger } satisfies Record<string, BackItemPainter>;
 
 export const GERMAN_SHIELDS = { boardShield, eagle: eagleShield } satisfies Record<string, ShieldPainter>;

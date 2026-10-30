@@ -14,7 +14,9 @@ const F = FRENCH_M;
  * the musketeer and the cuirassier's crested helm with its black mane
  * (age 3). Team colour stays on the tunics, coats, surcoats, hoods and
  * shield faces, so ownership reads first; the civ's blue is a dark navy
- * on the legs only, never a team-like blue.
+ * on the legs only, never a team-like blue. The King's Musketeer (M8,
+ * in the musketeer's slot) wears the plumed cavalier hat, the team
+ * casaque with its white cross and the bandolier.
  */
 export const FRENCH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   villager: {
@@ -99,6 +101,21 @@ export const FRENCH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       highBoots: true,
       belt: F.white,
       crossBelts: F.white,
+      weapon: 'musket',
+    },
+  },
+  mousquetaire: {
+    kind: 'foot',
+    human: {
+      hat: 'cavalier',
+      body: F.casaque,
+      skirt: { mat: M.team, length: 8.5 },
+      sleeves: M.team,
+      legs: F.navy,
+      boots: M.leather,
+      highBoots: true,
+      belt: M.darkLeather,
+      back: 'bandolier',
       weapon: 'musket',
     },
   },

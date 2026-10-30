@@ -23,6 +23,10 @@ export const GERMAN_M = {
   board: { color: 0xc9b088 } as Material,
   /** Ostrich plumes of the Landsknecht beret. */
   plume: { color: 0xf3efe4 } as Material,
+  /** The Landsknecht's two-tone slashing (M8): white under-cloth puffed through team cloth. */
+  slashedWhite: { color: 0xffffff, team: true, bands: { count: 5, color: 0xf3efe4, width: 0.3 } } as Material,
+  /** Red-and-white striped hose (Pluderhose) of the Landsknecht. */
+  stripedHose: { color: IMPERIAL_RED, bands: { count: 4, color: 0xf3efe4, width: 0.28 } } as Material,
   /** Puffed-and-slashed team doublet: gold under-cloth shows through the slashes. */
   slashed: { color: 0xffffff, team: true, bands: { count: 6, color: IMPERIAL_GOLD, width: 0.12 } } as Material,
   /** Heater shield: a gold field in a dark edge inside a team rim (the eagle is painted over it, germanGear.ts). */

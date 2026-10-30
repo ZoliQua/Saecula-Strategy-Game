@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WALL_E, WALL_N, WALL_NE, WALL_NW, WALL_S, WALL_SE, WALL_SW, WALL_W } from '../../../game/wallNeighbours';
-import type { AgeId, BuildingType, CivId } from '../../../types';
+import type { AgeId, BuildingType, CivId, UnitType } from '../../../types';
 import type { LitArt } from '../lighting/normalLayer';
 import { ANIM_FRAMES, PAINTED_HEADINGS } from '../units/layout';
 import { COMMON_WALL_PIECES } from '../walls/commonWallPieces';
@@ -113,5 +113,13 @@ export function pinUnits(civ: CivId, expected: UnitPins): void {
     it.each(UNIT_TYPES)('%s pixels', (type) => check(type, unitPixelsHash(type, civ), expected.pixels[type], false));
 
     it.each(UNIT_TYPES)('%s sheet geometry', (type) => check(type, unitGeometryHash(type, civ), expected.geometry[type], false));
+  });
+}
+
+/** Registers the split pixel and geometry pins of a civ's unique unit (M8). */
+export function pinUniqueUnit(civ: CivId, type: UnitType, expected: { readonly pixels: string; readonly geometry: string }): void {
+  describe(`${civ} ${type} art stays pixel-identical`, () => {
+    it('pixels', () => check(`${type} pixels`, unitPixelsHash(type, civ), expected.pixels));
+    it('sheet geometry', () => check(`${type} geometry`, unitGeometryHash(type, civ), expected.geometry));
   });
 }

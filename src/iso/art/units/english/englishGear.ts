@@ -1,6 +1,6 @@
 import { drawBow } from '../baseGear';
 import { axesAlong, type Axes, type Figure } from '../figure';
-import type { HatDef, ShieldPainter, WeaponStyleDef } from '../gear';
+import type { BackItemPainter, HatDef, ShieldPainter, WeaponStyleDef } from '../gear';
 import { M, type Material } from '../materials';
 import { madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { ENGLISH_M } from './englishMaterials';
@@ -10,7 +10,9 @@ import { ENGLISH_M } from './englishMaterials';
  * its swept tail, the grenadier's mitre cap, the light dragoon's
  * Tarleton helmet with a bearskin crest, and the heater shield bearing
  * St George's cross on a team-coloured rim; the yew longbow and the
- * arming sword as weapon styles. Registered in gearRegistry.ts.
+ * arming sword as weapon styles. The longbowman (M8) wears a broad
+ * kettle war hat and carries his arrows thrust through the belt.
+ * Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -79,11 +81,36 @@ function armingSword(fig: Figure, at: (k: number) => V3, side: V3): void {
   fig.cone(at(15.2), at(17.4), 0.7, 0.05, M.steel);
 }
 
+/** Kettle war hat: a ridged steel skull with a broad brim sloping down all round (the longbowman's). */
+export function warHat(fig: Figure, hc: V3, axes: Axes): void {
+  const u = axes[2];
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.ellipsoid(hp([-0.2, 0, 2.0]), axes, [6.9, 6.9, 7.6], M.steel, { n: u, at: hp([0, 0, 1.8]) });
+  fig.cone(hp([-0.2, 0, 2.6]), hp([-0.2, 0, 0.6]), 7.4, 12.2, M.darkSteel);
+  fig.cone(hp([-0.2, 0, 0.7]), hp([-0.2, 0, 0.1]), 12.2, 12.4, M.steel);
+  fig.capsule(hp([6.0, 0, 6.2]), hp([-6.4, 0, 6.2]), 0.85, M.darkSteel);
+  fig.capsule(hp([0, 0, 9.6]), hp([0, 0, 9.0]), 1.1, M.darkSteel);
+}
+
+/** A sheaf of arrows thrust through the belt at the right hip: heads down, grey fletching up by the ribs. */
+const beltArrows: BackItemPainter = (fig, torso) => {
+  for (const [dx, dy, lean] of [[1.4, -5.6, 0], [0.2, -6.1, 0.5], [-1.0, -5.9, 1.0], [2.4, -5.0, -0.5]] as const) {
+    const head = torso([dx + 0.6, dy - lean * 0.3, -3.4]);
+    const nock = torso([dx - 0.8, dy - 0.9 - lean * 0.4, 10.6]);
+    fig.capsule(head, nock, 0.42, M.wood);
+    fig.cone(head, torso([dx + 0.75, dy - lean * 0.3, -5.6]), 0.75, 0.05, M.steel);
+    fig.capsule(torso([dx - 0.6, dy - 0.85 - lean * 0.38, 7.6]), nock, 0.9, ENGLISH_M.fletching);
+  }
+};
+
 export const ENGLISH_HATS = {
   sallet: { draw: sallet, coversHead: false },
   mitre: { draw: mitre, coversHead: false },
   tarleton: { draw: tarleton, coversHead: false },
+  warHat: { draw: warHat, coversHead: false },
 } satisfies Record<string, HatDef>;
+
+export const ENGLISH_BACK_ITEMS = { beltArrows } satisfies Record<string, BackItemPainter>;
 
 export const ENGLISH_SHIELDS = { stGeorge: stGeorgeShield } satisfies Record<string, ShieldPainter>;
 

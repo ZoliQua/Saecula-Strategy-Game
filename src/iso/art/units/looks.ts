@@ -5,6 +5,7 @@ import { ENGLISH_LOOKS } from './english/englishLooks';
 import { FINNISH_LOOKS } from './finnish/finnishLooks';
 import { FRENCH_LOOKS } from './french/frenchLooks';
 import { GERMAN_LOOKS } from './german/germanLooks';
+import { HUNGARIAN_LOOKS } from './hungarian/hungarianLooks';
 import { ITALIAN_LOOKS } from './italian/italianLooks';
 import { RUSSIAN_LOOKS } from './russian/russianLooks';
 import { SPANISH_LOOKS } from './spanish/spanishLooks';
@@ -168,7 +169,7 @@ export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
 
 /** Per unit-look id: the types whose look differs from the base. */
 export const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitType, UnitLook>>>>> = {
-  hungarian: {},
+  hungarian: HUNGARIAN_LOOKS,
   english: ENGLISH_LOOKS,
   german: GERMAN_LOOKS,
   french: FRENCH_LOOKS,

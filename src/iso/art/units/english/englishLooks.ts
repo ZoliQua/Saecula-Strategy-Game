@@ -10,7 +10,9 @@ const E = ENGLISH_M;
  * type by type. Same rigs, poses and stats; English liveries: undyed
  * wool and madder-red hose, St George's cross on surcoats and heater
  * shields, sallets and kettle hats, the capped archer's yew longbow, a
- * grenadier mitre, a Tarleton helmet and a cast-iron gun. Team colour
+ * grenadier mitre, a Tarleton helmet and a cast-iron gun. The
+ * longbowman (M8, in the crossbowman's slot) is told from the archer by
+ * his long padded jack, broad steel war hat and belt-tucked arrows. Team colour
  * stays on the tunics, coats, skirts, hoods, shield rims, caps and
  * caparisons, so ownership still reads first.
  */
@@ -85,6 +87,21 @@ export const ENGLISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       belt: M.leather,
       back: 'bolts',
       weapon: 'crossbow',
+    },
+  },
+  longbowman: {
+    kind: 'foot',
+    human: {
+      hat: 'warHat',
+      body: E.jack,
+      skirt: { mat: E.jack, length: 8 },
+      sleeves: E.jack,
+      legs: E.greyWool,
+      boots: M.boot,
+      belt: M.darkLeather,
+      back: 'beltArrows',
+      weapon: 'bow',
+      weaponStyle: 'longbow',
     },
   },
   musketeer: {

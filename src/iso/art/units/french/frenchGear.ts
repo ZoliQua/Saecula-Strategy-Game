@@ -1,5 +1,5 @@
 import { axesAlong, type Axes, type Figure } from '../figure';
-import type { HatDef, ShieldPainter } from '../gear';
+import type { BackItemPainter, HatDef, ShieldPainter } from '../gear';
 import { M } from '../materials';
 import { add, madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { FRENCH_M } from './frenchMaterials';
@@ -13,7 +13,8 @@ const F = FRENCH_M;
  * "hounskull" bascinet with its snouted visor (Moyen Âge), the bicorne
  * worn athwart and the cuirassier's crested helm with its long black
  * horsehair mane (Lumières). The knight's heater shield bears a gold
- * fleur-de-lis on the team field. Registered in gearRegistry.ts.
+ * fleur-de-lis on the team field. The King's Musketeer (M8) wears the
+ * plumed cavalier hat and the bandolier. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -125,11 +126,46 @@ export function fleurShield(fig: Figure, hand: V3, T: Xform): void {
   }
 }
 
+/** Cavalier hat (M8): a broad felt brim cocked up on the left, a low crown with a gilt band, a white ostrich plume sweeping back over the brim. */
+export function cavalier(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l, u] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.sphere(hp([-0.4, 0, 1.4]), 6.75, F.felt, { n: u, at: hp([0, 0, 1.2]) });
+  fig.cone(hp([-0.4, 0, 2.0]), hp([-0.6, 0, 8.6]), 6.7, 5.9, F.felt);
+  fig.sphere(hp([-0.6, 0, 7.6]), 5.9, F.felt, { n: u, at: hp([0, 0, 8.4]) });
+  fig.cone(hp([-0.4, 0, 2.6]), hp([-0.4, 0, 4.0]), 6.85, 6.75, M.gold);
+  // The brim, cocked up on the left side.
+  const bu = rotate(u, f, 0.3);
+  const bc = hp([0, 0.6, 2.6]);
+  fig.cone(bc, madd(bc, bu, 0.7), 10.8, 10.4, F.felt);
+  fig.capsule(madd(madd(bc, l, 9.6), bu, 0.5), madd(madd(madd(bc, l, 7.9), f, 4.7), bu, 0.5), 0.6, M.gold);
+  // Ostrich plume from the cocked side, curling back and down past the brim.
+  const pts: V3[] = [hp([1.6, 5.6, 6.6]), hp([-1.6, 7.4, 10.2]), hp([-6.6, 6.6, 10.6]), hp([-10.8, 4.6, 7.2]), hp([-12.0, 3.0, 3.2])];
+  const r = [2.3, 2.1, 1.8, 1.4];
+  for (let k = 0; k < 4; k++) fig.cone(pts[k]!, pts[k + 1]!, r[k]!, r[k + 1] ?? 1.0, F.white);
+}
+
+/** Bandolier (M8): a buff belt over the left shoulder with its hanging powder charges, and a falling white lace collar. */
+const bandolier: BackItemPainter = (fig, torso, T) => {
+  fig.ellipsoid(torso([0.6, 0, 13.6]), [T.x, T.y, T.z], [4.0, 6.3, 1.1], F.white);
+  fig.capsule(torso([3.4, 4.8, 12.6]), torso([4.4, -4.4, 2.4]), 0.95, F.buff);
+  fig.capsule(torso([-3.6, 4.8, 12.6]), torso([-4.0, -4.6, 2.4]), 0.95, F.buff);
+  for (const t of [0.3, 0.45, 0.6, 0.75]) {
+    const p = torso([3.4 + 1.0 * t + 0.9, 4.8 - 9.2 * t, 12.6 - 10.2 * t]);
+    fig.capsule(p, madd(p, T.z, -2.2), 0.75, M.darkWood);
+    fig.sphere(p, 0.55, M.brass);
+  }
+  fig.ellipsoid(torso([2.6, -5.4, 0.8]), [T.x, T.y, T.z], [1.3, 1.1, 2.0], M.darkLeather);
+};
+
 export const FRENCH_HATS = {
   wheelHelm: { draw: wheelHelm, coversHead: false },
   hounskull: { draw: hounskull, coversHead: true },
   bicorne: { draw: bicorne, coversHead: false },
   crestedHelm: { draw: crestedHelm, coversHead: false },
+  cavalier: { draw: cavalier, coversHead: false },
 } satisfies Record<string, HatDef>;
+
+export const FRENCH_BACK_ITEMS = { bandolier } satisfies Record<string, BackItemPainter>;
 
 export const FRENCH_SHIELDS = { gaulShield, fleurShield } satisfies Record<string, ShieldPainter>;

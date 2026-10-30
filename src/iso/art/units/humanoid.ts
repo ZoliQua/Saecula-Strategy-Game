@@ -12,7 +12,7 @@ import {
   type WeaponStyle,
 } from './gear';
 import { M, type Material } from './materials';
-import { add, applyDir, applyPoint, ik2, madd, norm, rotate, sub, type V3, type Xform } from './rigMath';
+import { add, applyDir, applyPoint, ik2, lerp, madd, norm, rotate, sub, type V3, type Xform } from './rigMath';
 
 /** Body proportions (art px). Slightly chibi so figures read at 1:2 scale. */
 export const BODY = {
@@ -39,6 +39,8 @@ export interface HumanLook {
   /** Tunic / coat skirt below the belt (length in art px). */
   readonly skirt?: { readonly mat: Material; readonly length: number };
   readonly sleeves: Material;
+  /** Puffed upper sleeves (Landsknecht): a fuller upper arm with a puff below the shoulder. */
+  readonly puffedSleeves?: boolean;
   readonly forearms?: Material;
   readonly hands?: Material;
   readonly legs: Material;
@@ -178,7 +180,12 @@ function armReach(T: Xform, pose: HumanPose, side: number): { shoulder: V3; mid:
 function drawArms(fig: Figure, look: HumanLook, pose: HumanPose, T: Xform): void {
   for (const side of [1, -1]) {
     const { shoulder, mid, end } = armReach(T, pose, side);
-    fig.capsule(shoulder, mid, 2.35, look.sleeves);
+    if (look.puffedSleeves) {
+      fig.capsule(shoulder, mid, 2.9, look.sleeves);
+      fig.sphere(lerp(shoulder, mid, 0.42), 3.55, look.sleeves);
+    } else {
+      fig.capsule(shoulder, mid, 2.35, look.sleeves);
+    }
     fig.capsule(mid, end, 2.05, look.forearms ?? look.sleeves);
     fig.sphere(end, 2.15, look.hands ?? M.skin);
     if (look.pauldrons) fig.sphere(madd(shoulder, T.z, 0.6), 3.1, look.pauldrons);

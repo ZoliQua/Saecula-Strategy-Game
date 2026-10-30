@@ -13,7 +13,9 @@ const G = GERMAN_M;
  * horned pot helm with the eagle shield (age 2), the spiked leather helm
  * of the musketeer and the cuirassier (age 3). Team colour stays on the
  * tunics, doublets, coats, berets, shield faces and horns, so ownership
- * reads first.
+ * reads first. The Landsknecht unique unit (M8, in the pikeman's slot)
+ * wears the great plumed beret, puffed team-and-white slashing, striped
+ * hose and the Katzbalger at the hip.
  */
 export const GERMAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   villager: {
@@ -68,6 +70,21 @@ export const GERMAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       legs: G.hose,
       boots: M.boot,
       belt: M.darkLeather,
+      weapon: 'pike',
+    },
+  },
+  landsknecht: {
+    kind: 'foot',
+    human: {
+      hat: 'grandBeret',
+      body: G.slashedWhite,
+      skirt: { mat: G.slashedWhite, length: 3.5 },
+      sleeves: G.slashedWhite,
+      puffedSleeves: true,
+      legs: G.stripedHose,
+      boots: M.boot,
+      belt: M.darkLeather,
+      back: 'katzbalger',
       weapon: 'pike',
     },
   },
