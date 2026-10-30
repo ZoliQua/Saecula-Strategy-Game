@@ -1,5 +1,6 @@
 import { CIV_DEFS, type UnitLookId } from '../../../config/civs';
-import type { CivId, UnitType } from '../../../types';
+import type { BaseUnitType, CivId, UnitType } from '../../../types';
+import { baseUnitType } from '../../../game/civUnits';
 import { ENGLISH_LOOKS } from './english/englishLooks';
 import { FINNISH_LOOKS } from './finnish/finnishLooks';
 import { FRENCH_LOOKS } from './french/frenchLooks';
@@ -24,7 +25,7 @@ export type UnitLook =
  * Team colour (M.team) goes where it reads best at a glance: tunics,
  * coats, shields, hoods, caparisons.
  */
-export const BASE_UNIT_LOOKS: Readonly<Record<UnitType, UnitLook>> = {
+export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
   villager: {
     kind: 'foot',
     human: {
@@ -177,9 +178,9 @@ export const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record
   finnish: FINNISH_LOOKS,
 };
 
-/** The look a civ's units of a type wear (civ registry unitLook → override, else the base look). */
+/** The look a civ's units of a type wear (civ registry unitLook → override, else the look of the base unit it replaces). */
 export function unitLook(type: UnitType, civ: CivId): UnitLook {
-  return LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type] ?? BASE_UNIT_LOOKS[type];
+  return LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type] ?? BASE_UNIT_LOOKS[baseUnitType(type)];
 }
 
 export function contactShadow(look: UnitLook): ContactShadow {

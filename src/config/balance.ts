@@ -1,4 +1,4 @@
-import type { AgeId, BuildingType, ProjectileKind, Resources, TechId, UnitType } from '../types';
+import type { AgeId, BaseUnitType, BuildingType, ProjectileKind, Resources, TechId, UnitType } from '../types';
 
 /**
  * Single source of truth for unit and building stats
@@ -15,15 +15,37 @@ export const RANGED_COOLDOWN_MS = 2000;
 export const CANNON_COOLDOWN_MS = 5000;
 export const TOWER_COOLDOWN_MS = 2000;
 
-/** Extra melee damage a pikeman deals to the cavalry class. */
-export const PIKEMAN_CAVALRY_BONUS = 22;
-export const CAVALRY_CLASS: readonly UnitType[] = ['scout', 'knight', 'cavalry'];
+/** Extra melee damage an anti-cavalry unit deals to the cavalry class. */
+export const ANTI_CAVALRY_BONUS = 22;
+/** Units that deal the anti-cavalry bonus. */
+export const ANTI_CAVALRY_UNITS: readonly UnitType[] = ['pikeman', 'landsknecht'];
+export const CAVALRY_CLASS: readonly UnitType[] = [
+  'scout', 'knight', 'cavalry', 'hussar', 'conquistador', 'cossack',
+];
 /** Units affected by the infantry speed technology. */
 export const INFANTRY_CLASS: readonly UnitType[] = [
   'swordsman', 'pikeman', 'archer', 'crossbowman', 'musketeer',
+  'longbowman', 'landsknecht', 'mousquetaire', 'legionary', 'sissi',
 ];
 /** Units affected by the Arrow sharpening technologies. */
-export const ARROW_UNITS: readonly UnitType[] = ['archer', 'crossbowman', 'musketeer'];
+export const ARROW_UNITS: readonly UnitType[] = [
+  'archer', 'crossbowman', 'musketeer', 'longbowman', 'mousquetaire', 'sissi',
+];
+
+/**
+ * Civ bonus magnitudes (M8), as fractions. Which civ gets which lives in
+ * the civ registry, not here.
+ */
+export const CIV_BONUS = {
+  cavalrySpeed: 0.1,
+  farmFood: 0.15,
+  buildingHp: 0.15,
+  stableHp: 0.15,
+  goldGather: 0.15,
+  buildSpeed: 0.15,
+  woodGather: 0.15,
+  infantrySpeed: 0.1,
+} as const;
 
 /** How far (tiles) from where a walled-off attacker is stuck it looks for an enemy wall / building to breach. */
 export const BREACH_SEARCH_RADIUS = 2;
@@ -53,6 +75,8 @@ export interface UnitBalance {
   readonly trainers: readonly BuildingType[];
   readonly popCost: number;
   readonly cooldownMs: number;
+  /** Set exactly on unique units: the base unit this one replaces for its civ. */
+  readonly replaces?: BaseUnitType;
 }
 
 export interface BuildingBalance {
@@ -120,6 +144,46 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     age: 3, hp: 120, meleeAtk: 12, pierceAtk: 0, meleeDef: 2, pierceDef: 2,
     range: 1, speed: 1.5, los: 5, cost: c(70, 0, 75), trainTime: 30,
     trainers: ['stable'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
+  hussar: {
+    age: 2, hp: 85, meleeAtk: 9, pierceAtk: 0, meleeDef: 1, pierceDef: 2,
+    range: 1, speed: 1.55, los: 6, cost: c(70, 0, 40), trainTime: 25,
+    trainers: ['stable'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'knight',
+  },
+  longbowman: {
+    age: 2, hp: 35, meleeAtk: 0, pierceAtk: 5, meleeDef: 0, pierceDef: 0,
+    range: 7, speed: 0.96, los: 8, cost: c(0, 35, 40), trainTime: 32,
+    trainers: ['archery_range'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'crossbowman',
+  },
+  landsknecht: {
+    age: 2, hp: 70, meleeAtk: 7, pierceAtk: 0, meleeDef: 1, pierceDef: 0,
+    range: 1, speed: 1.0, los: 4, cost: c(50, 20, 25), trainTime: 24,
+    trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'pikeman',
+  },
+  mousquetaire: {
+    age: 3, hp: 65, meleeAtk: 0, pierceAtk: 9, meleeDef: 0, pierceDef: 1,
+    range: 6, speed: 1.1, los: 7, cost: c(60, 0, 35), trainTime: 22,
+    trainers: ['barracks'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'musketeer',
+  },
+  conquistador: {
+    age: 3, hp: 130, meleeAtk: 12, pierceAtk: 0, meleeDef: 4, pierceDef: 4,
+    range: 1, speed: 1.4, los: 5, cost: c(80, 0, 90), trainTime: 32,
+    trainers: ['stable'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'cavalry',
+  },
+  legionary: {
+    age: 1, hp: 45, meleeAtk: 7, pierceAtk: 0, meleeDef: 1, pierceDef: 3,
+    range: 1, speed: 0.9, los: 4, cost: c(60, 0, 30), trainTime: 23,
+    trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'swordsman',
+  },
+  cossack: {
+    age: 1, hp: 60, meleeAtk: 6, pierceAtk: 0, meleeDef: 0, pierceDef: 2,
+    range: 1, speed: 1.55, los: 8, cost: c(85, 0, 15), trainTime: 30,
+    trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'scout',
+  },
+  sissi: {
+    age: 1, hp: 32, meleeAtk: 0, pierceAtk: 4, meleeDef: 0, pierceDef: 0,
+    range: 3, speed: 1.15, los: 8, cost: c(0, 30, 40), trainTime: 32,
+    trainers: ['archery_range', 'barracks'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'archer',
   },
 };
 
@@ -198,6 +262,9 @@ export const UNIT_PROJECTILE: Partial<Record<UnitType, ProjectileKind>> = {
   crossbowman: 'bolt',
   musketeer: 'bullet',
   cannon: 'cannonball',
+  longbowman: 'arrow',
+  sissi: 'arrow',
+  mousquetaire: 'bullet',
 };
 
 /** Towers fire arrows (Task 11 wires the tower attacker to this). */

@@ -51,7 +51,8 @@ export interface Resources {
   gold: number;
 }
 
-export type UnitType =
+/** Units every civ can train (CLAUDE.md 4.4). */
+export type BaseUnitType =
   | 'villager'
   | 'scout'
   | 'swordsman'
@@ -62,6 +63,32 @@ export type UnitType =
   | 'musketeer'
   | 'cannon'
   | 'cavalry';
+
+/** Civ-specific units (M8); each replaces one base unit for its civ. */
+export type UniqueUnitType =
+  | 'hussar'
+  | 'longbowman'
+  | 'landsknecht'
+  | 'mousquetaire'
+  | 'conquistador'
+  | 'legionary'
+  | 'cossack'
+  | 'sissi';
+
+export type UnitType = BaseUnitType | UniqueUnitType;
+
+export const BASE_UNIT_TYPES: readonly BaseUnitType[] = [
+  'villager',
+  'scout',
+  'swordsman',
+  'archer',
+  'knight',
+  'pikeman',
+  'crossbowman',
+  'musketeer',
+  'cannon',
+  'cavalry',
+];
 
 export type BuildingType =
   | 'town_center'

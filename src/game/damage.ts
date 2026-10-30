@@ -1,13 +1,14 @@
 import {
   CAVALRY_CLASS,
-  PIKEMAN_CAVALRY_BONUS,
+  ANTI_CAVALRY_BONUS,
+  ANTI_CAVALRY_UNITS,
 } from '../config/balance';
 import type { UnitType } from '../types';
 
 export interface AttackStats {
   readonly meleeAtk: number;
   readonly pierceAtk: number;
-  /** Bonus melee damage against the cavalry class (pikeman). */
+  /** Bonus melee damage against the cavalry class (pikeman, landsknecht). */
   readonly bonusVsCavalry?: number;
 }
 
@@ -17,7 +18,7 @@ export interface ArmorStats {
 }
 
 export function bonusVsCavalryFor(type: UnitType): number {
-  return type === 'pikeman' ? PIKEMAN_CAVALRY_BONUS : 0;
+  return ANTI_CAVALRY_UNITS.includes(type) ? ANTI_CAVALRY_BONUS : 0;
 }
 
 /**
