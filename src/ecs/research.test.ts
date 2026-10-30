@@ -78,11 +78,11 @@ describe('research', () => {
 
   it('TC busy rule: training blocks research and research blocks training', () => {
     const { world, tc, player, wallet } = setup();
-    expect(queueUnit(tc, 'villager', 1).ok).toBe(true);
+    expect(queueUnit(tc, 'villager', { age: 1, civ: 'hungarian' }).ok).toBe(true);
     expect(startResearch(world, tc, 'feudalism', player, wallet).reason).toBe('training-busy');
     tc.trainingQueue?.entries.splice(0);
     startResearch(world, tc, 'feudalism', player, wallet);
-    expect(queueUnit(tc, 'villager', 1).reason).toBe('researching');
+    expect(queueUnit(tc, 'villager', { age: 1, civ: 'hungarian' }).reason).toBe('researching');
     expect(tc.trainingQueue?.entries.length).toBe(0);
   });
 

@@ -86,3 +86,33 @@ describe('isLastTownCenter', () => {
     expect(isLastTownCenter(world, a)).toBe(true);
   });
 });
+
+const trainableOf = (entity: Partial<Entity>) => {
+  const info = snapshot(entity);
+  return info?.kind === 'building' ? info.trainable : undefined;
+};
+
+describe('toSelectedInfo trainable roster', () => {
+  const stable = (playerId: number): Entity => ({
+    ...barracks(playerId),
+    building: { type: 'stable', footprint: { width: 3, height: 3 } },
+  }) as Entity;
+
+  it("lists the owner civ's own units, never the replaced base unit", () => {
+    expect(trainableOf(stable(1))).toEqual(['hussar', 'cavalry']);
+    expect(trainableOf(stable(2))).toEqual(['knight', 'cavalry']);
+  });
+
+  it('lists archer and not longbowman at an English barracks', () => {
+    const trainable = trainableOf(barracks(2));
+    expect(trainable).toContain('archer');
+    expect(trainable).not.toContain('longbowman');
+  });
+
+  it('lists longbowman and not crossbowman at an English archery range', () => {
+    const range = { ...barracks(2), building: { type: 'archery_range', footprint: { width: 3, height: 3 } } } as Entity;
+    const trainable = trainableOf(range);
+    expect(trainable).toContain('longbowman');
+    expect(trainable).not.toContain('crossbowman');
+  });
+});

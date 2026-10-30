@@ -221,7 +221,7 @@ export abstract class BaseStrategy implements AIStrategy {
     if (!canAfford(ctx.player.resources, UNIT_SPECS[type].cost, reserve)) return false;
     const trainer = this.trainersFor(view, type, maxQueued)[0];
     if (!trainer) return false;
-    const result = queueUnit(trainer, type, ctx.player.age, aiTrainAccount(ctx.world, ctx.player));
+    const result = queueUnit(trainer, type, ctx.player, aiTrainAccount(ctx.world, ctx.player));
     if (result.ok) this.log.add(ctx.timeMs, 'train', type);
     return result.ok;
   }

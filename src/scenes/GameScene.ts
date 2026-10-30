@@ -274,7 +274,7 @@ export class GameScene extends Phaser.Scene {
       if (cmd.type === 'queue-unit') {
         const trainer = find(cmd.trainerId);
         if (trainer && human && trainer.owner?.playerId === human.id) {
-          queueUnit(trainer, cmd.unitType, human.age);
+          queueUnit(trainer, cmd.unitType, human);
         }
       } else if (cmd.type === 'cancel-queue') {
         const trainer = find(cmd.trainerId);
