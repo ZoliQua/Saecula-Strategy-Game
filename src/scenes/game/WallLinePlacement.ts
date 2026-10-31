@@ -34,6 +34,7 @@ export class WallLinePlacement {
     private readonly playerId: number,
     private readonly getAge: () => AgeId,
     private readonly civ: CivId,
+    private readonly getHpMultiplier: () => number = () => 1,
   ) {}
 
   isDragging(): boolean {
@@ -71,7 +72,7 @@ export class WallLinePlacement {
     const state = uiStore.getState();
     state.setResources({ wood: state.resources.wood - cost.wood * plan.build.length });
     const siteIds = plan.build.map((tile) => {
-      const site = createWall(this.world, { tile, playerId: this.playerId, mapData: this.mapData, underConstruction: true });
+      const site = createWall(this.world, { tile, playerId: this.playerId, mapData: this.mapData, underConstruction: true, hpMultiplier: this.getHpMultiplier() });
       evictUnitsFrom(this.world, this.mapData, tile, { width: 1, height: 1 });
       return site.id ?? -1;
     });

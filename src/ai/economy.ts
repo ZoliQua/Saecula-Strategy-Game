@@ -39,6 +39,7 @@ export function populationWithQueued(world: EcsWorld, player: Player): Populatio
   let queued = 0;
   for (const b of world.with('trainingQueue', 'owner')) {
     if (b.owner.playerId !== player.id) continue;
+    // Exact type on purpose: a queued unique unit costs its own population, not its base slot's.
     for (const entry of b.trainingQueue.entries) queued += UNIT_SPECS[entry.unitType].populationCost;
   }
   return { current: pop.current + queued, cap: pop.cap };

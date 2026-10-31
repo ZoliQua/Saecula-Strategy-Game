@@ -17,7 +17,9 @@ const F = FINNISH_M;
  * and the shield fields, so ownership reads first; the civ's blue and
  * white only in the knight's outlined cross. The knight wears no mail
  * over his coat, so the team colour holds on a mounted, steel-limbed
- * figure.
+ * figure. The sissi (M8, in the archer's slot) wears a white snow hood
+ * with a fur ruff and a white cloak over a team tunic and sash, and
+ * carries a short bow.
  */
 export const FINNISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   villager: {
@@ -59,6 +61,21 @@ export const FINNISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       belt: M.darkLeather,
       back: 'quiver',
       weapon: 'bow',
+    },
+  },
+  sissi: {
+    kind: 'foot',
+    human: {
+      hat: 'snowHood',
+      body: M.team,
+      skirt: { mat: M.team, length: 9.5 },
+      sleeves: M.team,
+      hands: F.mitten,
+      legs: F.wool,
+      boots: M.leather,
+      back: 'snowCloak',
+      weapon: 'bow',
+      weaponStyle: 'shortBow',
     },
   },
   pikeman: {

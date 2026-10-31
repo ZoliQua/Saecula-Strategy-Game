@@ -16,7 +16,10 @@ const I = ITALIAN_M;
  * musketeer and the dragoon (age 3). Team colour stays on the tunics,
  * doublets, coats, shield and pavise faces, so ownership reads first;
  * the civ's green is a near-black bottle green on the legs, its red and
- * green only in narrow outlined pales.
+ * green only in narrow outlined pales. The legionary (M8, in the
+ * swordsman's slot) wears the lorica segmentata over a team tunic, the
+ * galea with its team crest athwart, and carries the great curved team
+ * scutum with the gold winged thunderbolt.
  */
 export const ITALIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   villager: {
@@ -45,6 +48,24 @@ export const ITALIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       belt: I.bronze,
       weapon: 'gladius',
       shield: 'scutum',
+    },
+  },
+  legionary: {
+    kind: 'foot',
+    human: {
+      hat: 'transverseGalea',
+      body: M.team,
+      armour: I.segmentata,
+      pauldrons: I.segmentata,
+      skirt: { mat: M.team, length: 7.5 },
+      sleeves: M.team,
+      forearms: M.skin,
+      legs: M.skin,
+      boots: M.leather,
+      belt: M.brass,
+      back: 'cingulum',
+      weapon: 'gladius',
+      shield: 'legionScutum',
     },
   },
   archer: {

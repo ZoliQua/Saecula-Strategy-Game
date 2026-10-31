@@ -12,6 +12,34 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.3.0] — 2026-10-30
+
+Every nation now fields a unique unit and carries a permanent bonus
+(milestone M8).
+
+### Added
+
+- **Unique units**: each nation replaces one of its base units with its own
+  version, trained in the same building and age: Hungarian hussar (replaces
+  the knight), English longbowman (crossbowman), German landsknecht
+  (pikeman), French mousquetaire (musketeer), Spanish conquistador
+  (cavalry), Italian legionary (swordsman), Russian cossack (scout) and
+  Finnish sissi (archer). Each has its own stats and a distinctive
+  silhouette. A nation cannot train the unit it replaced, so the texture
+  budget does not grow. The AI trains its nation's own unit.
+- **Nation bonuses**: Hungarian mounted units +10% speed, English farms +15%
+  food, German buildings +15% HP, French stable-trained units +15% HP,
+  Spanish gold gathering +15%, Italian construction 15% faster, Russian wood
+  gathering +15%, Finnish infantry +10% speed.
+- The nation picker, the tech tree (with a “unique” badge) and the training
+  buttons show each nation's unique unit; the picker also shows the bonus.
+
+### Changed
+
+- Save `schemaVersion` is now 3. Older saves load through an automatic
+  migration, and their units are kept even if their nation now trains
+  something else.
+
 ## [0.2.0] — 2026-10-29
 
 The first release under the name **Saecula**: eight nations, saving, sound,
@@ -103,6 +131,7 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/releases/tag/v0.1.0

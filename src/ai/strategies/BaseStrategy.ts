@@ -1,3 +1,4 @@
+import { buildingHpMultiplier } from '../../game/modifiers';
 import { AI_COMMON, AI_PLACEMENT, type Span } from '../../config/aiBalance';
 import { BUILDING_SPECS, createBuilding } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
@@ -13,7 +14,8 @@ import { planWallSegments } from '../../game/wallLine';
 import { isAgeUp, TECH_SPECS } from '../../game/technologies';
 import type { TileCoord } from '../../iso/coordinates';
 import { FOG_UNEXPLORED } from '../../map/FogOfWarData';
-import type { BuildingType, Resources, TechId, UnitType } from '../../types';
+import { civUnitType } from '../../game/civUnits';
+import type { BaseUnitType, BuildingType, Resources, TechId } from '../../types';
 import type { AIContext, AIStrategy } from '../AIPlayer';
 import { canPlaceAt, findPlacement } from '../decisions/placement';
 import { aiTrainAccount, canAfford, NO_RESERVE } from '../economy';
@@ -146,6 +148,7 @@ export abstract class BaseStrategy implements AIStrategy {
       playerId: ctx.player.id,
       mapData: ctx.mapData,
       underConstruction: true,
+      hpMultiplier: buildingHpMultiplier(ctx.player),
     });
     evictUnitsFrom(ctx.world, ctx.mapData, origin, BUILDING_SPECS[type]);
     this.assignBuilders(ctx, view, site, AI_COMMON.buildersPerSite);
@@ -174,7 +177,7 @@ export abstract class BaseStrategy implements AIStrategy {
     if (plan.build.length === 0) return 0;
     ctx.player.resources = { ...ctx.player.resources, wood: ctx.player.resources.wood - cost.wood * plan.build.length };
     const sites = plan.build.map((tile) => {
-      const site = createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true });
+      const site = createWall(ctx.world, { tile, playerId: ctx.player.id, mapData: ctx.mapData, underConstruction: true, hpMultiplier: buildingHpMultiplier(ctx.player) });
       evictUnitsFrom(ctx.world, ctx.mapData, tile, { width: 1, height: 1 });
       return site;
     });
@@ -199,28 +202,33 @@ export abstract class BaseStrategy implements AIStrategy {
 
   // ------------------------------------------------------------ training
 
-  /** Own finished trainers for `type` with room in the queue (shortest queue first). */
-  protected trainersFor(view: WorldView, type: UnitType, maxQueued: number): Entity[] {
-    const kinds = UNIT_SPECS[type].trainers;
+  /** Own finished trainers of the civ's unit for the `type` slot with room in the queue (shortest queue first). */
+  protected trainersFor(view: WorldView, type: BaseUnitType, maxQueued: number): Entity[] {
+    const kinds = UNIT_SPECS[civUnitType(view.civ, type)].trainers;
     return view.buildings
       .filter((b) => b.building && kinds.includes(b.building.type) && b.trainingQueue && !b.underConstruction && !b.research)
       .filter((b) => b.trainingQueue!.entries.length < maxQueued)
       .sort((a, b) => a.trainingQueue!.entries.length - b.trainingQueue!.entries.length);
   }
 
-  /** Queues one `type` at the least busy trainer through queueUnit (age, trainer, cost, pop checks). */
+  /**
+   * Queues one unit of the `type` slot — the civ's unique unit when it
+   * replaces that slot — at the least busy trainer through queueUnit (age,
+   * trainer, roster, cost, pop checks).
+   */
   protected train(
     ctx: AIContext,
     view: WorldView,
-    type: UnitType,
+    type: BaseUnitType,
     maxQueued = 1,
     reserve: Resources = NO_RESERVE,
   ): boolean {
-    if (!canAfford(ctx.player.resources, UNIT_SPECS[type].cost, reserve)) return false;
+    const unit = civUnitType(ctx.player.civ, type);
+    if (!canAfford(ctx.player.resources, UNIT_SPECS[unit].cost, reserve)) return false;
     const trainer = this.trainersFor(view, type, maxQueued)[0];
     if (!trainer) return false;
-    const result = queueUnit(trainer, type, ctx.player.age, aiTrainAccount(ctx.world, ctx.player));
-    if (result.ok) this.log.add(ctx.timeMs, 'train', type);
+    const result = queueUnit(trainer, unit, ctx.player, aiTrainAccount(ctx.world, ctx.player));
+    if (result.ok) this.log.add(ctx.timeMs, 'train', unit);
     return result.ok;
   }
 

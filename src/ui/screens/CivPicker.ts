@@ -4,6 +4,7 @@ import type { CivId } from '../../types';
 import type { CivPreview } from '../civPreview';
 import { el } from '../dom';
 import { hex } from '../format';
+import { civCaption } from './civCaption';
 import { arrowStep, nextEnabled } from './radioNav';
 
 const CHECK = `<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>`;
@@ -21,6 +22,8 @@ export class CivPicker {
   readonly caption: HTMLElement;
   private readonly captionName: HTMLElement;
   private readonly captionDesc: HTMLElement;
+  private readonly captionUnique: HTMLElement;
+  private readonly captionBonus: HTMLElement;
   private readonly buttons: HTMLButtonElement[] = [];
   private readonly stages = new Map<CivId, HTMLElement>();
   private value: CivId;
@@ -38,8 +41,10 @@ export class CivPicker {
     });
     this.captionName = el('span', { class: 'civ-caption-name' });
     this.captionDesc = el('span', { class: 'civ-caption-desc' });
+    this.captionUnique = el('span', { class: 'civ-caption-extra' });
+    this.captionBonus = el('span', { class: 'civ-caption-extra bonus' });
     // Visual only: each card already describes itself to assistive tech.
-    this.caption = el('div', { class: 'civ-caption', 'aria-hidden': 'true' }, this.captionName, this.captionDesc);
+    this.caption = el('div', { class: 'civ-caption', 'aria-hidden': 'true' }, this.captionName, this.captionDesc, this.captionUnique, this.captionBonus);
     this.set(value);
   }
 
@@ -52,7 +57,10 @@ export class CivPicker {
       b.tabIndex = on ? 0 : -1;
     }
     this.captionName.textContent = hu.civs[value];
-    this.captionDesc.textContent = hu.setup.civDesc[value];
+    const c = civCaption(value);
+    this.captionDesc.textContent = c.desc;
+    this.captionUnique.textContent = c.uniqueLine;
+    this.captionBonus.textContent = c.bonusLine;
     if (changed) {
       // Replays the caption's swap-in animation.
       this.caption.classList.remove('swap');
@@ -95,7 +103,7 @@ export class CivPicker {
       },
       stage,
       el('span', { class: 'civ-name', id: nameId }, hu.civs[id]),
-      el('span', { class: 'sr-only', id: descId }, hu.setup.civDesc[id]),
+      el('span', { class: 'sr-only', id: descId }, civCaption(id).srText),
       el('i', { class: 'civ-check', html: CHECK, 'aria-hidden': 'true' }),
     );
   }

@@ -32,4 +32,8 @@ export const ENGLISH_M = {
   /** Cast-iron gun barrel (the Hungarian gun is bronze). */
   ironBarrel: { color: 0x4a4d52, metal: 0.55, bands: { count: 4, color: 0x2e3034, width: 0.08 } } as Material,
   chestnut: { color: 0x8c4a24 } as Material,
+  /** Padded jack of the longbowman: team cloth in close quilting rows. */
+  jack: { color: 0xffffff, team: true, bands: { count: 9, width: 0.16 } } as Material,
+  /** Grey goose fletching of the arrows tucked in the belt. */
+  fletching: { color: 0xd8d4cc } as Material,
 } as const;

@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
+import { UNIT_BALANCE } from '../config/balance';
 import { MENU_CIV } from '../config/civs';
+import { canCivTrain, isUniqueUnit } from '../game/civUnits';
 import { PLAYER_COLORS } from '../game/Player';
 import { LightManager } from '../iso/art/lighting/LightManager';
 import { ANIM_FRAMES, frameIndex, headingSlot, unitSheetLayout, type UnitAnim } from '../iso/art/units/layout';
@@ -23,9 +25,16 @@ export interface ShowcaseOptions {
   teamsHeading?: Direction;
   /** Flat black silhouettes on a pale ground, unlit (also `?silhouette=1`): the civ must read by outline alone. */
   silhouette?: boolean;
+  /** Only these unit types (default: every base type, each followed by the unique units that replace it). */
+  types?: UnitType[];
 }
 
-const TYPES: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon'];
+const BASE_ORDER: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon'];
+/** Base types in showcase order, each followed by the unique units (M8) replacing it. */
+const TYPES: UnitType[] = BASE_ORDER.flatMap((base) => [
+  base,
+  ...(Object.keys(UNIT_BALANCE) as UnitType[]).filter((t) => UNIT_BALANCE[t].replaces === base),
+]);
 const HEADINGS: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const CELL_W = 74;
 const CELL_H = 62;
@@ -61,7 +70,9 @@ export class UnitShowcaseScene extends Phaser.Scene {
     // Silhouettes are unlit: no lights or cast shadows.
     this.lighting = silhouette ? null : new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
     const civs = this.opts.civs ?? [this.opts.civ ?? MENU_CIV];
-    const rows = TYPES.flatMap((type, t) => civs.map((civ) => ({ type, civ, t })));
+    const types = TYPES.filter((type) => this.opts.types?.includes(type) ?? true);
+    // A unique unit shows only for the civ that trains it, next to the base unit it replaces.
+    const rows = types.flatMap((type, t) => civs.filter((civ) => !isUniqueUnit(type) || canCivTrain(civ, type)).map((civ) => ({ type, civ, t })));
     const columns = this.opts.teams
       ? PLAYER_COLORS.slice(0, 6).map((color) => ({ dir: this.opts.teamsHeading ?? 'SE', color }))
       : HEADINGS.map((dir) => ({ dir, color: -1 }));

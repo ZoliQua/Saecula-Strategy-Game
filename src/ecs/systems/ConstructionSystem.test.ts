@@ -5,6 +5,10 @@ import { createBuilding } from '../archetypes/building';
 import { createVillager } from '../archetypes/villager';
 import { createEcsWorld } from '../world';
 import { ConstructionSystem } from './ConstructionSystem';
+import { buildingHpMultiplier } from '../../game/modifiers';
+import { createPlayer } from '../../game/Player';
+import { PlayerManager } from '../../game/PlayerManager';
+import type { CivId } from '../../types';
 
 function setup() {
   const map = new MapData(10, 10, TERRAIN.grass);
@@ -64,5 +68,50 @@ describe('ConstructionSystem', () => {
     const resolved = world.entities.find((e) => e.id === site.id)!;
     expect(resolved.underConstruction).toBeUndefined();
     void map; // silence unused
+  });
+});
+
+describe('ConstructionSystem civ bonuses', () => {
+  function civSetup(civ: CivId) {
+    const map = new MapData(10, 10, TERRAIN.grass);
+    const world = createEcsWorld();
+    const player = createPlayer({ id: 1, civ });
+    const site = createBuilding(world, {
+      type: 'house',
+      origin: { tx: 3, ty: 3 },
+      playerId: 1,
+      mapData: map,
+      underConstruction: true,
+      hpMultiplier: buildingHpMultiplier(player),
+    });
+    const v = createVillager(world, { tile: { tx: 2, ty: 3 } });
+    world.addComponent(v, 'buildCommand', { targetId: site.id! });
+    const system = new ConstructionSystem(world, map, undefined, new PlayerManager([player]));
+    return { site, system };
+  }
+
+  it('German site finishes at the boosted max', () => {
+    const { site, system } = civSetup('german');
+    expect(site.health!.max).toBe(575);
+    const total = site.underConstruction!.totalTime;
+    for (let t = 0; t < total + 2; t += 0.5) {
+      system.update(500);
+      expect(site.health!.current).toBeLessThanOrEqual(site.health!.max);
+    }
+    expect(site.underConstruction).toBeUndefined();
+    expect(site.health!.current).toBe(575);
+  });
+
+  it('Italian builder finishes 15 % sooner', () => {
+    const { site, system } = civSetup('italian');
+    const tickMs = 100;
+    const expectedMs = (site.underConstruction!.totalTime / 1.15) * 1000;
+    let elapsedMs = 0;
+    while (site.underConstruction) {
+      system.update(tickMs);
+      elapsedMs += tickMs;
+      expect(elapsedMs).toBeLessThan(expectedMs + 2 * tickMs);
+    }
+    expect(elapsedMs).toBeGreaterThanOrEqual(expectedMs - 1e-6);
   });
 });

@@ -1,3 +1,8 @@
+import { CIV_BONUS } from '../config/balance';
+
+/** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
+const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
+
 export const hu = {
   title: 'Saecula',
   subtitle: 'Izometrikus történelmi stratégia',
@@ -60,6 +65,23 @@ export const hu = {
       italian: 'Téglatornyok fecskefarkú pártázattal, árkádok, terrakotta kupolák',
       russian: 'Gerendaházak, sátortetős tornyok, aranyló hagymakupolák',
       finnish: 'Tőzegtetős faházak, gránitvár harangtoronnyal, vörös deszkaházak',
+    },
+    /** The permanent bonus of each civ, one line under its description (M8); percentages come from CIV_BONUS. */
+    civBonus: {
+      hungarian: `Lovas egységek +${pct(CIV_BONUS.cavalrySpeed)} sebesség`,
+      english: `Farmok +${pct(CIV_BONUS.farmFood)} étel`,
+      german: `Épületek +${pct(CIV_BONUS.buildingHp)} életerő`,
+      french: `Istállói egységek +${pct(CIV_BONUS.stableHp)} életerő`,
+      spanish: `Aranygyűjtés +${pct(CIV_BONUS.goldGather)}`,
+      italian: `Építés ${pct(CIV_BONUS.buildSpeed)}-kal gyorsabb`,
+      russian: `Fagyűjtés +${pct(CIV_BONUS.woodGather)}`,
+      finnish: `Gyalogság +${pct(CIV_BONUS.infantrySpeed)} sebesség`,
+    },
+    /** The unique unit line; `replaced` is the base unit's name (lower-cased here, "az" before a vowel). */
+    uniqueUnit: (unit: string, replaced: string) => {
+      const name = replaced.toLocaleLowerCase('hu');
+      const article = /^[aáeéiíoóöőuúüű]/.test(name) ? 'az' : 'a';
+      return `Egyedi egység: ${unit} (${article} ${name} helyett)`;
     },
     aiCivs: 'Ellenfelek népe',
     aiCivMixed: 'Vegyes',
@@ -125,6 +147,14 @@ export const hu = {
     musketeer: 'Muskétás',
     cannon: 'Ágyú',
     cavalry: 'Lovasság',
+    hussar: 'Huszár',
+    longbowman: 'Hosszúíjász',
+    landsknecht: 'Landsknecht',
+    mousquetaire: 'Királyi muskétás',
+    conquistador: 'Konkvisztádor',
+    legionary: 'Légiós',
+    cossack: 'Kozák',
+    sissi: 'Sissi',
   },
   buildings: {
     town_center: 'Városháza',
@@ -246,6 +276,14 @@ export const hu = {
     musketeer: 'Lőfegyveres',
     cannon: 'Ostromgép',
     cavalry: 'Könnyűlovas',
+    hussar: 'Portyázó könnyűlovas',
+    longbowman: 'Nagy lőtávú íjász',
+    landsknecht: 'Lovasság-ellenes zsoldos',
+    mousquetaire: 'Elit lőfegyveres',
+    conquistador: 'Páncélos lovas',
+    legionary: 'Nyílálló gyalogos',
+    cossack: 'Portyázó lovas',
+    sissi: 'Gyors portyázó íjász',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -366,6 +404,8 @@ export const hu = {
     alsoAt: 'Itt is:',
     /** On a trainer unlocked in an earlier age. */
     earlier: 'korábbi',
+    /** Badge on a civ's unique unit. */
+    unique: 'egyedi',
     researched: 'Kifejlesztve',
     noTechs: 'Nincs új fejlesztés',
     scrollHint: 'Görgess a további tartalomért',

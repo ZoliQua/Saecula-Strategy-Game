@@ -1,4 +1,4 @@
-import { ANIM_FRAMES, WALK_CYCLE_TILES, type UnitAnim } from '../../iso/art/units/layout';
+import { ANIM_FRAMES, walkCycleTiles, type UnitAnim } from '../../iso/art/units/layout';
 import type { Direction } from '../../types';
 import type { Entity } from '../components';
 import { onFootprintRing } from '../footprint';
@@ -47,7 +47,7 @@ export function unitAnimState(entity: Entity, now: number, siteOf?: SiteLookup):
   const mv = entity.movable;
   if (mv && mv.path.length > 0) {
     const type = entity.unit?.unitType;
-    const cycleMs = type && mv.speed > 0 ? (WALK_CYCLE_TILES[type] / mv.speed) * 1000 : FALLBACK_WALK_CYCLE_MS;
+    const cycleMs = type && mv.speed > 0 ? (walkCycleTiles(type) / mv.speed) * 1000 : FALLBACK_WALK_CYCLE_MS;
     const i = Math.floor(((now + phase) / cycleMs) * ANIM_FRAMES.walk) % ANIM_FRAMES.walk;
     return { anim: 'walk', i, heading };
   }

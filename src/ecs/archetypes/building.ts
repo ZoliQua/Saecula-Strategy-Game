@@ -67,6 +67,8 @@ export interface CreateBuildingOptions {
   readonly mapData: MapData;
   /** When true, the building starts under construction at 1 HP. */
   readonly underConstruction?: boolean;
+  /** Scales the maximum HP (civ bonus); default 1. */
+  readonly hpMultiplier?: number;
 }
 
 /**
@@ -83,6 +85,7 @@ export function createBuilding(
   blockFootprint(options.mapData, options.origin, spec, true);
 
   const underConstruction = options.underConstruction ?? false;
+  const maxHp = Math.round(spec.maxHp * (options.hpMultiplier ?? 1));
   const entity: Entity = assignEntityId({
     position: { tx: options.origin.tx, ty: options.origin.ty },
     renderable: { textureKey: spec.textureKey },
@@ -91,8 +94,8 @@ export function createBuilding(
       footprint: { width: spec.width, height: spec.height },
     },
     health: {
-      current: underConstruction ? 1 : spec.maxHp,
-      max: spec.maxHp,
+      current: underConstruction ? 1 : maxHp,
+      max: maxHp,
     },
     selectable: { selected: false },
     owner: { playerId: options.playerId },

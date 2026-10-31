@@ -1,6 +1,7 @@
 import { uiStore } from '../ui/store';
 import { isUnitAvailable } from '../game/availability';
-import type { AgeId, Population, UnitType } from '../types';
+import { canCivTrain } from '../game/civUnits';
+import type { AgeId, CivId, Population, UnitType } from '../types';
 import type { Entity } from './components';
 import { UNIT_SPECS } from './archetypes/unit';
 import { uiWallet, type Wallet } from './research';
@@ -10,6 +11,7 @@ export interface QueueUnitResult {
   readonly reason?:
     | 'missing-queue'
     | 'wrong-trainer'
+    | 'civ-locked'
     | 'researching'
     | 'age-locked'
     | 'queue-full'
@@ -35,12 +37,12 @@ export function uiTrainAccount(): TrainAccount {
  * otherwise so the UI can show why the click was rejected. The rules
  * are enforced here for the human and the AI alike: the building must
  * be one of the unit's trainers, not researching or collapsing, and the
- * unit must be unlocked at `playerAge`.
+ * unit must be in the owner's civ roster and unlocked at the owner's age.
  */
 export function queueUnit(
   trainer: Entity,
   type: UnitType,
-  playerAge: AgeId,
+  owner: { readonly age: AgeId; readonly civ: CivId },
   account: TrainAccount = uiTrainAccount(),
 ): QueueUnitResult {
   const spec = UNIT_SPECS[type];
@@ -49,8 +51,9 @@ export function queueUnit(
   if (!trainer.building || !spec.trainers.includes(trainer.building.type)) {
     return { ok: false, reason: 'wrong-trainer' };
   }
+  if (!canCivTrain(owner.civ, type)) return { ok: false, reason: 'civ-locked' };
   if (trainer.research) return { ok: false, reason: 'researching' };
-  if (!isUnitAvailable(type, playerAge)) return { ok: false, reason: 'age-locked' };
+  if (!isUnitAvailable(type, owner.age)) return { ok: false, reason: 'age-locked' };
   if (trainer.trainingQueue.entries.length >= trainer.trainingQueue.maxQueue) {
     return { ok: false, reason: 'queue-full' };
   }

@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.2.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.3.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -195,7 +195,9 @@ hozzáadhatunk:
 - 1 egyedi bónusz / nép (pl. olasz: +10% építési sebesség)
 - 1 egyedi épület / nép
 
-A MVP-ben ezek nincsenek, minden nép statisztikailag azonos.
+A MVP-ben ezek nincsenek, minden nép statisztikailag azonos. Az M8-tól
+minden népnek van 1 egyedi egysége és 1 népbónusza (lásd 9. szekció, M8);
+egyedi épület továbbra sincs.
 
 ### 4.4 Egységek
 
@@ -217,7 +219,8 @@ Felvilágosodás:
 - `cannon` — Ágyú. Épület-romboló, lassú.
 - `cavalry` — Lovasság. Gyors mozgó közelharci.
 
-**Egyedi (nép-specifikus) egységek:** MVP-ben nincsenek. Későbbi fázis.
+**Egyedi (nép-specifikus) egységek:** MVP-ben nincsenek. Az M8-ban
+népenként egy, amely a nép egyik alap egységét váltja le (lásd M8).
 
 ### 4.5 Épületek
 
@@ -576,7 +579,7 @@ docs/                            ← tervek és specifikációk (plans/specs)
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.2.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.3.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -888,6 +891,60 @@ Az első teljes játék (2026-10-29) hibalistája és kérései. Ág: `feat/M7-p
   0,44 MB JSON (`schemaVersion` 2), mentése ~6–15 ms; a hosszú AI-szimulációk
   (`src/ai/strategies`) 25 s alatt futnak le.
 
+### M8 — Egyedi egységek és népbónuszok
+A 4.3 első két pontja. Ág: `feat/M8-unique-units`. Változat: 0.3.0.
+- **Leváltás, nem bővítés:** minden nép egyedi egysége a nép egyik alap
+  egységét váltja le — ugyanabban az épületben, ugyanabban a korban képzik,
+  és az a nép az alap egységet nem képezheti. Népenként így 10 egységlap
+  marad, a textúra-keret (10.) nem nő. Az AI a hadsereg-keverékben az alap
+  egység helyett a nép saját változatát képzi.
+- **Egyedi egységek** (új `UnitType`, saját statisztika a `balance.ts`-ben,
+  saját kinézet a nép `units/<nép>/` mappájában, legalább egy erős sziluett-jel):
+
+  | Nép | Egység (`UnitType`) | Leváltja | Kor | Szerep |
+  |---|---|---|---|---|
+  | Magyar | Huszár (`hussar`) | `knight` | 2 | gyorsabb, olcsóbb, könnyebb páncél; portyázó |
+  | Angol | Hosszúíjász (`longbowman`) | `crossbowman` | 2 | +2 lőtáv, kicsit lassabb képzés |
+  | Német | Landsknecht (`landsknecht`) | `pikeman` | 2 | kétkezes kard, több HP és támadás, lovasság elleni bónusz marad, aranyba kerül |
+  | Francia | Királyi muskétás (`mousquetaire`) | `musketeer` | 3 | erősebb lövés, gyorsabb |
+  | Spanyol | Konkvisztádor (`conquistador`) | `cavalry` | 3 | morion sisak, nagy páncél |
+  | Olasz | Légiós (`legionary`) | `swordsman` | 1 | scutum, nagy védelem nyíl ellen |
+  | Orosz | Kozák (`cossack`) | `scout` | 1 | papaha, saska; erősebb, végig hasznos portyázó |
+  | Finn | Sissi (`sissi`) | `archer` | 1 | gyorsabb, nagyobb látótáv, kicsit kisebb lőtáv |
+
+  Az egyedi egység az alap egység osztályaiba tartozik (lovas, gyalogos,
+  nyíl-egység), így a fejlesztések és a bónuszsebzések rá is hatnak. Új
+  képesség (roham, rejtőzés stb.) nincs.
+- **Népbónuszok** (állandó, a meglévő fejlesztés-hatásokkal egy úton
+  számolva, `src/game/modifiers.ts`):
+  magyar — lovas egységek +10 % sebesség; angol — farm +15 % étel;
+  német — épületek +15 % HP; francia — istállóban képzett egységek +15 % HP;
+  spanyol — aranygyűjtés +15 %; olasz — építés +15 % gyorsabb;
+  orosz — fagyűjtés +15 %; finn — gyalogság +10 % sebesség.
+- **UI:** a nép-választó, a fejlődési fa és a képző gombok a nép egyedi
+  egységét mutatják; a nép-választó egy sorban a bónuszt is. Minden szöveg
+  a `hu.ts`-ben.
+- **Mentés:** `schemaVersion` 3, migrációval (a régi mentés egységei
+  megmaradnak, akkor is, ha a népük azóta mást képez).
+- **Tesztek:** rögzítő tesztek (draw-log hash) az új egységkinézetekre;
+  a régi kinézetek rögzítései változatlanok; egy hosszú AI-szimuláció őrzi,
+  hogy mind a 8 nép AI-ja képzi a saját egységét és az alapot nem.
+- Nem része: egyedi épületek, új egység-képességek, népenként második
+  egyedi egység.
+- Keret (10.): az M7 keretei változatlanok.
+- **Állapot (2026-10-30):** kész — nyolc egyedi egység (a leváltott alap egység
+  helyett), nyolc népbónusz, az AI saját egységet képez, nép-választó, fejlődési
+  fa és képző gombok az egyedi egységgel, `schemaVersion` 3 migrációval. Mérve —
+  textúra-memória (a teljes 1728×963-as böngészőablakban, 1,2-es és 0,5-ös
+  nagyítás; népenként a saját lista): 6 különböző nép 248,7 MB, a hat legnehezebb
+  nép 246,6 MB, az M4 két népes eset 161,4 MB (M7: 245,9 / 243,5 / 158,5 MB; a
+  különbség jórészt a nagyobb nézet terep-gyorsítótára: 25,7–25,9 MB a 23,1 MB
+  helyett), az egységlapok száma változatlan (60); képkocka-CPU p95 7,9–8,1 ms
+  hanggal (96×96, 4 játékos; M7: 7,1–8,0 ms); bundle 0,74 MB gzip (M7: 0,73 MB).
+  Böngésző-smoke: magyar huszár az istállóban, olasz légiós a laktanyában
+  képezhető és harcol, a fejlődési fa „egyedi” jelvényt mutat, a v2 (M7) mentés
+  hibátlanul betöltődik.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
@@ -994,4 +1051,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-29. Zoli projekt — Saecula, v0.2.0.*
+*Utolsó frissítés: 2026-10-30. Zoli projekt — Saecula, v0.3.0.*

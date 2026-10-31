@@ -1,5 +1,7 @@
 import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS, UNIT_BALANCE } from '../config/balance';
-import type { ResourceType, TechId, UnitType } from '../types';
+import { CIV_DEFS } from '../config/civs';
+import type { CivId, ResourceType, TechId, UnitType } from '../types';
+import { baseUnitType } from './civUnits';
 import { TECH_SPECS, type TechEffect } from './technologies';
 
 /**
@@ -20,6 +22,8 @@ import { TECH_SPECS, type TechEffect } from './technologies';
  */
 export interface Researched {
   readonly researched: ReadonlySet<TechId>;
+  /** When set, the civ's permanent bonus joins the technology effects. */
+  readonly civ?: CivId;
 }
 
 export interface UnitBonuses {
@@ -58,10 +62,13 @@ const NO_BONUS: UnitBonuses = Object.freeze({
  */
 interface EffectCache {
   size: number;
+  civ: CivId | undefined;
   effects: readonly TechEffect[];
   units: Map<UnitType, UnitBonuses>;
   gather: Map<ResourceType, number>;
   house: number | undefined;
+  buildingHp: number | undefined;
+  buildSpeed: number | undefined;
 }
 
 const caches = new WeakMap<ReadonlySet<TechId>, EffectCache>();
@@ -69,10 +76,20 @@ const caches = new WeakMap<ReadonlySet<TechId>, EffectCache>();
 function cacheOf(player: Researched): EffectCache {
   const set = player.researched;
   let c = caches.get(set);
-  if (!c || c.size !== set.size) {
+  if (!c || c.size !== set.size || c.civ !== player.civ) {
     const effects: TechEffect[] = [];
+    if (player.civ) effects.push(CIV_DEFS[player.civ].bonus);
     for (const id of set) effects.push(TECH_SPECS[id].effect);
-    c = { size: set.size, effects, units: new Map(), gather: new Map(), house: undefined };
+    c = {
+      size: set.size,
+      civ: player.civ,
+      effects,
+      units: new Map(),
+      gather: new Map(),
+      house: undefined,
+      buildingHp: undefined,
+      buildSpeed: undefined,
+    };
     caches.set(set, c);
   }
   return c;
@@ -88,7 +105,6 @@ function hasMeleeAttack(type: UnitType): boolean {
 
 /** Bonuses of the researched techs for one unit type. */
 export function unitBonuses(player: Researched, unitType: UnitType): UnitBonuses {
-  if (player.researched.size === 0) return NO_BONUS;
   const cache = cacheOf(player);
   let cached = cache.units.get(unitType);
   if (!cached) {
@@ -122,6 +138,12 @@ function computeUnitBonuses(effects: readonly TechEffect[], unitType: UnitType):
       case 'cavalryHp':
         if (CAVALRY_CLASS.includes(unitType)) hpMultiplier *= 1 + e.bonus;
         break;
+      case 'cavalrySpeed':
+        if (CAVALRY_CLASS.includes(unitType)) speedMultiplier *= 1 + e.bonus;
+        break;
+      case 'stableHp':
+        if (UNIT_BALANCE[baseUnitType(unitType)].trainers.includes('stable')) hpMultiplier *= 1 + e.bonus;
+        break;
       default:
         break;
     }
@@ -146,7 +168,6 @@ export function effectiveUnitStats(player: Researched, unitType: UnitType): Effe
 
 /** Multiplier on the gather rate of `resource` (stacks multiplicatively). */
 export function gatherMultiplier(player: Researched, resource: ResourceType): number {
-  if (player.researched.size === 0) return 1;
   const cache = cacheOf(player);
   let m = cache.gather.get(resource);
   if (m === undefined) {
@@ -187,6 +208,28 @@ export function houseBonus(player: Researched): number {
     cache.house = bonus;
   }
   return cache.house;
+}
+
+/** Multiplier on the maximum HP of newly placed buildings. */
+export function buildingHpMultiplier(player: Researched): number {
+  const cache = cacheOf(player);
+  if (cache.buildingHp === undefined) {
+    let m = 1;
+    for (const e of cache.effects) if (e.kind === 'buildingHp') m *= 1 + e.bonus;
+    cache.buildingHp = m;
+  }
+  return cache.buildingHp;
+}
+
+/** Multiplier on the build time contributed by each builder. */
+export function buildSpeedMultiplier(player: Researched): number {
+  const cache = cacheOf(player);
+  if (cache.buildSpeed === undefined) {
+    let m = 1;
+    for (const e of cache.effects) if (e.kind === 'buildSpeed') m *= 1 + e.bonus;
+    cache.buildSpeed = m;
+  }
+  return cache.buildSpeed;
 }
 
 /** Scales current and max HP by `factor`, keeping the health ratio. */

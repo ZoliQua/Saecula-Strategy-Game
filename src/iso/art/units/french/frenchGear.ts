@@ -1,5 +1,5 @@
 import { axesAlong, type Axes, type Figure } from '../figure';
-import type { HatDef, ShieldPainter } from '../gear';
+import type { BackItemPainter, HatDef, ShieldPainter } from '../gear';
 import { M } from '../materials';
 import { add, madd, norm, rotate, scale, type V3, type Xform } from '../rigMath';
 import { FRENCH_M } from './frenchMaterials';
@@ -13,7 +13,8 @@ const F = FRENCH_M;
  * "hounskull" bascinet with its snouted visor (Moyen Âge), the bicorne
  * worn athwart and the cuirassier's crested helm with its long black
  * horsehair mane (Lumières). The knight's heater shield bears a gold
- * fleur-de-lis on the team field. Registered in gearRegistry.ts.
+ * fleur-de-lis on the team field. The King's Musketeer (M8) wears the
+ * plumed cavalier hat, the casaque's cross and the bandolier. Registered in gearRegistry.ts.
  */
 
 /** Head-local point: hc + f·p0 + l·p1 + u·p2. */
@@ -125,11 +126,95 @@ export function fleurShield(fig: Figure, hand: V3, T: Xform): void {
   }
 }
 
+/**
+ * Cavalier hat (M8): a broad flat felt brim with a gilt edge, its left
+ * side turned up against a low crown, and a big white ostrich plume
+ * rising from the turned-up side and sweeping over the crown and back.
+ */
+export function cavalier(fig: Figure, hc: V3, axes: Axes): void {
+  const [f, l, u] = axes;
+  const hp = (p: V3): V3 => at(hc, axes, p);
+  fig.sphere(hp([-0.4, 0, 1.4]), 6.75, F.felt, { n: u, at: hp([0, 0, 1.2]) });
+  fig.cone(hp([-0.4, 0, 2.0]), hp([-0.5, 0, 6.4]), 6.7, 6.2, F.felt);
+  fig.sphere(hp([-0.5, 0, 5.2]), 6.2, F.felt, { n: u, at: hp([0, 0, 6.2]) });
+  fig.cone(hp([-0.4, 0, 2.6]), hp([-0.4, 0, 3.8]), 6.85, 6.8, M.gold);
+  // Flat brim with a gilt edge; the left side turned up against the crown.
+  const bc = hp([0, -0.8, 2.4]);
+  fig.cone(bc, madd(bc, u, 0.6), 10.6, 10.4, F.felt);
+  fig.cone(madd(bc, u, 0.05), madd(bc, u, 0.55), 11.0, 10.8, M.gold, { n: scale(l, -1), at: madd(bc, l, 4.0) });
+  const up: Axes = [f, rotate(l, f, -1.15), rotate(u, f, -1.15)];
+  const flap = hp([-0.4, 7.4, 6.0]);
+  fig.ellipsoid(flap, up, [7.6, 0.7, 4.0], F.felt, { n: up[2], at: madd(flap, up[2], -0.4) });
+  fig.capsule(madd(madd(flap, up[0], -6.6), up[2], 3.6), madd(madd(flap, up[0], 6.6), up[2], 3.6), 0.55, M.gold);
+  fig.sphere(madd(flap, l, 0.8), 1.4, F.white);
+  // The plume: rising from the turned-up side, sweeping over the crown and down the back.
+  const pts: V3[] = [hp([2.4, 6.6, 7.0]), hp([0.6, 6.0, 12.6]), hp([-4.4, 3.2, 13.8]), hp([-9.6, 0.4, 10.6]), hp([-11.6, -1.4, 5.6])];
+  const r = [3.0, 3.0, 2.7, 2.2];
+  for (let k = 0; k < 4; k++) fig.cone(pts[k]!, pts[k + 1]!, r[k]!, r[k + 1] ?? 1.6, F.white);
+  fig.sphere(pts[4]!, 1.7, F.white);
+}
+
+/** The torso garment's ellipsoid (humanoid.ts drawHuman), in torso-local units. */
+const TORSO = { c: 7.8, a: 4.3, b: 6.1, h: 8.2 } as const;
+/** How far the casaque's cross plates stand off the torso (centre), and their half thickness. */
+const CROSS_LIFT = 0.6;
+const CROSS_HALF = 0.75;
+
+/**
+ * Casaque gear (M8): the white cross of the King's Musketeers, front and
+ * back, as plates bent round the torso and standing proud of the team
+ * cloth (the casaque is worn over the bandolier, so the cross covers its
+ * strap); a small falling lace collar above the cross; the buff
+ * bandolier over the left shoulder, its powder charges hanging at the
+ * right hip below the cross arm.
+ */
+const casaque: BackItemPainter = (fig, torso, T) => {
+  const dir = (d: V3): V3 => norm(add(add(scale(T.x, d[0]), scale(T.y, d[1])), scale(T.z, d[2])));
+  const lifted = (k: number) => 1 + (CROSS_LIFT / TORSO.a) * k;
+  for (const side of [1, -1]) {
+    // Upright bar: plates along the torso's front (or back) meridian.
+    const bar = (phi: number): V3 => [side * TORSO.a * lifted(1) * Math.cos(phi), 0, TORSO.c + (TORSO.h + CROSS_LIFT) * Math.sin(phi)];
+    for (let k = 0; k < 5; k++) {
+      const p0 = bar(-0.5 + k * 0.26);
+      const p1 = bar(-0.5 + (k + 1) * 0.26);
+      const along = dir([p1[0] - p0[0], 0, p1[2] - p0[2]]);
+      const mid: V3 = [(p0[0] + p1[0]) / 2, 0, (p0[2] + p1[2]) / 2];
+      const len = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]);
+      const normal = dir([mid[0] / TORSO.a ** 2, 0, (mid[2] - TORSO.c) / TORSO.h ** 2]);
+      fig.box(torso(mid), axesAlong(along, normal), [len / 2 + 0.15, CROSS_HALF, 1.6], F.cross);
+    }
+    // Cross arm: plates round the torso at chest height.
+    const z = 10.0;
+    const k = Math.sqrt(1 - ((z - TORSO.c) / TORSO.h) ** 2);
+    const arm = (t: number): V3 => [side * (TORSO.a * k + CROSS_LIFT) * Math.cos(t), (TORSO.b * k + CROSS_LIFT) * Math.sin(t), z];
+    for (let n = 0; n < 4; n++) {
+      const p0 = arm(-0.7 + n * 0.35);
+      const p1 = arm(-0.7 + (n + 1) * 0.35);
+      const along = dir([p1[0] - p0[0], p1[1] - p0[1], 0]);
+      const mid: V3 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, z];
+      const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+      const normal = dir([mid[0] / TORSO.a ** 2, mid[1] / TORSO.b ** 2, 0]);
+      fig.box(torso(mid), axesAlong(along, normal), [len / 2 + 0.15, CROSS_HALF, 1.45], F.cross);
+    }
+  }
+  fig.ellipsoid(torso([0.3, 0, 14.6]), [T.x, T.y, T.z], [3.0, 5.0, 0.8], F.white);
+  fig.capsule(torso([3.0, 5.2, 12.8]), torso([4.4, -4.6, 2.6]), 0.75, F.buff);
+  fig.capsule(torso([-3.2, 5.2, 12.8]), torso([-4.2, -4.6, 2.6]), 0.75, F.buff);
+  for (const t of [0.76, 0.88, 1.0]) {
+    const p = torso([3.0 + 1.4 * t + 0.6, 5.2 - 9.8 * t, 12.8 - 10.2 * t]);
+    fig.capsule(p, madd(p, T.z, -2.0), 0.7, M.darkWood);
+    fig.sphere(p, 0.5, M.brass);
+  }
+};
+
 export const FRENCH_HATS = {
   wheelHelm: { draw: wheelHelm, coversHead: false },
   hounskull: { draw: hounskull, coversHead: true },
   bicorne: { draw: bicorne, coversHead: false },
   crestedHelm: { draw: crestedHelm, coversHead: false },
+  cavalier: { draw: cavalier, coversHead: false },
 } satisfies Record<string, HatDef>;
+
+export const FRENCH_BACK_ITEMS = { casaque } satisfies Record<string, BackItemPainter>;
 
 export const FRENCH_SHIELDS = { gaulShield, fleurShield } satisfies Record<string, ShieldPainter>;

@@ -27,7 +27,7 @@ describe('dying (collapsing) buildings', () => {
     const map = new MapData(16, 16, TERRAIN.grass);
     const world = createEcsWorld();
     const tc = createBuilding(world, { type: 'town_center', origin: { tx: 4, ty: 4 }, playerId: 1, mapData: map });
-    queueUnit(tc, 'villager', 1);
+    queueUnit(tc, 'villager', { age: 1, civ: 'hungarian' });
     const trainTime = tc.trainingQueue!.entries[0]!.totalTime;
     killEntity(world, tc as Alive);
     new TrainingSystem(world, map).update(trainTime * 1000 + 100);

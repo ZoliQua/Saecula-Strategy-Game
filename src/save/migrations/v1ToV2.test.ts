@@ -16,7 +16,7 @@ describe('v1 → v2 migration', () => {
   it('adds zeroed stats for every saved player and an empty timeline', () => {
     const out = v1ToV2({ schemaVersion: 1, players: [{ id: 1 }, { id: 2 }, { id: 4 }] });
     expect(out['stats']).toEqual({ players: { '1': zeroStats(), '2': zeroStats(), '4': zeroStats() }, timeline: [] });
-    expect(migrate({ schemaVersion: 1, players: [{ id: 1 }] })).toEqual({
+    expect(migrate({ schemaVersion: 1, players: [{ id: 1 }] }, 2)).toEqual({
       ok: true,
       data: { schemaVersion: 2, players: [{ id: 1 }], stats: { players: { '1': zeroStats() }, timeline: [] }, matchId: expect.any(String) as unknown },
     });
@@ -46,7 +46,7 @@ describe('v1 → v2 migration', () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     const save = parsed.save;
-    expect(save.schemaVersion).toBe(2);
+    expect(save.schemaVersion).toBe(3);
     expect(save.matchId).toBe(`v1-${v1Save.setup.seed}-${v1Save.createdAt}`);
     expect(Object.keys(save.stats.players)).toEqual(save.players.map((p) => String(p.id)));
     expect(Object.values(save.stats.players).every((s) => s.gathered === 0 && s.ageUpAtMs.length === 0)).toBe(true);

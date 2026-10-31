@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import type { CivId, UnitType } from '../../../../types';
+import type { CivId, BaseUnitType, UnitType } from '../../../../types';
 import { Figure } from '../figure';
 import { PAINTED_HEADINGS } from '../layout';
 import { BASE_UNIT_LOOKS, contactShadow, unitLook } from '../looks';
@@ -10,7 +10,7 @@ import { IDENTITY } from '../rigMath';
 import { sheetGeometry } from '../sheet';
 import { ENGLISH_M } from './englishMaterials';
 
-const TYPES: readonly UnitType[] = [
+const TYPES: readonly BaseUnitType[] = [
   'villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon',
 ];
 

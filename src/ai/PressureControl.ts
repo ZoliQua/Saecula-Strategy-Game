@@ -1,7 +1,8 @@
 import { AI_COMMON, type MediumTuning } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { UNIT_SPECS } from '../ecs/archetypes/unit';
-import type { UnitType } from '../types';
+import { baseUnitType, civUnitType } from '../game/civUnits';
+import type { BaseUnitType } from '../types';
 import type { AIContext } from './AIPlayer';
 import type { ArmyControl } from './ArmyControl';
 import type { WorldView } from './perception';
@@ -15,8 +16,8 @@ export interface PressureActions {
   explorers(view: WorldView): Entity[];
   /** Exploring scouts still wanted beyond those out now. */
   missingExplorers(view: WorldView): number;
-  train(ctx: AIContext, view: WorldView, type: UnitType, maxQueued: number): boolean;
-  trainersFor(view: WorldView, type: UnitType, maxQueued: number): Entity[];
+  train(ctx: AIContext, view: WorldView, type: BaseUnitType, maxQueued: number): boolean;
+  trainersFor(view: WorldView, type: BaseUnitType, maxQueued: number): Entity[];
   /** The rolled first-attack time (restored with the strategy). */
   firstAttackAtMs(): number;
   /** Called after the raid launched (Mesteri may split off a flank). */
@@ -93,7 +94,7 @@ export class PressureControl {
     const { unit, minArmy, leadMs } = this.tune.pressure;
     if (this.sentFlag || ctx.timeMs < this.act.firstAttackAtMs() - leadMs) return false;
     const queued = view.buildings.reduce(
-      (n, b) => n + (b.trainingQueue?.entries.filter((e) => e.unitType === unit).length ?? 0),
+      (n, b) => n + (b.trainingQueue?.entries.filter((e) => baseUnitType(e.unitType) === unit).length ?? 0),
       0,
     );
     // Missing explorers: the next scouts trained go exploring first.
@@ -108,7 +109,7 @@ export class PressureControl {
   private squad(view: WorldView): Entity[] {
     const explorers = new Set(this.act.explorers(view));
     return [...view.military, ...view.scouts].filter(
-      (u) => !explorers.has(u) && !this.act.isReserved(u) && u.unit?.unitType === this.tune.pressure.unit,
+      (u) => !explorers.has(u) && !this.act.isReserved(u) && !!u.unit && baseUnitType(u.unit.unitType) === this.tune.pressure.unit,
     );
   }
 
@@ -124,6 +125,6 @@ export class PressureControl {
     if (this.act.trainersFor(view, unit, Infinity).length === 0) return false;
     if (ctx.timeMs > this.act.firstAttackAtMs() + AI_COMMON.pressureHoldCapMs) return false;
     const farm = view.buildings.some((b) => b.building?.type === 'farm' && !b.underConstruction);
-    return farm || ctx.player.resources.food >= UNIT_SPECS[unit].cost.food;
+    return farm || ctx.player.resources.food >= UNIT_SPECS[civUnitType(ctx.player.civ, unit)].cost.food;
   }
 }

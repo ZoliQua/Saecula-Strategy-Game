@@ -1,6 +1,7 @@
 import type { With } from 'miniplex';
-import type { CivId, UnitType } from '../../types';
+import type { CivId } from '../../types';
 import type { SelectedEntityInfo } from '../../ui/store';
+import { civUnitTypes } from '../../game/civUnits';
 import { techsForBuilding } from '../../game/technologies';
 import { UNIT_SPECS } from '../archetypes/unit';
 import type { Entity } from '../components';
@@ -82,7 +83,7 @@ export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: numb
     const uc = (entity as Entity).underConstruction;
     if (uc) info.constructionProgress = Math.min(1, uc.elapsed / uc.totalTime);
     if (entity.trainingQueue) {
-      const trainable = (Object.keys(UNIT_SPECS) as UnitType[]).filter(
+      const trainable = civUnitTypes(info.civ).filter(
         (u) => UNIT_SPECS[u].trainers.includes(entity.building!.type),
       );
       info.trainable = trainable;

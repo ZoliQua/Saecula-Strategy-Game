@@ -208,7 +208,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
     farms: new FarmRegenSystem(world),
-    construction: new ConstructionSystem(world, map, paths),
+    construction: new ConstructionSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor),

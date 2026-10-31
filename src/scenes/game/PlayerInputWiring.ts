@@ -21,6 +21,8 @@ export interface PlayerInputDeps {
   readonly humanId: number;
   readonly civ: CivId;
   readonly age: () => AgeId;
+  /** Max-HP multiplier for the human's new buildings (civ bonus). */
+  readonly buildingHp: () => number;
   /** An Esc with nothing to cancel (it opens the pause). */
   readonly onIdleEscape: () => void;
 }
@@ -38,7 +40,7 @@ export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildP
   // The placement ghost and the cursor read the hover tile from the pointer handler.
   let pointer: PointerInput | null = null;
   const hoverTile = () => pointer?.getHoverTile() ?? null;
-  const placement = new BuildPlacement(scene, d.world, d.mapData, d.selection, hoverTile, d.age, d.humanId, d.civ);
+  const placement = new BuildPlacement(scene, d.world, d.mapData, d.selection, hoverTile, d.age, d.humanId, d.civ, d.buildingHp);
   pointer = new PointerInput(scene, d.tileMap, d.selection, placement, orders, d.onIdleEscape, undefined, d.humanId);
   pointer.register();
   const registered = pointer;

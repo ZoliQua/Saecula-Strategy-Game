@@ -16,7 +16,10 @@ const R = RUSSIAN_M;
  * kolpak, a long kaftan and the berdysh on the back (age 3). Team
  * colour stays on the shirts, kaftans, kolpaks and the shield field, so
  * ownership reads first; the legs are near-black wool, the civ's blue
- * and white only in the small outlined saltire badge.
+ * and white only in the small outlined saltire badge. The cossack (M8,
+ * in the scout's slot) wears the tall black papakha and a long team
+ * cherkeska with gazyri on its breast, carries the shashka and rides a
+ * small, fast steppe horse.
  */
 export const RUSSIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   villager: {
@@ -119,6 +122,23 @@ export const RUSSIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
       weapon: 'spear',
     },
     horse: { coat: R.dun, mane: M.horse.mane, saddleCloth: true },
+  },
+  cossack: {
+    kind: 'rider',
+    human: {
+      hat: 'papakha',
+      body: M.team,
+      skirt: { mat: M.team, length: 9 },
+      sleeves: M.team,
+      legs: R.wool,
+      boots: M.blackBoot,
+      highBoots: true,
+      belt: R.silver,
+      back: 'gazyri',
+      weapon: 'sabre',
+      weaponStyle: 'shashka',
+    },
+    horse: { coat: R.steppeBay, mane: M.horse.mane, saddleCloth: true, light: true },
   },
   knight: {
     kind: 'rider',

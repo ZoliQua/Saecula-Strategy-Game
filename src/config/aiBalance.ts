@@ -1,5 +1,5 @@
 import type { Difficulty } from '../game/GameSetupConfig';
-import type { BuildingType, UnitType } from '../types';
+import type { BaseUnitType, BuildingType } from '../types';
 
 /**
  * AI tuning (PROGRAM_TERV.md §10): every number the AI strategies and
@@ -55,7 +55,7 @@ export const AI_COMMON = {
   /** How long an enemy villager's last seen spot is remembered (ms). */
   villagerMemoryMs: 180_000,
   /** Expensive units the army saves for when the mix wants one next (cheaper units then leave its cost banked). */
-  savesForUnits: ['cannon'] as readonly UnitType[],
+  savesForUnits: ['cannon'] as readonly BaseUnitType[],
   /** A failed search for a Wonder site near the TC stops Wonder saving until this long has passed (ms). */
   wonderSiteRetryMs: 120_000,
   /** A flank unit found idle short of its target this many times (no path) is released from the flank. */
@@ -132,7 +132,7 @@ export const AI_COUNTERS = {
     cavalry: ['pikeman'],
     archers: ['knight', 'swordsman', 'cavalry'],
     infantry: ['crossbowman', 'archer', 'musketeer', 'cannon'],
-  } as Readonly<Record<'cavalry' | 'archers' | 'infantry', readonly UnitType[]>>,
+  } as Readonly<Record<'cavalry' | 'archers' | 'infantry', readonly BaseUnitType[]>>,
 } as const;
 
 /**

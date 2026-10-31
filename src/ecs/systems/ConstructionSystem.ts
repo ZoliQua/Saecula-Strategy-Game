@@ -11,6 +11,8 @@ import { onFootprintRing } from '../footprint';
 import { faceToward } from './facing';
 import type { EcsWorld } from '../world';
 import { gameEvents } from '../../game/events';
+import { buildSpeedMultiplier } from '../../game/modifiers';
+import type { PlayerManager } from '../../game/PlayerManager';
 
 /** How far (tiles) from the finished segment a builder looks for the next wall segment. */
 const CHAIN_RADIUS = 3;
@@ -38,6 +40,7 @@ export class ConstructionSystem {
     world: EcsWorld,
     mapData: MapData,
     private readonly paths: PathAllowance = UNLIMITED_PATHS,
+    private readonly players: PlayerManager | null = null,
   ) {
     this.world = world;
     this.mapData = mapData;
@@ -71,7 +74,8 @@ export class ConstructionSystem {
       b.movable.path = [];
       b.movable.progress = 0;
       faceToward(b as Entity, site as Entity);
-      site.underConstruction.elapsed += dt;
+      const owner = this.players?.get(b.owner.playerId);
+      site.underConstruction.elapsed += owner ? dt * buildSpeedMultiplier(owner) : dt;
       const pct = Math.min(
         1,
         site.underConstruction.elapsed / site.underConstruction.totalTime,

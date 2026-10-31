@@ -5,7 +5,7 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { MENU_PHASE } from '../config/visual';
 import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { LightManager, lit } from '../iso/art/lighting/LightManager';
-import { frameIndex, headingSlot, unitSheetLayout, WALK_CYCLE_TILES } from '../iso/art/units/layout';
+import { frameIndex, headingSlot, unitSheetLayout, walkCycleTiles } from '../iso/art/units/layout';
 import { pumpUnitArt } from '../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../iso/art/units/unitSprite';
 import { PLAYER_COLORS } from '../game/Player';
@@ -337,7 +337,7 @@ export class MainMenuScene extends Phaser.Scene {
       back: directionFromDelta(a.tx - b.tx, a.ty - b.ty),
       outbound: true,
       // Average tween speed (tiles/ms) sets the stride pace.
-      cycleMs: (WALK_CYCLE_TILES[type] / Math.max(0.1, tiles / WALK_MS)) * 0.7,
+      cycleMs: (walkCycleTiles(type) / Math.max(0.1, tiles / WALK_MS)) * 0.7,
     };
     this.walkers.push(walker);
     this.tweens.add({

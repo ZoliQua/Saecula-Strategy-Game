@@ -1,5 +1,6 @@
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
+import { civUnitTypes, isUniqueUnit } from '../../game/civUnits';
 import { buildingRequiredAge, techRequiredAge, unitRequiredAge } from '../../game/availability';
 import { isAgeUp, TECH_SPECS } from '../../game/technologies';
 import { AGES, type AgeId, type BuildingType, type CivId, type Resources, type TechId, type UnitType } from '../../types';
@@ -17,6 +18,8 @@ export interface TreeBuilding {
 export interface TreeUnit {
   readonly type: UnitType;
   readonly cost: Resources;
+  /** True for a civ's unique unit. */
+  readonly unique: boolean;
   readonly trainTime: number;
   /** The earliest-unlocked building that trains it (the diagram's connector). */
   readonly trainedAt: BuildingType;
@@ -70,7 +73,6 @@ export interface TechTreeModel {
 }
 
 const BUILDINGS = Object.keys(BUILDING_SPECS) as BuildingType[];
-const UNITS = Object.keys(UNIT_SPECS) as UnitType[];
 const TECHS = Object.keys(TECH_SPECS) as TechId[];
 
 /** Table order, made stable by unlock age (a sort is stable). */
@@ -80,7 +82,7 @@ function treeUnit(type: UnitType): TreeUnit {
   const spec = UNIT_SPECS[type];
   const [trainedAt, ...alsoAt] = [...spec.trainers].sort(byUnlock);
   if (!trainedAt) throw new Error(`techTreeModel: ${type} has no trainer`);
-  return { type, cost: spec.cost, trainTime: spec.trainTime, trainedAt, alsoAt };
+  return { type, cost: spec.cost, unique: isUniqueUnit(type), trainTime: spec.trainTime, trainedAt, alsoAt };
 }
 
 function entryInto(age: AgeId): AgeEntry | null {
@@ -110,7 +112,7 @@ function trainersOf(units: readonly TreeUnit[]): TreeTrainer[] {
  */
 export function techTreeModel(civ: CivId, age: AgeId, researched: ReadonlySet<TechId> = new Set()): TechTreeModel {
   const columns = AGES.map(({ id }): TreeColumn => {
-    const units = UNITS.filter((t) => unitRequiredAge(t) === id).map(treeUnit);
+    const units = civUnitTypes(civ).filter((t) => unitRequiredAge(t) === id).map(treeUnit);
     return {
       age: id,
       state: id === age ? 'current' : id < age ? 'past' : 'locked',

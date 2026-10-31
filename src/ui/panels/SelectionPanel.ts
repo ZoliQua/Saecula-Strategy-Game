@@ -89,8 +89,8 @@ export class SelectionPanel {
     const more = count > 1 ? `+${count - 1} ${hu.hud.selectedMore}` : undefined;
     if (sel.kind === 'unit') {
       const spec = UNIT_SPECS[sel.unitType];
-      // Technology bonuses are only known for the human's own units.
-      const eff = effectiveUnitStats({ researched: new Set(enemy ? [] : researched) }, sel.unitType);
+      // Technology bonuses are only known for the human's own units; the owner's civ bonus is public.
+      const eff = effectiveUnitStats({ researched: new Set(enemy ? [] : researched), civ: sel.civ }, sel.unitType);
       const base = spec.balance;
       const attackBonus = eff.meleeAtk - base.meleeAtk + (eff.pierceAtk - base.pierceAtk);
       const rows: Array<[IconName, string, string]> = [

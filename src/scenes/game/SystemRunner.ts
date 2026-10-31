@@ -139,7 +139,7 @@ export class SystemRunner {
     this.movement = new MovementSystem(world, players, mapData);
     this.gathering = new GatheringSystem(world, mapData, players, this.paths);
     this.farms = new FarmRegenSystem(world);
-    this.construction = new ConstructionSystem(world, mapData, this.paths);
+    this.construction = new ConstructionSystem(world, mapData, this.paths, players);
     this.training = new TrainingSystem(world, mapData, players);
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);

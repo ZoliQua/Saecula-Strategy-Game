@@ -116,7 +116,7 @@ describe('integration — M1 vertical slice', () => {
     const before = world.entities.filter(
       (e) => e.unit?.unitType === 'villager',
     ).length;
-    const result = queueUnit(tc, 'villager', 1);
+    const result = queueUnit(tc, 'villager', { age: 1, civ: 'hungarian' });
     expect(result.ok).toBe(true);
 
     run(30000, 250);
@@ -157,7 +157,7 @@ describe('integration — M1 vertical slice', () => {
     expect(completed.trainingQueue).toBeDefined();
 
     // Queue a swordsman.
-    const queueResult = queueUnit(completed, 'swordsman', 1);
+    const queueResult = queueUnit(completed, 'swordsman', { age: 1, civ: 'hungarian' });
     expect(queueResult.ok).toBe(true);
     run(30000, 250);
 

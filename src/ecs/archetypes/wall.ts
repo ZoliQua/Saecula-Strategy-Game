@@ -13,6 +13,8 @@ export interface CreateWallOptions {
   readonly underConstruction?: boolean;
   /** Shown in at least this age's style (fortress presets are stone from the start). */
   readonly minStyleAge?: AgeId;
+  /** Scales the maximum HP (civ bonus); default 1. */
+  readonly hpMultiplier?: number;
 }
 
 /**
@@ -27,6 +29,7 @@ export function createWall(world: EcsWorld, options: CreateWallOptions): Entity 
     playerId: options.playerId,
     mapData: options.mapData,
     underConstruction: options.underConstruction ?? false,
+    ...(options.hpMultiplier !== undefined ? { hpMultiplier: options.hpMultiplier } : {}),
   });
   if (options.minStyleAge !== undefined && wall.building) wall.building.minStyleAge = options.minStyleAge;
   return wall;

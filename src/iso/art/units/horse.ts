@@ -10,7 +10,15 @@ export interface HorseLook {
   readonly barding?: boolean;
   /** Team saddle cloth on the flanks. */
   readonly saddleCloth?: boolean;
+  /** Small, fast steppe horse (cossack): the body rides lower on shorter, finer legs, the barrel slimmer. */
+  readonly light?: boolean;
 }
+
+/** How much lower the light horse's body rides, and how much slimmer its barrel and legs are. */
+const LIGHT_DROP = 2.6;
+const LIGHT_SLIM = 0.86;
+/** Hoof height above the ground at the standing pose (the leg's length is fitted so it stays there). */
+const HOOF_Z = 1.1;
 
 const TAU = Math.PI * 2;
 const UPPER = 8.8;
@@ -79,7 +87,9 @@ export function horseFall(i: number): Xform {
 /** Paints the horse; returns the body transform the rider sits in. */
 export function drawHorse(fig: Figure, look: HorseLook, anim: UnitAnim, i: number): Xform {
   const hp = horsePose(anim, i);
-  const B = hp.body;
+  const drop = look.light ? LIGHT_DROP : 0;
+  const slim = look.light ? LIGHT_SLIM : 1;
+  const B = look.light ? compose(translation([0, 0, -drop]), hp.body) : hp.body;
   const at = (p: V3): V3 => applyPoint(B, p);
   const bAxes: Axes = [B.x, B.y, B.z];
   const coat = look.coat;
@@ -89,17 +99,19 @@ export function drawHorse(fig: Figure, look: HorseLook, anim: UnitAnim, i: numbe
   tops.forEach((top, k) => {
     const s = hp.legs[k] ?? STAND;
     const a = at(top);
-    const knee = madd(a, [Math.sin(s.swing), 0, -Math.cos(s.swing)], UPPER);
+    // A lowered body keeps its hooves on the ground: the leg shortens by the drop.
+    const len = drop === 0 ? 1 : (top[2] - drop - HOOF_Z) / (top[2] - HOOF_Z);
+    const knee = madd(a, [Math.sin(s.swing), 0, -Math.cos(s.swing)], UPPER * len);
     const lowAngle = s.swing - s.fold;
-    const hoof = madd(knee, [Math.sin(lowAngle), 0, -Math.cos(lowAngle)], LOWER);
-    fig.capsule(a, knee, k < 2 ? 2.2 : 2.6, coat);
-    fig.capsule(knee, hoof, 1.35, coat);
+    const hoof = madd(knee, [Math.sin(lowAngle), 0, -Math.cos(lowAngle)], LOWER * len);
+    fig.capsule(a, knee, (k < 2 ? 2.2 : 2.6) * slim, coat);
+    fig.capsule(knee, hoof, 1.35 * slim, coat);
     fig.cone(madd(hoof, [0, 0, 1], 0.4), madd(hoof, [0, 0, 1], -1.3), 1.6, 1.85, M.horse.hoof);
   });
 
-  fig.ellipsoid(at([0, 0, 22]), bAxes, [13.2, 5.9, 6.5], coat);
-  fig.ellipsoid(at([9.6, 0, 22.8]), bAxes, [6.4, 5.5, 6.8], coat);
-  fig.ellipsoid(at([-9.6, 0, 23.4]), bAxes, [7.2, 6.0, 6.9], coat);
+  fig.ellipsoid(at([0, 0, 22]), bAxes, [13.2, 5.9 * slim, 6.5], coat);
+  fig.ellipsoid(at([9.6, 0, 22.8]), bAxes, [6.4, 5.5 * slim, 6.8], coat);
+  fig.ellipsoid(at([-9.6, 0, 23.4]), bAxes, [7.2, 6.0 * slim, 6.9], coat);
 
   // Neck and head (dipping with the stride).
   const neckBase = at([11.4, 0, 25.6]);

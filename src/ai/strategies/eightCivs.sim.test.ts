@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import { createRng } from '../../map/random';
-import type { CivId } from '../../types';
+import { civUnitTypes } from '../../game/civUnits';
+import type { CivId, UnitType } from '../../types';
 import type { AIStrategy } from '../AIPlayer';
 import { createHeadlessMatch } from '../testing/headlessMatch';
 import { EasyStrategy } from './EasyStrategy';
@@ -9,26 +10,32 @@ import { HardStrategy } from './HardStrategy';
 import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
-/** Wall-clock cap per six-player match (about 12.5 s each when the machine is idle). */
+/** Wall-clock cap per six-player match (about 12-13 s each when the machine is idle). */
 const SIM_TIMEOUT_MS = 90_000;
 
 /**
  * M5 closing smoke without a browser (CLAUDE.md §9 M5): two 6-player
  * 96×96 matches whose line-ups cover all eight civs, every gameplay system
- * running. Civs are art only, so this pins that any civ in any slot runs
- * through all three ages without exceptions and within the 500-entity
- * budget (units, buildings, projectiles; CLAUDE.md §10).
+ * running. This pins that any civ in any slot runs through all three ages
+ * without exceptions and within the 500-entity budget (units, buildings,
+ * projectiles; CLAUDE.md §10). M8: every civ fields only its own roster,
+ * and the age-1 unique units (legionary, cossack, sissi) take the field —
+ * so the Italian and Russian sides hold Medium slots (Easy trains only
+ * villagers and swordsmen, and is raided down early).
  *
  * Target rules as in threeAges.sim.test.ts: a head-on Medium-vs-Hard duel
  * ends before age 2, so each Medium or Hard side first raids its own Easy
  * neighbour (the Easy fights back at it); once every Medium and Hard side
  * is in the Enlightenment they turn on each other. A side whose target is
  * gone moves on to the next one alive.
- * Measured (seed 3): run A — age 3 at 18.87 (HU), 18.57 (DE), 20.34 (ES)
- * min; foundries for all three, cannons for HU and ES; at most 292
- * entities; ends at 26.3 min. Run B — age 3 at 19.20 (EN), 18.74 (FI);
- * foundries and cannons for both; at most 263 entities; ends at 25.2 min.
- * About 12.5 s each. PRINT_SIM=1 prints the figures.
+ * Measured (seed 3, M8): run A — age 3 at 21.40 (IT), 19.05 (DE), 21.59
+ * (RU) min; foundries and cannons for all three; legionaries and
+ * cossacks; first cannonball at 22.93 min; at most 293 entities; ends at
+ * 27.6 min; about 13 s. Run B — age 3 at 18.00 (EN), 18.39 (FI); foundries
+ * and cannons for both; sissis; the first cannonball only at 32.95 min
+ * (14.6 min into the late phase: longbowmen and sissis keep the duel
+ * long), hence its late phase that runs until the first cannonball (at least 6 and at most 20 minutes in); at most 226 entities; ends at
+ * 32.95 min (the first cannonball); about 12 s. PRINT_SIM=1 prints the figures.
  */
 
 interface Slot {
@@ -38,6 +45,13 @@ interface Slot {
   readonly early: readonly number[];
   readonly late: readonly number[];
 }
+
+/** The age-1 unique units (M8) and their civs. */
+const AGE1_UNIQUES: readonly { readonly civ: CivId; readonly type: UnitType }[] = [
+  { civ: 'italian', type: 'legionary' },
+  { civ: 'russian', type: 'cossack' },
+  { civ: 'finnish', type: 'sissi' },
+];
 
 function strategyFor(difficulty: Difficulty, seed: number): AIStrategy {
   if (difficulty === 'hard') return new HardStrategy(createRng(seed * 31 + 2));
@@ -52,12 +66,21 @@ interface RunResult {
   readonly foundryOwners: Set<number>;
   readonly cannonOwners: Set<number>;
   readonly cannonballs: boolean;
+  readonly firstCannonballMin: number;
+  /** When every Medium and Hard side was in age 3 (the late phase started). */
+  readonly lateMin: number;
+  /** Unit types each player fielded (sampled during the run). */
+  readonly fielded: Map<number, Set<UnitType>>;
   readonly endMin: number;
   readonly wallMs: number;
 }
 
-/** Plays a 6-player 96×96 meadow match with `slots` (slot 0 is the human, driven by an AI). */
-function play(seed: number, slots: readonly Slot[]): RunResult {
+/**
+ * Plays a 6-player 96×96 meadow match with `slots` (slot 0 is the human, driven by an AI). The late phase lasts
+ * `lateMin` minutes; with `stopAtFirstCannonball` it ends early, once a cannonball has flown at least 6 minutes
+ * into it, and `lateMin` is only the hard cap.
+ */
+function play(seed: number, slots: readonly Slot[], lateMin = 6, stopAtFirstCannonball = false): RunResult {
   const t0 = performance.now();
   let late = false;
   const [human, ...ais] = slots;
@@ -85,22 +108,32 @@ function play(seed: number, slots: readonly Slot[]): RunResult {
   const cannonOwners = new Set<number>();
   // Sampled during the run, like cannonOwners: a foundry razed before the end still counts.
   const foundryOwners = new Set<number>();
+  const fielded = new Map<number, Set<UnitType>>();
   let maxEntities = 0;
-  let cannonballs = false;
+  let firstCannonballAt = Infinity;
   let lateAt = Infinity;
+  let tick = 0;
   match.run(45 * MIN, 100, (t) => {
+    // The fielded-types scan is the costly part; every 10th tick is plenty for "ever fielded".
+    const sampleFielded = tick++ % 10 === 0;
     maxEntities = Math.max(maxEntities, live());
     for (const p of match.players.all()) if (p.age >= 3 && !age3At.has(p.id)) age3At.set(p.id, t);
     for (const e of match.world.entities) {
-      if (e.projectile?.kind === 'cannonball') cannonballs = true;
+      if (e.projectile?.kind === 'cannonball' && firstCannonballAt === Infinity) firstCannonballAt = t;
       if (e.unit?.unitType === 'cannon') cannonOwners.add(e.owner?.playerId ?? 0);
+      if (sampleFielded && e.unit && e.owner) {
+        const types = fielded.get(e.owner.playerId) ?? new Set<UnitType>();
+        fielded.set(e.owner.playerId, types.add(e.unit.unitType));
+      }
       if (e.building?.type === 'foundry' && !e.underConstruction) foundryOwners.add(e.owner?.playerId ?? 0);
     }
     if (!late && strong.every((id) => age3At.has(id))) {
       late = true;
       lateAt = t;
     }
-    return late && t >= lateAt + 6 * MIN;
+    if (!late) return false;
+    if (stopAtFirstCannonball && firstCannonballAt < Infinity && t >= lateAt + 6 * MIN) return true;
+    return t >= lateAt + lateMin * MIN;
   });
   return {
     civs: match.players.all().map((p) => p.civ),
@@ -108,7 +141,10 @@ function play(seed: number, slots: readonly Slot[]): RunResult {
     maxEntities,
     foundryOwners,
     cannonOwners,
-    cannonballs,
+    cannonballs: firstCannonballAt < Infinity,
+    firstCannonballMin: +(firstCannonballAt / MIN).toFixed(2),
+    lateMin: +(lateAt / MIN).toFixed(2),
+    fielded,
     endMin: +(match.timeMs() / MIN).toFixed(2),
     wallMs: Math.round(performance.now() - t0),
   };
@@ -124,21 +160,31 @@ function expectRun(r: RunResult, slots: readonly Slot[]): void {
   expect(r.foundryOwners.size, 'foundries').toBeGreaterThan(0);
   expect(r.cannonOwners.size, 'cannons').toBeGreaterThan(0);
   expect(r.cannonballs, 'cannonballs fired').toBe(true);
+  // M8: every civ fields only its own roster, and the age-1 unique units in the line-up take the field.
+  slots.forEach((s, i) => {
+    const fielded = [...(r.fielded.get(i + 1) ?? [])];
+    expect(fielded.filter((t) => !civUnitTypes(s.civ).includes(t)), `${s.civ} outside its roster`).toEqual([]);
+  });
+  for (const unique of AGE1_UNIQUES.filter((u) => slots.some((s) => s.civ === u.civ))) {
+    const id = slots.findIndex((s) => s.civ === unique.civ) + 1;
+    expect(r.fielded.get(id)?.has(unique.type), `${unique.civ} trains ${unique.type}`).toBe(true);
+  }
   if (!process.env['PRINT_SIM']) return;
   const age3Min = Object.fromEntries([...r.age3At].map(([id, t]) => [id, +(t / MIN).toFixed(2)]));
-  console.log(JSON.stringify({ ...r, age3At: age3Min, foundryOwners: [...r.foundryOwners], cannonOwners: [...r.cannonOwners] }));
+  const fielded = Object.fromEntries([...r.fielded].map(([id, types]) => [id, [...types]]));
+  console.log(JSON.stringify({ ...r, age3At: age3Min, foundryOwners: [...r.foundryOwners], cannonOwners: [...r.cannonOwners], fielded }));
 }
 
 describe('eight-civ headless matches (96×96 meadow, 6 players each)', () => {
-  it('run A: Hungarian Medium vs German Hard, Spanish Medium and French, Italian, Russian Easy', () => {
+  it('run A: Italian Medium vs German Hard, Russian Medium and French, Hungarian, Spanish Easy', () => {
     // 1 raids 3, 2 raids 5, 4 raids 6; then 1 and 4 turn on 2, 2 on 1.
     const slots: Slot[] = [
-      { civ: 'hungarian', difficulty: 'medium', early: [3, 5, 6], late: [2, 4] },
+      { civ: 'italian', difficulty: 'medium', early: [3, 5, 6], late: [2, 4] },
       { civ: 'german', difficulty: 'hard', early: [5, 3, 6], late: [1, 4] },
       { civ: 'french', difficulty: 'easy', early: [1, 2], late: [1, 2] },
-      { civ: 'spanish', difficulty: 'medium', early: [6, 5, 3], late: [2, 1] },
-      { civ: 'italian', difficulty: 'easy', early: [2, 1], late: [2, 1] },
-      { civ: 'russian', difficulty: 'easy', early: [4, 2], late: [4, 2] },
+      { civ: 'russian', difficulty: 'medium', early: [6, 5, 3], late: [2, 1] },
+      { civ: 'hungarian', difficulty: 'easy', early: [2, 1], late: [2, 1] },
+      { civ: 'spanish', difficulty: 'easy', early: [4, 2], late: [4, 2] },
     ];
     expectRun(play(3, slots), slots);
   }, SIM_TIMEOUT_MS);
@@ -153,6 +199,6 @@ describe('eight-civ headless matches (96×96 meadow, 6 players each)', () => {
       { civ: 'french', difficulty: 'easy', early: [1, 2], late: [1, 2] },
       { civ: 'spanish', difficulty: 'easy', early: [2, 1], late: [2, 1] },
     ];
-    expectRun(play(3, slots), slots);
+    expectRun(play(3, slots, 20, true), slots);
   }, SIM_TIMEOUT_MS);
 });

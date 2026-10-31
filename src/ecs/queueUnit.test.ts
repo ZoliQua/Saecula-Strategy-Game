@@ -24,23 +24,23 @@ describe('queueUnit', () => {
 
   it('only accepts one of the unit type trainers', () => {
     const { tc, barracks, stable } = setup();
-    expect(queueUnit(tc, 'swordsman', 3).reason).toBe('wrong-trainer');
-    expect(queueUnit(barracks, 'villager', 3).reason).toBe('wrong-trainer');
-    expect(queueUnit(barracks, 'knight', 3).reason).toBe('wrong-trainer');
-    expect(queueUnit(stable, 'knight', 3).ok).toBe(true);
-    expect(queueUnit(barracks, 'swordsman', 1).ok).toBe(true);
+    expect(queueUnit(tc, 'swordsman', { age: 3, civ: 'hungarian' }).reason).toBe('wrong-trainer');
+    expect(queueUnit(barracks, 'villager', { age: 3, civ: 'hungarian' }).reason).toBe('wrong-trainer');
+    expect(queueUnit(barracks, 'knight', { age: 3, civ: 'hungarian' }).reason).toBe('wrong-trainer');
+    expect(queueUnit(stable, 'hussar', { age: 3, civ: 'hungarian' }).ok).toBe(true);
+    expect(queueUnit(barracks, 'swordsman', { age: 1, civ: 'hungarian' }).ok).toBe(true);
   });
 
   it('refuses buildings without a queue and collapsing trainers', () => {
     const { world, house, barracks } = setup();
-    expect(queueUnit(house, 'villager', 1).reason).toBe('missing-queue');
+    expect(queueUnit(house, 'villager', { age: 1, civ: 'hungarian' }).reason).toBe('missing-queue');
     world.addComponent(barracks, 'dying', { ttlMs: 100 });
-    expect(queueUnit(barracks, 'swordsman', 1).reason).toBe('missing-queue');
+    expect(queueUnit(barracks, 'swordsman', { age: 1, civ: 'hungarian' }).reason).toBe('missing-queue');
   });
 
   it('refuses units above the player age', () => {
     const { stable } = setup();
-    expect(queueUnit(stable, 'knight', 1).reason).toBe('age-locked');
+    expect(queueUnit(stable, 'hussar', { age: 1, civ: 'hungarian' }).reason).toBe('age-locked');
   });
 
   it('charges the given account and checks its population, not the UI store', () => {
@@ -48,12 +48,12 @@ describe('queueUnit', () => {
     const player = createPlayer({ id: 2, resources: { food: 60, wood: 0, gold: 20 } });
     let pop = { current: 4, cap: 5 };
     const account: TrainAccount = { wallet: playerWallet(player), population: () => pop };
-    expect(queueUnit(barracks, 'swordsman', 1, account).ok).toBe(true);
+    expect(queueUnit(barracks, 'swordsman', { age: 1, civ: 'hungarian' }, account).ok).toBe(true);
     expect(player.resources).toEqual({ food: 0, wood: 0, gold: 0 });
     expect(uiStore.getState().resources.food).toBe(500);
     pop = { current: 5, cap: 5 };
     player.resources = { food: 500, wood: 500, gold: 500 };
-    expect(queueUnit(barracks, 'swordsman', 1, account).reason).toBe('pop-cap');
+    expect(queueUnit(barracks, 'swordsman', { age: 1, civ: 'hungarian' }, account).reason).toBe('pop-cap');
   });
 });
 
@@ -67,5 +67,22 @@ describe('cancelQueuedUnit', () => {
     expect(value).toEqual(UNIT_SPECS.villager.cost);
     expect(cancelQueuedUnit(trainer, 0, wallet)).toBe(false);
     expect(value).toEqual(UNIT_SPECS.villager.cost);
+  });
+});
+
+describe('queueUnit civ roster', () => {
+  const hu = { age: 2 as const, civ: 'hungarian' as const };
+  const en = { age: 2 as const, civ: 'english' as const };
+
+  beforeEach(() => {
+    uiStore.setState({ resources: { food: 500, wood: 500, gold: 500 }, population: { current: 0, cap: 50 } });
+  });
+
+  it("refuses a base unit its civ replaces and accepts the civ's own", () => {
+    const { stable } = setup();
+    expect(queueUnit(stable, 'knight', hu)).toEqual({ ok: false, reason: 'civ-locked' });
+    expect(queueUnit(stable, 'hussar', hu).ok).toBe(true);
+    expect(queueUnit(stable, 'hussar', en)).toEqual({ ok: false, reason: 'civ-locked' });
+    expect(queueUnit(stable, 'knight', en).ok).toBe(true);
   });
 });

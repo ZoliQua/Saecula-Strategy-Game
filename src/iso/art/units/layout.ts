@@ -1,4 +1,5 @@
-import type { Direction, UnitType } from '../../../types';
+import { baseUnitType } from '../../../game/civUnits';
+import type { BaseUnitType, Direction, UnitType } from '../../../types';
 
 /**
  * Frame layout of a unit sprite sheet (pure, no DOM).
@@ -106,7 +107,7 @@ export function unitAnims(type: UnitType): readonly UnitAnim[] {
 }
 
 /** Ground covered by one walk / gallop / wheel cycle (tiles), so feet don't skate. */
-export const WALK_CYCLE_TILES: Readonly<Record<UnitType, number>> = {
+export const WALK_CYCLE_TILES: Readonly<Record<BaseUnitType, number>> = {
   villager: 0.85,
   swordsman: 0.85,
   archer: 0.85,
@@ -118,6 +119,11 @@ export const WALK_CYCLE_TILES: Readonly<Record<UnitType, number>> = {
   cavalry: 1.9,
   cannon: 0.5,
 };
+
+/** Walk-cycle ground length of a unit type (unique units use their base unit's). */
+export function walkCycleTiles(type: UnitType): number {
+  return WALK_CYCLE_TILES[baseUnitType(type)];
+}
 
 const layouts = new Map<UnitType, SheetLayout>();
 

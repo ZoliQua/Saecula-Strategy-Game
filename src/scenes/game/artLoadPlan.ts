@@ -1,3 +1,4 @@
+import { civUnitTypes } from '../../game/civUnits';
 import { BUILDING_BALANCE, UNIT_BALANCE } from '../../config/balance';
 import {
   BACKGROUND_ART_EVERY_FRAMES,
@@ -19,8 +20,6 @@ export interface ArtPainters {
   unit(type: UnitType, civ: CivId): void;
 }
 
-const UNIT_TYPES = Object.keys(UNIT_BALANCE) as UnitType[];
-
 /**
  * Unit sheets painted while loading: every type for the human's civ (the
  * HUD and the build/train panels show them), only the age-1 types for an
@@ -28,12 +27,13 @@ const UNIT_TYPES = Object.keys(UNIT_BALANCE) as UnitType[];
  * unit trained before that is painted on demand (unitArt).
  */
 export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
-  return civ === human ? [...UNIT_TYPES] : UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === 1);
+  const types = civUnitTypes(civ);
+  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1);
 }
 
 /** The unit sheets of the types introduced in `age`. */
 function unitArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
-  return UNIT_TYPES.filter((t) => UNIT_BALANCE[t].age === age).map((t) => () => paint.unit(t, civ));
+  return civUnitTypes(civ).filter((t) => UNIT_BALANCE[t].age === age).map((t) => () => paint.unit(t, civ));
 }
 
 /**

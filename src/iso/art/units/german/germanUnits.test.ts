@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { UNIT_BALANCE } from '../../../../config/balance';
 import { CIV_DEFS, CIV_IDS } from '../../../../config/civs';
-import type { AgeId, CivId, UnitType } from '../../../../types';
+import type { AgeId, CivId, BaseUnitType, UnitType } from '../../../../types';
 import { ANIM_FRAMES, PAINTED_HEADINGS } from '../layout';
 import { BASE_UNIT_LOOKS, contactShadow, unitLook, type UnitLook } from '../looks';
 import { FrameRaster } from '../raster';
@@ -10,7 +10,7 @@ import { buildFigure } from '../rig';
 import { sheetGeometry } from '../sheet';
 import { GERMAN_M } from './germanMaterials';
 
-const TYPES: readonly UnitType[] = [
+const TYPES: readonly BaseUnitType[] = [
   'villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon',
 ];
 
