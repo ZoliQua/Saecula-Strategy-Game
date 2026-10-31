@@ -26,9 +26,22 @@ export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard', 'm
 export const AVAILABLE_DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard', 'master'];
 export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
 
-/** How a match can be won: conquest only, or conquest or a Wonder held WONDER_HOLD_MS (CLAUDE.md §4.8). */
-export type VictoryMode = 'conquest' | 'conquest_wonder';
-export const VICTORY_MODES: readonly VictoryMode[] = ['conquest', 'conquest_wonder'];
+/**
+ * How a match can be won (CLAUDE.md §4.8): conquest is always on; a Wonder
+ * held WONDER_HOLD_MS and / or the best score at TIME_VICTORY.limitMs are optional.
+ */
+export type VictoryMode = 'conquest' | 'conquest_wonder' | 'conquest_time' | 'all';
+export const VICTORY_MODES: readonly VictoryMode[] = ['conquest', 'conquest_wonder', 'conquest_time', 'all'];
+
+/** The mode lets a held Wonder win. */
+export function hasWonderVictory(mode: VictoryMode): boolean {
+  return mode === 'conquest_wonder' || mode === 'all';
+}
+
+/** The mode ends the match on score at the time limit. */
+export function hasTimeVictory(mode: VictoryMode): boolean {
+  return mode === 'conquest_time' || mode === 'all';
+}
 
 export const MIN_AI = 1;
 export const MAX_AI = 5;

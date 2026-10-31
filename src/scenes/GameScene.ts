@@ -2,7 +2,8 @@ import { buildingHpMultiplier } from '../game/modifiers';
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
 import { CAMERA_BOUNDS_PADDING } from '../config/constants';
-import type { Difficulty, GameSetupConfig } from '../game/GameSetupConfig';
+import { hasWonderVictory, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
+import { timeRuleFor } from '../game/timeVictory';
 import { decidedWinner, gameOverRows } from '../game/gameOverStats';
 import type { PlayerManager } from '../game/PlayerManager';
 import { browserSaveStore } from '../save/browserStore';
@@ -221,10 +222,11 @@ export class GameScene extends Phaser.Scene {
       spawnPresetWalls(this.world, this.players, mapData, start.generated.walls);
     }
 
-    const wonderHoldMs = config.victory === 'conquest_wonder' ? WONDER_HOLD_MS : null;
-    this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs);
-    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats);
+    const wonderHoldMs = hasWonderVictory(config.victory) ? WONDER_HOLD_MS : null;
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
+    const time = timeRuleFor(config.victory, this.runner.stats, () => this.gameElapsedMs);
+    this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time);
+    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time);
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
     this.matchSave = new MatchSave(() => this.captureMatch(), this.storage, this.gameElapsedMs);

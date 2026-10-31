@@ -45,6 +45,7 @@ import { screenToTile, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import { MatchStats } from '../../stats/MatchStats';
+import { TimeLimitWatch } from '../../game/timeVictory';
 import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
@@ -53,6 +54,10 @@ export interface SystemRunnerOptions {
   readonly difficulty: Difficulty;
   /** The match can be won by holding a Wonder: WonderSystem runs and the AIs play for Wonders. */
   readonly wonderVictory: boolean;
+  /** The match ends on score at TIME_VICTORY.limitMs: the AIs see the limit. */
+  readonly timeVictory?: boolean;
+  /** Game time the match starts at (a save's clock); default 0. */
+  readonly startMs?: number;
   /** The match seed (config.seed). */
   readonly seed: number;
   /**
@@ -90,6 +95,8 @@ export class SystemRunner {
   private readonly death: DeathSystem;
   private readonly wonders: WonderSystem;
   private readonly wonderVictory: boolean;
+  /** The time limit as the AIs see it (null: no time victory). */
+  private readonly timeLimit: TimeLimitWatch | null;
   private readonly isDefeated: (playerId: number) => boolean;
   private readonly healthBars: HealthBarSystem;
   private readonly fogOfWar: FogOfWarSystem;
@@ -152,6 +159,7 @@ export class SystemRunner {
     const { restore } = options;
     this.stats = restore?.stats ?? new MatchStats(world, players, 0);
     this.detachStats = this.stats.attach();
+    this.timeLimit = options.timeVictory === true ? new TimeLimitWatch(players, this.stats, options.startMs ?? 0) : null;
     const savedFog = (id: number) => restore?.fogs.get(id) ?? new FogOfWarData(mapData.width, mapData.height);
     this.fogData = savedFog(1);
     // Each AI sees through its own fog (perception, towers); scans are staggered across frames.
@@ -256,7 +264,9 @@ export class SystemRunner {
     this.movement.update(delta);
     this.death.update(delta);
     this.wonders.update(delta);
-    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated };
+    this.timeLimit?.advance(delta);
+    const timeVictory = this.timeLimit?.view();
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, ...(timeVictory && { timeVictory }) };
     for (const ai of this.aiPlayers) {
       ai.update(this.humanId === undefined ? base : { ...base, enemyPlayerId: this.humanId }, delta);
     }

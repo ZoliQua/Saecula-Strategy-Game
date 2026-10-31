@@ -94,7 +94,7 @@ export const hu = {
     loading: 'Betöltés…',
     summary: (players: number, tiles: number) => `${players} játékos · ${tiles}×${tiles} mező`,
     victory: 'Győzelem',
-    victories: { conquest: 'Hódítás', conquest_wonder: 'Hódítás vagy Csoda' },
+    victories: { conquest: 'Hódítás', conquest_wonder: 'Hódítás vagy Csoda', conquest_time: 'Hódítás vagy idő', all: 'Mind' },
     mapFailed: 'Ezzel a térkép-maggal nem sikerült játszható térképet készíteni. Válassz másik magot vagy térképtípust.',
   },
   game: {
@@ -245,6 +245,11 @@ export const hu = {
     controls: (keys: string, gesture: string | null) =>
       `${keys}: kamera · Görgő / csípés: zoom · Jobb klikk${gesture === null ? '' : ` vagy ${gesture}+klikk`}: parancs`,
     wonderClock: (t: string) => `Csoda: ${t}`,
+    /** The time-limit clock (time victory): time left until the best score wins. */
+    timeLimitClock: (t: string) => `Időkorlát: ${t}`,
+    timeLimitLeader: 'Éllovas',
+    timeLimitLeaderYou: 'Te vezetsz',
+    timeLimitFinal: 'Az utolsó 5 perc! A legtöbb pont nyer.',
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
     wonderLost: 'Egy Csoda elpusztult.',
@@ -318,12 +323,16 @@ export const hu = {
         victory: 'Csodád 10 percig dacolt az ellenséggel. A győzelem a tiéd.',
         defeat: 'Egy ellenfél Csodája 10 percig állt. Még egy menet?',
       },
+      time: {
+        victory: 'Lejárt a 60 perc, és a te pontszámod a legmagasabb. A győzelem a tiéd.',
+        defeat: 'Lejárt a 60 perc, és egy ellenfél több pontot gyűjtött. Még egy menet?',
+      },
     },
     backToMenu: 'Vissza a főmenübe',
     statsHeader: 'Statisztika',
     durationLabel: 'Játékidő',
     causeLabel: 'Döntött',
-    causes: { conquest: 'Hódítás', wonder: 'Csoda' },
+    causes: { conquest: 'Hódítás', wonder: 'Csoda', time: 'Idő' },
     /** The player table. */
     players: 'Játékosok',
     human: 'Te',

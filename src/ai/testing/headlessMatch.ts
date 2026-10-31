@@ -23,6 +23,8 @@ import { resetUiStore } from '../../ui/store';
 import type { PersonalityId } from '../../config/aiPersonality';
 import {
   defaultSetupConfig,
+  hasTimeVictory,
+  hasWonderVictory,
   MAP_SIZE_IDS,
   MAP_SIZES,
   matchCivs,
@@ -33,6 +35,7 @@ import { restoreMatch } from '../../save/deserializer';
 import type { SaveData } from '../../save/schema';
 import { serializeMatch, type MatchState } from '../../save/serializer';
 import { MatchStats } from '../../stats/MatchStats';
+import { TimeLimitWatch } from '../../game/timeVictory';
 import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
@@ -60,6 +63,8 @@ export interface HeadlessMatchOptions {
   readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
   /** The match can be won by a Wonder: WonderSystem runs and the AIs play for Wonders (default false). */
   readonly wonderVictory?: boolean;
+  /** The match ends on score at the time limit: the AIs see the limit (default false). */
+  readonly timeVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
   /** The match id its saves carry (default `headless-<seed>`, so equal runs save equal). */
@@ -94,8 +99,13 @@ function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
     template: options.template ?? 'meadow',
     mapSize,
     difficulty: options.difficulty?.(2) ?? 'medium',
-    victory: options.wonderVictory === true ? 'conquest_wonder' : 'conquest',
+    victory: victoryOf(options.wonderVictory === true, options.timeVictory === true),
   };
+}
+
+function victoryOf(wonder: boolean, time: boolean): GameSetupConfig['victory'] {
+  if (wonder && time) return 'all';
+  return wonder ? 'conquest_wonder' : time ? 'conquest_time' : 'conquest';
 }
 
 /**
@@ -202,7 +212,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     (id === human?.id ? humanAi?.fog : ais.find((a) => a.player.id === id)?.fog) ?? null;
   // Same per-frame A* budget as the game (scaled to the step length).
   const paths = new PathBudget();
-  const wonderVictory = setup.victory === 'conquest_wonder';
+  const wonderVictory = hasWonderVictory(setup.victory);
   const isDefeated = (id: number) => players.get(id)?.defeated ?? false;
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
@@ -220,6 +230,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     population: new PopulationSystem(world, 1, players),
   };
   let now = parts.startMs;
+  const timeLimit = hasTimeVictory(setup.victory) ? new TimeLimitWatch(players, stats, now) : null;
   const step = (dt: number) => {
     now += dt;
     paths.reset(dt);
@@ -235,8 +246,11 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.movement.update(dt);
     systems.death.update(dt);
     systems.wonders.update(dt);
-    for (const ai of ais) ai.update({ world, mapData: map, wonderVictory, isDefeated, enemyPlayerId: enemyOf(ai.player.id) }, dt);
-    humanAi?.update({ world, mapData: map, wonderVictory, isDefeated, enemyPlayerId: humanEnemy() }, dt);
+    timeLimit?.advance(dt);
+    const timeVictory = timeLimit?.view();
+    const base = { world, mapData: map, wonderVictory, isDefeated, ...(timeVictory && { timeVictory }) };
+    for (const ai of ais) ai.update({ ...base, enemyPlayerId: enemyOf(ai.player.id) }, dt);
+    humanAi?.update({ ...base, enemyPlayerId: humanEnemy() }, dt);
     systems.population.update();
     stats.update(dt);
   };

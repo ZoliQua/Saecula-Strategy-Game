@@ -57,12 +57,13 @@ describe('GameSetupConfig', () => {
 
   it('default victory is conquest_wonder', () => {
     expect(defaultSetupConfig(1).victory).toBe('conquest_wonder');
-    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder']);
+    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder', 'conquest_time', 'all']);
+    expect(withSetup(defaultSetupConfig(1), { victory: 'all' }).victory).toBe('all');
     expect(withSetup(defaultSetupConfig(1), { victory: 'conquest' }).victory).toBe('conquest');
   });
 
   it('unknown victory falls back', () => {
-    const bad = { victory: 'time' } as unknown as Partial<GameSetupConfig>;
+    const bad = { victory: 'time_only' } as unknown as Partial<GameSetupConfig>;
     expect(withSetup(defaultSetupConfig(1), bad).victory).toBe('conquest_wonder');
     expect(withSetup(withSetup(defaultSetupConfig(1), { victory: 'conquest' }), bad).victory).toBe('conquest_wonder');
   });

@@ -21,16 +21,15 @@ describe('v2 → v3 migration', () => {
   it('returns the data unchanged (the unit-type enum only widened)', () => {
     const data = { schemaVersion: 2, players: [{ id: 1 }], entities: [{ id: 3 }] };
     expect(v2ToV3(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: 3 } });
-    expect(SCHEMA_VERSION).toBe(3);
+    expect(migrate(data, 3)).toEqual({ ok: true, data: { ...data, schemaVersion: 3 } });
   });
 
   it('a v2 fixture migrates to version 3 and parses', () => {
     expect(v2Save.schemaVersion).toBe(2);
-    expect(migrate(v2Save)).toMatchObject({ ok: true, data: { schemaVersion: 3 } });
+    expect(migrate(v2Save)).toMatchObject({ ok: true, data: { schemaVersion: SCHEMA_VERSION } });
     const parsed = parseSave(JSON.stringify(v2Save));
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect(parsed.save.schemaVersion).toBe(3);
+    if (parsed.ok) expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('loads a v2 save whose civ now trains a unique unit instead', () => {
@@ -50,8 +49,8 @@ describe('v2 → v3 migration', () => {
     if (info?.kind !== 'building') throw new Error('the stable is not a building');
     expect(info.civ).toBe('hungarian');
     expect(info.trainable).toEqual(['hussar', 'cavalry']);
-    // The loaded save plays on and snapshots as v3.
-    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(3);
+    // The loaded save plays on and snapshots at the current version.
+    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('a save holding all 8 unique units round-trips identically, through JSON too', () => {

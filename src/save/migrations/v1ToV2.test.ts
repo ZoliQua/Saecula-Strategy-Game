@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SCHEMA_VERSION } from '../schema';
 import { resumeHeadlessMatch } from '../../ai/testing/headlessMatch';
 import { parseSave } from '../parse';
 import { FIXED_DATE, STEP_MS } from '../savedMatch.testkit';
@@ -46,7 +47,7 @@ describe('v1 → v2 migration', () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     const save = parsed.save;
-    expect(save.schemaVersion).toBe(3);
+    expect(save.schemaVersion).toBe(SCHEMA_VERSION);
     expect(save.matchId).toBe(`v1-${v1Save.setup.seed}-${v1Save.createdAt}`);
     expect(Object.keys(save.stats.players)).toEqual(save.players.map((p) => String(p.id)));
     expect(Object.values(save.stats.players).every((s) => s.gathered === 0 && s.ageUpAtMs.length === 0)).toBe(true);
