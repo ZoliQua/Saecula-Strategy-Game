@@ -1,18 +1,20 @@
-import { UNIQUE_BUILDINGS } from '../../config/balance';
+import { TIME_VICTORY, UNIQUE_BUILDINGS } from '../../config/balance';
 import type { EcsWorld } from '../../ecs/world';
 import { countPlayerBuildings } from '../../game/buildRules';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { wonderClocks, type WonderClockInfo } from '../../game/wonderClocks';
 import type { MatchStats } from '../../stats/MatchStats';
 import { VILLAGER_ACTIVITIES, villagerActivity, type VillagerActivity } from '../../stats/villagerActivity';
-import { uiStore, type ScoreRowInfo } from '../../ui/store';
+import { timeLeader, type TimeVictoryRule } from '../../game/timeVictory';
+import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
 
 /**
  * Once-a-second ECS → UI store copies the HUD needs beyond the per-frame
  * systems: which limited buildings (wonder) the human already has, for
  * the build menu, and the running Wonder countdowns (none when the
  * match cannot be won by a Wonder), and the side panel's every-player
- * scores (highest first) and the human's villager activity counts.
+ * scores (highest first) and the human's villager activity counts, and
+ * the time-victory clock (time left and the leader) when the match has one.
  */
 export class HudSync {
   constructor(
@@ -22,6 +24,8 @@ export class HudSync {
     private readonly wonderHoldMs: number | null,
     /** The match statistics (null: no score rows). */
     private readonly stats: MatchStats | null = null,
+    /** The time-victory rule (null: no time limit, no clock). */
+    private readonly time: TimeVictoryRule | null = null,
   ) {}
 
   secondTick(): void {
@@ -29,6 +33,21 @@ export class HudSync {
     if (this.wonderHoldMs !== null) this.syncWonders(this.wonderHoldMs);
     this.syncScores();
     this.syncVillagers();
+    if (this.time) this.syncTimeLimit(this.time);
+  }
+
+  private syncTimeLimit(time: TimeVictoryRule): void {
+    const remainingMs = Math.max(0, time.limitMs - time.nowMs());
+    const leaderId = timeLeader(this.players.all(), time.standing);
+    const next: TimeLimitInfo = {
+      remainingMs,
+      leaderId,
+      leaderColor: leaderId === null ? null : (this.players.get(leaderId)?.color ?? null),
+      final: remainingMs <= TIME_VICTORY.holdLeadMs,
+    };
+    const prev = uiStore.getState().timeLimit;
+    const same = prev && prev.remainingMs === next.remainingMs && prev.leaderId === next.leaderId && prev.final === next.final;
+    if (!same) uiStore.getState().setTimeLimit(next);
   }
 
   private syncScores(): void {

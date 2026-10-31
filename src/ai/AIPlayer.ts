@@ -2,6 +2,7 @@ import { AI_COMMON } from '../config/aiBalance';
 import { FogOfWarSystem } from '../ecs/systems/FogOfWarSystem';
 import type { EcsWorld } from '../ecs/world';
 import type { Player } from '../game/Player';
+import type { TimeLimitView } from '../game/timeVictory';
 import { FogOfWarData } from '../map/FogOfWarData';
 import type { MapData } from '../map/MapData';
 import type { StatefulRng } from '../map/random';
@@ -21,6 +22,11 @@ export interface AIContext {
   readonly enemyPlayerId?: number;
   /** The match can be won by holding a Wonder (absent = false): the AI builds and hunts Wonders. */
   readonly wonderVictory?: boolean;
+  /**
+   * The time limit, when the match ends on score (absent = no limit): time
+   * left and the current leader, read from the public scores.
+   */
+  readonly timeVictory?: TimeLimitView;
   /** Whether a player is out of the match (public knowledge); absent = nobody is. */
   readonly isDefeated?: (playerId: number) => boolean;
   /** Absolute game time in ms. */

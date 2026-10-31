@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { WONDER_HOLD_MS } from '../../config/balance';
+import { TIME_VICTORY, WONDER_HOLD_MS } from '../../config/balance';
 import { createBuilding } from '../../ecs/archetypes/building';
 import { createEcsWorld } from '../../ecs/world';
 import { createPlayer } from '../../game/Player';
@@ -54,4 +54,25 @@ describe('HudSync', () => {
     ]);
     expect(s.villagerCounts).toEqual({ food: 0, wood: 0, gold: 0, build: 0, idle: 1, other: 0 });
   });
+
+  it('with a time limit, publishes the time left, the leader and the final-window flag', () => {
+    const { world, players } = setup();
+    let now = 0;
+    const scores: Record<number, number> = { 1: 10, 2: 30 };
+    const time = { limitMs: TIME_VICTORY.limitMs, nowMs: () => now, standing: (id: number) => ({ score: scores[id] ?? 0, killValue: 0 }) };
+    const sync = new HudSync(world, players, null, null, time);
+    sync.secondTick();
+    expect(uiStore.getState().timeLimit).toEqual({ remainingMs: TIME_VICTORY.limitMs, leaderId: 2, leaderColor: players.get(2)!.color, final: false });
+    now = TIME_VICTORY.limitMs - TIME_VICTORY.holdLeadMs;
+    scores[1] = 99;
+    sync.secondTick();
+    expect(uiStore.getState().timeLimit).toMatchObject({ remainingMs: TIME_VICTORY.holdLeadMs, leaderId: 1, final: true });
+  });
+
+  it('without a time limit the clock stays null', () => {
+    const { world, players } = setup();
+    new HudSync(world, players, null).secondTick();
+    expect(uiStore.getState().timeLimit).toBeNull();
+  });
 });
+
