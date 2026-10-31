@@ -945,6 +945,43 @@ A 4.3 első két pontja. Ág: `feat/M8-unique-units`. Változat: 0.3.0.
   képezhető és harcol, a fejlődési fa „egyedi” jelvényt mutat, a v2 (M7) mentés
   hibátlanul betöltődik.
 
+### M9 — Időgyőzelem és köztes terep-felbontás
+A 4.8 harmadik pontja és az M6-ban nyitva hagyott terep-memória. Ág:
+`feat/M9-time-victory-terrain`. Változat: 0.4.0.
+- **Időgyőzelem (4.8 #3):** 60 játékperc (`TIME_VICTORY.limitMs` a
+  `balance.ts`-ben) után a legnagyobb pontszámú, még talpon lévő játékos nyer
+  (pontszám: M7). Holtversenynél a több elpusztított ellenséges érték
+  (`killValue`), majd a kisebb játékos-azonosító dönt. A hódítás és a Csoda
+  az időkorlát előtt továbbra is nyerhet; ha ugyanabban a pillanatban több
+  feltétel teljesül, a hódítás, majd a Csoda, majd az idő a sorrend.
+- **Beállítás:** a győzelmi mód négy értékű: „Hódítás” / „Hódítás vagy
+  Csoda” (alapértelmezett, változatlan) / „Hódítás vagy idő” / „Mind”
+  (hódítás, Csoda vagy idő). A `VictoryMode` unió bővül; a meglévő értékek
+  jelentése nem változik.
+- **HUD:** időkorlátos meccsen a felső óra alatt egy üveg sáv mutatja a hátralévő
+  időt és az éllovas színét; az utolsó 5 percben kiemelve. A játék vége képernyő
+  saját okot („Idő”) és szöveget kap, a játéknapló is „time” okot tárol.
+- **AI:** az AI pontszám-adatot csak abból kap, amit a játékos is lát (a
+  pontszám-panel nyilvános, M7). Időkorlátos meccsen az utolsó 5 percben
+  (`TIME_VICTORY.holdLeadMs`) a pontszámban vezető AI nem indít új támadó
+  hullámot (megtartja a seregét, nem veszít pontot); a többi AI változatlan.
+- **Mentés:** `schemaVersion` 4, migrációval (a `VictoryMode` enum bővül, a régi
+  mentés változatlanul betöltődik).
+- **Köztes terep-felbontás:** a terep-darabok (`ChunkStreamer`) a teljes és a fél
+  felbontás között egy háromnegyedes (`mid`) szintet is kapnak. A
+  `TERRAIN_STREAM.lodZoom` (0,65) és `midZoom` (0,97) közötti nagyításon a nézetben
+  lévő darabok a háromnegyedes textúrát kapják a teljes helyett (ugyanaz a
+  texel/képpont arány, amit a fél felbontás 0,65-ön már elfogad). A terep sosem
+  üres: a cserék sorrendje továbbra is „előbb az új, utána a régi elengedése”.
+- **Tesztek:** `VictoryChecker` (időkorlát, holtverseny, sorrend, legyőzött
+  játékos kizárva), `chunkWants` (három szint, hiszterézis), `ChunkStreamer`
+  (szintváltás lyuk nélkül), v3 → v4 migráció valódi v3 mentéssel, AI-döntés
+  (vezető AI nem indít hullámot az utolsó percekben).
+- Nem része: választható időkorlát, döntetlen eredmény, csapatok.
+- Keret (10.): az M8 keretei; a 0,65–1,0 nagyítási sáv terep-többlete
+  (M6: ~13 MB) legalább a felére csökken, mérve ugyanazzal a szkripttel a `main`
+  és az ág között.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
