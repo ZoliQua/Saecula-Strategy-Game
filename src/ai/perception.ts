@@ -72,7 +72,8 @@ export function ownLiving(view: Pick<WorldView, 'byId' | 'playerId'>, id: number
  */
 export function pruneOwnLiving(ids: Set<number>, view: Pick<WorldView, 'byId' | 'playerId'>): Entity[] {
   const kept: Entity[] = [];
-  for (const id of [...ids]) {
+  // Deleting the visited element during a Set's for-of is safe.
+  for (const id of ids) {
     const u = ownLiving(view, id);
     if (u) kept.push(u);
     else ids.delete(id);

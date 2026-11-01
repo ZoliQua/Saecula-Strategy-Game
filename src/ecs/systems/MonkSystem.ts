@@ -1,7 +1,9 @@
-import { MONK, REPATH_RETRY_MS } from '../../config/balance';
+import { MONK } from '../../config/balance';
 import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert';
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
+import type { MapData } from '../../map/MapData';
+import { nearestReachableTile } from '../../map/pathfinding';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -14,7 +16,9 @@ import { findEntityById } from './gathering/gatherQueries';
  *  - with a `convertIntent`, the monk walks toward the target until it
  *    is within MONK.convertRange, then channels for MONK.convertTimeMs
  *    (restarted whenever the target escapes) and converts it
- *    (convertUnit); a recharging monk or an invalid target ends the order;
+ *    (convertUnit); a recharging monk or an invalid target ends the order,
+ *    and a target no walkable tile within convertRange leads to is given
+ *    up at once (the monk stops; markConvertGivenUp tells the AI);
  *  - otherwise a monk standing still heals the most wounded own unit
  *    within MONK.healRange at MONK.healPerSec (whole HP; fractions carry).
  * `busy` marks a healing / channelling monk for its work animation.
@@ -22,27 +26,18 @@ import { findEntityById } from './gathering/gatherQueries';
 export class MonkSystem {
   /** Where each approaching monk last headed (render-free working state; rebuilt after a load). */
   private readonly goals = new WeakMap<Entity, TileCoord>();
-  /** A monk whose path ended short of its target (unreachable) re-plans no earlier than this (system clock, ms). */
-  private readonly retryAt = new WeakMap<Entity, number>();
-  /** Whether the monk's last planned path ends within convertRange of its goal (unset until the path appears). */
-  private readonly planOk = new WeakMap<Entity, boolean>();
-  /** The path the monk had when it last re-planned: the same array afterwards means no new path was found. */
-  private readonly planFrom = new WeakMap<Entity, readonly TileCoord[]>();
-  /** Re-plans that ended short of the target, per monk. */
-  private readonly failures = new WeakMap<Entity, number>();
   /** The conversion order the approach state above belongs to (a new order starts afresh). */
   private readonly orderOf = new WeakMap<Entity, object>();
-  private nowMs = 0;
 
   constructor(
     private readonly world: EcsWorld,
+    private readonly map: MapData,
     private readonly civOf: (playerId: number) => CivId,
     /** A player's researched technologies (illumination shortens the recharge, M12); absent = none. */
     private readonly researchOf: (playerId: number) => Researched | undefined = () => undefined,
   ) {}
 
   update(deltaMs: number): void {
-    this.nowMs += deltaMs;
     for (const monk of [...this.world.with('converter', 'position', 'owner')]) {
       const c = monk.converter;
       c.rechargeMs = Math.max(0, c.rechargeMs - deltaMs);
@@ -89,42 +84,29 @@ export class MonkSystem {
   /** Heads for the target, re-pathing only when it has moved away from the last goal. */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
-    if (goal) this.judgePlan(monk, goal);
     const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
     // Walking toward a goal the target is still near: keep going.
     if (goal && moving && chebyshev(goal, at) < MONK.retargetTiles) return;
-    // Each re-plan looks at the last plan: a path that ended near its goal (however long the
-    // detour) shows the target can be reached. A path that fell short could not get there
-    // (an island, wherever the target walks on it): a monk standing still retries only every
-    // REPATH_RETRY_MS, as combat does, and any monk gives up after MONK.maxFailedPaths such plans.
-    if (goal) {
-      const ok = this.planOk.get(monk);
-      if (ok === true) this.failures.delete(monk);
-      else if (ok === false) {
-        if (!moving && this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
-        const failed = (this.failures.get(monk) ?? 0) + 1;
-        if (failed > MONK.maxFailedPaths) {
-          this.giveUp(monk);
-          return;
-        }
-        this.failures.set(monk, failed);
-      }
+    if (!this.canReachNear(monk, at)) {
+      this.giveUp(monk);
+      return;
     }
-    this.planOk.delete(monk);
-    if (monk.movable) this.planFrom.set(monk, monk.movable.path);
-    this.retryAt.set(monk, this.nowMs + REPATH_RETRY_MS);
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
     if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
     else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });
   }
 
-  /** Once the planned path appears (the move order is consumed), notes whether it ends near the goal. */
-  private judgePlan(monk: Entity, goal: TileCoord): void {
-    if (monk.moveIntent || this.planOk.has(monk) || !monk.position) return;
-    // Pathfinding sets a fresh path array; an unchanged one is an old plan (none was found), so judge from here.
-    const path = monk.movable?.path;
-    const end = (path && path !== this.planFrom.get(monk) ? path.at(-1) : undefined) ?? monk.position;
-    this.planOk.set(monk, chebyshev(end, goal) <= MONK.convertRange);
+  /**
+   * Whether some tile the monk can walk to lies within convertRange of `at`
+   * (else the target is out of reach: an island, a walled-off pen). A monk
+   * on blocked ground (a foundation laid over it) is not judged until its
+   * escape path has taken it off.
+   */
+  private canReachNear(monk: Entity, at: TileCoord): boolean {
+    const from = monk.position;
+    if (!from || !this.map.isPassable(from.tx, from.ty)) return true;
+    const nearest = nearestReachableTile(this.map, from, at);
+    return !!nearest && chebyshev(nearest, at) <= MONK.convertRange;
   }
 
   /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is. */
@@ -141,10 +123,6 @@ export class MonkSystem {
 
   private forgetApproach(monk: Entity): void {
     this.goals.delete(monk);
-    this.retryAt.delete(monk);
-    this.failures.delete(monk);
-    this.planOk.delete(monk);
-    this.planFrom.delete(monk);
     this.orderOf.delete(monk);
   }
 

@@ -207,8 +207,6 @@ export const MONK = {
   rechargeMs: 20000,
   /** A target may move this many tiles from where its monk last headed before the monk re-paths. */
   retargetTiles: 2,
-  /** A conversion whose target stays out of reach is dropped after this many failed re-plans (REPATH_RETRY_MS apart). */
-  maxFailedPaths: 3,
 } as const;
 
 export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {

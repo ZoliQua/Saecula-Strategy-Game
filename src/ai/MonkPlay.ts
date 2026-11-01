@@ -26,7 +26,7 @@ export interface MonkActions {
 /**
  * Monk play of the Medium strategy family (CLAUDE.md M11). Read from the
  * world, apart from a short memory of given-up targets (not saved: after a
- * load a monk may try one of them once more):
+ * load a monk may pick one again, and MonkSystem gives it up on the spot):
  *  - build: from age 2 with `minVillagers` and the age's military buildings standing, one monastery;
  *  - train: up to `count` monks there;
  *  - control: a ready monk converts the nearest visible enemy unit within

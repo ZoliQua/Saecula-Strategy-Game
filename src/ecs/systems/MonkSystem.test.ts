@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CivId } from '../../types';
-import { MONK, REPATH_RETRY_MS } from '../../config/balance';
+import { MONK } from '../../config/balance';
 import { clearUnitOrders } from '../orders';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { takeConvertGivenUp } from '../../game/convert';
@@ -18,7 +18,7 @@ const civOf = (id: number): CivId => (id === 1 ? 'hungarian' : 'english');
 function setup() {
   const map = new MapData(40, 40);
   const world = createEcsWorld();
-  const monks = new MonkSystem(world, civOf);
+  const monks = new MonkSystem(world, map, civOf);
   const pathing = new PathfindingSystem(world, map);
   const movement = new MovementSystem(world);
   const step = (ms: number, dt = 100) => {
@@ -132,33 +132,28 @@ describe('MonkSystem', () => {
     for (let ty = 23 - r; ty <= 23 + r; ty++) for (let tx = 23 - r; tx <= 23 + r; tx++) map.setTile(tx, ty, TERRAIN.grass);
   }
 
-  /** Steps until the monk stands still (it reached the shore), at most `maxMs`. */
-  function settle(step: (ms: number) => void, monk: ReturnType<typeof createUnit>, maxMs = 30_000): void {
-    for (let t = 0; t < maxMs; t += 100) {
-      step(100);
-      if (!monk.moveIntent && (monk.movable?.path.length ?? 0) === 0 && t > 500) return;
-    }
-  }
-
-  it('a monk ordered onto an unreachable target retries its path only every REPATH_RETRY_MS, then gives up', () => {
+  it('a monk ordered onto an unreachable target gives up at once, without walking (M11 review)', () => {
     const { map, world, step } = setup();
     island(map);
     const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    settle(step, monk);
-    let orders = 0;
-    const add = world.addComponent.bind(world);
-    (world as unknown as { addComponent: typeof add }).addComponent = ((e, c, v) => {
-      if (c === 'moveIntent') orders++;
-      return add(e, c, v);
-    }) as typeof add;
-    step(2 * REPATH_RETRY_MS - 100);
-    // Still trying, but at most once per REPATH_RETRY_MS (each frame before the fix).
-    expect(monk.convertIntent).toBeDefined();
-    expect(orders).toBeLessThanOrEqual(3);
-    step((MONK.maxFailedPaths + 1) * REPATH_RETRY_MS);
+    step(100);
     expect(monk.convertIntent).toBeUndefined();
+    expect(monk.moveIntent).toBeUndefined();
+    expect(monk.position).toEqual({ tx: 4, ty: 23 });
+    expect(takeConvertGivenUp(monk)).toBe(archer.id);
+  });
+
+  it('does not give up while standing on blocked ground (it first steps off it)', () => {
+    const { map, world, step } = setup();
+    island(map);
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
+    map.setTile(4, 23, TERRAIN.water);
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    step(100);
+    expect(monk.convertIntent).toBeDefined();
   });
 
   it('gives up on an unreachable target that keeps moving too', () => {
@@ -188,11 +183,12 @@ describe('MonkSystem', () => {
     const archer = createUnit(world, { type: 'archer', tile: { tx: 28, ty: 5 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     const ownerOf = (): number => archer.owner!.playerId;
-    for (let s = 0; s < 30 && ownerOf() === 2; s++) {
+    for (let s = 0; s < 90 && ownerOf() === 2; s++) {
       archer.position = { tx: 28 + (s % 2) * 3, ty: 5 + (s % 3) };
       step(1000);
       expect(monk.convertIntent !== undefined || ownerOf() === 1, `second ${s}`).toBe(true);
     }
+    expect(ownerOf()).toBe(1);
   });
 
   it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {
