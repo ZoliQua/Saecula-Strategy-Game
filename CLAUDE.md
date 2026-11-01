@@ -1257,6 +1257,20 @@ gálya, fregatt).
   ezt a `scripts/perf/texmem.mjs`-szel mérjük (6 különböző nép), a ≤ 256 MB
   textúra-keret köt; ha nem fér bele, a hajólapok koronként vagy csak vízi
   térképen készülnek.
+- **Állapot (2026-11-01):** kész — vízi réteg (`map/navGrid`, `ecs/navLayer`), négy
+  hajó és a kikötő (népenkénti hajótest-paletta, közös, palettavezérelt
+  kikötő-festő), halrajok (`TERRAIN.fish`), halászat, tengeri harc, szállítás
+  (`TransportSystem`: beszállás, kirakodás, elsüllyedés, népesség), kurzorok,
+  „Kirakodás” gomb, hajóhangok, Beltenger és Szigetvilág sablon (kikötőhely és
+  hal minden kezdőhelynek, a validálás ellenőrzi), AI `NavalPlay` és
+  `LandingControl` (Közepestől; a Könnyű csak halászik), `schemaVersion` 9
+  migrációval. Az AI népek hajólapjai igény szerint készülnek. Mérve
+  (`scripts/perf/texmem.mjs`, distinct6, 1280×720, ugyanazzal a szkripttel a
+  `main`-en és az ágon): csúcs 148,2 → 150,0 MB, a nem terep-textúrák +5,3 MB.
+  Szimulációk: Beltengeren a Közepes AI kikötőt épít, halászik és gályákat tart;
+  Szigetvilágon ~21 perc alatt partra száll a másik szigeten. Böngésző-smoke:
+  kikötő az építési menüben, hajóképzés, halászat, beszállás, átkelés és
+  kirakodás, konzolhiba nélkül.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét

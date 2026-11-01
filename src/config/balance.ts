@@ -232,6 +232,12 @@ export const NAVAL = {
   fishRate: 0.6,
   /** Food in one fish school. */
   fishAmount: 225,
+  /** Walks a boarding unit may finish without getting aboard before its order is dropped. */
+  boardTries: 20,
+  /** A transport within this many tiles of its unload target (and beside land) puts its cargo ashore there. */
+  unloadReach: 3,
+  /** How far (tiles) from an unload target a transport looks for an open shore. */
+  shoreSearch: 14,
 } as const;
 
 /** The monk's healing and conversion (M11). Ranges in tiles (Chebyshev), as unit ranges. */

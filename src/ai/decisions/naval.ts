@@ -2,6 +2,8 @@ import { isShoreSite } from '../../game/shore';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { reachMask } from '../../map/gridSteps';
+import type { NavGrid } from '../../map/navGrid';
+import { isPassable } from '../../map/TerrainTypes';
 
 /**
  * The nearest dock site (M14) to `anchor` within `maxRadius` (Chebyshev):
@@ -31,12 +33,18 @@ export function findDockSite(
 }
 
 /**
- * Whether `to` (or a tile beside it, for a building) can be walked to on
- * the land as it is now from `from` or a tile within FROM_SLACK of it (a
+ * Whether `to` (or a tile beside it, for a building) can be walked to over
+ * the terrain (walls and buildings ignored: they can be breached) from `from` or a tile within FROM_SLACK of it (a
  * town centre's own tiles are blocked; its villagers stand round it).
  */
 export function landReachable(map: MapData, from: TileCoord, to: TileCoord): boolean {
-  const mask = reachMask(map, to);
+  // Terrain only: walls and buildings can be breached, water cannot.
+  const terrain: NavGrid = {
+    width: map.width,
+    height: map.height,
+    isPassable: (tx, ty) => tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && isPassable(map.getTile(tx, ty)),
+  };
+  const mask = reachMask(terrain, to);
   for (let dy = -FROM_SLACK; dy <= FROM_SLACK; dy++) {
     for (let dx = -FROM_SLACK; dx <= FROM_SLACK; dx++) {
       const tx = from.tx + dx;

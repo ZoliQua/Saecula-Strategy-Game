@@ -232,3 +232,19 @@ describe('OrderIssuer: transports (M14)', () => {
     expect(ship.moveIntent?.target).toEqual({ tx: 25, ty: 25 });
   });
 });
+
+describe('OrderIssuer: melee units and ships (M14)', () => {
+  it('a melee unit sent at an enemy ship moves there instead (it cannot attack it); an archer attacks it', () => {
+    const sim = createMiniSim(32);
+    for (let ty = 0; ty < 32; ty++) for (let tx = 16; tx < 32; tx++) sim.map.setTile(tx, ty, TERRAIN.water);
+    const ship = createUnit(sim.world, { type: 'galley', tile: { tx: 17, ty: 10 }, playerId: 2 });
+    const sword = createUnit(sim.world, { type: 'swordsman', tile: { tx: 10, ty: 10 }, playerId: 1 });
+    const archer = createUnit(sim.world, { type: 'archer', tile: { tx: 10, ty: 12 }, playerId: 1 });
+    const { orders, played } = issuer(sim, [sword, archer]);
+    orders.issueOrders({ tx: 17, ty: 10 });
+    expect(sword.attackIntent).toBeUndefined();
+    expect(sword.moveIntent).toBeDefined();
+    expect(archer.attackIntent).toEqual({ targetId: ship.id });
+    expect(played).toEqual(['unit_attack']);
+  });
+});

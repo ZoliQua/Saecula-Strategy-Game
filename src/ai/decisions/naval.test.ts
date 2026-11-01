@@ -27,4 +27,15 @@ describe('naval decisions (M14)', () => {
     expect(landReachable(map, { tx: 2, ty: 2 }, { tx: 18, ty: 35 })).toBe(true);
     expect(landReachable(map, { tx: 2, ty: 2 }, { tx: 30, ty: 30 })).toBe(false);
   });
+
+  it('a walled-in enemy is still walkable (walls are breached), only water cuts the land off', () => {
+    const map = coast();
+    for (let t = 5; t <= 15; t++) {
+      map.setBlocked(5, t, true);
+      map.setBlocked(15, t, true);
+      map.setBlocked(t, 5, true);
+      map.setBlocked(t, 15, true);
+    }
+    expect(landReachable(map, { tx: 1, ty: 1 }, { tx: 10, ty: 10 })).toBe(true);
+  });
 });

@@ -83,6 +83,11 @@ describe('Medium AI navy (M14)', () => {
       });
       expect(match.world.entities.some((e) => e.unit?.unitType === 'transport' && e.owner?.playerId === 2) || landedAt < Infinity).toBe(true);
       expect(landedAt, 'AI units ashore on the enemy island within 45 min').toBeLessThan(45 * MIN);
+      // The landed wave fights on there: it is not called home across the sea.
+      match.run(3 * MIN, 100);
+      const ashore = match.world.entities.filter((e) => e.unit && e.owner?.playerId === 2 && !e.dying && e.position && e.attacker && onEnemyIsland(e.position));
+      expect(ashore.length + match.stats.of(2).killValue).toBeGreaterThan(0);
+      expect(ashore.every((u) => !u.moveIntent || onEnemyIsland(u.moveIntent.target))).toBe(true);
     },
     SIM_TIMEOUT_MS,
   );

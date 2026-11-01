@@ -11,7 +11,7 @@ import { canViewerSee } from '../../ecs/systems/renderPlacement';
 import type { TileCoord } from '../../iso/coordinates';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
-import { moveLayerOf } from '../../ecs/navLayer';
+import { canAttackTarget, moveLayerOf } from '../../ecs/navLayer';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
@@ -96,7 +96,8 @@ export class OrderIssuer {
         ordered ??= 'unit_convert';
         continue;
       }
-      if (target.kind === 'enemy' && entity.attacker) {
+      // A unit that cannot hurt the target (a melee unit, a ship: M14) walks there instead.
+      if (target.kind === 'enemy' && entity.attacker && target.entity && canAttackTarget(entity, target.entity)) {
         this.world.addComponent(entity, 'attackIntent', { targetId });
         ordered = 'unit_attack';
         continue;

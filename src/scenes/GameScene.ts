@@ -290,6 +290,10 @@ export class GameScene extends Phaser.Scene {
         const ship = find(cmd.unitId);
         if (ship?.position && ship.cargo && ship.cargo.units.length > 0 && ship.owner?.playerId === human?.id) {
           clearUnitOrders(this.world, ship);
+          if (ship.movable) {
+            ship.movable.path = [];
+            ship.movable.progress = 0;
+          }
           this.world.addComponent(ship, 'unloadIntent', { target: { tx: ship.position.tx, ty: ship.position.ty } });
         }
       } else if (cmd.type === 'cancel-queue') {

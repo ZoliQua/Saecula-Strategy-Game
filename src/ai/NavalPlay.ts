@@ -5,11 +5,14 @@ import { canAttackTarget } from '../ecs/navLayer';
 import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { BaseUnitType, BuildingType } from '../types';
 import type { AIContext } from './AIPlayer';
+import { nearest } from './decisions/gathering';
 import { findDockSite } from './decisions/naval';
 import { baseAnchor } from './economyBuildings';
 import type { WorldView } from './perception';
 import { FOG_UNEXPLORED } from '../map/FogOfWarData';
 import { TERRAIN } from '../map/TerrainTypes';
+import type { MapData } from '../map/MapData';
+import { waterGrid } from '../map/navGrid';
 
 /** The strategy helpers naval play acts through (BaseStrategy's building and training). */
 export interface NavalActions {
@@ -39,7 +42,7 @@ export class NavalPlay {
   build(ctx: AIContext, view: WorldView): void {
     if (view.villagers.length < this.tune.minVillagers || this.act.ownCount(view, 'dock') > 0) return;
     const anchor = baseAnchor(view);
-    if (!anchor || !findDockSite(ctx.mapData, anchor, this.tune.dockRadius, (tx, ty) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED)) return;
+    if (!anchor || !findDockSite(ctx.mapData, anchor, AI_NAVAL.dockSearchRadius, (tx, ty) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED)) return;
     this.act.startBuilding(ctx, view, 'dock', anchor);
   }
 
@@ -72,8 +75,7 @@ export class NavalPlay {
 
   private fish(ctx: AIContext, view: WorldView, boat: Entity): void {
     if (boat.gatherIntent || boat.gatherer?.targetNodeId !== undefined) return;
-    const at = boat.position!;
-    const school = view.fish.reduce<Entity | null>((best, f) => (!best || chebyshev(f.position!, at) < chebyshev(best.position!, at) ? f : best), null);
+    const school = nearest(view.fish, boat.position!);
     if (school?.id !== undefined) ctx.world.addComponent(boat, 'gatherIntent', { nodeId: school.id });
   }
 
@@ -81,7 +83,9 @@ export class NavalPlay {
     const at = ship.position!;
     const busy = ship.attackIntent !== undefined || ship.moveIntent !== undefined || (ship.movable?.path.length ?? 0) > 0;
     // Ships first, then anything else it can reach; only what is close by.
-    const near = (e: Entity) => !!e.position && chebyshev(e.position, at) <= AI_NAVAL.engageRadius && canAttackTarget(ship, e);
+    const range = ship.attacker?.range ?? 0;
+    const near = (e: Entity) =>
+      !!e.position && chebyshev(e.position, at) <= AI_NAVAL.engageRadius && canAttackTarget(ship, e) && shootableFromWater(ctx.mapData, e, range);
     const foe =
       view.visibleEnemyUnits.find((e) => e.unit && isNavalType(e.unit.unitType) && near(e)) ??
       view.visibleEnemyUnits.find(near) ??
@@ -122,4 +126,16 @@ export class NavalPlay {
     }
     return null;
   }
+}
+
+/** Whether some open-water tile lies within `range` of `target` (a ship can shoot it from there, M14). */
+function shootableFromWater(map: MapData, target: Entity, range: number): boolean {
+  const p = target.position!;
+  const w = target.building?.footprint.width ?? 1;
+  const h = target.building?.footprint.height ?? 1;
+  const water = waterGrid(map);
+  for (let ty = p.ty - range; ty < p.ty + h + range; ty++) {
+    for (let tx = p.tx - range; tx < p.tx + w + range; tx++) if (water.isPassable(tx, ty)) return true;
+  }
+  return false;
 }

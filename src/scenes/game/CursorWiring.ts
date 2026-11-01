@@ -9,7 +9,7 @@ import { uiStore } from '../../ui/store';
 import { canConvert, readyToConvert } from '../../game/convert';
 import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
-import { moveLayerOf, navGridFor } from '../../ecs/navLayer';
+import { canAttackTarget, moveLayerOf, navGridFor } from '../../ecs/navLayer';
 
 /** Re-checks the cursor this often while the pointer rests (targets walk under it, the selection changes). */
 const CURSOR_REFRESH_MS = 150;
@@ -36,7 +36,7 @@ export function cursorContext(
   return {
     placing,
     units: units.map((e) => ({
-      attacks: e.attacker !== undefined,
+      attacks: e.attacker !== undefined && (!target?.entity || target.kind !== 'enemy' || canAttackTarget(e, target.entity)),
       gathers: target?.entity?.resourceNode ? canWorkNode(e, target.entity) : e.gatherer !== undefined,
       builds: isBuilder(e),
       converts: readyToConvert(e),

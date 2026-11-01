@@ -124,3 +124,32 @@ describe('TransportSystem: unloading beside a blocked shore (M14)', () => {
     expect(u.position!.tx).toBeGreaterThan(27);
   });
 });
+
+describe('TransportSystem: a shore the unit cannot reach (M14)', () => {
+  it('the transport comes over to the unit; the order never re-plans forever', () => {
+    const { map, world, step } = setup();
+    // The transport lies beside a shore pocket walled off by forest; the unit stands farther down the coast.
+    for (let ty = 7; ty <= 13; ty++) map.setTile(8, ty, TERRAIN.forest);
+    for (let tx = 8; tx <= 11; tx++) {
+      map.setTile(tx, 7, TERRAIN.forest);
+      map.setTile(tx, 13, TERRAIN.forest);
+    }
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 12, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'swordsman', tile: { tx: 3, ty: 22 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    step(60_000);
+    expect(ship.cargo?.units.length ?? 0).toBe(1);
+  });
+
+  it('a transport nobody can reach: the boarding order is dropped in the end', () => {
+    const { map, world, step } = setup();
+    // A lagoon cut off from the unit's land and from the sea.
+    for (let ty = 0; ty < 30; ty++) map.setTile(4, ty, TERRAIN.water);
+    for (let ty = 0; ty < 30; ty++) map.setTile(5, ty, TERRAIN.cliff);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 4, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'swordsman', tile: { tx: 9, ty: 10 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    step(120_000);
+    expect(u.boardIntent).toBeUndefined();
+  });
+});

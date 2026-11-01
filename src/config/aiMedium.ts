@@ -160,7 +160,6 @@ export const AI_MEDIUM: MediumTuning = {
   monks: { count: 2, minVillagers: 18 },
   navy: {
     minVillagers: 10,
-    dockRadius: 22,
     fishingBoats: 4,
     galleys: [0, 2, 3, 2],
     frigates: [0, 0, 0, 2],

@@ -202,8 +202,9 @@ export class MediumStrategy extends BaseStrategy {
         this.onWaveLaunched(ctx, view);
       }
     }
-    // An army out "exploring" its own island while the enemy is across the sea: home, to board.
-    if (!this.enemyWalkable(ctx, view) && this.army.attacking) this.army.recall(ctx, view);
+    // An army out "exploring" its own island while the enemy is across the sea: home, to board
+    // (a wave that has landed over there fights on).
+    if (!this.enemyWalkable(ctx, view) && this.army.attacking && !this.waveReachesEnemy(ctx, view)) this.army.recall(ctx, view);
     this.updateThoughts(ctx, view);
   }
 
@@ -222,6 +223,15 @@ export class MediumStrategy extends BaseStrategy {
     const answer = enemy.some((p) => landReachable(ctx.mapData, home, p));
     this.walkable = { answer, atMs: ctx.timeMs, key };
     return answer;
+  }
+
+  /** Whether any wave member can walk to the enemy (it landed on the enemy's island, M14). */
+  private waveReachesEnemy(ctx: AIContext, view: WorldView): boolean {
+    const spots = this.enemySpots(ctx, view);
+    return [...this.army.members()].some((id) => {
+      const u = view.byId.get(id);
+      return !!u?.position && spots.some((p) => landReachable(ctx.mapData, u.position!, p));
+    });
   }
 
   /** Where the enemy is known to be: its known buildings, else where its villagers were last seen (M14). */
