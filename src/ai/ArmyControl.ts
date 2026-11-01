@@ -1,4 +1,5 @@
 import { AI_COMMON } from '../config/aiBalance';
+import { holdsTimeLead } from '../game/timeVictory';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { TileCoord } from '../iso/coordinates';
@@ -76,9 +77,15 @@ export class ArmyControl {
 
   /**
    * Sends `units` (default: every military unit) out as the wave,
-   * together with any wave already out. Returns the wave size.
+   * together with any wave already out. Returns the wave size. No new
+   * wave while the AI holds the lead in the time limit's final window.
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
+    // Leading on score in the time limit's final minutes: keep the army home, a lost fight only costs the lead.
+    if (holdsTimeLead(ctx.player.id, ctx.timeVictory)) {
+      this.log.add(ctx.timeMs, 'stance', 'holdLead');
+      return this.wave.size;
+    }
     for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
     this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));

@@ -6,7 +6,7 @@ import type { EcsWorld } from '../ecs/world';
 import { gameOverRows, type GameOverOutcome } from '../game/gameOverStats';
 import { DIFFICULTIES, MAP_SIZE_IDS, mapTiles, type Difficulty, type GameSetupConfig, type MapSizeId } from '../game/GameSetupConfig';
 import type { Player } from '../game/Player';
-import type { VictoryCause } from '../game/VictoryChecker';
+import { VICTORY_CAUSES, type VictoryCause } from '../game/VictoryChecker';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import { GameSetupConfigSchema, PlayerMatchStatsSchema, TimelineSampleSchema } from '../save/schema';
 import { ageId, civId, enumOf, int, num, type Assert, type Exact, type Loose } from '../save/schemaKit';
@@ -62,7 +62,7 @@ export const MatchRecordSchema = z
     createdAt: z.string().datetime(),
     setup: GameSetupConfigSchema,
     outcome: enumOf<MatchOutcome>(['victory', 'defeat', 'abandoned']),
-    cause: z.union([enumOf<VictoryCause>(['conquest', 'wonder']), z.null()]),
+    cause: z.union([enumOf<VictoryCause>(VICTORY_CAUSES), z.null()]),
     durationMs: num.nonnegative(),
     map: z.object({ template: enumOf(MAP_TEMPLATES), mapSize: enumOf(MAP_SIZE_IDS), tiles: int.positive() }).strict(),
     players: z.array(

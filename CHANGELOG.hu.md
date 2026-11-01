@@ -12,6 +12,34 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.4.0] — 2026-11-01
+
+Időgyőzelem és könnyebb terep-textúrák kicsinyített nézetben (M9 mérföldkő).
+
+### Új
+
+- **Időgyőzelem**: 60 játékperc után a legmagasabb pontszámú, még talpon
+  lévő játékos nyer. Holtversenynél az nyer, aki több ellenséges értéket
+  pusztított el, utána a kisebb játékosszám. A hódítás és a Csoda az
+  időkorlát előtt továbbra is nyerhet.
+- A győzelmi beállításnak négy értéke van: Hódítás, Hódítás vagy Csoda (az
+  alapértelmezés, ahogy eddig), Hódítás vagy idő és Mind.
+- Időkorlátos meccsen a HUD mutatja a hátralévő időt és az éllovast. Az
+  utolsó öt percben az óra kiemelve látszik, és értesítés jelenik meg. A
+  játék vége képernyő és a játéknapló az új okot („Idő”) is mutatja.
+- Az utolsó öt percben a pontszámban vezető AI nem indít új támadó
+  hullámot.
+
+### Változott
+
+- 0,65 és 0,97 közötti nagyításon a nézet közelében a terep háromnegyedes
+  felbontású textúrát kap a teljes helyett. Képernyőn ugyanolyan éles, mint
+  a fél felbontás 0,65-ön. Egy 6 játékosos, 128×128-as Szigetek térképen mérve
+  a terep ebben a nagyítási sávban 49 → 33 MB-ot foglal 1280×720-on, és
+  75 → 45 MB-ot 1728×963-on.
+- A mentés `schemaVersion` értéke 4 lett. A régebbi mentések automatikus
+  migrációval töltődnek be, a győzelmi beállításuk megmarad.
+
 ## [0.3.0] — 2026-10-30
 
 Minden népnek van egyedi egysége és állandó bónusza (M8 mérföldkő).
@@ -129,7 +157,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/releases/tag/v0.1.0

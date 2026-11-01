@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WONDER_HOLD_MS } from '../config/balance';
+import { TIME_VICTORY, WONDER_HOLD_MS } from '../config/balance';
 import { createBuilding } from '../ecs/archetypes/building';
 import { createEcsWorld } from '../ecs/world';
 import { MapData } from '../map/MapData';
@@ -170,6 +170,52 @@ describe('VictoryChecker', () => {
       const e = wonderOf(w, 2, WONDER_HOLD_MS);
       w.world.addComponent(e, 'dying', { ttlMs: 2400 });
       expect(w.vc.check()).toEqual({ kind: 'playing' });
+    });
+  });
+
+  describe('Time victory', () => {
+    /** setup() with a time rule: `now` is the clock, `scores` / `kills` by player id. */
+    function timed(nowMs: number, scores: Record<number, number>, kills: Record<number, number> = {}, holdMs: number | null = null) {
+      const w = setup();
+      const vc = new VictoryChecker(w.world, w.players, holdMs, {
+        limitMs: TIME_VICTORY.limitMs,
+        nowMs: () => nowMs,
+        standing: (id) => ({ score: scores[id] ?? 0, killValue: kills[id] ?? 0 }),
+      });
+      return { ...w, vc };
+    }
+
+    it('before the limit → playing', () => {
+      expect(timed(TIME_VICTORY.limitMs - 1, { 1: 100, 2: 900 }).vc.check()).toEqual({ kind: 'playing' });
+    });
+
+    it('at the limit the higher score wins: AI ahead → defeat, cause time', () => {
+      expect(timed(TIME_VICTORY.limitMs, { 1: 100, 2: 900 }).vc.check()).toEqual({ kind: 'defeat', winnerId: 2, cause: 'time' });
+    });
+
+    it('human ahead → victory, cause time', () => {
+      expect(timed(TIME_VICTORY.limitMs + 50, { 1: 901, 2: 900 }).vc.check()).toEqual({ kind: 'victory', winnerId: 1, cause: 'time' });
+    });
+
+    it('tie on score: kill value decides', () => {
+      expect(timed(TIME_VICTORY.limitMs, { 1: 900, 2: 900 }, { 1: 10, 2: 20 }).vc.check()).toEqual({ kind: 'defeat', winnerId: 2, cause: 'time' });
+    });
+
+    it('without a time rule the clock never ends the match', () => {
+      const w = setup();
+      expect(new VictoryChecker(w.world, w.players, WONDER_HOLD_MS, null).check()).toEqual({ kind: 'playing' });
+    });
+
+    it('conquest and the Wonder come before time', () => {
+      const a = timed(TIME_VICTORY.limitMs, { 1: 100, 2: 900 });
+      const aiTc = a.world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === 2)!;
+      a.world.addComponent(aiTc, 'dying', { ttlMs: 0 });
+      expect(a.vc.check()).toEqual({ kind: 'victory', winnerId: 1, cause: 'conquest' });
+
+      const b = timed(TIME_VICTORY.limitMs, { 1: 100, 2: 900 }, {}, WONDER_HOLD_MS);
+      const wonder = createBuilding(b.world, { type: 'wonder', origin: { tx: 8, ty: 8 }, playerId: 1, mapData: b.map });
+      b.world.addComponent(wonder, 'wonder', { heldMs: WONDER_HOLD_MS });
+      expect(b.vc.check()).toEqual({ kind: 'victory', winnerId: 1, cause: 'wonder' });
     });
   });
 });

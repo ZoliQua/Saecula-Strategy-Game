@@ -31,7 +31,7 @@ export function decidedWinner(
   state: { readonly kind: 'victory' | 'defeat'; readonly winnerId: number; readonly cause: VictoryCause },
   players: readonly Player[],
 ): number | null {
-  if (state.kind === 'victory' || state.cause === 'wonder') return state.winnerId;
+  if (state.kind === 'victory' || state.cause !== 'conquest') return state.winnerId;
   const standing = players.filter((p) => !p.defeated);
   return standing.length === 1 ? standing[0]!.id : null;
 }

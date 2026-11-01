@@ -55,6 +55,14 @@ function rec(over: { at: string; outcome: MatchRecord['outcome']; civ?: MatchRec
 }
 
 describe('buildMatchRecord', () => {
+  it('a time-decided match of a timed setup records cause time and validates', () => {
+    const { world, players, stats, setup } = fixture();
+    const timed = { ...setup, victory: 'all' as const };
+    const r = buildMatchRecord({ matchId: 'match-t', createdAt: AT, setup: timed, players: players.all(), stats, world, durationMs: 3_600_000, end: { kind: 'defeat', winnerId: 2, cause: 'time' } });
+    expect(r).toMatchObject({ outcome: 'defeat', cause: 'time', setup: { victory: 'all' } });
+    expect(MatchRecordSchema.safeParse(JSON.parse(JSON.stringify(r))).success).toBe(true);
+  });
+
   it('records the setup, players, final stats, score breakdown and timeline of a decided match', () => {
     const { world, players, stats, setup } = fixture();
     const r = buildMatchRecord({ matchId: 'match-1', createdAt: AT, setup, players: players.all(), stats, world, durationMs: 754_321, end: { kind: 'victory', winnerId: 1, cause: 'conquest' } });

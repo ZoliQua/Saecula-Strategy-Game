@@ -246,6 +246,14 @@ export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>
 /** How long a finished Wonder must stand for its owner to win (Wonder victory, CLAUDE.md §4.8). */
 export const WONDER_HOLD_MS = 600_000;
 
+/** Time victory (CLAUDE.md §4.8 #3, M9): the highest score among the standing players wins at `limitMs`. */
+export const TIME_VICTORY = {
+  /** Game time at which the match is decided on score. */
+  limitMs: 3_600_000,
+  /** Final window in which the leading AI launches no new attack wave; the HUD clock is highlighted. */
+  holdLeadMs: 300_000,
+} as const;
+
 /** Tiles per second used by the game. */
 export function gameSpeed(tableSpeed: number): number {
   return tableSpeed * SPEED_SCALE;

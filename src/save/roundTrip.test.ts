@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SCHEMA_VERSION } from './schema';
 import { resumeHeadlessMatch } from '../ai/testing/headlessMatch';
 import { createBuilding } from '../ecs/archetypes/building';
 import { parseSave } from './parse';
@@ -9,7 +10,7 @@ describe('save round trip', () => {
     const match = savableMatch();
     match.run(6 * MIN, STEP_MS);
     const s1 = match.snapshot(FIXED_DATE);
-    expect(s1.schemaVersion).toBe(3);
+    expect(s1.schemaVersion).toBe(SCHEMA_VERSION);
     // The match id is saved and kept through every resume (the match log's key).
     expect(s1.matchId).toBe(match.matchId);
     expect(s1.matchId.length).toBeGreaterThan(0);

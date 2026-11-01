@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { defaultSetupConfig, matchCivs, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { defaultSetupConfig, hasTimeVictory, hasWonderVictory, matchCivs, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
 import { newMatchId } from '../../game/matchId';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
@@ -90,10 +90,15 @@ export async function startFromSlot(
  * fit its strategy (the load fails); a new match's errors propagate.
  */
 export function runnerFor(start: MatchStart, setup: GameSetupConfig, make: (options: SystemRunnerOptions) => SystemRunner): SystemRunner | null {
-  const options: SystemRunnerOptions = { difficulty: setup.difficulty, wonderVictory: setup.victory === 'conquest_wonder', seed: setup.seed };
+  const options: SystemRunnerOptions = {
+    difficulty: setup.difficulty,
+    wonderVictory: hasWonderVictory(setup.victory),
+    timeVictory: hasTimeVictory(setup.victory),
+    seed: setup.seed,
+  };
   if (start.kind === 'new') return make(options);
   try {
-    return make({ ...options, restore: { fogs: start.restored.fogs, ais: start.restored.aiStates, stats: start.restored.stats } });
+    return make({ ...options, startMs: start.restored.gameTimeMs, restore: { fogs: start.restored.fogs, ais: start.restored.aiStates, stats: start.restored.stats } });
   } catch (err) {
     if (import.meta.env.DEV) console.warn('restoring the AIs failed', err);
     return null;

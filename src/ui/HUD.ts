@@ -10,6 +10,7 @@ import { CommandPanel } from './panels/CommandPanel';
 import { ResourceBar } from './panels/ResourceBar';
 import { SelectionPanel } from './panels/SelectionPanel';
 import { SidePanel } from './panels/SidePanel';
+import { TimeLimitClock } from './panels/TimeLimitClock';
 import { WonderTimers } from './panels/WonderTimers';
 import type { Minimap } from './Minimap';
 import { guardPageZoom } from './pageZoomGuard';
@@ -49,6 +50,7 @@ export class Hud {
   private readonly selection: SelectionPanel;
   private readonly commands: CommandPanel;
   private readonly wonderTimers = new WonderTimers();
+  private readonly timeLimit = new TimeLimitClock(() => this.toast(hu.hud.timeLimitFinal, 'ok'));
   private readonly side = new SidePanel();
   private readonly dockWatch: ResizeObserver | null;
   /** Removes the page-zoom guard (a pinch over a HUD card must not zoom the browser page). */
@@ -107,7 +109,7 @@ export class Hud {
       this.minimapSlot,
     );
     const bottom = el('div', { class: 'hud-bottom' }, minimapCard, this.selection.root, this.commands.root);
-    const right = el('div', { class: 'hud-right' }, this.wonderTimers.root, this.side.root);
+    const right = el('div', { class: 'hud-right' }, this.timeLimit.root, this.wonderTimers.root, this.side.root);
     this.root = el('div', { class: 'hud' }, top, right, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
     this.unguardZoom = guardPageZoom(uiRoot(), document);
@@ -168,6 +170,7 @@ export class Hud {
     this.resources.render(state);
     this.selection.render(state);
     this.commands.render(state);
+    this.timeLimit.render(state);
     this.wonderTimers.render(state);
     this.side.render(state);
     this.ageChip.textContent = AGE_NAME[state.currentAge];
@@ -189,6 +192,7 @@ export class Hud {
     this.unsubscribeAge();
     this.unsubscribeResearch();
     this.unsubscribeWonders();
+    this.timeLimit.destroy();
     this.wonderTimers.destroy();
     this.dockWatch?.disconnect();
     this.side.destroy();
