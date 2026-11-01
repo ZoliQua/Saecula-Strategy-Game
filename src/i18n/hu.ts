@@ -11,6 +11,7 @@ export const hu = {
     loadGame: 'Betöltés',
     settings: 'Beállítások',
     stats: 'Statisztika',
+    campaign: 'Kampány',
     credits: 'Készítők',
     eyebrow: 'Skirmish · Rómától a felvilágosodásig',
     headline: 'Építs birodalmat.\nVédd meg a földed.',
@@ -344,12 +345,16 @@ export const hu = {
         victory: 'Lejárt a 60 perc, és a te pontszámod a legmagasabb. A győzelem a tiéd.',
         defeat: 'Lejárt a 60 perc, és egy ellenfél több pontot gyűjtött. Még egy menet?',
       },
+      mission: {
+        victory: 'Minden célt teljesítettél. A küldetés sikerült.',
+        defeat: 'A küldetés nem sikerült. Próbáld újra!',
+      },
     },
     backToMenu: 'Vissza a főmenübe',
     statsHeader: 'Statisztika',
     durationLabel: 'Játékidő',
     causeLabel: 'Döntött',
-    causes: { conquest: 'Hódítás', wonder: 'Csoda', time: 'Idő' },
+    causes: { conquest: 'Hódítás', wonder: 'Csoda', time: 'Idő', mission: 'Küldetés' },
     /** The player table. */
     players: 'Játékosok',
     human: 'Te',
@@ -415,6 +420,54 @@ export const hu = {
     exported: 'A meccsnapló letöltése elindult',
     /** The exported file's name (date: YYYY-MM-DD). */
     exportFile: (date: string) => `saecula-meccsek-${date}.json`,
+  },
+  /** The campaign (M13): mission list, briefing, objectives and closing texts. */
+  campaign: {
+    kicker: 'Saecula krónikája',
+    title: 'Kampány',
+    intro: 'Három küldetés Rómától a felvilágosodásig. Mindegyik a következőt nyitja meg; a teljesítetteket újrajátszhatod.',
+    missionNumber: (n: number) => `${n}. küldetés`,
+    status: { locked: 'Zárolva', available: 'Elérhető', completed: 'Teljesítve' },
+    lockedHint: 'Előbb teljesítsd az előző küldetést.',
+    objectivesTitle: 'Célok',
+    start: 'Küldetés indítása',
+    replay: 'Újrajátszás',
+    objectiveDone: (text: string) => `Cél teljesítve: ${text}`,
+    objectives: {
+      reachAge: (age: string) => `Lépj be: ${age}`,
+      ownBuildings: (name: string, n: number) => (n === 1 ? `Építs fel: ${name}` : `Építs fel ${n} épületet: ${name}`),
+      ownUnits: (name: string, n: number) => `Képezz ${n} egységet: ${name}`,
+      survive: (min: number) => `Tarts ki ${min} percig (a városházád álljon)`,
+      winMatch: 'Nyerd meg a meccset (hódítás vagy Csoda)',
+    },
+    /** The objective's progress, e.g. "1 / 2" (minutes for a survive objective). */
+    progress: (have: number, need: number) => `${have} / ${need}`,
+    missions: {
+      first_monastery: {
+        title: 'Az első kolostor',
+        place: 'Magyarok · kicsi Mezőség · 1 könnyű ellenfél',
+        briefing:
+          'A római utak mentén új hit terjed. A törzsfők azt akarják, hogy a népnek saját kolostora legyen, ahol szerzetesek gyógyítják a sebesülteket, és békével fordítják maguk felé a szomszédokat. Fejlődj a középkorba, emeld fel a kolostort, és képezz két szerzetest.',
+        victory: 'A kolostor harangja először szólal meg a völgyben. A szerzetesek útnak indulnak; a hír eljut a határ menti várakhoz is.',
+        defeat: 'A városháza elesett, a kolostor csak terv maradt. Gyűjts erőt, és próbáld újra.',
+      },
+      border_guards: {
+        title: 'A határ őrei',
+        place: 'Angolok · közepes Erődítmény · 2 közepes ellenfél · középkorból indulva',
+        briefing:
+          'A szomszédos német fejedelemségek szövetségre léptek ellenünk. A király parancsa: húsz percig tartsd a határt, amíg a felmentő sereg megérkezik. Építs négy őrtornyot a falak mentén, és ne engedd, hogy a városháza elessen.',
+        victory: 'A felmentő sereg zászlói feltűnnek a dombon. A tornyok kitartottak; a határ biztonságban van.',
+        defeat: 'A falak leomlottak, a határvidék elveszett. A király új parancsot ad: próbáld újra.',
+      },
+      age_of_wonders: {
+        title: 'Csodák kora',
+        place: 'Olaszok · közepes Szigetek · 2 nehéz ellenfél · a felvilágosodásban',
+        briefing:
+          'A szigetvilág városállamai egy új korszak vezetéséért versengenek. Bőséges kincstárral indulsz: építs Csodát és tartsd meg, vagy foglald el ellenfeleid városházáit. Csak egy út vezet a győzelemhez: nyerd meg a meccset.',
+        victory: 'A Saecula krónikája lezárul: a te néped neve fémjelzi a kort. Gratulálunk, teljesítetted a kampányt!',
+        defeat: 'A szigetek ura más lett. A krónika utolsó lapja még üres: próbáld újra.',
+      },
+    },
   },
   /** The pause menu (Esc). */
   pause: {

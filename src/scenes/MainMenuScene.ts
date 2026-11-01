@@ -20,6 +20,9 @@ import { directionFromDelta, type BuildingType, type CivId, type Direction, type
 import { paintNextCivPreview } from '../ui/civPreview';
 import { MainMenu, MENU_ENTRANCE_MS } from '../ui/screens/MainMenu';
 import { SaveSlots } from '../ui/screens/SaveSlots';
+import { CampaignScreen } from '../ui/screens/CampaignScreen';
+import { CampaignProgress } from '../campaign/progress';
+import { missionSetup } from '../campaign/missions';
 import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { StatsScreen } from '../ui/screens/StatsScreen';
 import { MatchLog } from '../stats/matchLog';
@@ -119,6 +122,7 @@ export class MainMenuScene extends Phaser.Scene {
   /** The setup card is open (it paints any missing preview itself, after its entrance). */
   private away = false;
   /** The load list ("Betöltés"), while open. */
+  private campaign: CampaignScreen | null = null;
   private slots: SaveSlots | null = null;
   /** The settings card ("Beállítások"), while open. */
   private settings: SettingsScreen | null = null;
@@ -220,6 +224,7 @@ export class MainMenuScene extends Phaser.Scene {
       () => this.openLoadList(),
       () => this.openSettings(),
       () => this.openStats(),
+      () => this.openCampaign(),
     );
     // A start that failed (no valid map) comes straight back to the setup card;
     // a notice alone (a save that could not be loaded) shows on the menu.
@@ -239,6 +244,8 @@ export class MainMenuScene extends Phaser.Scene {
       this.settings = null;
       this.stats?.destroy();
       this.stats = null;
+      this.campaign?.destroy();
+      this.campaign = null;
       this.tileMap?.destroy();
       this.tileMap = null;
       this.lighting?.destroy();
@@ -253,9 +260,34 @@ export class MainMenuScene extends Phaser.Scene {
     this.menu?.setAway(false);
   }
 
+  /** The campaign card over the diorama (M13); starting a mission fades into GameScene on its setup. */
+  private openCampaign(): void {
+    if (this.settings || this.slots || this.stats || this.campaign) return;
+    this.away = true;
+    this.menu?.setAway(true);
+    const progress = new CampaignProgress();
+    const campaign: CampaignScreen = new CampaignScreen((id) => progress.status(id), {
+      onStart: (id) => {
+        if (this.campaign !== campaign) return;
+        campaign.leave();
+        this.fadeOutThen(() => this.scene.start('GameScene', missionSetup(id)));
+      },
+      onBack: () => {
+        if (this.campaign !== campaign) return;
+        campaign.leave();
+        this.campaign = null;
+        this.away = false;
+        this.menu?.setAway(false);
+        this.menu?.focusButton('campaign');
+        window.setTimeout(() => campaign.destroy(), CARD_LEAVE_MS);
+      },
+    });
+    this.campaign = campaign;
+  }
+
   /** The statistics card over the diorama (the local match log); back (or Esc) brings the hero back. */
   private openStats(): void {
-    if (this.settings || this.slots || this.stats) return;
+    if (this.settings || this.slots || this.stats || this.campaign) return;
     this.away = true;
     this.menu?.setAway(true);
     const stats: StatsScreen = new StatsScreen(() => {
@@ -275,7 +307,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The settings card over the diorama; back (or Esc) brings the hero back. */
   private openSettings(): void {
-    if (this.settings || this.slots || this.stats) return;
+    if (this.settings || this.slots || this.stats || this.campaign) return;
     this.away = true;
     this.menu?.setAway(true);
     const settings: SettingsScreen = new SettingsScreen(() => {
@@ -293,7 +325,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The load list over the diorama; picking a save starts GameScene on it (startFromSlot). */
   private openLoadList(): void {
-    if (this.slots || this.settings || this.stats) return;
+    if (this.slots || this.settings || this.stats || this.campaign) return;
     this.away = true;
     this.menu?.setAway(true);
     const slots: SaveSlots = new SaveSlots('load', [], {

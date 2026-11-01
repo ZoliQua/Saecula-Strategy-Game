@@ -28,6 +28,8 @@ export interface RestoredMatch {
   lightPhase: number;
   /** The saved statistics on the restored world and players (attach it to count on). */
   stats: MatchStats;
+  /** A campaign mission's done objectives (M13). */
+  campaign?: { done: number[] };
 }
 
 /** A live entity from saved components (deep-copied, so the save is never aliased). */
@@ -91,5 +93,6 @@ export function restoreMatch(save: SaveData): RestoredMatch {
     camera: { ...save.camera },
     lightPhase: save.lightPhase,
     stats,
+    ...(save.campaign ? { campaign: { done: [...save.campaign.done] } } : {}),
   };
 }

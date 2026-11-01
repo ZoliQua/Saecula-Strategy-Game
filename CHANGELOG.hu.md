@@ -12,6 +12,35 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.8.0] — 2026-11-01
+
+Háromküldetéses kampány (M13 mérföldkő).
+
+### Új
+
+- **Kampány** a főmenüben. Három küldetés rögzített térképpel és
+  felállással, sorban nyílnak meg; a teljesítettek újrajátszhatók.
+  1. *Az első kolostor* (magyarok, 1 könnyű ellenfél): lépj a középkorba,
+     építs kolostort, képezz két szerzetest.
+  2. *A határ őrei* (angolok, Erődítmény, 2 közepes ellenfél, középkorból
+     indulva): tarts ki 20 percig, és építs négy őrtornyot.
+  3. *Csodák kora* (olaszok, Szigetek, 2 nehéz ellenfél, a
+     felvilágosodásban, bőséges kincstárral): nyerd meg a meccset
+     hódítással vagy Csodával.
+- Minden küldetés magyar eligazítással indul, amely felsorolja a célokat.
+- Játék közben a HUD célpanelje kipipálja a teljesített célokat, és
+  mindegyikről értesítés jelenik meg.
+- A küldetés megnyerhető az összes cél teljesítésével vagy hódítással, és
+  elveszik, ha elesik a városházad. A játék vége képernyő a küldetés
+  zárószövegét mutatja.
+- Az előrehaladást a böngésző őrzi.
+
+### Változott
+
+- A mentés `schemaVersion` értéke 7 lett: a folyamatban lévő küldetés
+  megőrzi a céljait. A régebbi mentések automatikus migrációval töltődnek
+  be.
+
 ## [0.7.0] — 2026-11-01
 
 Bővített fejlődési fa (M12 mérföldkő).
@@ -233,7 +262,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0

@@ -12,6 +12,34 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.8.0] — 2026-11-01
+
+A three-mission campaign (milestone M13).
+
+### Added
+
+- **Campaign** in the main menu. Three missions on fixed maps and
+  line-ups, unlocked in order; completed missions can be replayed.
+  1. *Az első kolostor* (Hungarians, one easy opponent): reach the Middle
+     Ages, build a monastery and train two monks.
+  2. *A határ őrei* (English, Fortress map, two medium opponents, starting
+     in the Middle Ages): hold out for 20 minutes and build four towers.
+  3. *Csodák kora* (Italians, Islands, two hard opponents, starting in the
+     Enlightenment with a full treasury): win the match by conquest or a
+     Wonder.
+- Each mission opens with a Hungarian briefing that lists its objectives.
+- During play, an objectives panel on the HUD ticks each objective off and
+  a notice appears for each one met.
+- A mission is won when all its objectives are met, or by conquest. It is
+  lost when your town centre falls. The game-over card shows the mission's
+  closing text.
+- Progress is kept in the browser.
+
+### Changed
+
+- Save `schemaVersion` is now 7: a mission in progress keeps its
+  objectives. Older saves load through an automatic migration.
+
 ## [0.7.0] — 2026-11-01
 
 A larger tech tree (milestone M12).
@@ -230,7 +258,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0

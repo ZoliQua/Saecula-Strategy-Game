@@ -28,6 +28,8 @@ export interface MatchState {
   lightPhase: number;
   /** The match statistics (scores, timeline). */
   stats: MatchStats;
+  /** A campaign mission's done objectives (M13); absent outside the campaign. */
+  campaign?: { done: readonly number[] };
 }
 
 /**
@@ -120,5 +122,6 @@ export function serializeMatch(state: MatchState, now: Date = new Date()): SaveD
     camera: { ...state.camera },
     lightPhase: state.lightPhase,
     stats: state.stats.snapshot(),
+    ...(state.campaign ? { campaign: { done: [...state.campaign.done] } } : {}),
   };
 }

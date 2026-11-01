@@ -3,8 +3,8 @@ import type { PlayerManager } from './PlayerManager';
 import { timeLeader, type TimeVictoryRule } from './timeVictory';
 
 /** How a match was decided. */
-export type VictoryCause = 'conquest' | 'wonder' | 'time';
-export const VICTORY_CAUSES: readonly VictoryCause[] = ['conquest', 'wonder', 'time'];
+export type VictoryCause = 'conquest' | 'wonder' | 'time' | 'mission';
+export const VICTORY_CAUSES: readonly VictoryCause[] = ['conquest', 'wonder', 'time', 'mission'];
 
 export type VictoryState =
   | { kind: 'playing' }
@@ -22,6 +22,9 @@ export type VictoryState =
  * the hold wins outright, unless that owner is already defeated. With
  * several past the hold, the one held longest wins.
  *
+ * Mission victory (M13, when `mission` is set, right after conquest): the
+ * human wins once every objective of the mission is done.
+ *
  * Time victory (when `time` is set, checked last): once the clock reaches
  * the limit the standing player with the best score wins (timeLeader).
  */
@@ -33,6 +36,8 @@ export class VictoryChecker {
     private readonly wonderHoldMs: number | null,
     /** Time victory rule; null = no time limit. */
     private readonly time: TimeVictoryRule | null = null,
+    /** A campaign mission (M13): every objective done is a victory; null = no mission. */
+    private readonly mission: { complete(): boolean } | null = null,
   ) {}
 
   check(): VictoryState {
@@ -51,6 +56,7 @@ export class VictoryChecker {
     if (ais.length > 0 && ais.every((p) => p.defeated)) {
       return { kind: 'victory', winnerId: human.id, cause: 'conquest' };
     }
+    if (this.mission?.complete()) return { kind: 'victory', winnerId: human.id, cause: 'mission' };
     const wonderWinner = this.wonderWinner();
     if (wonderWinner !== null) {
       return { kind: wonderWinner === human.id ? 'victory' : 'defeat', winnerId: wonderWinner, cause: 'wonder' };
