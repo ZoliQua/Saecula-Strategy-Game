@@ -28,6 +28,12 @@ Javítások a 0.4.0–0.8.0 code review-ja alapján.
   újra ugyanazzal a céllal.
 - Az AI támadó hulláma, oldaltámadása és portyája elengedi a tőle
   áttérített egységeket.
+- Az új épületalap alá került egység azon az oldalon lép le, amerről
+  elérheti a célját; az ott álló szerzetes már nem adja fel a másik
+  oldalról elérhető célt.
+- A mentés megőrzi, mely célokat adta fel az AI szerzetese. A mentések
+  sémaváltozata 8; a 0.8.0 ezeket nem nyitja meg, a régebbi mentések
+  ugyanúgy betöltődnek.
 - Ha töltődő szerzetessel egy ellenségre jobb klikkelsz, a szerzetes oda
   megy, ahogy a kurzor jelzi, és a parancs nem vész el.
 - A felvilágosodásból induló küldetés a kezdőkora grafikáját tölti be. Az

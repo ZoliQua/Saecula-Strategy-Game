@@ -10,6 +10,7 @@ import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
 import { baseAnchor } from './economyBuildings';
 import { ownLiving, type WorldView } from './perception';
+import type { MonkAvoidState } from './strategyState';
 
 
 /** The strategy helpers monk play acts through (BaseStrategy's building and training). */
@@ -25,8 +26,8 @@ export interface MonkActions {
 
 /**
  * Monk play of the Medium strategy family (CLAUDE.md M11). Read from the
- * world, apart from a short memory of given-up targets (not saved: after a
- * load a monk may pick one again, and MonkSystem gives it up on the spot):
+ * world, apart from a short memory of given-up targets (saved with the
+ * strategy: snapshot / restore):
  *  - build: from age 2 with `minVillagers` and the age's military buildings standing, one monastery;
  *  - train: up to `count` monks there;
  *  - control: a ready monk converts the nearest visible enemy unit within
@@ -41,6 +42,22 @@ export class MonkPlay {
     private readonly tune: MediumTuning['monks'],
     private readonly act: MonkActions,
   ) {}
+
+  /** The avoided targets as `[monkId, targetId, untilMs]` rows (saved with the strategy). */
+  snapshot(): MonkAvoidState {
+    const rows: [number, number, number][] = [];
+    for (const [monkId, targets] of this.avoid) for (const [targetId, until] of targets) rows.push([monkId, targetId, until]);
+    return rows;
+  }
+
+  restore(rows: MonkAvoidState): void {
+    this.avoid.clear();
+    for (const [monkId, targetId, until] of rows) {
+      let targets = this.avoid.get(monkId);
+      if (!targets) this.avoid.set(monkId, (targets = new Map()));
+      targets.set(targetId, until);
+    }
+  }
 
   /** The monks of `view` (own, alive). */
   static monksOf(ctx: AIContext): Entity[] {

@@ -25,6 +25,11 @@ Fixes from the code review of 0.4.0–0.8.0.
   every frame, which wasted the shared path-finding budget. An AI monk
   leaves such a target alone for a minute.
 - An AI attack wave, flank or raid now drops units converted away from it.
+- A unit caught under a new foundation finds its way by whichever side
+  leads to its goal; a monk there no longer gives up a target it could
+  reach from the other side.
+- A saved game keeps which targets an AI monk has given up on. Saves are
+  now schema version 8; 0.8.0 cannot open them, older saves load as before.
 - Right-clicking an enemy with a recharging monk now walks the monk there,
   as the cursor shows, instead of losing the order.
 - The Enlightenment-age mission loads the art of the age it starts in,

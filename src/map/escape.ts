@@ -47,26 +47,48 @@ export function escapeSteps(
   rules: EscapeRules = STRICT_ESCAPE,
   toward?: TileCoord,
 ): TileCoord[] | null {
+  const found = searchEscape(map, start, rules);
+  if (!found) return null;
+  const chosen = pickExit(map, found.exits, toward);
+  return chosen === undefined ? null : unwind(found.parent, chosen, map.width);
+}
+
+/**
+ * Every way off blocked ground (the exits escapeSteps chooses among),
+ * nearest first, each as the steps from `start` (included) to its exit;
+ * an empty list when there is no exit. Null when no escape is needed.
+ * For a search that may leave by whichever exit leads to its goal.
+ */
+export function escapeRoutes(map: MapData, start: TileCoord, rules: EscapeRules = STRICT_ESCAPE): TileCoord[][] | null {
+  const w = map.width;
+  if (start.tx < 0 || start.ty < 0 || start.tx >= w || start.ty >= map.height) return [];
+  if (map.isPassable(start.tx, start.ty) && hasExit(map, start.tx, start.ty)) return null;
+  const found = searchEscape(map, start, rules);
+  return found ? found.exits.map((i) => unwind(found.parent, i, w)) : [];
+}
+
+/** The exits off blocked ground with their search tree (escapeSteps' rules); null when no escape is needed or none exists. */
+function searchEscape(map: MapData, start: TileCoord, rules: EscapeRules): { parent: Int32Array; exits: number[] } | null {
   const w = map.width;
   const h = map.height;
   if (start.tx < 0 || start.ty < 0 || start.tx >= w || start.ty >= h) return null;
   const startFree = map.isPassable(start.tx, start.ty);
   if (startFree && hasExit(map, start.tx, start.ty)) return null;
-  const steps = searchExit(map, start, startFree, rules, (tx, ty) => rules.crossable(tx, ty), toward);
+  const first = searchExit(map, start, startFree, rules, (tx, ty) => rules.crossable(tx, ty));
   const last = rules.lastResort;
-  if (steps || startFree || !last) return steps;
-  return searchExit(map, start, startFree, rules, (tx, ty) => rules.crossable(tx, ty) || last.call(rules, tx, ty), toward);
+  if (first.exits.length > 0 || startFree || !last) return first.exits.length > 0 ? first : null;
+  const second = searchExit(map, start, startFree, rules, (tx, ty) => rules.crossable(tx, ty) || last.call(rules, tx, ty));
+  return second.exits.length > 0 ? second : null;
 }
 
-/** The breadth-first search of escapeSteps, crossing blocked tiles where `cross` allows. */
+/** The breadth-first search of escapeSteps, crossing blocked tiles where `cross` allows: every exit, nearest first. */
 function searchExit(
   map: MapData,
   start: TileCoord,
   startFree: boolean,
   rules: EscapeRules,
   cross: (tx: number, ty: number) => boolean,
-  toward: TileCoord | undefined,
-): TileCoord[] | null {
+): { parent: Int32Array; exits: number[] } {
   const w = map.width;
   const h = map.height;
   const parent = new Int32Array(w * h).fill(-1);
@@ -97,8 +119,7 @@ function searchExit(
       }
     }
   }
-  const chosen = pickExit(map, exits, toward);
-  return chosen === undefined ? null : unwind(parent, chosen, w);
+  return { parent, exits };
 }
 
 function pickExit(map: MapData, exits: readonly number[], toward: TileCoord | undefined): number | undefined {

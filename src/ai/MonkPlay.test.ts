@@ -29,7 +29,7 @@ function scene() {
   const perception = new Perception();
   const ctx = (timeMs: number): AIContext => ({ world, mapData: map, player: createPlayer({ id: 2 }), timeMs, fog });
   const tick = (t: number) => play.control(ctx(t), perception.update(ctx(t)));
-  return { world, monk, archer, tick, fog };
+  return { world, monk, archer, tick, fog, play };
 }
 
 describe('MonkPlay', () => {
@@ -58,5 +58,25 @@ describe('MonkPlay', () => {
     expect(monk.convertIntent).toBeUndefined();
     tick(1000 + AI_COMMON.monkAvoidMs + 1000);
     expect(monk.convertIntent?.targetId).toBe(archer.id);
+  });
+
+  it('carries its avoided targets through a save (snapshot / restore)', () => {
+    const { world, monk, archer, tick, play: saved } = scene();
+    tick(0);
+    world.removeComponent(monk, 'convertIntent');
+    markConvertGivenUp(monk, archer.id!);
+    tick(1000);
+    const sceneSnapshot = saved.snapshot();
+    const play = new MonkPlay(AI_MEDIUM.monks, {
+      ownCount: () => 0,
+      militaryReady: () => false,
+      startBuilding: () => null,
+      train: () => false,
+      waveMembers: () => new Set(),
+    });
+    expect(play.snapshot()).toEqual([]);
+    play.restore(sceneSnapshot);
+    expect(play.snapshot()).toEqual(sceneSnapshot);
+    expect(JSON.parse(JSON.stringify(sceneSnapshot))).toEqual([[monk.id, archer.id, 1000 + AI_COMMON.monkAvoidMs]]);
   });
 });

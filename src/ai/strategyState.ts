@@ -74,6 +74,9 @@ export interface EasyState {
   readonly firstAttackAtMs: number;
 }
 
+/** MonkPlay's avoided conversion targets: `[monkId, targetId, untilMs]` rows. */
+export type MonkAvoidState = readonly (readonly [number, number, number])[];
+
 /** Medium's fields (Hard and Mesteri extend them). */
 export interface MediumFields {
   readonly base: BaseState;
@@ -82,6 +85,8 @@ export interface MediumFields {
   readonly pressure: PressureState;
   readonly firstAttackAtMs: number;
   readonly lastScoutMs: number | null;
+  /** Absent when there is none (and in saves from before 0.8.1). */
+  readonly monkAvoid?: MonkAvoidState | undefined;
 }
 
 export interface MediumState extends MediumFields {

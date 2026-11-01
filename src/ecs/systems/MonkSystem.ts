@@ -3,7 +3,7 @@ import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert'
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
-import { escapeSteps } from '../../map/escape';
+import { escapeRoutes } from '../../map/escape';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToAny } from '../../map/pathfinding';
 import { escapeRulesAt } from '../escapeRules';
@@ -109,10 +109,11 @@ export class MonkSystem {
     const escape = escapeRulesAt(this.world, from, this.map, monk.owner?.playerId ?? 0);
     // Inline Chebyshev: called for every tile the search visits, with no allocation.
     const inRange = (tx: number, ty: number) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= MONK.convertRange;
-    const path = findPathToAny(this.map, from, inRange, escape, at);
+    const path = findPathToAny(this.map, from, inRange, escape);
     if (!path) {
       this.giveUp(monk);
-      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape, at)?.slice(1) ?? [];
+      // The target is out of reach from every exit: the nearest one will do.
+      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeRoutes(this.map, from, escape)?.[0]?.slice(1) ?? [];
       return;
     }
     if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
