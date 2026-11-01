@@ -12,6 +12,24 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.5.0] — 2026-11-01
+
+Megosztható mentések és mérőszkriptek (M10 mérföldkő).
+
+### Új
+
+- **Mentés megosztása**: a betöltési listában (főmenü és szünet) minden
+  használható mentés mellett van egy exportgomb, amely JSON-fájlként
+  letölti. Az „Importálás fájlból” gomb egy ilyen fájlt azonnal betölt. A
+  fájl ugyanazt az ellenőrzést kapja, mint a tárolt mentés (a régebbit
+  migrálja). Túl nagy (16 MB fölötti), sérült, nem mentés vagy újabb
+  verzióval készült fájlnál magyar üzenet jelenik meg, és nem töltődik be
+  semmi.
+- **Mérőszkriptek** a `scripts/perf/` mappában: az `npm run perf:texmem` a
+  textúra-memóriát méri nagyításonként, az `npm run perf:frame` a
+  képkockaidőt (Playwright a fejlesztői szerveren; lásd
+  `scripts/perf/README.hu.md`).
+
 ## [0.4.0] — 2026-11-01
 
 Időgyőzelem és könnyebb terep-textúrák kicsinyített nézetben (M9 mérföldkő).
@@ -157,7 +175,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.1.0...v0.2.0

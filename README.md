@@ -131,7 +131,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.4.0**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.5.0**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
@@ -142,6 +142,7 @@ each version contains.
 | M7 | Playtest fixes, controls, scores, statistics | ✅ 0.2.0 |
 | M8 | Unique units and nation bonuses | ✅ 0.3.0 |
 | M9 | Time victory, lighter terrain when zoomed out | ✅ 0.4.0 |
+| M10 | Shareable saves (JSON), perf scripts | ✅ 0.5.0 |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, campaigns.
