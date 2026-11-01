@@ -1,0 +1,51 @@
+import { isShoreSite } from '../../game/shore';
+import type { TileCoord } from '../../iso/coordinates';
+import type { MapData } from '../../map/MapData';
+import { reachMask } from '../../map/gridSteps';
+
+/**
+ * The nearest dock site (M14) to `anchor` within `maxRadius` (Chebyshev):
+ * a 3×3 footprint of free grass, every tile `allowed` (explored), with open
+ * water along a side; null when there is none.
+ */
+export function findDockSite(
+  map: MapData,
+  anchor: TileCoord,
+  maxRadius: number,
+  allowed: (tx: number, ty: number) => boolean,
+): TileCoord | null {
+  for (let r = 2; r <= maxRadius; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const o = { tx: anchor.tx + dx, ty: anchor.ty + dy };
+        let ok = true;
+        for (let y = 0; y < 3 && ok; y++) {
+          for (let x = 0; x < 3 && ok; x++) ok = map.isBuildable(o.tx + x, o.ty + y) && allowed(o.tx + x, o.ty + y);
+        }
+        if (ok && isShoreSite(map, o, 3, 3)) return o;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Whether `to` (or a tile beside it, for a building) can be walked to on
+ * the land as it is now from `from` or a tile within FROM_SLACK of it (a
+ * town centre's own tiles are blocked; its villagers stand round it).
+ */
+export function landReachable(map: MapData, from: TileCoord, to: TileCoord): boolean {
+  const mask = reachMask(map, to);
+  for (let dy = -FROM_SLACK; dy <= FROM_SLACK; dy++) {
+    for (let dx = -FROM_SLACK; dx <= FROM_SLACK; dx++) {
+      const tx = from.tx + dx;
+      const ty = from.ty + dy;
+      if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && mask[ty * map.width + tx] === 1) return true;
+    }
+  }
+  return false;
+}
+
+/** How far round `from` landReachable looks for a free tile to start from. */
+const FROM_SLACK = 3;

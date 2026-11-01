@@ -22,6 +22,10 @@ import { aiTrainAccount, canAfford, NO_RESERVE } from '../economy';
 import { Perception, type WorldView } from '../perception';
 import type { BaseState, StrategyState } from '../strategyState';
 import { ThoughtLog, type AIThoughts } from '../thoughts';
+import { findDockSite } from '../decisions/naval';
+
+/** How far from its anchor the AI looks for a dock site (M14). */
+const AI_DOCK_SEARCH_RADIUS = 24;
 
 /**
  * Shared AI skeleton: a cheap upkeep pass every AI_COMMON.upkeepMs and a
@@ -103,6 +107,8 @@ export abstract class BaseStrategy implements AIStrategy {
 
   /** Free origin for `type` near `anchor` on explored ground, keeping lanes clear. */
   protected placeFor(ctx: AIContext, view: WorldView, type: BuildingType, anchor: TileCoord): TileCoord | null {
+    // A dock (M14) stands on the shore nearest the base.
+    if (type === 'dock') return findDockSite(ctx.mapData, anchor, AI_DOCK_SEARCH_RADIUS, (tx, ty) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED);
     const spec = BUILDING_SPECS[type];
     const ring = AI_PLACEMENT.byType[type] ?? AI_PLACEMENT.fallback;
     const tc = type === 'farm' ? view.townCenter : undefined;

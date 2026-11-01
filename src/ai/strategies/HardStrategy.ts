@@ -96,7 +96,7 @@ export class HardStrategy extends MediumStrategy {
   }
 
   protected override isReserved(u: Entity): boolean {
-    return this.harass.has(u);
+    return super.isReserved(u) || this.harass.has(u);
   }
 
   protected override upkeep(ctx: AIContext, view: WorldView): void {

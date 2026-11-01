@@ -95,3 +95,32 @@ describe('TransportSystem (M14)', () => {
     expect(ship.cargo?.units ?? []).toHaveLength(0);
   });
 });
+
+describe('TransportSystem: a transport out at sea (M14)', () => {
+  it('comes in to the shore by the units that want to board it', () => {
+    const { world, step } = setup();
+    // Out in the strait, no land beside it.
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 20, ty: 20 }, playerId: 1 });
+    const u = createUnit(world, { type: 'swordsman', tile: { tx: 6, ty: 6 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    step(40_000);
+    expect(ship.cargo?.units).toHaveLength(1);
+  });
+});
+
+describe('TransportSystem: unloading beside a blocked shore (M14)', () => {
+  it('a voyage that ends with no land beside it (a dock there) goes on to the nearest open shore and unloads', () => {
+    const { map, world, step } = setup();
+    // The far shore right by the target is built up: a wall of blocked tiles along it.
+    for (let ty = 5; ty <= 15; ty++) map.setBlocked(28, ty, true);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 13, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'archer', tile: { tx: 11, ty: 10 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    step(5_000);
+    expect(ship.cargo?.units).toHaveLength(1);
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 28, ty: 10 } });
+    step(60_000);
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    expect(u.position!.tx).toBeGreaterThan(27);
+  });
+});

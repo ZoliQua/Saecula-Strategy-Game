@@ -608,6 +608,7 @@ export const hu = {
         rebalance: 'Átcsoportosítás',
         harass: 'Portyázás',
         flank: 'Bekerítés',
+        landing: 'Partraszállás',
         stance: 'Stratégiaváltás',
       },
       stanceLabel: 'Stratégia',

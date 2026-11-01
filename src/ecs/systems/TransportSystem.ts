@@ -2,6 +2,7 @@ import { NAVAL } from '../../config/balance';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { NEIGHBOUR_STEPS } from '../../map/gridSteps';
+import { waterGrid } from '../../map/navGrid';
 import type { Entity } from '../components';
 import { moveLayerOf } from '../navLayer';
 import { clearUnitOrders } from '../orders';
@@ -10,6 +11,8 @@ import { findEntityById } from './gathering/gatherQueries';
 
 /** A transport within this many tiles of its unload target (and beside land) puts its cargo ashore there. */
 const UNLOAD_REACH = 3;
+/** How far (tiles) from an unload target a transport looks for an open shore. */
+const SHORE_SEARCH = 14;
 /** A transport that moved this far from where a boarding unit last headed makes it re-plan. */
 const RETARGET_TILES = 2;
 
@@ -28,6 +31,8 @@ export class TransportSystem {
   private readonly headed = new WeakMap<Entity, TileCoord>();
   /** The unload order each transport has set sail for (a new order starts afresh). */
   private readonly sailing = new WeakMap<Entity, object>();
+  /** The unload order each transport has already sought an open shore for (once per order). */
+  private readonly sought = new WeakMap<Entity, object>();
 
   constructor(
     private readonly world: EcsWorld,
@@ -59,11 +64,15 @@ export class TransportSystem {
       this.stow(u, t);
       return;
     }
+    const shipBusy = !!t.unloadIntent || !!t.moveIntent || (t.movable?.path.length ?? 0) > 0;
+    const beside = this.landBeside(t.position, u.position);
+    // Out at sea (no land beside it): the transport comes in to the shore by the unit.
+    if (!beside && !shipBusy) this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
     const walking = !!u.moveIntent || (u.movable?.path.length ?? 0) > 0;
     const last = this.headed.get(u);
     if (walking && last && chebyshev(last, t.position) < RETARGET_TILES) return;
     // A land tile beside the transport, nearest the unit; else toward the transport (the shore nearest it).
-    const shore = this.landBeside(t.position, u.position) ?? t.position;
+    const shore = beside ?? t.position;
     this.headed.set(u, { tx: t.position.tx, ty: t.position.ty });
     if (u.moveIntent) u.moveIntent.target = shore;
     else this.world.addComponent(u, 'moveIntent', { target: shore });
@@ -100,7 +109,14 @@ export class TransportSystem {
     }
     if (walking) return;
     if (sailed) {
-      // The voyage ended out at sea: as near as it gets, nothing to unload onto.
+      // The voyage ended with no land beside it (a built-up shore): on to the nearest open shore, once.
+      const shore = this.sought.get(t) === t.unloadIntent ? null : this.shoreWaterNear(target);
+      if (shore && (shore.tx !== t.position.tx || shore.ty !== t.position.ty)) {
+        this.sought.set(t, t.unloadIntent);
+        this.world.addComponent(t, 'moveIntent', { target: shore });
+        return;
+      }
+      // As near as it gets, nothing to unload onto.
       this.world.removeComponent(t, 'unloadIntent');
       return;
     }
@@ -130,6 +146,21 @@ export class TransportSystem {
     });
     t.cargo.units = stay;
     this.world.removeComponent(t, 'unloadIntent');
+  }
+
+  /** The open-water tile beside walkable land nearest `target` (rings outward, at most SHORE_SEARCH tiles away). */
+  private shoreWaterNear(target: TileCoord): TileCoord | null {
+    const water = waterGrid(this.map);
+    for (let r = 0; r <= SHORE_SEARCH; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const tile = { tx: target.tx + dx, ty: target.ty + dy };
+          if (water.isPassable(tile.tx, tile.ty) && this.landBeside(tile, target)) return tile;
+        }
+      }
+    }
+    return null;
   }
 
   /** A passable land tile next to `at`, the one nearest `toward`; null when `at` is not beside land. */

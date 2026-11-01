@@ -36,6 +36,16 @@ const mediumFields = {
   firstAttackAtMs: num,
   lastScoutMs: time,
   monkAvoid: z.array(z.tuple([int, int, num]).readonly()).readonly().optional(),
+  landing: z
+    .object({
+      members: ids,
+      transports: ids,
+      target: tile.nullable(),
+      phase: z.enum(['boarding', 'sailing']).nullable(),
+      sinceMs: num,
+    })
+    .strict()
+    .optional(),
 };
 
 const hardFields = {

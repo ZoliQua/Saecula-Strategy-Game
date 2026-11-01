@@ -7,9 +7,13 @@ import { TECH_SPECS } from '../../game/technologies';
 import { baseUnitType, civUnitType } from '../../game/civUnits';
 import { BASE_UNIT_TYPES, type BaseUnitType, type BuildingType, type Resources, type TechId } from '../../types';
 import type { AIContext } from '../AIPlayer';
+import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import { ArmyControl } from '../ArmyControl';
 import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
-import { attackReady } from '../decisions/combat';
+import { attackReady, pickAttackTarget } from '../decisions/combat';
+import { landReachable } from '../decisions/naval';
+import { LandingControl } from '../LandingControl';
+import { NavalPlay } from '../NavalPlay';
 import { weightsForGoal } from '../decisions/gathering';
 import { pickResearch } from '../decisions/research';
 import { needsHouse } from '../decisions/housing';
@@ -31,6 +35,14 @@ import { WonderPlay } from '../WonderPlay';
 import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
 
+/** The tile of `tiles` nearest `from` (Chebyshev), or undefined. */
+function nearestTile(tiles: readonly TileCoord[], from: TileCoord): TileCoord | undefined {
+  return tiles.reduce<TileCoord | undefined>((best, t) => (!best || chebyshev(t, from) < chebyshev(best, from) ? t : best), undefined);
+}
+
+/** How long a walkability answer (M14) holds while the known enemy buildings stay the same. */
+const WALKABLE_RECHECK_MS = 60_000;
+
 /**
  * Medium AI (PROGRAM_TERV.md §10.2): a preset build order, age-ups as
  * soon as they are affordable, blacksmith and economy techs, a mixed army
@@ -46,6 +58,10 @@ export class MediumStrategy extends BaseStrategy {
   private readonly pressure: PressureControl;
   private readonly wonder: WonderPlay;
   private readonly monks: MonkPlay;
+  private readonly naval: NavalPlay;
+  private readonly landing: LandingControl;
+  /** Whether the enemy can be walked to (M14), re-checked now and then: [answer, checked at, enemy buildings key]. */
+  private walkable: { answer: boolean; atMs: number; key: string } | null = null;
 
   /** `tune` is the strategy's table (AI_MEDIUM; Hard passes its own). */
   constructor(
@@ -67,6 +83,15 @@ export class MediumStrategy extends BaseStrategy {
       // Monks spend only what the army's savings (a cannon it is short of) leave over.
       train: (c, v, t, n) => this.train(c, v, t, n, this.armySavings(c, v)),
       waveMembers: () => this.army.members(),
+    });
+    this.landing = new LandingControl(this.log, (c, v, units) => {
+      this.army.launchWave(c, v, units);
+    });
+    this.naval = new NavalPlay(tune.navy, {
+      ownCount: (v, t, f) => this.ownCount(v, t, f),
+      startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a, this.reserve(c, v)),
+      train: (c, v, t, n) => this.train(c, v, t, n, this.armySavings(c, v)),
+      transportsWanted: (c, v) => (this.enemyWalkable(c, v) ? 0 : this.tune.navy.transports),
     });
     this.pressure = new PressureControl(tune, this.army, {
       isReserved: (u) => this.isReserved(u),
@@ -97,6 +122,7 @@ export class MediumStrategy extends BaseStrategy {
       pressure: this.pressure.snapshot(),
       firstAttackAtMs: this.firstAttackAtMs,
       lastScoutMs: savedTime(this.lastScoutMs),
+      ...(this.landing.active ? { landing: this.landing.snapshot() } : {}),
       // Only when there is any: a save without avoided targets stays as before 0.8.1.
       ...(monkAvoid.length > 0 ? { monkAvoid } : {}),
     };
@@ -109,12 +135,13 @@ export class MediumStrategy extends BaseStrategy {
     this.pressure.restore(s.pressure);
     this.firstAttackAtMs = s.firstAttackAtMs;
     this.lastScoutMs = loadedTime(s.lastScoutMs);
+    this.landing.restore(s.landing ?? { members: [], transports: [], target: null, phase: null, sinceMs: 0 });
     this.monks.restore(s.monkAvoid ?? []);
   }
 
   /** Units another controller (Hard's raids) owns; the army and pressure squad leave them alone. */
-  protected isReserved(_u: Entity): boolean {
-    return false;
+  protected isReserved(u: Entity): boolean {
+    return this.landing.has(u);
   }
 
   /** Army size that launches a main wave (Infinity holds the army at home). */
@@ -131,6 +158,8 @@ export class MediumStrategy extends BaseStrategy {
     assignIdleVillagers(ctx.world, view, this.gatherWeights(ctx, view));
     this.army.update(ctx, view);
     this.monks.control(ctx, view);
+    this.naval.control(ctx, view);
+    this.landing.update(ctx, view);
     this.army.scout(ctx, view);
     const waitingForTc = this.tryAgeUp(ctx, view);
     const first = this.tune.pressure.beforeFarms;
@@ -151,9 +180,11 @@ export class MediumStrategy extends BaseStrategy {
     this.buildEconomy(ctx, view);
     this.buildMilitary(ctx, view);
     this.monks.build(ctx, view);
+    this.naval.build(ctx, view);
     this.keepScouting(ctx, view);
     this.trainArmy(ctx, view);
     this.monks.train(ctx, view);
+    this.naval.train(ctx, view);
     this.researchTechs(ctx, view);
     this.pressure.launch(ctx, view);
     this.pressure.recall(ctx, view);
@@ -163,11 +194,53 @@ export class MediumStrategy extends BaseStrategy {
       timeMs: ctx.timeMs,
       notBeforeMs: this.firstAttackAtMs,
     })) {
-      this.army.launchWave(ctx, view);
-      this.pressure.mainWaveLaunched();
-      this.onWaveLaunched(ctx, view);
+      // The enemy across the sea (M14): the wave lands from transports instead of marching.
+      if (!this.enemyWalkable(ctx, view)) this.tryLanding(ctx, view);
+      else {
+        this.army.launchWave(ctx, view);
+        this.pressure.mainWaveLaunched();
+        this.onWaveLaunched(ctx, view);
+      }
     }
+    // An army out "exploring" its own island while the enemy is across the sea: home, to board.
+    if (!this.enemyWalkable(ctx, view) && this.army.attacking) this.army.recall(ctx, view);
     this.updateThoughts(ctx, view);
+  }
+
+  /**
+   * Whether the enemy's known buildings can be walked to from the base
+   * (M14); with none known yet, true (the army explores as before).
+   * Re-checked when what is known changes, at most every WALKABLE_RECHECK_MS.
+   */
+  protected enemyWalkable(ctx: AIContext, view: WorldView): boolean {
+    const enemy = this.enemySpots(ctx, view);
+    const home = view.townCenter?.position;
+    if (enemy.length === 0 || !home) return true;
+    const key = enemy.map((p) => `${p.tx},${p.ty}`).join(';');
+    const last = this.walkable;
+    if (last && last.key === key && ctx.timeMs - last.atMs < WALKABLE_RECHECK_MS) return last.answer;
+    const answer = enemy.some((p) => landReachable(ctx.mapData, home, p));
+    this.walkable = { answer, atMs: ctx.timeMs, key };
+    return answer;
+  }
+
+  /** Where the enemy is known to be: its known buildings, else where its villagers were last seen (M14). */
+  private enemySpots(ctx: AIContext, view: WorldView): TileCoord[] {
+    const ours = (ownerId: number) => ctx.enemyPlayerId === undefined || ownerId === ctx.enemyPlayerId;
+    const buildings = view.knownEnemyBuildings.filter((b) => ours(b.ownerId)).map((b) => b.position);
+    return buildings.length > 0 ? buildings : view.enemyVillagers.filter((v) => ours(v.ownerId)).map((v) => v.position);
+  }
+
+  /** Boards the army at home onto the idle transports, bound for the enemy's nearest known building, or villagers (M14). */
+  private tryLanding(ctx: AIContext, view: WorldView): void {
+    if (this.landing.active) return;
+    const transports = view.ships.filter((s) => s.unit?.unitType === 'transport' && !s.unloadIntent && (s.cargo?.units.length ?? 0) === 0);
+    const home = view.townCenter?.position;
+    const known = home && pickAttackTarget(view.knownEnemyBuildings, home, ctx.enemyPlayerId);
+    const target = known?.position ?? (home && nearestTile(this.enemySpots(ctx, view), home));
+    if (transports.length === 0 || !target) return;
+    const units = view.military.filter((u) => !this.isReserved(u) && !this.army.inWave(u));
+    if (this.landing.start(ctx, units, transports, target) > 0) this.pressure.mainWaveLaunched();
   }
 
   /** Called after each wave launch (pressure and main waves); Mesteri splits off a flank here. */
