@@ -1,5 +1,5 @@
 import { audio, type AudioSink } from '../../audio/AudioManager';
-import { canConvert } from '../../game/convert';
+import { canConvert, readyToConvert } from '../../game/convert';
 import type { Entity } from '../../ecs/components';
 import { insideFootprint } from '../../ecs/footprint';
 import { clearUnitOrders } from '../../ecs/orders';
@@ -80,8 +80,8 @@ export class OrderIssuer {
       // actually listens.
       clearUnitOrders(this.world, entity);
       const targetId = target.entity?.id ?? 0;
-      // A monk converts an enemy unit (M11); against what it cannot convert it just walks there.
-      if (target.kind === 'enemy' && entity.converter && canConvert(target.entity ?? undefined, this.humanId)) {
+      // A ready monk converts an enemy unit (M11); a recharging one, or one facing what it cannot convert, walks there.
+      if (target.kind === 'enemy' && readyToConvert(entity) && canConvert(target.entity ?? undefined, this.humanId)) {
         this.world.addComponent(entity, 'convertIntent', { targetId, elapsedMs: 0 });
         ordered ??= 'unit_convert';
         continue;

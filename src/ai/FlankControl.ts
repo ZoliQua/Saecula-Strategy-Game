@@ -3,7 +3,7 @@ import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { AIContext } from './AIPlayer';
 import { pickEngageTarget } from './decisions/combat';
-import type { KnownBuilding, WorldView } from './perception';
+import { ownLiving, pruneOwnLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, type FlankState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -78,7 +78,8 @@ export class FlankControl {
   /** Upkeep: drop the fallen, release the flank once its target is gone, else fight or march on. */
   update(ctx: AIContext, view: WorldView): void {
     if (!this.active) return;
-    for (const id of [...this.flank]) if (!view.byId.get(id) || view.byId.get(id)!.dying) this.flank.delete(id);
+    const members = pruneOwnLiving(this.flank, view);
+    for (const id of this.reorders.keys()) if (!this.flank.has(id)) this.reorders.delete(id);
     if (!this.active) {
       this.goal = null;
       return;
@@ -87,18 +88,18 @@ export class FlankControl {
       this.release(ctx, view);
       return;
     }
-    this.steer(ctx, view);
+    this.steer(ctx, view, members);
   }
 
   /** Units in reach (villagers too: the flank raids the economy) first, then the target, else the march to it. */
-  private steer(ctx: AIContext, view: WorldView): void {
+  private steer(ctx: AIContext, view: WorldView, members: readonly Entity[]): void {
     const goal = this.goal;
     if (!goal) return;
     const enemyUnits = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
     const goalInSight = view.visibleEnemyBuildings.some((b) => b.id === goal.id);
-    for (const id of this.flank) {
-      const u = view.byId.get(id);
-      if (!u?.position) continue;
+    for (const u of members) {
+      const id = u.id!;
+      if (!u.position) continue;
       // A path being walked, or a fight: the march works, so only consecutive failed paths count.
       if ((u.movable?.path.length ?? 0) > 0 || u.attackIntent) this.reorders.delete(id);
       const current = u.attackIntent ? view.byId.get(u.attackIntent.targetId) : undefined;
@@ -136,7 +137,7 @@ export class FlankControl {
   /** The target is gone: the members stop where they are and are free again. */
   private release(ctx: AIContext, view: WorldView): void {
     for (const id of this.flank) {
-      const u = view.byId.get(id);
+      const u = ownLiving(view, id);
       if (!u) continue;
       clearUnitOrders(ctx.world, u);
       if (u.movable) u.movable.path = [];

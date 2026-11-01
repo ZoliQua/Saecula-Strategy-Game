@@ -59,7 +59,20 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
   if (!generated) return { ok: false, back: { config: setup, notice: hu.setup.mapFailed } };
   const players = createPlayers(civs.human, civs.ais);
   if (setup.mission) applyMissionStart(players, setup.mission);
-  return { ok: true, match: { matchId: newMatchId(), setup, players, start: { kind: 'new', generated } } };
+  const art = missionStartArt(players);
+  return { ok: true, match: { matchId: newMatchId(), setup, players, start: { kind: 'new', generated }, ...(art ? { art } : {}) } };
+}
+
+/**
+ * A new match whose players start past age 1 (a campaign mission, M13)
+ * loads like a saved one: each civ's art for the age it is in (age spans),
+ * and every town centre in its owner's age style, instead of the age-1
+ * art of a new skirmish (which nothing would show nor release).
+ */
+function missionStartArt(players: PlayerManager): LoadArt | undefined {
+  if (players.all().every((p) => p.age === 1)) return undefined;
+  const buildings = players.all().map((p) => ({ kind: 'building' as const, type: 'town_center' as const, age: p.age, owner: p.id, civ: p.civ }));
+  return { spans: civAgeSpans(players), buildings };
 }
 
 /**

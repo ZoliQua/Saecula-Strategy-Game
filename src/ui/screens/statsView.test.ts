@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { exportDate, exportPayload, formatLength, formatRate, formatWhen } from './statsView';
+import { exportDate } from '../download';
+import { exportPayload, formatLength, formatRate, formatWhen } from './statsView';
 
 describe('statsView', () => {
   it('formats rates and lengths', () => {

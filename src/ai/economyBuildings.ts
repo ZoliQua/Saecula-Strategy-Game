@@ -1,9 +1,8 @@
+import { type TileCoord, chebyshev } from '../iso/coordinates';
 import { AI_COMMON } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { baseUnitType } from '../game/civUnits';
-import type { TileCoord } from '../iso/coordinates';
 import type { BuildingType, Population, ResourceType } from '../types';
-import { chebyshev } from './decisions/gathering';
 import { needsHouse } from './decisions/housing';
 import { clusterAnchor } from './decisions/placement';
 import type { WorldView } from './perception';

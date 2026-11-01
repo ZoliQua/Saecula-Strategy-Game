@@ -153,7 +153,7 @@ export class SystemRunner {
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
     this.combat = new CombatSystem(world, mapData, players, this.paths);
-    this.monks = new MonkSystem(world, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id));
+    this.monks = new MonkSystem(world, mapData, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), this.paths);
     this.projectiles = new ProjectileSystem(world, players);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);

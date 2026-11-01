@@ -117,6 +117,12 @@ export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig
   };
 }
 
+/** A setup for the skirmish setup card: never a campaign mission (its tag would turn an edited skirmish into one). */
+export function skirmishConfig(config: GameSetupConfig): GameSetupConfig {
+  const { mission: _mission, ...rest } = config;
+  return rest;
+}
+
 export function mapTiles(config: GameSetupConfig): number {
   return MAP_SIZES[config.mapSize].tiles;
 }

@@ -2,12 +2,12 @@ import { AI_COMMON } from '../config/aiBalance';
 import { holdsTimeLead } from '../game/timeVictory';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
-import type { TileCoord } from '../iso/coordinates';
+import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
-import { chebyshev, nearest } from './decisions/gathering';
+import { nearest } from './decisions/gathering';
 import { nextExploreTarget } from './decisions/scouting';
-import type { KnownBuilding, WorldView } from './perception';
+import { ownLiving, pruneOwnLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, copyTile, type ArmyState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -55,7 +55,7 @@ export class ArmyControl {
     return this.wave.size;
   }
 
-  /** Ids of the units on the attack wave. */
+  /** Ids of the units on the attack wave (as of the last upkeep: check each with `ownLiving`). */
   members(): ReadonlySet<number> {
     return this.wave;
   }
@@ -84,12 +84,13 @@ export class ArmyControl {
     // Leading on score in the time limit's final minutes: keep the army home, a lost fight only costs the lead.
     if (holdsTimeLead(ctx.player.id, ctx.timeVictory)) {
       this.log.add(ctx.timeMs, 'stance', 'holdLead');
+      this.prune(view);
       return this.wave.size;
     }
     for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
     this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
-    this.steerWave(ctx, view);
+    this.steerWave(ctx, view, this.prune(view));
     return this.wave.size;
   }
 
@@ -99,10 +100,10 @@ export class ArmyControl {
    * wave falls back home.
    */
   update(ctx: AIContext, view: WorldView): void {
-    for (const id of [...this.wave]) if (!view.byId.get(id) || view.byId.get(id)!.dying) this.wave.delete(id);
+    const members = this.prune(view);
     if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) this.retreat(ctx, view);
     this.defend(ctx, view);
-    if (this.attacking) this.steerWave(ctx, view);
+    if (this.attacking) this.steerWave(ctx, view, members);
   }
 
   /** True when hostile units are near the base. */
@@ -125,8 +126,8 @@ export class ArmyControl {
     }
   }
 
-  private steerWave(ctx: AIContext, view: WorldView): void {
-    const members = [...this.wave].map((id) => view.byId.get(id)).filter((u): u is Entity => !!u && !u.dying);
+  /** `members`: the wave's living units, just pruned. */
+  private steerWave(ctx: AIContext, view: WorldView, members: readonly Entity[]): void {
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
     this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemy(e, ctx));
@@ -188,6 +189,11 @@ export class ArmyControl {
     for (const u of idle) ctx.world.addComponent(u, 'moveIntent', { target: this.exploreGoal });
   }
 
+  /** Drops members that are no longer the AI's own living units (dead, or converted away, M11); returns the rest. */
+  private prune(view: WorldView): Entity[] {
+    return pruneOwnLiving(this.wave, view);
+  }
+
   /** Calls the wave home (it is spent or its job is done). */
   recall(ctx: AIContext, view: WorldView): void {
     if (this.attacking) this.retreat(ctx, view);
@@ -196,7 +202,7 @@ export class ArmyControl {
   private retreat(ctx: AIContext, view: WorldView): void {
     const at = home(view);
     for (const id of this.wave) {
-      const u = view.byId.get(id);
+      const u = ownLiving(view, id);
       if (!u) continue;
       clearUnitOrders(ctx.world, u);
       ctx.world.addComponent(u, 'moveIntent', { target: at });

@@ -23,11 +23,6 @@ export function formatLength(ms: number | null): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-/** The export file's local date part (YYYY-MM-DD). */
-export function exportDate(now: Date): string {
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
 /** The exported JSON: every record, oldest first, with when and what it is. */
 export function exportPayload(records: readonly MatchRecord[], now: Date): string {
   return JSON.stringify({ app: 'saecula', kind: 'match-log', version: 1, exportedAt: now.toISOString(), count: records.length, records }, null, 2);

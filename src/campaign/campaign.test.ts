@@ -80,6 +80,22 @@ describe('ObjectiveTracker', () => {
   });
 });
 
+describe('ObjectiveTracker cost', () => {
+  it('a done objective is not judged again (no world scan once a second for it)', () => {
+    const { map, w } = world();
+    createBuilding(w, { type: 'monastery', origin: { tx: 2, ty: 2 }, playerId: 1, mapData: map });
+    let scans = 0;
+    const entities = { [Symbol.iterator]: () => (scans++, w.entities[Symbol.iterator]()) };
+    const ctx: ObjectiveContext = { entities, humanId: 1, humanAge: 2, humanDefeated: false, timeMs: 0 };
+    const t = new ObjectiveTracker([{ kind: 'ownBuildings', building: 'monastery', count: 1 }]);
+    expect(t.tick(ctx).fresh).toEqual([0]);
+    scans = 0;
+    const again = t.tick(ctx);
+    expect(scans).toBe(0);
+    expect(again.states[0]).toMatchObject({ done: true, progress: { have: 1, need: 1 } });
+  });
+});
+
 describe('missions', () => {
   it('are valid setups (withSetup keeps them as they are), tagged with their id, in order', () => {
     for (const id of MISSION_IDS) expect(withSetup(missionSetup(id), {})).toEqual(missionSetup(id));
@@ -138,4 +154,13 @@ describe('CampaignProgress', () => {
     const failing = new CampaignProgress({ getItem: () => null, setItem: () => { throw new Error('quota'); } });
     expect(() => failing.markCompleted('first_monastery')).not.toThrow();
   });
+
+  it('a mission setup sent back to the skirmish setup card loses its mission tag (no hidden mission)', async () => {
+    const { skirmishConfig } = await import('../game/GameSetupConfig');
+    const back = skirmishConfig(missionSetup('border_guards'));
+    expect(back.mission).toBeUndefined();
+    expect('mission' in back).toBe(false);
+    expect(back.civ).toBe('english');
+  });
 });
+

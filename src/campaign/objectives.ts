@@ -39,32 +39,46 @@ const MIN = 60_000;
 export function objectiveProgress(o: Objective, ctx: ObjectiveContext): ObjectiveProgress {
   switch (o.kind) {
     case 'reachAge':
-      return { have: Math.min(ctx.humanAge, o.age), need: o.age };
+      return { have: Math.min(ctx.humanAge, o.age), need: objectiveNeed(o) };
     case 'ownBuildings': {
       let have = 0;
       for (const e of ctx.entities) {
         if (e.building?.type === o.building && e.owner?.playerId === ctx.humanId && !e.underConstruction && !e.dying) have++;
       }
-      return { have: Math.min(have, o.count), need: o.count };
+      return { have: Math.min(have, o.count), need: objectiveNeed(o) };
     }
     case 'ownUnits': {
       let have = 0;
       for (const e of ctx.entities) if (e.unit?.unitType === o.unit && e.owner?.playerId === ctx.humanId && !e.dying) have++;
-      return { have: Math.min(have, o.count), need: o.count };
+      return { have: Math.min(have, o.count), need: objectiveNeed(o) };
     }
     case 'survive': {
       // Whole minutes held; full only once the clock reaches `ms` (a partial last minute does not count).
-      const need = Math.round(o.ms / MIN);
+      const need = objectiveNeed(o);
       if (ctx.humanDefeated) return { have: 0, need };
       return { have: ctx.timeMs >= o.ms ? need : Math.min(need - 1, Math.floor(ctx.timeMs / MIN)), need };
     }
     case 'winMatch':
-      return { have: 0, need: 1 };
+      return { have: 0, need: objectiveNeed(o) };
   }
 }
 
-/** Whether `o` is met in `ctx`. */
-export function objectiveMet(o: Objective, ctx: ObjectiveContext): boolean {
-  const p = objectiveProgress(o, ctx);
-  return o.kind !== 'winMatch' && p.have >= p.need;
+/** What an objective counts up to (known from its definition, no world scan). */
+export function objectiveNeed(o: Objective): number {
+  switch (o.kind) {
+    case 'reachAge':
+      return o.age;
+    case 'ownBuildings':
+    case 'ownUnits':
+      return o.count;
+    case 'survive':
+      return Math.round(o.ms / MIN);
+    case 'winMatch':
+      return 1;
+  }
+}
+
+/** Whether `progress` meets `o` (a winMatch objective is never met by progress: the regular victory ends it). */
+export function progressMeets(o: Objective, progress: ObjectiveProgress): boolean {
+  return o.kind !== 'winMatch' && progress.have >= progress.need;
 }

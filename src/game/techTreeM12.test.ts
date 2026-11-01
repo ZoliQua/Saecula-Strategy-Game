@@ -86,7 +86,7 @@ describe('M12 technologies', () => {
     const monk = createUnit(world, { type: 'monk', tile: { tx: 3, ty: 3 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 5, ty: 3 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    new MonkSystem(world, () => 'hungarian', (id) => players.get(id)).update(MONK.convertTimeMs);
+    new MonkSystem(world, map, () => 'hungarian', (id) => players.get(id)).update(MONK.convertTimeMs);
     expect(archer.owner!.playerId).toBe(1);
     expect(monk.converter!.rechargeMs).toBe(MONK.rechargeMs / 2);
   });

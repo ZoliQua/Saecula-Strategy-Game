@@ -205,6 +205,8 @@ export const MONK = {
   convertTimeMs: 6000,
   /** After a conversion the monk cannot convert again for this long. */
   rechargeMs: 20000,
+  /** A target may move this many tiles from where its monk last headed before the monk re-paths. */
+  retargetTiles: 2,
 } as const;
 
 export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {

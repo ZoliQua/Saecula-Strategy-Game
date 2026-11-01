@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { civsInPlay, defaultSetupConfig, type GameSetupConfig } from '../game/GameSetupConfig';
+import { civsInPlay, defaultSetupConfig, type GameSetupConfig, skirmishConfig } from '../game/GameSetupConfig';
 import { prewarmUnitTypes } from './game/artLoadPlan';
 import { UnitArtPrewarm } from '../iso/art/units/UnitArtPrewarm';
 import { AVAILABLE_CIVS } from '../config/civs';
@@ -49,7 +49,8 @@ export class GameSetupScene extends Phaser.Scene {
     this.leaving = false;
     prewarmReport.frames = 0;
     this.setup = new GameSetup(
-      data?.config ?? defaultSetupConfig(),
+      // The setup card is for skirmishes: a mission tag never survives here (M13).
+      skirmishConfig(data?.config ?? defaultSetupConfig()),
       {
         onStart: (config) => this.beginLoading(config),
         onBack: () => this.close(),

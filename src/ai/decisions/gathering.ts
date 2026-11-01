@@ -93,10 +93,6 @@ export function onEnemyGround(p: TileCoord, known: readonly KnownBuilding[], rad
   });
 }
 
-export function chebyshev(a: TileCoord, b: TileCoord): number {
-  return Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty));
-}
-
 /**
  * Shifts gatherer weights toward what a savings goal still lacks: each
  * resource's share of the remaining shortfall (`goal - have`) is blended

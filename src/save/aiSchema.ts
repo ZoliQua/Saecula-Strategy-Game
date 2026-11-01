@@ -35,6 +35,7 @@ const mediumFields = {
   pressure: z.object({ sent: z.boolean(), raidOutSinceMs: time }).strict(),
   firstAttackAtMs: num,
   lastScoutMs: time,
+  monkAvoid: z.array(z.tuple([int, int, num]).readonly()).readonly().optional(),
 };
 
 const hardFields = {

@@ -56,6 +56,31 @@ export interface WorldView {
   readonly enemyVillagers: readonly VillagerSighting[];
 }
 
+/**
+ * The AI's own living unit with `id`, or undefined. `byId` holds every
+ * entity, so a group member converted away by a monk (M11) must be
+ * dropped by owner, not only once it is gone or dying.
+ */
+export function ownLiving(view: Pick<WorldView, 'byId' | 'playerId'>, id: number): Entity | undefined {
+  const u = view.byId.get(id);
+  return u && !u.dying && u.owner?.playerId === view.playerId ? u : undefined;
+}
+
+/**
+ * Removes from `ids` every id that is no longer the AI's own living unit
+ * (dead, or converted away, M11) and returns the ones that remain, in order.
+ */
+export function pruneOwnLiving(ids: Set<number>, view: Pick<WorldView, 'byId' | 'playerId'>): Entity[] {
+  const kept: Entity[] = [];
+  // Deleting the visited element during a Set's for-of is safe.
+  for (const id of ids) {
+    const u = ownLiving(view, id);
+    if (u) kept.push(u);
+    else ids.delete(id);
+  }
+  return kept;
+}
+
 /** Any tile of the entity's footprint is currently visible. */
 export function isEntityVisible(fog: FogOfWarData, e: Entity & { position: TileCoord }): boolean {
   const w = e.building?.footprint.width ?? 1;

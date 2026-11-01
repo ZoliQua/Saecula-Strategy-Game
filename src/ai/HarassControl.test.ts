@@ -1,3 +1,4 @@
+import { convertUnit } from '../game/convert';
 import { describe, expect, it } from 'vitest';
 import { AI_HARD } from '../config/aiBalance';
 import { createBuilding } from '../ecs/archetypes/building';
@@ -71,5 +72,17 @@ describe('HarassControl (villager raids)', () => {
     }
     expect(control.raidsLaunched).toBe(AI_HARD.harass.maxRaids);
     expect(control.mayLaunch(t + 10 * 60_000)).toBe(false);
+  });
+
+  it('a raider converted away (M11) leaves the raid and keeps its new owner\'s orders', () => {
+    const { ctx, raiders, perception, control } = setup();
+    control.launch(ctx, raiders, control.pickTarget(ctx, perception.update(ctx))!);
+    const turned = raiders[0]!;
+    convertUnit(ctx.world, turned, 1, () => 'english');
+    ctx.world.addComponent(turned, 'moveIntent', { target: { tx: 40, ty: 4 } });
+    control.update(ctx, perception.update(ctx));
+    expect(control.has(turned)).toBe(false);
+    expect(turned.moveIntent?.target).toEqual({ tx: 40, ty: 4 });
+    expect(turned.attackIntent).toBeUndefined();
   });
 });

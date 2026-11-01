@@ -2,12 +2,12 @@ import { AI_COMMON, type HardTuning } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import { baseUnitType } from '../game/civUnits';
-import type { TileCoord } from '../iso/coordinates';
+import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
-import { chebyshev, nearest } from './decisions/gathering';
+import { nearest } from './decisions/gathering';
 import { pickHarassTarget, raidOutnumbered, type HarassTarget } from './decisions/harass';
-import type { WorldView } from './perception';
+import { pruneOwnLiving, type WorldView } from './perception';
 import { copyTile, loadedTime, savedTime, type HarassState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -96,7 +96,7 @@ export class HarassControl {
   /** Upkeep: fight villagers in sight, ride on, or fall back. */
   update(ctx: AIContext, view: WorldView): void {
     if (!this.active) return;
-    const members = [...this.raid].map((id) => view.byId.get(id)).filter((u): u is Entity => !!u && !u.dying && !!u.position);
+    const members = pruneOwnLiving(this.raid, view).filter((u) => !!u.position);
     if (members.length === 0) return this.end(ctx, view, members, '');
     const centre = groupCentre(members)!;
     const enemies = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
