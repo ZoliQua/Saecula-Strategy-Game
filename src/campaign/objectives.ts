@@ -63,8 +63,27 @@ export function objectiveProgress(o: Objective, ctx: ObjectiveContext): Objectiv
   }
 }
 
+/** What an objective counts up to (known from its definition, no world scan). */
+export function objectiveNeed(o: Objective): number {
+  switch (o.kind) {
+    case 'reachAge':
+      return o.age;
+    case 'ownBuildings':
+    case 'ownUnits':
+      return o.count;
+    case 'survive':
+      return Math.round(o.ms / MIN);
+    case 'winMatch':
+      return 1;
+  }
+}
+
+/** Whether `progress` meets `o` (a winMatch objective is never met by progress: the regular victory ends it). */
+export function progressMeets(o: Objective, progress: ObjectiveProgress): boolean {
+  return o.kind !== 'winMatch' && progress.have >= progress.need;
+}
+
 /** Whether `o` is met in `ctx`. */
 export function objectiveMet(o: Objective, ctx: ObjectiveContext): boolean {
-  const p = objectiveProgress(o, ctx);
-  return o.kind !== 'winMatch' && p.have >= p.need;
+  return progressMeets(o, objectiveProgress(o, ctx));
 }

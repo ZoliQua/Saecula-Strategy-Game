@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CivId } from '../../types';
 import { MONK, REPATH_RETRY_MS } from '../../config/balance';
+import { clearUnitOrders } from '../orders';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { gameEvents } from '../../game/events';
 import { MapData } from '../../map/MapData';
@@ -140,8 +141,24 @@ describe('MonkSystem', () => {
       return add(e, c, v);
     }) as typeof add;
     step(6000);
-    expect(monk.convertIntent).toBeDefined();
     expect(orders).toBeLessThanOrEqual(Math.ceil(6000 / REPATH_RETRY_MS) + 1);
+    // It gives up after MONK.maxFailedPaths re-plans (an AI monk would otherwise stand on the shore forever).
+    step((MONK.maxFailedPaths + 1) * REPATH_RETRY_MS);
+    expect(monk.convertIntent).toBeUndefined();
+  });
+
+  it('a new conversion order on the same target moves at once (the retry wait belongs to the old order)', () => {
+    const { world, monks } = setup();
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    monks.update(16);
+    expect(monk.moveIntent).toBeDefined();
+    // The player clicks the same target again before the path exists.
+    clearUnitOrders(world, monk);
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    monks.update(16);
+    expect(monk.moveIntent?.target).toEqual({ tx: 30, ty: 30 });
   });
 });
 

@@ -93,8 +93,6 @@ export function onEnemyGround(p: TileCoord, known: readonly KnownBuilding[], rad
   });
 }
 
-/** Re-exported for the AI modules that import it from here (the one definition lives in iso/coordinates). */
-export { chebyshev } from '../../iso/coordinates';
 
 /**
  * Shifts gatherer weights toward what a savings goal still lacks: each

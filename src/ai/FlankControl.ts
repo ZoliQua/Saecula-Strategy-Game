@@ -97,7 +97,7 @@ export class FlankControl {
     const enemyUnits = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
     const goalInSight = view.visibleEnemyBuildings.some((b) => b.id === goal.id);
     for (const id of this.flank) {
-      const u = view.byId.get(id);
+      const u = ownLiving(view, id);
       if (!u?.position) continue;
       // A path being walked, or a fight: the march works, so only consecutive failed paths count.
       if ((u.movable?.path.length ?? 0) > 0 || u.attackIntent) this.reorders.delete(id);
@@ -136,7 +136,7 @@ export class FlankControl {
   /** The target is gone: the members stop where they are and are free again. */
   private release(ctx: AIContext, view: WorldView): void {
     for (const id of this.flank) {
-      const u = view.byId.get(id);
+      const u = ownLiving(view, id);
       if (!u) continue;
       clearUnitOrders(ctx.world, u);
       if (u.movable) u.movable.path = [];

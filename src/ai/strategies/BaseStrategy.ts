@@ -12,7 +12,7 @@ import { evictUnitsFrom } from '../../ecs/evict';
 import { buildBlocker, countPlayerBuildings } from '../../game/buildRules';
 import { planWallSegments } from '../../game/wallLine';
 import { isAgeUp, TECH_SPECS } from '../../game/technologies';
-import type { TileCoord } from '../../iso/coordinates';
+import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import { FOG_UNEXPLORED } from '../../map/FogOfWarData';
 import { civUnitType } from '../../game/civUnits';
 import type { BaseUnitType, BuildingType, Resources, TechId } from '../../types';
@@ -192,7 +192,7 @@ export abstract class BaseStrategy implements AIStrategy {
     const at = site.position;
     const free = view.villagers
       .filter((v) => !v.buildCommand && v.position)
-      .sort((a, b) => dist(a.position!, at) - dist(b.position!, at))
+      .sort((a, b) => chebyshev(a.position!, at) - chebyshev(b.position!, at))
       .slice(0, count);
     for (const v of free) {
       clearUnitOrders(ctx.world, v);
@@ -279,6 +279,4 @@ function insideFootprint(b: Entity, tx: number, ty: number): boolean {
   return tx >= b.position.tx && ty >= b.position.ty && tx < b.position.tx + width && ty < b.position.ty + height;
 }
 
-function dist(a: TileCoord, b: TileCoord): number {
-  return Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty));
-}
+

@@ -5,7 +5,8 @@ import { clearUnitOrders } from '../ecs/orders';
 import type { TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
-import { chebyshev, nearest } from './decisions/gathering';
+import { nearest } from './decisions/gathering';
+import { chebyshev } from '../iso/coordinates';
 import { nextExploreTarget } from './decisions/scouting';
 import { ownLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, copyTile, type ArmyState } from './strategyState';
@@ -126,7 +127,7 @@ export class ArmyControl {
   }
 
   private steerWave(ctx: AIContext, view: WorldView): void {
-    const members = [...this.wave].map((id) => view.byId.get(id)).filter((u): u is Entity => !!u && !u.dying);
+    const members = [...this.wave].map((id) => ownLiving(view, id)).filter((u): u is Entity => !!u);
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
     this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemy(e, ctx));
@@ -196,7 +197,7 @@ export class ArmyControl {
   private retreat(ctx: AIContext, view: WorldView): void {
     const at = home(view);
     for (const id of this.wave) {
-      const u = view.byId.get(id);
+      const u = ownLiving(view, id);
       if (!u) continue;
       clearUnitOrders(ctx.world, u);
       ctx.world.addComponent(u, 'moveIntent', { target: at });

@@ -1,4 +1,4 @@
-import { MONK, MONK_AI, REPATH_RETRY_MS } from '../../config/balance';
+import { MONK, REPATH_RETRY_MS } from '../../config/balance';
 import { canConvert, convertUnit } from '../../game/convert';
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
@@ -24,6 +24,10 @@ export class MonkSystem {
   private readonly goals = new WeakMap<Entity, TileCoord>();
   /** A monk whose path ended short of its target (unreachable) re-plans no earlier than this (system clock, ms). */
   private readonly retryAt = new WeakMap<Entity, number>();
+  /** Re-plans that ended short of the target, per monk. */
+  private readonly failures = new WeakMap<Entity, number>();
+  /** The conversion order the approach state above belongs to (a new order starts afresh). */
+  private readonly orderOf = new WeakMap<Entity, object>();
   private nowMs = 0;
 
   constructor(
@@ -40,8 +44,11 @@ export class MonkSystem {
       c.rechargeMs = Math.max(0, c.rechargeMs - deltaMs);
       c.busy = false;
       if (monk.dying) continue;
-      if (monk.convertIntent) this.convert(monk, deltaMs);
-      else this.heal(monk, deltaMs);
+      if (this.orderOf.get(monk) !== monk.convertIntent) this.forgetApproach(monk);
+      if (monk.convertIntent) {
+        this.orderOf.set(monk, monk.convertIntent);
+        this.convert(monk, deltaMs);
+      } else this.heal(monk, deltaMs);
     }
   }
 
@@ -50,7 +57,7 @@ export class MonkSystem {
     const target = findEntityById(this.world, intent.targetId);
     if (monk.converter.rechargeMs > 0 || !canConvert(target, monk.owner.playerId)) {
       this.world.removeComponent(monk, 'convertIntent');
-      this.goals.delete(monk);
+      this.forgetApproach(monk);
       return;
     }
     if (chebyshev(monk.position, target.position) > MONK.convertRange) {
@@ -64,7 +71,7 @@ export class MonkSystem {
       monk.movable.path = [];
       monk.movable.progress = 0;
     }
-    this.goals.delete(monk);
+    this.forgetApproach(monk);
     faceToward(monk, target);
     monk.converter.busy = true;
     intent.elapsedMs += deltaMs;
@@ -79,14 +86,31 @@ export class MonkSystem {
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
     const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
-    const sameGoal = !!goal && chebyshev(goal, at) < MONK_AI.retargetTiles;
+    const sameGoal = !!goal && chebyshev(goal, at) < MONK.retargetTiles;
     if (sameGoal && moving) return;
-    // Stopped short of the same goal: the target cannot be reached from here; retry later, as combat does.
-    if (sameGoal && this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
+    if (sameGoal) {
+      // Stopped short of the same goal: the target cannot be reached from here. Retry later, as
+      // combat does, and give up after MONK.maxFailedPaths tries (the order would never end).
+      if (this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
+      const failed = (this.failures.get(monk) ?? 0) + 1;
+      if (failed > MONK.maxFailedPaths) {
+        this.world.removeComponent(monk, 'convertIntent');
+        this.forgetApproach(monk);
+        return;
+      }
+      this.failures.set(monk, failed);
+    } else this.failures.delete(monk);
     this.retryAt.set(monk, this.nowMs + REPATH_RETRY_MS);
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
     if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
     else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });
+  }
+
+  private forgetApproach(monk: Entity): void {
+    this.goals.delete(monk);
+    this.retryAt.delete(monk);
+    this.failures.delete(monk);
+    this.orderOf.delete(monk);
   }
 
   private heal(monk: Entity & Required<Pick<Entity, 'converter' | 'position' | 'owner'>>, deltaMs: number): void {

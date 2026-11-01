@@ -6,7 +6,7 @@ import { baseUnitType } from '../../game/civUnits';
 import type { BaseUnitType } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { groupCentre } from '../decisions/combat';
-import { chebyshev } from '../decisions/gathering';
+import { chebyshev } from '../../iso/coordinates';
 import { pointToward, wallLineAcross } from '../decisions/fortify';
 import {
   decayedPeak,

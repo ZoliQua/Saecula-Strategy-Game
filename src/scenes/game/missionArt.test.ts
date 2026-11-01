@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { missionSetup } from '../../campaign/missions';
+import { createHeadlessMatch } from '../../ai/testing/headlessMatch';
+import { EasyStrategy } from '../../ai/strategies/EasyStrategy';
+import { createRng } from '../../map/random';
 import { prepareMatch } from './MatchStart';
+import { restoredBuildingArt, type RestoredBuildingArt } from './restoredArt';
 
 /*
  * A mission that starts past age 1 (M13, mission 3 starts in age 3) loads
@@ -22,4 +26,14 @@ describe('mission start art', () => {
     const m1 = prepareMatch(missionSetup('first_monastery'));
     expect(m1.ok && m1.match.art).toBeUndefined();
   });
+
+  it('the planned start art covers every building the match actually spawns (as a loaded save would list them)', () => {
+    const prepared = prepareMatch(missionSetup('age_of_wonders'));
+    if (!prepared.ok) throw new Error('mission 3 did not prepare');
+    const match = createHeadlessMatch({ mission: 'age_of_wonders', seed: 3303, size: 96, aiCount: 2, strategy: () => new EasyStrategy(createRng(1)) });
+    const spawned = restoredBuildingArt(match.world.entities, (id) => match.players.get(id)?.age ?? 1, (id) => match.players.get(id)?.civ ?? 'hungarian');
+    const key = (b: RestoredBuildingArt) => (b.kind === 'building' ? `${b.type}@${b.age}:${b.owner}` : `stage${b.stage}`);
+    expect(new Set(prepared.match.art!.buildings.map(key))).toEqual(new Set(spawned.map(key)));
+  });
 });
+

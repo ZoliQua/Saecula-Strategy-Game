@@ -1,4 +1,4 @@
-import { objectiveProgress, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
+import { objectiveNeed, objectiveProgress, progressMeets, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
 
 /** One objective's state for the HUD. */
 export interface ObjectiveState {
@@ -29,28 +29,34 @@ export class ObjectiveTracker {
     return this.tick(ctx).fresh;
   }
 
-  /** update and states in one pass over the objectives (each judged once). */
+  /**
+   * One pass: judges each objective not yet done (a done one is not
+   * judged again, so no world scan for it), marks the newly met ones, and
+   * returns them with every objective's state for the HUD.
+   */
   tick(ctx: ObjectiveContext): { fresh: number[]; states: ObjectiveState[] } {
     const fresh: number[] = [];
     const states = this.objectives.map((objective, index) => {
+      if (this.doneSet.has(index)) return this.doneState(objective, index);
       const progress = objectiveProgress(objective, ctx);
-      if (!this.doneSet.has(index) && objective.kind !== 'winMatch' && progress.have >= progress.need) {
-        this.doneSet.add(index);
-        fresh.push(index);
-      }
-      const done = this.doneSet.has(index);
-      return { index, objective, done, progress: done ? { have: progress.need, need: progress.need } : progress };
+      if (!progressMeets(objective, progress)) return { index, objective, done: false, progress };
+      this.doneSet.add(index);
+      fresh.push(index);
+      return this.doneState(objective, index);
     });
     return { fresh, states };
   }
 
-  /** Every objective with its state (done ones show as complete whatever the world now holds). */
+  /** Every objective with its state, without marking anything (done ones show as complete). */
   states(ctx: ObjectiveContext): ObjectiveState[] {
-    return this.objectives.map((objective, index) => {
-      const done = this.doneSet.has(index);
-      const progress = objectiveProgress(objective, ctx);
-      return { index, objective, done, progress: done ? { have: progress.need, need: progress.need } : progress };
-    });
+    return this.objectives.map((objective, index) =>
+      this.doneSet.has(index) ? this.doneState(objective, index) : { index, objective, done: false, progress: objectiveProgress(objective, ctx) },
+    );
+  }
+
+  private doneState(objective: Objective, index: number): ObjectiveState {
+    const need = objectiveNeed(objective);
+    return { index, objective, done: true, progress: { have: need, need } };
   }
 
   /** Indices of the objectives done so far, ascending (saved). */

@@ -205,16 +205,10 @@ export const MONK = {
   convertTimeMs: 6000,
   /** After a conversion the monk cannot convert again for this long. */
   rechargeMs: 20000,
-} as const;
-
-/** How monks are steered (MonkSystem, the AI's MonkPlay). Tiles, Chebyshev. */
-export const MONK_AI = {
-  /** A target may move this far from where its monk last headed before the monk re-paths. */
+  /** A target may move this many tiles from where its monk last headed before the monk re-paths. */
   retargetTiles: 2,
-  /** The AI converts a visible enemy unit within convertRange + this. */
-  convertReach: 3,
-  /** An AI monk further than this from its rally point (the wave, or home) walks back. */
-  followSlack: 4,
+  /** A conversion whose target stays out of reach is dropped after this many failed re-plans (REPATH_RETRY_MS apart). */
+  maxFailedPaths: 3,
 } as const;
 
 export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {

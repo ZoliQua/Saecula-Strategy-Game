@@ -2,9 +2,10 @@ import { AI_MASTER, type MasterTuning } from '../../config/aiBalance';
 import type { Entity } from '../../ecs/components';
 import type { AIContext } from '../AIPlayer';
 import { pickFlankTarget } from '../decisions/combat';
-import { chebyshev } from '../decisions/gathering';
+import { chebyshev } from '../../iso/coordinates';
 import { FlankControl } from '../FlankControl';
 import type { WorldView } from '../perception';
+import { ownLiving } from '../perception';
 import { expectKind, type StrategyState } from '../strategyState';
 import { HardStrategy } from './HardStrategy';
 
@@ -66,8 +67,8 @@ export class MasterStrategy extends HardStrategy {
     const target = pickFlankTarget(view.knownEnemyBuildings, main, ctx.enemyPlayerId, tune.minSeparation);
     if (!target) return;
     const units = [...ids]
-      .map((id) => view.byId.get(id))
-      .filter((u): u is Entity => !!u?.position && !u.dying)
+      .map((id) => ownLiving(view, id))
+      .filter((u): u is Entity => !!u?.position)
       .sort((a, b) => chebyshev(a.position!, target.position) - chebyshev(b.position!, target.position))
       .slice(0, Math.round(tune.share * ids.size));
     if (units.length === 0) return;

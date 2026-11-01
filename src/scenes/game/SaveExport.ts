@@ -1,8 +1,7 @@
 import { hu } from '../../i18n/hu';
 import { exportSaveText } from '../../save/share';
 import type { SaveStorage, SlotId } from '../../save/storage';
-import { downloadText } from '../../ui/download';
-import { exportDate } from '../../ui/screens/statsView';
+import { downloadText, exportDate } from '../../ui/download';
 import { readErrorText } from './MatchRestore';
 
 /** The shared file's name for `slot`'s save (hu.save.exportFile). */
