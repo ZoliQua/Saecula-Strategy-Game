@@ -12,6 +12,32 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.7.0] — 2026-11-01
+
+A larger tech tree (milestone M12).
+
+### Added
+
+- **Ten new technologies:**
+  - Town centre: wheelbarrow (villagers +10% speed) and treadmill crane
+    (building 20% faster).
+  - Stable: husbandry (cavalry +10% speed) and cavalry armour (cavalry +15%
+    HP).
+  - Barracks: forced march (infantry another +10% speed) and conscription
+    (barracks, archery range and stable train 25% faster).
+  - Blacksmith: chemistry (+1 ranged attack for musketeers and cannons).
+  - Monastery: sanctity (monks +50% HP), fervor (monks +15% speed) and
+    illumination (half the wait after a conversion).
+- The command panels and the tech tree show them, and the monastery becomes
+  a research building.
+- The Medium, Hard and Master AIs research them once nothing from their main
+  list can start, and only from gold their army is not saving.
+
+### Changed
+
+- Save `schemaVersion` is now 6. Older saves load through an automatic
+  migration.
+
 ## [0.6.0] — 2026-11-01
 
 Monks and monasteries (milestone M11).
@@ -204,7 +230,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0

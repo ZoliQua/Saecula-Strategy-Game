@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.6.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.7.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -582,7 +582,7 @@ scripts/perf/                    ← mérőszkriptek (textúra-memória, képkoc
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.6.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.7.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1121,6 +1121,14 @@ Az 1.3 „Tech fa (kutatási fejlesztések)” pontja. Ág: `feat/M12-tech-tree`
 - Nem része: új épület, új egység, egyedi (népenkénti) technológia, tech-fa
   szerkesztő.
 - Keret (10.): az M11 keretei változatlanok (nincs új textúra).
+- **Állapot (2026-11-01):** kész — tíz új technológia hat új hatás-fajtával, a
+  kolostor kutatóhely, a fejlődési fa és a parancspanelek mutatják őket,
+  `schemaVersion` 6 migrációval. Az AI a régi kutatási sorrendjét és
+  tartalékát változatlanul tartja; az új technológiákat külön listából
+  (`extraTechPriority`), csak a sereg ágyú-takarékossága fölötti aranyból
+  kutatja. A vegyes népes három-kori szimuláció emberi helye a Közepes 5-ös
+  magra került (a söprés a teszt megjegyzésében). Böngésző-smoke: a fejlődési fa
+  és a kolostor kutatás-gombjai az új technológiákkal, konzolhiba nélkül.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1228,4 +1236,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.6.0.*
+*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.7.0.*

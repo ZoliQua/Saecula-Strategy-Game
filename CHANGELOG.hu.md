@@ -12,6 +12,34 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.7.0] — 2026-11-01
+
+Bővített fejlődési fa (M12 mérföldkő).
+
+### Új
+
+- **Tíz új technológia:**
+  - Városháza: Talicska (falusiak +10% sebesség) és Taposókerekes daru (az
+    építés 20%-kal gyorsabb).
+  - Istálló: Lótenyésztés (lovasság +10% sebesség) és Lovas vértezet
+    (lovasság +15% életerő).
+  - Laktanya: Erőltetett menet (gyalogság további +10% sebesség) és Sorozás
+    (laktanya, lőtér és istálló 25%-kal gyorsabban képez).
+  - Kovácsműhely: Kémia (+1 távolsági támadás a muskétásoknak és az
+    ágyúknak).
+  - Kolostor: Szentség (szerzetesek +50% életerő), Buzgóság (szerzetesek
+    +15% sebesség) és Megvilágosodás (térítés után feleannyi várakozás).
+- A parancspanelek és a fejlődési fa mutatják őket, a kolostor kutatóhely
+  lesz.
+- A Közepes, Nehéz és Mesteri AI akkor kutatja őket, ha a fő listájáról
+  semmi sem indítható, és csak abból az aranyból, amit a serege nem tesz
+  félre.
+
+### Változott
+
+- A mentés `schemaVersion` értéke 6 lett. A régebbi mentések automatikus
+  migrációval töltődnek be.
+
 ## [0.6.0] — 2026-11-01
 
 Szerzetesek és kolostorok (M11 mérföldkő).
@@ -205,7 +233,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
