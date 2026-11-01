@@ -1,6 +1,6 @@
 import PF from 'pathfinding';
 import type { TileCoord } from '../iso/coordinates';
-import { escapeSteps, STRICT_ESCAPE, type EscapeRules } from './escape';
+import { escapeRoutes, escapeSteps, STRICT_ESCAPE, type EscapeRules } from './escape';
 import { canStep, NEIGHBOUR_STEPS, unwind } from './gridSteps';
 import type { MapData } from './MapData';
 
@@ -140,37 +140,57 @@ export function nearestReachableTile(
  * `start` to it (both included), or null when no reachable tile qualifies.
  * Used where any of several tiles will do: the fallback when the work tile
  * a system picked turns out to be cut off (e.g. a grass hole inside a
- * forest), and a monk's walk to any tile within its convert range.
+ * forest), and a monk's walk to any tile within its convert range. Off
+ * blocked ground it may leave by any exit (escapeRoutes), whichever leads to
+ * the nearest goal.
  */
 export function findPathToAny(
   map: MapData,
   start: TileCoord,
   isGoal: (tx: number, ty: number) => boolean,
   escape: EscapeRules = STRICT_ESCAPE,
-  /** Off blocked ground or a pocket, prefer the exit toward this tile (as findPath does toward its goal). */
-  toward?: TileCoord,
 ): TileCoord[] | null {
-  const steps = escapeSteps(map, start, escape, toward);
-  const from = steps ? steps.at(-1)! : start;
-  if (steps && isGoal(from.tx, from.ty)) return steps;
+  // Off blocked ground the search may leave by any exit: each joins the search at its route's length,
+  // so the path found is the shortest in total (escape steps included).
+  const routes = escapeRoutes(map, start, escape);
+  if (routes && routes.length === 0) return null;
+  const seeds = [...(routes ?? [[start]])].sort((a, b) => a.length - b.length);
   const w = map.width;
   const parent = new Int32Array(w * map.height).fill(-1);
-  const origin = from.ty * w + from.tx;
-  parent[origin] = origin;
-  const queue: number[] = [origin];
-  for (let head = 0; head < queue.length; head++) {
+  const dist = new Int32Array(w * map.height);
+  const routeOf = new Map<number, TileCoord[]>();
+  const queue: number[] = [];
+  let next = 0;
+  const seedUpTo = (steps: number) => {
+    for (; next < seeds.length && seeds[next]!.length - 1 <= steps; next++) {
+      const route = seeds[next]!;
+      const exit = route.at(-1)!;
+      const idx = exit.ty * w + exit.tx;
+      if (parent[idx] !== -1) continue;
+      parent[idx] = idx;
+      dist[idx] = route.length - 1;
+      routeOf.set(idx, route);
+      queue.push(idx);
+    }
+  };
+  for (let head = 0; head < queue.length || next < seeds.length; head++) {
+    if (head >= queue.length) seedUpTo(seeds[next]!.length - 1);
+    else seedUpTo(dist[queue[head]!]!);
     const idx = queue[head]!;
     const tx = idx % w;
     const ty = (idx - tx) / w;
-    if (isGoal(tx, ty) && idx !== origin) {
+    // The start itself is never the goal (as before); an exit reached by escaping may be.
+    if (isGoal(tx, ty) && (routes || !routeOf.has(idx))) {
       const rest = unwind(parent, idx, w);
-      return steps ? [...steps, ...rest.slice(1)] : rest;
+      const route = routeOf.get(rest[0]!.ty * w + rest[0]!.tx)!;
+      return [...route, ...rest.slice(1)];
     }
     for (const [dx, dy] of NEIGHBOUR_STEPS) {
       if (!canStep(map, tx, ty, dx, dy)) continue;
       const n = (ty + dy) * w + tx + dx;
       if (parent[n] !== -1) continue;
       parent[n] = idx;
+      dist[n] = dist[idx]! + 1;
       queue.push(n);
     }
   }

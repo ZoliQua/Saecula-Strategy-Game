@@ -127,3 +127,45 @@ describe('escape never crosses another structure (fix round 1)', () => {
     expect(escapeSteps(map, { tx: 6, ty: 10 }, block, { tx: 6, ty: 2 })!.at(-1)!.ty).toBe(8);
   });
 });
+
+describe('findPathToAny from blocked ground with exits onto separate regions', () => {
+  it('finds a goal reachable from any exit, not only the one the escape would pick', () => {
+    for (const side of [1, -1]) {
+      // A foundation over the start on a river line: its ring opens onto two banks that do not meet.
+      const map = new MapData(40, 40, TERRAIN.grass);
+      for (let ty = 0; ty < 40; ty++) map.setTile(20, ty, TERRAIN.water);
+      for (let y = 19; y <= 21; y++) for (let x = 19; x <= 21; x++) map.setBlocked(x, y, true);
+      const pad: EscapeRules = { crossable: (tx, ty) => tx >= 19 && tx <= 21 && ty >= 19 && ty <= 21, cuttable: () => true };
+      // The goal: tiles within 3 of an islet on one bank's side (the islet tile itself is cut off).
+      const islet = { tx: 20 + side * 8, ty: 20 };
+      for (let y = 18; y <= 22; y++) for (let x = islet.tx - 2; x <= islet.tx + 2; x++) map.setTile(x, y, TERRAIN.water);
+      map.setTile(islet.tx, islet.ty, TERRAIN.grass);
+      const near = (tx: number, ty: number) => Math.max(Math.abs(tx - islet.tx), Math.abs(ty - islet.ty)) <= 3;
+      const path = findPathToAny(map, { tx: 20, ty: 20 }, near, pad);
+      expect(path, `side ${side}`).not.toBeNull();
+      expect(stepsAreAdjacent(path!)).toBe(true);
+      expect(near(path!.at(-1)!.tx, path!.at(-1)!.ty)).toBe(true);
+    }
+  });
+});
+
+describe('findPathToAny from blocked ground counts the escape steps', () => {
+  it('prefers the exit with the shorter whole path, not the one nearer the goal after escaping', () => {
+    // A 5-tile foundation strip over the unit at its west end; the goal sits past its middle, below it.
+    const map = new MapData(30, 30, TERRAIN.grass);
+    for (let x = 10; x <= 14; x++) {
+      map.setBlocked(x, 10, true);
+      // Water along both sides: the strip can only be left at its two ends.
+      map.setTile(x, 9, TERRAIN.water);
+      map.setTile(x, 11, TERRAIN.water);
+    }
+    const strip: EscapeRules = { crossable: (tx, ty) => ty === 10 && tx >= 10 && tx <= 14, cuttable: () => false };
+    const goal = { tx: 13, ty: 12 };
+    const path = findPathToAny(map, { tx: 10, ty: 10 }, (tx, ty) => tx === goal.tx && ty === goal.ty, strip);
+    expect(path?.at(-1)).toEqual(goal);
+    expect(stepsAreAdjacent(path!)).toBe(true);
+    // West exit: 1 step out + 6 round the water = 7; east exit: 5 steps along the strip + 4 = 9
+    // (an exit seeded at distance 0 would reach the goal first from the east: 4 < 6).
+    expect(path!.length - 1).toBe(7);
+  });
+});

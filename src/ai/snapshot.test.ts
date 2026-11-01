@@ -4,6 +4,7 @@ import { createPlayer } from '../game/Player';
 import { createEcsWorld } from '../ecs/world';
 import { MapData } from '../map/MapData';
 import { createStatefulRng } from '../map/random';
+import { AIPlayerStateSchema } from '../save/aiSchema';
 import { AIPlayer } from './AIPlayer';
 import { aiRngSeed, createStrategy } from './createStrategy';
 import { EasyStrategy } from './strategies/EasyStrategy';
@@ -47,6 +48,17 @@ describe('AI snapshot / restore', () => {
       expect(rng.getState()).toBe(s.rngState);
     }, 120_000);
   }
+
+  it("a medium AI's avoided monk targets survive the save schema and a restore", () => {
+    const rng = createStatefulRng(1);
+    const ai = new AIPlayer(createPlayer({ id: 2 }), createStrategy('medium', rng.next), { rng });
+    const s = ai.snapshot();
+    const withAvoid = { ...s, strategy: { ...s.strategy, monkAvoid: [[40, 41, 90_000]] } } as typeof s;
+    const parsed = AIPlayerStateSchema.parse(JSON.parse(JSON.stringify(withAvoid)));
+    const fresh = new AIPlayer(ai.player, createStrategy('medium', createStatefulRng(1).next), { rng: createStatefulRng(1) });
+    fresh.restore(parsed);
+    expect(fresh.snapshot().strategy).toEqual(withAvoid.strategy);
+  });
 
   it('restoring a hard snapshot into a MediumStrategy throws TypeError', () => {
     const hard = new HardStrategy(createStatefulRng(1).next).snapshot();

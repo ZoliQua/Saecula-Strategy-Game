@@ -15,6 +15,7 @@ import { MasterStrategy } from './strategies/MasterStrategy';
 import { MediumStrategy } from './strategies/MediumStrategy';
 import { NullStrategy } from './strategies/NullStrategy';
 import { ThoughtLog } from './thoughts';
+import { MonkPlay, type MonkActions } from './MonkPlay';
 import { WonderPlay, type WonderActions } from './WonderPlay';
 
 /**
@@ -44,7 +45,7 @@ const MEDIUM: Inventory = {
   tune: CONFIG,
   army: 'saved',
   wonder: 'saved',
-  monks: 'excluded: MonkPlay reads the world; its memory of given-up targets is transient (a monk may retry one after a load)',
+  monks: 'saved',
   pressure: 'saved',
   firstAttackAtMs: 'saved',
   lastScoutMs: 'saved',
@@ -75,6 +76,7 @@ function cases(): [string, object, Inventory][] {
     ['PressureControl', new PressureControl(AI_MEDIUM, army, noPressure), { sentFlag: 'saved', raidOutSinceMs: 'saved', tune: CONFIG, army: CONFIG, act: CONFIG }],
     ['WonderSiteCheck', new WonderSiteCheck(1), { nextSearchMs: 'saved', found: 'saved', retryMs: CONFIG }],
     ['WonderPlay', new WonderPlay(AI_MEDIUM.wonder, noWonder), { site: 'saved', tune: CONFIG, act: CONFIG }],
+    ['MonkPlay', new MonkPlay(AI_MEDIUM.monks, {} as MonkActions), { avoid: 'saved', tune: CONFIG, act: CONFIG }],
     [
       'AIPlayer',
       new AIPlayer(createPlayer({ id: 2 }), new NullStrategy(), { rng }),

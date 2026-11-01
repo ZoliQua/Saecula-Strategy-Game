@@ -89,6 +89,7 @@ export class MediumStrategy extends BaseStrategy {
 
   /** Medium's saved fields; Hard and Mesteri add theirs. */
   protected mediumFields(): MediumFields {
+    const monkAvoid = this.monks.snapshot();
     return {
       base: this.baseState(),
       army: this.army.snapshot(),
@@ -96,6 +97,8 @@ export class MediumStrategy extends BaseStrategy {
       pressure: this.pressure.snapshot(),
       firstAttackAtMs: this.firstAttackAtMs,
       lastScoutMs: savedTime(this.lastScoutMs),
+      // Only when there is any: a save without avoided targets stays as before 0.8.1.
+      ...(monkAvoid.length > 0 ? { monkAvoid } : {}),
     };
   }
 
@@ -106,6 +109,7 @@ export class MediumStrategy extends BaseStrategy {
     this.pressure.restore(s.pressure);
     this.firstAttackAtMs = s.firstAttackAtMs;
     this.lastScoutMs = loadedTime(s.lastScoutMs);
+    this.monks.restore(s.monkAvoid ?? []);
   }
 
   /** Units another controller (Hard's raids) owns; the army and pressure squad leave them alone. */

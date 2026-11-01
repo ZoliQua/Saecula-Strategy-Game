@@ -41,9 +41,10 @@ import {
  * v5 (M11): the monk and the monastery, and the monk components (convertIntent, converter, originCiv).
  * v6 (M12): the technology enum gains the ten M12 technologies.
  * v7 (M13): a campaign mission (setup.mission) and its objective state (campaign).
+ * v8 (0.8.1): a Medium-family AI's given-up monk targets (strategy.monkAvoid).
  */
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();

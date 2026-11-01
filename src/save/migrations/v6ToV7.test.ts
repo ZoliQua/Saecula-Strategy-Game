@@ -14,20 +14,19 @@ describe('v6 → v7 migration', () => {
   it('returns the data unchanged (optional mission and campaign fields added)', () => {
     const data = { schemaVersion: 6, setup: { victory: 'conquest' } };
     expect(v6ToV7(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: 7 } });
-    expect(SCHEMA_VERSION).toBe(7);
+    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: SCHEMA_VERSION } });
   });
 
   it('the v6 fixture migrates, parses (no mission) and plays on', () => {
     expect(v6Save.schemaVersion).toBe(6);
     const parsed = parseSave(JSON.stringify(v6Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save.schemaVersion).toBe(7);
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
     expect(parsed.save.setup.mission).toBeUndefined();
     expect(parsed.save.campaign).toBeUndefined();
     const match = resumeHeadlessMatch(parsed.save);
     match.run(2_000, STEP_MS);
-    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(7);
+    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('a mission save keeps its mission and done objectives through JSON and a restore', () => {
