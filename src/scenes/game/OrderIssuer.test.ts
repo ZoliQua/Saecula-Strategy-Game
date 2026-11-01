@@ -157,4 +157,17 @@ describe('OrderIssuer: conversion (M11)', () => {
     monk.converter!.rechargeMs = 5000;
     expect(cursorAt(12)).toBe('move');
   });
+
+  it('a recharging monk right-clicked onto an enemy walks there (as its cursor says), it does not stand still', () => {
+    const sim = createMiniSim(32);
+    const monk = createUnit(sim.world, { type: 'monk', tile: { tx: 4, ty: 4 }, playerId: 1 });
+    createUnit(sim.world, { type: 'knight', tile: { tx: 12, ty: 4 }, playerId: 2 });
+    monk.converter!.rechargeMs = 5000;
+    const { orders, played } = issuer(sim, [monk]);
+    orders.issueOrders({ tx: 12, ty: 4 });
+    expect(monk.convertIntent).toBeUndefined();
+    expect(monk.moveIntent?.target).toEqual({ tx: 12, ty: 4 });
+    expect(played).toEqual(['unit_move']);
+  });
 });
+
