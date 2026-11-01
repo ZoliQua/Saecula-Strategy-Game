@@ -55,3 +55,14 @@ describe('cursorCss', () => {
     }
   });
 });
+
+describe('cursorFor: conversion (M11)', () => {
+  const ctx = (units: Array<{ attacks: boolean; gathers: boolean; converts?: boolean }>, convertible: boolean) =>
+    cursorFor({ placing: false, units, target: { kind: 'enemy', convertible }, passable: true });
+  it('a ready monk on a convertible enemy converts; any attacker in the selection attacks instead', () => {
+    expect(ctx([{ attacks: false, gathers: false, converts: true }], true)).toBe('convert');
+    expect(ctx([{ attacks: false, gathers: false, converts: true }, { attacks: true, gathers: false }], true)).toBe('attack');
+    expect(ctx([{ attacks: false, gathers: false, converts: true }], false)).toBe('move');
+    expect(ctx([{ attacks: false, gathers: false, converts: false }], true)).toBe('move');
+  });
+});

@@ -1,4 +1,5 @@
 import { audio, type AudioSink } from '../../audio/AudioManager';
+import { canConvert } from '../../game/convert';
 import type { Entity } from '../../ecs/components';
 import { insideFootprint } from '../../ecs/footprint';
 import { clearUnitOrders } from '../../ecs/orders';
@@ -71,7 +72,7 @@ export class OrderIssuer {
     // Only the human's units take orders (a selected building or enemy does not).
     if (!actor) return;
     const target = resolveOrderTarget(this.world, tile, actor, this.canSee);
-    let ordered: 'unit_move' | 'unit_attack' | null = null;
+    let ordered: 'unit_move' | 'unit_attack' | 'unit_convert' | null = null;
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== this.humanId || entity.unit === undefined) continue;
       // Any new right-click order overrides whatever the unit was
@@ -79,6 +80,12 @@ export class OrderIssuer {
       // actually listens.
       clearUnitOrders(this.world, entity);
       const targetId = target.entity?.id ?? 0;
+      // A monk converts an enemy unit (M11); against what it cannot convert it just walks there.
+      if (target.kind === 'enemy' && entity.converter && canConvert(target.entity ?? undefined, this.humanId)) {
+        this.world.addComponent(entity, 'convertIntent', { targetId, elapsedMs: 0 });
+        ordered ??= 'unit_convert';
+        continue;
+      }
       if (target.kind === 'enemy' && entity.attacker) {
         this.world.addComponent(entity, 'attackIntent', { targetId });
         ordered = 'unit_attack';

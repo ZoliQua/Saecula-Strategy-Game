@@ -255,6 +255,9 @@ export const hu = {
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
     wonderLost: 'Egy Csoda elpusztult.',
+    /** Conversions (M11). */
+    convertedToYou: (unit: string) => `Egy ellenséges ${unit} áttért hozzád`,
+    convertedFromYou: (unit: string) => `Egy ${unit} egységedet áttérítették`,
     /** The selection panel's delete button; `pct` is the refund of a site (0 = none). */
     deleteBuilding: (pct: number) => (pct > 0 ? `Törlés · +${pct} %` : 'Törlés'),
     /** The armed button, waiting for the confirming second press. */
