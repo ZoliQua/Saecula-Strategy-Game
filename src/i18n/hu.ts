@@ -155,6 +155,7 @@ export const hu = {
     legionary: 'Légiós',
     cossack: 'Kozák',
     sissi: 'Sissi',
+    monk: 'Szerzetes',
   },
   buildings: {
     town_center: 'Városháza',
@@ -170,6 +171,7 @@ export const hu = {
     tower: 'Őrtorony',
     wall: 'Fal',
     wonder: 'Csoda',
+    monastery: 'Kolostor',
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -289,6 +291,7 @@ export const hu = {
     legionary: 'Nyílálló gyalogos',
     cossack: 'Portyázó lovas',
     sissi: 'Gyors portyázó íjász',
+    monk: 'Gyógyít · ellenséges egységet térít',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -304,6 +307,7 @@ export const hu = {
     tower: 'Védelmi torony',
     wall: 'Védőfal',
     wonder: 'Győzelmi emlékmű',
+    monastery: 'Szerzeteseket képez',
   },
   mapLoading: {
     kicker: 'Térkép előkészítése',

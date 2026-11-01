@@ -103,7 +103,10 @@ export function paintOrder(layout: SheetLayout): number[] {
 
 /** Villagers also have a work (tool swing) animation. */
 export function unitAnims(type: UnitType): readonly UnitAnim[] {
-  return type === 'villager' ? ['idle', 'walk', 'attack', 'work', 'death'] : ['idle', 'walk', 'attack', 'death'];
+  if (type === 'villager') return ['idle', 'walk', 'attack', 'work', 'death'];
+  // The monk never attacks: its "work" frames are the heal / conversion channel (M11).
+  if (type === 'monk') return ['idle', 'walk', 'work', 'death'];
+  return ['idle', 'walk', 'attack', 'death'];
 }
 
 /** Ground covered by one walk / gallop / wheel cycle (tiles), so feet don't skate. */
@@ -118,6 +121,7 @@ export const WALK_CYCLE_TILES: Readonly<Record<BaseUnitType, number>> = {
   knight: 1.7,
   cavalry: 1.9,
   cannon: 0.5,
+  monk: 0.8,
 };
 
 /** Walk-cycle ground length of a unit type (unique units use their base unit's). */

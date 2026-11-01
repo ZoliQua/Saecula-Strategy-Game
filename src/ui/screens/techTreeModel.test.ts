@@ -19,7 +19,7 @@ describe('techTreeModel civ roster', () => {
   });
 
   it('lists exactly ten units per civ', () => {
-    expect(units('finnish')).toHaveLength(10);
+    expect(units('finnish')).toHaveLength(11);
   });
 });
 

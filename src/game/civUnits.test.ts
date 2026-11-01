@@ -9,7 +9,7 @@ describe('civ unit roster', () => {
     const roster = civUnitTypes('hungarian');
     expect(roster).toContain('hussar');
     expect(roster).not.toContain('knight');
-    expect(roster).toHaveLength(10);
+    expect(roster).toHaveLength(11);
     expect(civUnitType('hungarian', 'knight')).toBe('hussar');
     expect(civUnitType('hungarian', 'archer')).toBe('archer');
   });

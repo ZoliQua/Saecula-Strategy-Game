@@ -62,7 +62,8 @@ export type BaseUnitType =
   | 'crossbowman'
   | 'musketeer'
   | 'cannon'
-  | 'cavalry';
+  | 'cavalry'
+  | 'monk';
 
 /** Civ-specific units (M8); each replaces one base unit for its civ. */
 export type UniqueUnitType =
@@ -88,6 +89,7 @@ export const BASE_UNIT_TYPES: readonly BaseUnitType[] = [
   'musketeer',
   'cannon',
   'cavalry',
+  'monk',
 ];
 
 export type BuildingType =
@@ -103,7 +105,8 @@ export type BuildingType =
   | 'foundry'
   | 'tower'
   | 'wall'
-  | 'wonder';
+  | 'wonder'
+  | 'monastery';
 
 export interface Population {
   current: number;

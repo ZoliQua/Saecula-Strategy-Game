@@ -39,13 +39,13 @@ function recordPlan(human: 'hungarian' | 'english', civs: Array<'hungarian' | 'e
 describe('N-civ art budget (M5 Task 1)', () => {
   it('AI-only civs prewarm only age-1 unit types', () => {
     expect(prewarmUnitTypes('english', 'hungarian').sort()).toEqual(['archer', 'scout', 'swordsman', 'villager']);
-    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(10);
+    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(11);
   });
 
   it('age-up jobs paint that age’s unit sheets and the next age’s wall pieces', () => {
     const log: string[] = [];
     ageUpArtJobs('english', 2, recordingPainters(log)).forEach((j) => j());
-    expect(log.filter((l) => l.startsWith('unit')).sort()).toEqual(['unit knight english', 'unit longbowman english', 'unit pikeman english']);
+    expect(log.filter((l) => l.startsWith('unit')).sort()).toEqual(['unit knight english', 'unit longbowman english', 'unit monk english', 'unit pikeman english']);
     expect(log.some((l) => l.startsWith('wall') && l.includes(' 3 english'))).toBe(true);
   });
 
@@ -151,7 +151,7 @@ describe('planArtLoad for a loaded save (age spans)', () => {
     expect(wallAges(background, 'english')).toEqual([]);
     expect(critical.filter((l) => l.startsWith('wall') && l.endsWith(' 3 english'))).toHaveLength(COMMON_WALL_PIECES.length);
     expect(units(critical, 'english')).toEqual(
-      ['unit cannon english', 'unit cavalry english', 'unit knight english', 'unit longbowman english', 'unit musketeer english', 'unit pikeman english'],
+      ['unit cannon english', 'unit cavalry english', 'unit knight english', 'unit longbowman english', 'unit monk english', 'unit musketeer english', 'unit pikeman english'],
     );
   });
 
@@ -165,7 +165,7 @@ describe('planArtLoad for a loaded save (age spans)', () => {
     const { critical, background } = run(new Map([['hungarian', span(1, 1)], ['english', span(2, 2)]]));
     expect(wallAges(critical, 'english')).toEqual([2]);
     expect(wallAges(background, 'english')).toEqual([3]);
-    expect(units(critical, 'english')).toEqual(['unit knight english', 'unit longbowman english', 'unit pikeman english']);
+    expect(units(critical, 'english')).toEqual(['unit knight english', 'unit longbowman english', 'unit monk english', 'unit pikeman english']);
   });
 
   it('a civ at age 1 keeps today’s walls (age 1 loading, age 2 in the background); buildings unchanged', () => {

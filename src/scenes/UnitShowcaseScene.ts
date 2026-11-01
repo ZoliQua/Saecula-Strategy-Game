@@ -29,7 +29,7 @@ export interface ShowcaseOptions {
   types?: UnitType[];
 }
 
-const BASE_ORDER: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon'];
+const BASE_ORDER: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon', 'monk'];
 /** Base types in showcase order, each followed by the unique units (M8) replacing it. */
 const TYPES: UnitType[] = BASE_ORDER.flatMap((base) => [
   base,
