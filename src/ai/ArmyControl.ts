@@ -176,7 +176,7 @@ export class ArmyControl {
   private shouldSwitch(u: Entity, view: WorldView, enemyUnits: readonly Entity[]): boolean {
     const current = view.byId.get(u.attackIntent!.targetId);
     if (current && !current.building) return false;
-    return enemyUnits.some((e) => e.attacker && e.position && chebyshev(e.position, u.position!) <= AI_COMMON.engageRadius);
+    return enemyUnits.some((e) => e.attacker && e.position && canAttackTarget(u, e) && chebyshev(e.position, u.position!) <= AI_COMMON.engageRadius);
   }
 
   /** No enemy known yet: the wave walks together to the next unexplored area. */

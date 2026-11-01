@@ -87,7 +87,8 @@ describe('Medium AI navy (M14)', () => {
       match.run(3 * MIN, 100);
       const ashore = match.world.entities.filter((e) => e.unit && e.owner?.playerId === 2 && !e.dying && e.position && e.attacker && onEnemyIsland(e.position));
       expect(ashore.length + match.stats.of(2).killValue).toBeGreaterThan(0);
-      expect(ashore.every((u) => !u.moveIntent || onEnemyIsland(u.moveIntent.target))).toBe(true);
+      const headed = (u: (typeof ashore)[number]) => u.moveIntent?.target ?? u.movable?.path.at(-1);
+      expect(ashore.every((u) => !headed(u) || onEnemyIsland(headed(u)!))).toBe(true);
     },
     SIM_TIMEOUT_MS,
   );

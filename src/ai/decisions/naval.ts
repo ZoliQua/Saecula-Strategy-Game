@@ -38,6 +38,12 @@ export function findDockSite(
  * town centre's own tiles are blocked; its villagers stand round it).
  */
 export function landReachable(map: MapData, from: TileCoord, to: TileCoord): boolean {
+  return landReachableFromAny(map, [from], to);
+}
+
+/** landReachable for several starting points at the cost of one flood: true when any of them can walk to `to`. */
+export function landReachableFromAny(map: MapData, froms: readonly TileCoord[], to: TileCoord): boolean {
+  if (froms.length === 0) return false;
   // Terrain only: walls and buildings can be breached, water cannot.
   const terrain: NavGrid = {
     width: map.width,
@@ -45,11 +51,13 @@ export function landReachable(map: MapData, from: TileCoord, to: TileCoord): boo
     isPassable: (tx, ty) => tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && isPassable(map.getTile(tx, ty)),
   };
   const mask = reachMask(terrain, to);
-  for (let dy = -FROM_SLACK; dy <= FROM_SLACK; dy++) {
-    for (let dx = -FROM_SLACK; dx <= FROM_SLACK; dx++) {
-      const tx = from.tx + dx;
-      const ty = from.ty + dy;
-      if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && mask[ty * map.width + tx] === 1) return true;
+  for (const from of froms) {
+    for (let dy = -FROM_SLACK; dy <= FROM_SLACK; dy++) {
+      for (let dx = -FROM_SLACK; dx <= FROM_SLACK; dx++) {
+        const tx = from.tx + dx;
+        const ty = from.ty + dy;
+        if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && mask[ty * map.width + tx] === 1) return true;
+      }
     }
   }
   return false;

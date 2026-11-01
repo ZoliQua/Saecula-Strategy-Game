@@ -153,3 +153,24 @@ describe('TransportSystem: a shore the unit cannot reach (M14)', () => {
     expect(u.boardIntent).toBeUndefined();
   });
 });
+
+describe('TransportSystem: boarding at real frame rates (M14)', () => {
+  it('units waiting on the shore keep their order while the transport sails in (16 ms frames)', () => {
+    const map = new MapData(40, 30, TERRAIN.grass);
+    for (let ty = 0; ty < 30; ty++) for (let tx = 12; tx <= 39; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    const pathing = new PathfindingSystem(world, map);
+    const movement = new MovementSystem(world, null, map);
+    const transports = new TransportSystem(world, map);
+    // Far out at sea; the unit is right by the shore.
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 36, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'swordsman', tile: { tx: 11, ty: 10 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    for (let t = 0; t < 40_000 && !ship.cargo; t += 16) {
+      pathing.update();
+      movement.update(16);
+      transports.update(16);
+    }
+    expect(ship.cargo?.units).toHaveLength(1);
+  });
+});

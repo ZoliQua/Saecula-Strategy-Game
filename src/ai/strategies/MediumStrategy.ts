@@ -11,7 +11,7 @@ import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import { ArmyControl } from '../ArmyControl';
 import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
 import { attackReady, pickAttackTarget } from '../decisions/combat';
-import { landReachable } from '../decisions/naval';
+import { landReachable, landReachableFromAny } from '../decisions/naval';
 import { LandingControl } from '../LandingControl';
 import { NavalPlay } from '../NavalPlay';
 import { weightsForGoal } from '../decisions/gathering';
@@ -227,11 +227,10 @@ export class MediumStrategy extends BaseStrategy {
 
   /** Whether any wave member can walk to the enemy (it landed on the enemy's island, M14). */
   private waveReachesEnemy(ctx: AIContext, view: WorldView): boolean {
-    const spots = this.enemySpots(ctx, view);
-    return [...this.army.members()].some((id) => {
-      const u = view.byId.get(id);
-      return !!u?.position && spots.some((p) => landReachable(ctx.mapData, u.position!, p));
-    });
+    const members = [...this.army.members()].map((id) => view.byId.get(id)?.position).filter((p): p is TileCoord => !!p);
+    // One flood from the enemy's spot (any one will do: they share the enemy's land) reaches every member it can.
+    const spot = this.enemySpots(ctx, view)[0];
+    return !!spot && landReachableFromAny(ctx.mapData, members, spot);
   }
 
   /** Where the enemy is known to be: its known buildings, else where its villagers were last seen (M14). */

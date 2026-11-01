@@ -9,8 +9,6 @@ import { clearUnitOrders } from '../orders';
 import type { EcsWorld } from '../world';
 import { findEntityById } from './gathering/gatherQueries';
 
-/** A transport that moved this far from where a boarding unit last headed makes it re-plan. */
-const RETARGET_TILES = 2;
 
 /**
  * Transports (M14):
@@ -27,8 +25,10 @@ export class TransportSystem {
   private readonly headed = new WeakMap<Entity, TileCoord>();
   /** The unload order each transport has set sail for (a new order starts afresh). */
   private readonly sailing = new WeakMap<Entity, object>();
-  /** Walks toward its transport each boarding unit has finished without getting aboard. */
-  private readonly tries = new WeakMap<Entity, number>();
+  /** The boarding order each unit's clock belongs to, and when it began (system clock, ms). */
+  private readonly orderOf = new WeakMap<Entity, object>();
+  private readonly since = new WeakMap<Entity, number>();
+  private nowMs = 0;
   /** The unload order each transport has already sought an open shore for (once per order). */
   private readonly sought = new WeakMap<Entity, object>();
 
@@ -37,7 +37,8 @@ export class TransportSystem {
     private readonly map: MapData,
   ) {}
 
-  update(_deltaMs: number): void {
+  update(deltaMs: number): void {
+    this.nowMs += deltaMs;
     for (const u of [...this.world.with('boardIntent', 'position', 'owner')]) this.board(u);
     for (const t of [...this.world.with('unloadIntent', 'position', 'cargo', 'owner')]) this.unload(t);
     for (const t of this.world.with('unloadIntent')) if (!t.cargo || t.cargo.units.length === 0) this.world.removeComponent(t, 'unloadIntent');
@@ -63,25 +64,29 @@ export class TransportSystem {
       return;
     }
     const shipBusy = !!t.unloadIntent || !!t.moveIntent || (t.movable?.path.length ?? 0) > 0;
+    // Too long without getting aboard (the shore by the transport is out of reach): the order is dropped.
+    const order = u.boardIntent;
+    if (this.orderOf.get(u) !== order) {
+      this.orderOf.set(u, order);
+      this.since.set(u, this.nowMs);
+    }
+    if (this.nowMs - (this.since.get(u) ?? this.nowMs) > NAVAL.boardTimeoutMs) {
+      this.world.removeComponent(u, 'boardIntent');
+      this.headed.delete(u);
+      return;
+    }
     const beside = this.landBeside(t.position, u.position);
     const walking = !!u.moveIntent || (u.movable?.path.length ?? 0) > 0;
     const last = this.headed.get(u);
-    if (walking && last && chebyshev(last, t.position) < RETARGET_TILES) return;
-    // A finished walk that did not get the unit aboard: the shore it headed for is out of its reach.
-    const tries = !walking && last ? (this.tries.get(u) ?? 0) + 1 : 0;
-    this.tries.set(u, tries);
-    if (tries > NAVAL.boardTries) {
-      this.world.removeComponent(u, 'boardIntent');
-      this.headed.delete(u);
-      this.tries.delete(u);
+    const shipMoved = !last || chebyshev(last, t.position) >= NAVAL.boardRetargetTiles;
+    if (last && !shipMoved) {
+      // Walking toward it, or done walking and not beside it: no new search until the transport moves;
+      // an idle transport comes in to the shore by the unit.
+      if (!walking && !shipBusy) this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
       return;
     }
-    // Out at sea, or beside a shore the unit cannot reach: the transport comes in to the shore by the unit.
-    if ((!beside || tries > 0) && !shipBusy) this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
-    if (tries > 0 && !shipBusy) {
-      this.headed.set(u, { tx: t.position.tx, ty: t.position.ty });
-      return;
-    }
+    // Out at sea (no land beside it): the transport comes in to the shore by the unit.
+    if (!beside && !shipBusy) this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
     // A land tile beside the transport, nearest the unit; else toward the transport (the shore nearest it).
     const shore = beside ?? t.position;
     this.headed.set(u, { tx: t.position.tx, ty: t.position.ty });
