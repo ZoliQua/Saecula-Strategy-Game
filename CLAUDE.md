@@ -49,7 +49,7 @@ Ha a MVP stabil, ezek kerülhetnek be később (külön feature branch-ben):
 - Kampány mód (M13: három küldetés)
 - Tech fa (kutatási fejlesztések)
 - Vallási egységek / konverzió
-- Tengeri egységek és vízi térképek
+- Tengeri egységek és vízi térképek (M14)
 - Mentett játék megosztása linkkel (JSON export/import)
 
 ---
@@ -1182,6 +1182,73 @@ tulajdonos 2026-11-01-én jóváhagyta (a teljesített küldetés újrajátszhat
   indul. A 3. küldetés megnyerhetőségét szimuláció nem ellenőrzi. Böngésző-smoke:
   kampánylista (teljesített / elérhető / zárolt), eligazítás, indítás, célpanel,
   konzolhiba nélkül.
+
+### M14 — Tengeri egységek és vízi térképek
+Az 1.3 „Tengeri egységek és vízi térképek” pontja. Ág: `feat/M14-naval` (a
+`fix/0.8.1-review` ágra épül). Változat: 0.9.0. **Állapot: javaslat,
+jóváhagyásra vár** (a tulajdonos 2026-11-01-én döntött: szállítóhajó is
+legyen; a hajók: halászhajó, gálya, fregatt).
+- **Vízi mozgás:** a hajók csak vízen járnak (`TERRAIN.water`), a szárazföldi
+  egységek csak szárazon. Az útkeresés réteget kap (`land` / `water`): a
+  `findPath` és társai a mozgás rétegének járhatóságát használják, a közös
+  útkeresési keret (10.) mindkettőre vonatkozik. Épület vízre nem kerül.
+- **Kikötő (`dock`, Kikötő):** új épület, 3×3, 1. kortól; szárazföldön áll,
+  legalább egy oldala vízzel határos. Hajókat képez, a halászhajó ide viszi a
+  halat. Minden nép a saját stílusának palettájával kapja (egy közös,
+  palettavezérelt festő, a kolostor mintájára).
+- **Hal (`fish`):** új nyersanyag-lelőhely vízi mezőn (étel); a térképgenerátor
+  a víz széléhez és nyílt vízre helyezi.
+- **Hajók** (új `BaseUnitType`-ok, statisztika a `balance.ts`-ben, új osztály:
+  `naval`; minden népnek azonosak, a nép a palettát és a vitorla-címert adja):
+
+  | Hajó (`UnitType`) | Magyar név | Kor | Szerep |
+  |---|---|---|---|
+  | `fishing_boat` | Halászhajó | 1 | halból ételt gyűjt, a kikötőbe viszi |
+  | `transport` | Szállítóhajó | 1 | legfeljebb 5 szárazföldi egységet visz; nem harcol |
+  | `galley` | Gálya | 1 | távolsági (nyíl), hajó és part menti egység ellen |
+  | `frigate` | Fregatt | 3 | ágyús, épület- és hajórombolás, lassú |
+
+- **Szállítás:** a kijelölt szárazföldi egységek jobb klikkje (vagy
+  parancs-gesztusa) egy saját szállítóhajóra beszállást indít: az egységek a
+  hajóhoz legközelebbi parti mezőre mennek, ott eltűnnek a hajóban (`cargo`
+  komponens a hajón; a rakomány nem látszik, nem harcol, nem gyógyul). A
+  kijelölt szállítóhajó jobb klikkje egy parti mezőre kiszállítást indít: a hajó
+  a parthoz megy, a rakomány a legközelebbi szabad szárazföldi mezőkre lép. A
+  kijelölés-panel mutatja a rakományt és egy „Kirakodás” gombot. Elsüllyedt
+  hajóval a rakomány is elvész (pontszámban elvesztett egységek). A népesség a
+  rakományt is számolja.
+- **Harc:** a hajók egymást és a partközeli szárazföldi egységeket,
+  épületeket a lőtávjukon belül támadják; a szárazföldi távolsági egységek és a
+  tornyok a hajókat. Közelharci egység hajót nem támadhat. A szerzetes hajót nem
+  téríthet.
+- **Térképek:** két új sablon: „Beltenger” (közepes, középen nagy tó, körbe
+  szárazon is járható) és „Szigetvilág” (minden játékos saját szigeten, a
+  szigetek között csak víz: szállítás nélkül nem lehet szárazföldön támadni). A
+  meglévő „Szigetek” (szirtek és hidak) változatlan.
+- **AI (Közepestől):** ha a bázisa közelében elég víz van, kikötőt épít,
+  halászhajókat képez, a korához illő hajóhadat tart (gálya, a 3. kortól
+  fregatt), a látott ellenséges hajókat és a part menti célokat támadja.
+  „Szigetvilágon” szállítóhajóval partra teszi a támadó hullámot (berakodás a
+  saját parton, kirakodás az ellenfél szigetének legközelebbi szabad partján).
+  A könnyű AI csak halászik.
+- **UI:** hajó-kurzorok (beszállás, kirakodás, halászat), a fejlődési fa a
+  kikötőt és a hajókat automatikusan mutatja, a minimap a hajókat. Hang:
+  procedurális vitorla-, evező- és ágyúhang. Minden szöveg a `hu.ts`-ben.
+- **Mentés:** `schemaVersion` 8, migrációval; új komponens: `cargo` (a hajóban
+  lévő egységek teljes állapota).
+- **Tesztek:** rétegzett útkeresés (hajó nem megy szárazra, egység nem megy
+  vízre), kikötő-elhelyezés, halászat, beszállás / kirakodás / elsüllyedés,
+  hajóharc (ki kit támadhat), népesség a rakománnyal, mentés oda-vissza
+  rakománnyal, v7 → v8 migráció valódi v7 mentéssel, a két új sablon játszható
+  (minden játékosnak van kikötőhelye és hala), AI-szimuláció: a Közepes AI
+  „Szigetvilágon” partra szállít és megtámadja az ellenfelet; „Beltengeren”
+  halászik és hajóhadat épít.
+- Nem része: kereskedelmi hajó, tűzhajó, sekély gázló, vízi fal, tengeri
+  technológiák, népenkénti hajókinézet, hajó-formáció.
+- Keret (10.): az M13 keretei; a négy hajó népenként négy új egységlapot jelent,
+  ezt a `scripts/perf/texmem.mjs`-szel mérjük (6 különböző nép), a ≤ 256 MB
+  textúra-keret köt; ha nem fér bele, a hajólapok koronként vagy csak vízi
+  térképen készülnek.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
