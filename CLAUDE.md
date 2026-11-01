@@ -1185,9 +1185,9 @@ tulajdonos 2026-11-01-én jóváhagyta (a teljesített küldetés újrajátszhat
 
 ### M14 — Tengeri egységek és vízi térképek
 Az 1.3 „Tengeri egységek és vízi térképek” pontja. Ág: `feat/M14-naval` (a
-`fix/0.8.1-review` ágra épül). Változat: 0.9.0. **Állapot: javaslat,
-jóváhagyásra vár** (a tulajdonos 2026-11-01-én döntött: szállítóhajó is
-legyen; a hajók: halászhajó, gálya, fregatt).
+`main`-ből, a 0.8.1 után). Változat: 0.9.0. A scope-ot a tulajdonos
+2026-11-01-én jóváhagyta (szállítóhajó is legyen; a hajók: halászhajó,
+gálya, fregatt).
 - **Vízi mozgás:** a hajók csak vízen járnak (`TERRAIN.water`), a szárazföldi
   egységek csak szárazon. Az útkeresés réteget kap (`land` / `water`): a
   `findPath` és társai a mozgás rétegének járhatóságát használják, a közös
@@ -1234,12 +1234,12 @@ legyen; a hajók: halászhajó, gálya, fregatt).
 - **UI:** hajó-kurzorok (beszállás, kirakodás, halászat), a fejlődési fa a
   kikötőt és a hajókat automatikusan mutatja, a minimap a hajókat. Hang:
   procedurális vitorla-, evező- és ágyúhang. Minden szöveg a `hu.ts`-ben.
-- **Mentés:** `schemaVersion` 8, migrációval; új komponens: `cargo` (a hajóban
+- **Mentés:** `schemaVersion` 9, migrációval; új komponens: `cargo` (a hajóban
   lévő egységek teljes állapota).
 - **Tesztek:** rétegzett útkeresés (hajó nem megy szárazra, egység nem megy
   vízre), kikötő-elhelyezés, halászat, beszállás / kirakodás / elsüllyedés,
   hajóharc (ki kit támadhat), népesség a rakománnyal, mentés oda-vissza
-  rakománnyal, v7 → v8 migráció valódi v7 mentéssel, a két új sablon játszható
+  rakománnyal, v8 → v9 migráció valódi v8 mentéssel, a két új sablon játszható
   (minden játékosnak van kikötőhelye és hala), AI-szimuláció: a Közepes AI
   „Szigetvilágon” partra szállít és megtámadja az ellenfelet; „Beltengeren”
   halászik és hajóhadat épít.
