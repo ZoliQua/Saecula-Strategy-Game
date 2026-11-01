@@ -26,7 +26,8 @@ import { MatchLog } from '../stats/matchLog';
 import { slotRows } from '../ui/screens/slotRows';
 import { browserMatchStore, browserSaveStore } from '../save/browserStore';
 import { SaveStorage } from '../save/storage';
-import { startFromSlot } from './game/MatchStart';
+import { startFromFile, startFromSlot } from './game/MatchStart';
+import { exportSlot } from './game/SaveExport';
 import type { SetupReturn } from './GameSetupScene';
 
 const MENU_MAP_SIZE = 48;
@@ -299,6 +300,13 @@ export class MainMenuScene extends Phaser.Scene {
       onPick: async (slot): Promise<void> => {
         const started = await startFromSlot(this, this.storage, slot, (message) => slots.notice(message, 'error'));
         if (!started && this.slots === slots) slots.setRows(slotRows(await this.storage.list(), 'load'));
+      },
+      onExport: async (slot): Promise<void> => {
+        const result = await exportSlot(this.storage, slot);
+        if (this.slots === slots) slots.notice(result.message, result.ok ? 'ok' : 'error');
+      },
+      onImport: async (file): Promise<void> => {
+        await startFromFile(this, file, (message) => slots.notice(message, 'error'));
       },
       onBack: () => {
         // A card already closing (Esc within its exit animation) must not close the next one.

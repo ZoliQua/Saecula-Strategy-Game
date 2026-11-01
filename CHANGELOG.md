@@ -12,6 +12,22 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.5.0] — 2026-11-01
+
+Shareable saves and measurement scripts (milestone M10).
+
+### Added
+
+- **Save sharing**: in the load list (main menu and pause) every usable save
+  has an export button that downloads it as a JSON file. An “Import from
+  file” button loads such a file at once. The file is checked exactly like a
+  stored save (an older one is migrated). A file that is too large (over
+  16 MB), damaged, not a save, or written by a newer version gives a
+  Hungarian message, and nothing is loaded.
+- **Perf scripts** in `scripts/perf/`: `npm run perf:texmem` measures
+  texture memory per zoom, `npm run perf:frame` measures frame time
+  (Playwright on the dev server; see `scripts/perf/README.md`).
+
 ## [0.4.0] — 2026-11-01
 
 Time victory and lighter terrain textures when zoomed out (milestone M9).
@@ -159,7 +175,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.1.0...v0.2.0

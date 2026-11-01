@@ -158,7 +158,26 @@
 .slots-notice { margin-top: 12px; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; animation: e-up 0.35s var(--ease) both; }
 .slots-notice.ok { color: #ffe3bd; background: rgba(245, 168, 87, 0.12); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.4); }
 .slots-notice.error { color: #ffd9d2; background: rgba(90, 26, 20, 0.55); box-shadow: inset 0 0 0 1px rgba(255, 122, 107, 0.4); }
-.slots-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+.slots-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+
+/* save sharing (M10): an export button beside each usable save, an import button in the footer */
+.slot-line { display: flex; align-items: stretch; gap: 6px; }
+.slot-line > .slot-row { flex: 1; min-width: 0; }
+.slots-list.entering .slot-line > .slot-row { animation-delay: calc(0.12s + var(--i) * 0.04s); }
+.slot-export {
+  flex: none; width: 46px; display: grid; place-items: center; border: 0; border-radius: 13px; cursor: pointer; color: var(--ink-3);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.2));
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: color 0.2s, background 0.25s, box-shadow 0.25s, transform 0.25s var(--ease);
+}
+.slot-export:hover:not([disabled]), .slot-export:focus-visible {
+  color: var(--amber-2); transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(245, 168, 87, 0.15), rgba(245, 168, 87, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.45);
+}
+.slot-export[disabled] { cursor: progress; opacity: 0.6; }
+.slots-file { display: none; }
+.slots-import { display: inline-flex; align-items: center; gap: 8px; }
 .slots-foot .pause-foot { margin: 0; }
 .slots-back { height: 42px; gap: 10px; padding: 0 16px; animation: e-up 0.5s var(--ease) 0.3s backwards; }
 .slots-back .arrow { display: grid; place-items: center; }

@@ -8,6 +8,7 @@ import { el, uiRoot } from '../dom';
 import { icons } from '../icons';
 import { bindModalKeys, GLYPHS } from './modalKeys';
 import { grouped, hex } from '../format';
+import { downloadText } from '../download';
 import { exportDate, exportPayload, formatLength, formatRate, formatWhen } from './statsView';
 import '../hud.css';
 import '../screens.css';
@@ -146,13 +147,7 @@ export class StatsScreen {
   private exportAll(): void {
     if (this.records.length === 0) return;
     const now = new Date();
-    const url = URL.createObjectURL(new Blob([exportPayload(this.records, now)], { type: 'application/json' }));
-    const a = el('a', { href: url, download: hu.stats.exportFile(exportDate(now)), class: 'st-download' });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    // The download has its own reference; the URL can go once the click has been handled.
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadText(hu.stats.exportFile(exportDate(now)), exportPayload(this.records, now));
     audio().playSFX('ui_click');
     this.status.replaceChildren(el('div', { class: 'slots-notice ok' }, hu.stats.exported));
   }

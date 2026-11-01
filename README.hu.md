@@ -130,7 +130,7 @@ megjelenítik. A teljes architektúra, a scope és a konvenciók a
 
 ## Állapot és ütemterv
 
-A Saecula jelenlegi verziója **0.4.0**. Az egyes verziók tartalmát a
+A Saecula jelenlegi verziója **0.5.0**. Az egyes verziók tartalmát a
 [változásnapló](CHANGELOG.hu.md) sorolja fel.
 
 | Mérföldkő | Tartalom | Állapot |
@@ -141,6 +141,7 @@ A Saecula jelenlegi verziója **0.4.0**. Az egyes verziók tartalmát a
 | M7 | Playtest-javítások, irányítás, pontszám, statisztika | ✅ 0.2.0 |
 | M8 | Egyedi egységek és népbónuszok | ✅ 0.3.0 |
 | M9 | Időgyőzelem, könnyebb terep kicsinyítve | ✅ 0.4.0 |
+| M10 | Megosztható mentések (JSON), mérőszkriptek | ✅ 0.5.0 |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, kampány.

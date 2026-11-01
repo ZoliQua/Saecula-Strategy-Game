@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.4.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.5.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -530,6 +530,7 @@ Saecula-Strategy-Game/
         └── index.ts             ← globális típusok (CivId, UnitType, stb.)
 
 docs/                            ← tervek és specifikációk (plans/specs)
+scripts/perf/                    ← mérőszkriptek (textúra-memória, képkockaidő; Playwright, M10)
 ```
 
 ---
@@ -579,7 +580,7 @@ docs/                            ← tervek és specifikációk (plans/specs)
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.4.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.5.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -992,6 +993,40 @@ A 4.8 harmadik pontja és az M6-ban nyitva hagyott terep-memória. Ág:
   tesztcsomag zöld, kivéve 40 rögzítő (art-hash) tesztet, amely a `main`-en is
   ugyanígy bukik Node 22-n (a CI Node 26-on fut).
 
+### M10 — Mentés megosztása és mérőszkriptek
+Az 1.3 „Mentett játék megosztása (JSON export/import)” pontja, és a mérések
+reprodukálhatósága. Ág: `feat/M10-save-share-perf`. Változat: 0.5.0.
+- **Export:** a betöltési lista (főmenü és szünet) minden használható mentése
+  mellett egy „Exportálás” gomb: a mentés JSON-fájlként letöltődik
+  (`saecula-mentes-<hely>-<dátum>.json`), az aktuális `schemaVersion`-nel
+  (régebbi mentés migrálva). Szerver, link-rövidítő nincs: a fájlt a játékos
+  maga küldi tovább.
+- **Import:** a betöltési lista „Importálás fájlból” gombja egy JSON-fájlt
+  olvas be, ugyanazzal az ellenőrzéssel, mint a tárolt mentést (migráció, zod,
+  konzisztencia), és azonnal betölti a meccset. Nem ír mentési helyre (a
+  játékos utána elmentheti). Legfeljebb `SAVE_SHARE.maxBytes` (16 MB) méretű
+  fájlt fogad el. Hibás, túl nagy, újabb verziójú vagy olvashatatlan fájlnál
+  magyar hibaüzenet, sosem omlik össze.
+- **Mérőszkriptek:** új top-level `scripts/perf/` mappa (Node + Playwright, a
+  fejlesztői szerverrel, a `window.__game` hookon át): `texmem.mjs` (textúra-
+  memória forgatókönyvenként és nagyításonként, a nézet több pontján a
+  legrosszabb érték; a terep külön), `frametime.mjs` (képkocka-CPU átlag / p95 /
+  legrosszabb). `npm run perf:texmem` / `npm run perf:frame`; az eredmény JSON a
+  `scripts/perf/results/` alá (gitignore). A szkriptek nem részei a buildnek és a
+  teszteknek.
+- **Tesztek:** az export–import oda-vissza azonossága, a méretkorlát, a sérült és
+  újabb verziójú fájl, a fájlnév; a letöltés-segéd közös a statisztika
+  exportjával.
+- Nem része: online megosztás, mentés URL-ben, felhőmentés (1.2).
+- Keret (10.): az M9 keretei változatlanok.
+- **Állapot (2026-11-01):** kész — export (soronkénti gomb, a fájl az aktuális
+  `schemaVersion`-nel), import (fájlválasztó, 16 MB-os korlát, magyar hibaüzenetek,
+  azonnali betöltés), közös letöltés-segéd, `scripts/perf/` (`texmem.mjs`,
+  `frametime.mjs`, `npm run perf:texmem` / `perf:frame`). A Playwright nem lett
+  függőség: a szkriptek dinamikusan töltik be, hiányában telepítési útmutatót írnak.
+  Böngésző-smoke: mentés → export (98 KB-os fájl) → hibás fájl importja magyar
+  üzenettel → a jó fájl importja betölti a meccset, konzolhiba nélkül.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
@@ -1098,4 +1133,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.4.0.*
+*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.5.0.*

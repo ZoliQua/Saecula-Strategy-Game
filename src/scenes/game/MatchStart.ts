@@ -5,6 +5,9 @@ import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
 import type { RestoredMatch } from '../../save/deserializer';
 import type { SaveStorage, SlotId } from '../../save/storage';
+import type { SaveData } from '../../save/schema';
+import { importSaveFile, type ImportResult, type ImportSource } from '../../save/share';
+import { SAVE_SHARE } from '../../config/constants';
 import { DEFAULT_CIV } from '../../config/civs';
 import type { LoadArt } from './MatchArt';
 import { restoredBuildingArt } from './restoredArt';
@@ -71,10 +74,41 @@ export async function startFromSlot(
   beforeReplace?: () => void,
 ): Promise<boolean> {
   const result = await storage.read(slot);
-  // The player may have left the match (menu, game over) while the slot was read.
+  return startLoaded(scene, result.ok ? result : { ok: false, message: readErrorText(result.reason) }, onError, beforeReplace);
+}
+
+/**
+ * Replaces the running match (or the menu) with a shared save file (M10
+ * import): checked like a stored save; a file that cannot be used shows
+ * why through `onError` and keeps the current scene. Resolves whether the
+ * load started.
+ */
+export async function startFromFile(
+  scene: Phaser.Scene,
+  file: ImportSource,
+  onError: (message: string) => void = showHudNotice,
+  beforeReplace?: () => void,
+): Promise<boolean> {
+  const result = await importSaveFile(file);
+  return startLoaded(scene, result.ok ? result : { ok: false, message: importErrorText(result.reason) }, onError, beforeReplace);
+}
+
+/** The Hungarian reason a shared save file cannot be used. */
+export function importErrorText(reason: Exclude<ImportResult, { ok: true }>['reason']): string {
+  const t = hu.save.importErrors;
+  return reason === 'tooLarge' ? t.tooLarge(Math.round(SAVE_SHARE.maxBytes / (1024 * 1024))) : t[reason];
+}
+
+function startLoaded(
+  scene: Phaser.Scene,
+  result: { ok: true; save: SaveData } | { ok: false; message: string },
+  onError: (message: string) => void,
+  beforeReplace?: () => void,
+): boolean {
+  // The player may have left the match (menu, game over) while the save was read.
   if (!scene.scene.isActive() && !scene.scene.isPaused()) return false;
   if (!result.ok) {
-    onError(readErrorText(result.reason));
+    onError(result.message);
     return false;
   }
   beforeReplace?.();
