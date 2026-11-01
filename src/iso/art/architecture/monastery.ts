@@ -45,7 +45,8 @@ export function monasteryArt(s: ArchStyle): BuildingArt {
         if (door) archedOpening(ctx, w / bays / 2 - 9, 18, 30, shade(c.trim, 0.95), c.doors.main, light);
       };
       p.leftFace(0.28, 1.92, 1.27, 8, nave(1, 4, true), 64);
-      p.rightFace(0.33, 1.27, 1.92, 8, nave(R, 2, false), 64);
+      // The bell tower stands in front of the nave's east wall: no windows there (no glow behind it).
+      p.rightFace(0.33, 1.27, 1.92, 8, nave(R, 0, false), 64);
       p.material = 'tile';
       styledGable(p, s, 0.28, 0.33, 1.92, 1.27, 72, NAVE_RISE, c.roof, c.ashlar, 'u');
       // Bell tower at the nave's east end.
