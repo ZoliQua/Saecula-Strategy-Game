@@ -147,7 +147,7 @@ export function findPathToAny(
   start: TileCoord,
   isGoal: (tx: number, ty: number) => boolean,
   escape: EscapeRules = STRICT_ESCAPE,
-  /** From blocked ground, prefer the exit toward this tile (as findPath does toward its goal). */
+  /** Off blocked ground or a pocket, prefer the exit toward this tile (as findPath does toward its goal). */
   toward?: TileCoord,
 ): TileCoord[] | null {
   const steps = escapeSteps(map, start, escape, toward);
