@@ -1,17 +1,12 @@
-import { MONK } from '../../config/balance';
+import { MONK, MONK_AI, REPATH_RETRY_MS } from '../../config/balance';
 import { canConvert, convertUnit } from '../../game/convert';
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
-import type { TileCoord } from '../../iso/coordinates';
+import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { faceToward } from './facing';
 import { findEntityById } from './gathering/gatherQueries';
-
-/** Tiles a target may move from where its monk last headed before the monk re-paths. */
-const RETARGET_TILES = 2;
-
-const chebyshev = (a: TileCoord, b: TileCoord): number => Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty));
 
 /**
  * The monk's healing and conversion (CLAUDE.md M11):
@@ -27,6 +22,9 @@ const chebyshev = (a: TileCoord, b: TileCoord): number => Math.max(Math.abs(a.tx
 export class MonkSystem {
   /** Where each approaching monk last headed (render-free working state; rebuilt after a load). */
   private readonly goals = new WeakMap<Entity, TileCoord>();
+  /** A monk whose path ended short of its target (unreachable) re-plans no earlier than this (system clock, ms). */
+  private readonly retryAt = new WeakMap<Entity, number>();
+  private nowMs = 0;
 
   constructor(
     private readonly world: EcsWorld,
@@ -36,6 +34,7 @@ export class MonkSystem {
   ) {}
 
   update(deltaMs: number): void {
+    this.nowMs += deltaMs;
     for (const monk of [...this.world.with('converter', 'position', 'owner')]) {
       const c = monk.converter;
       c.rechargeMs = Math.max(0, c.rechargeMs - deltaMs);
@@ -80,7 +79,11 @@ export class MonkSystem {
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
     const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
-    if (goal && moving && chebyshev(goal, at) < RETARGET_TILES) return;
+    const sameGoal = !!goal && chebyshev(goal, at) < MONK_AI.retargetTiles;
+    if (sameGoal && moving) return;
+    // Stopped short of the same goal: the target cannot be reached from here; retry later, as combat does.
+    if (sameGoal && this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
+    this.retryAt.set(monk, this.nowMs + REPATH_RETRY_MS);
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
     if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
     else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });

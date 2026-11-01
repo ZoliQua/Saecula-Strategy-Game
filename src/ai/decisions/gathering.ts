@@ -93,9 +93,8 @@ export function onEnemyGround(p: TileCoord, known: readonly KnownBuilding[], rad
   });
 }
 
-export function chebyshev(a: TileCoord, b: TileCoord): number {
-  return Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty));
-}
+/** Re-exported for the AI modules that import it from here (the one definition lives in iso/coordinates). */
+export { chebyshev } from '../../iso/coordinates';
 
 /**
  * Shifts gatherer weights toward what a savings goal still lacks: each

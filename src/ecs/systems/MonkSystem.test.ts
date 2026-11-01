@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CivId } from '../../types';
-import { MONK } from '../../config/balance';
+import { MONK, REPATH_RETRY_MS } from '../../config/balance';
+import { TERRAIN } from '../../map/TerrainTypes';
 import { gameEvents } from '../../game/events';
 import { MapData } from '../../map/MapData';
 import { createUnit } from '../archetypes/createUnit';
@@ -122,4 +123,25 @@ describe('MonkSystem', () => {
     expect(archer.attackIntent).toBeUndefined();
     expect(archer.selectable!.selected).toBe(false);
   });
+
+  it('a monk ordered onto an unreachable target retries its path only every REPATH_RETRY_MS, not every frame', () => {
+    const { map, world, step } = setup();
+    // The target stands on an island: water all around it, out of convert range of the shore.
+    for (let ty = 14; ty <= 32; ty++) for (let tx = 14; tx <= 32; tx++) map.setTile(tx, ty, TERRAIN.water);
+    map.setTile(23, 23, TERRAIN.grass);
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 5, ty: 23 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    step(15_000); // walk to the shore and settle
+    let orders = 0;
+    const add = world.addComponent.bind(world);
+    (world as unknown as { addComponent: typeof add }).addComponent = ((e, c, v) => {
+      if (c === 'moveIntent') orders++;
+      return add(e, c, v);
+    }) as typeof add;
+    step(6000);
+    expect(monk.convertIntent).toBeDefined();
+    expect(orders).toBeLessThanOrEqual(Math.ceil(6000 / REPATH_RETRY_MS) + 1);
+  });
 });
+

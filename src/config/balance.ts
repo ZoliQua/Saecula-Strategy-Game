@@ -207,6 +207,16 @@ export const MONK = {
   rechargeMs: 20000,
 } as const;
 
+/** How monks are steered (MonkSystem, the AI's MonkPlay). Tiles, Chebyshev. */
+export const MONK_AI = {
+  /** A target may move this far from where its monk last headed before the monk re-paths. */
+  retargetTiles: 2,
+  /** The AI converts a visible enemy unit within convertRange + this. */
+  convertReach: 3,
+  /** An AI monk further than this from its rally point (the wave, or home) walks back. */
+  followSlack: 4,
+} as const;
+
 export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   town_center: {
     age: 1, hp: 2400, width: 3, height: 3, cost: c(0, 275, 100), buildTime: 150,

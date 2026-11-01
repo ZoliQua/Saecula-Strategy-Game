@@ -1,19 +1,15 @@
-import { MONK } from '../config/balance';
+import { MONK, MONK_AI } from '../config/balance';
 import type { MediumTuning } from '../config/aiMedium';
 import type { Entity } from '../ecs/components';
 import { isBuildingAvailable } from '../game/availability';
 import { canConvert } from '../game/convert';
-import type { TileCoord } from '../iso/coordinates';
+import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { BaseUnitType, BuildingType } from '../types';
 import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
 import { baseAnchor } from './economyBuildings';
 import type { WorldView } from './perception';
 
-/** Tiles past convertRange a monk will walk to convert an enemy it sees. */
-const CONVERT_REACH = 3;
-/** A monk further than this from where it should be (the wave, or home) walks back. */
-const FOLLOW_SLACK = 4;
 
 /** The strategy helpers monk play acts through (BaseStrategy's building and training). */
 export interface MonkActions {
@@ -26,15 +22,13 @@ export interface MonkActions {
   waveMembers(): ReadonlySet<number>;
 }
 
-const chebyshev = (a: TileCoord, b: TileCoord): number => Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty));
-
 /**
  * Monk play of the Medium strategy family (CLAUDE.md M11). Stateless (all
  * from the world), so nothing extra is saved:
  *  - build: from age 2 with `minVillagers` and the age's military buildings standing, one monastery;
  *  - train: up to `count` monks there;
  *  - control: a ready monk converts the nearest visible enemy unit within
- *    convertRange + CONVERT_REACH; otherwise it walks with the attack wave
+ *    convertRange + MONK_AI.convertReach; otherwise it walks with the attack wave
  *    (or stays home), where MonkSystem heals the wounded around it.
  */
 export class MonkPlay {
@@ -71,14 +65,14 @@ export class MonkPlay {
       if (monk.convertIntent) continue;
       if (this.tryConvert(ctx, view, monk)) continue;
       if (!rally || monk.moveIntent || (monk.movable?.path.length ?? 0) > 0) continue;
-      if (chebyshev(monk.position!, rally) > FOLLOW_SLACK) ctx.world.addComponent(monk, 'moveIntent', { target: { tx: rally.tx, ty: rally.ty } });
+      if (chebyshev(monk.position!, rally) > MONK_AI.followSlack) ctx.world.addComponent(monk, 'moveIntent', { target: { tx: rally.tx, ty: rally.ty } });
     }
   }
 
   private tryConvert(ctx: AIContext, view: WorldView, monk: Entity): boolean {
     if (!monk.converter || monk.converter.rechargeMs > 0) return false;
     let best: Entity | null = null;
-    let bestDist = MONK.convertRange + CONVERT_REACH + 1;
+    let bestDist = MONK.convertRange + MONK_AI.convertReach + 1;
     for (const e of view.visibleEnemyUnits) {
       if (!canConvert(e, ctx.player.id)) continue;
       const d = chebyshev(e.position, monk.position!);

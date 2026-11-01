@@ -52,3 +52,8 @@ export function isInsideMap(
 ): boolean {
   return t.tx >= 0 && t.ty >= 0 && t.tx < width && t.ty < height;
 }
+
+/** Chebyshev (king-move) distance between two tiles: how unit ranges are measured. */
+export function chebyshev(a: TileCoord, b: TileCoord): number {
+  return Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty));
+}
