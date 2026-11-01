@@ -7,7 +7,7 @@ import type { AIContext } from './AIPlayer';
 import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
 import { chebyshev, nearest } from './decisions/gathering';
 import { nextExploreTarget } from './decisions/scouting';
-import type { KnownBuilding, WorldView } from './perception';
+import { ownLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, copyTile, type ArmyState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -99,7 +99,7 @@ export class ArmyControl {
    * wave falls back home.
    */
   update(ctx: AIContext, view: WorldView): void {
-    for (const id of [...this.wave]) if (!view.byId.get(id) || view.byId.get(id)!.dying) this.wave.delete(id);
+    for (const id of [...this.wave]) if (!ownLiving(view, id)) this.wave.delete(id);
     if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) this.retreat(ctx, view);
     this.defend(ctx, view);
     if (this.attacking) this.steerWave(ctx, view);

@@ -1,3 +1,4 @@
+import { convertUnit } from '../game/convert';
 import { describe, expect, it } from 'vitest';
 import { AI_COMMON, AI_MASTER } from '../config/aiBalance';
 import { createBuilding, unblockBuilding } from '../ecs/archetypes/building';
@@ -134,5 +135,19 @@ describe('FlankControl', () => {
     ctx.world.removeComponent(u, 'moveIntent');
     flank.update(ctx, perception.update(ctx));
     expect(flank.has(u)).toBe(false);
+  });
+
+  it('a flanker converted away (M11) leaves the flank and keeps its new owner\'s orders', () => {
+    const { ctx, army, perception, wave, flank, enemyTc } = setup();
+    const view = perception.update(ctx);
+    wave.launchWave(ctx, view, army);
+    flank.launch(ctx, view, army.slice(0, 2), view.knownEnemyBuildings.find((b) => b.id === enemyTc.id)!);
+    const turned = army[0]!;
+    convertUnit(ctx.world, turned, 1, () => 'english');
+    ctx.world.addComponent(turned, 'moveIntent', { target: { tx: 3, ty: 44 } });
+    flank.update(ctx, perception.update(ctx));
+    expect(flank.has(turned)).toBe(false);
+    expect(turned.moveIntent?.target).toEqual({ tx: 3, ty: 44 });
+    expect(turned.attackIntent).toBeUndefined();
   });
 });

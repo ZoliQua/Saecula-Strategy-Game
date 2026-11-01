@@ -1,3 +1,4 @@
+import { convertUnit } from '../game/convert';
 import { describe, expect, it } from 'vitest';
 import { TIME_VICTORY } from '../config/balance';
 import { createBuilding, unblockBuilding } from '../ecs/archetypes/building';
@@ -75,5 +76,26 @@ describe('ArmyControl', () => {
     expect(send({ remainingMs: 1000, leaderId: 1 })).toBe(5);
     expect(send(undefined)).toBe(5);
   });
-});
 
+  it('a wave member converted away (M11) leaves the wave and keeps its new owner\'s orders', () => {
+    const map = new MapData(48, 48);
+    const world = createEcsWorld();
+    const fog = new FogOfWarData(48, 48);
+    createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'town_center', origin: { tx: 36, ty: 36 }, playerId: 1, mapData: map });
+    const army = Array.from({ length: 6 }, (_, i) => createUnit(world, { type: 'swordsman', tile: { tx: 10 + i, ty: 10 }, playerId: 2 }));
+    fog.markVisible(37, 37);
+    const ctx: AIContext = { world, mapData: map, player: createPlayer({ id: 2 }), timeMs: 0, fog, enemyPlayerId: 1 };
+    const perception = new Perception();
+    const control = new ArmyControl(new ThoughtLog(), createRng(3));
+    control.launchWave(ctx, perception.update(ctx));
+    const turned = army[0]!;
+    convertUnit(world, turned, 1, () => 'english');
+    world.addComponent(turned, 'moveIntent', { target: { tx: 5, ty: 40 } });
+    control.update(ctx, perception.update(ctx));
+    expect(control.members().has(turned.id!)).toBe(false);
+    expect(control.members().size).toBe(5);
+    expect(turned.moveIntent?.target).toEqual({ tx: 5, ty: 40 });
+    expect(turned.attackIntent).toBeUndefined();
+  });
+});

@@ -3,7 +3,7 @@ import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { AIContext } from './AIPlayer';
 import { pickEngageTarget } from './decisions/combat';
-import type { KnownBuilding, WorldView } from './perception';
+import { ownLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, type FlankState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -78,7 +78,7 @@ export class FlankControl {
   /** Upkeep: drop the fallen, release the flank once its target is gone, else fight or march on. */
   update(ctx: AIContext, view: WorldView): void {
     if (!this.active) return;
-    for (const id of [...this.flank]) if (!view.byId.get(id) || view.byId.get(id)!.dying) this.flank.delete(id);
+    for (const id of [...this.flank]) if (!ownLiving(view, id)) this.flank.delete(id);
     if (!this.active) {
       this.goal = null;
       return;
