@@ -36,6 +36,8 @@ export interface GameEvents {
   };
   /** A villager dropped `amount` resources at a dropoff. */
   resourcesDelivered: { world: EcsWorld; playerId: number; amount: number };
+  /** A monk converted an enemy unit (M11): it now belongs to `toPlayerId`. */
+  unitConverted: { world: EcsWorld; entityId: number; fromPlayerId: number; toPlayerId: number; unitType: UnitType };
   /** A trainer finished a unit. */
   unitTrained: { world: EcsWorld; playerId: number; unitType: UnitType };
   /** A construction site was finished. */
@@ -56,6 +58,7 @@ const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   entityKilled: new Set(),
   resourcesDelivered: new Set(),
   unitTrained: new Set(),
+  unitConverted: new Set(),
   buildingCompleted: new Set(),
   pauseChanged: new Set(),
 };

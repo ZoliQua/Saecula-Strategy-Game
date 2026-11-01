@@ -53,6 +53,7 @@ export function createUnit(
       cooldownRemaining: 0,
     };
   }
+  if (options.type === 'monk') entity.converter = { rechargeMs: 0, healCarry: 0, busy: false };
   entity.fogEmitter = { sightRange: b.los };
   world.add(entity);
   return entity;

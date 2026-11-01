@@ -85,6 +85,12 @@ export class MatchStats {
       gameEvents.on('buildingCompleted', (e) => {
         if (mine(e.world)) this.edit(e.playerId, (s) => s.buildingsBuilt++);
       }),
+      // A conversion counts as a kill for the converter and a lost unit for the victim (M11).
+      gameEvents.on('unitConverted', (e) => {
+        if (!mine(e.world)) return;
+        this.edit(e.fromPlayerId, (s) => s.unitsLost++);
+        this.edit(e.toPlayerId, (s) => (s.killValue += victimValue({ unitType: e.unitType })));
+      }),
       gameEvents.on('entityKilled', (e) => {
         if (!mine(e.world) || e.victimOwnerId === 0) return;
         this.edit(e.victimOwnerId, (s) => (e.buildingType ? s.buildingsLost++ : s.unitsLost++));

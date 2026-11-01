@@ -4,6 +4,7 @@ import { createUnit } from '../ecs/archetypes/createUnit';
 import type { Entity } from '../ecs/components';
 import { createEcsWorld } from '../ecs/world';
 import { gameEvents } from '../game/events';
+import { convertUnit } from '../game/convert';
 import { applyDamage, killEntity } from '../game/kill';
 import { createPlayers } from '../game/PlayerManager';
 import { MapData } from '../map/MapData';
@@ -21,6 +22,16 @@ function setup() {
 }
 
 describe('MatchStats', () => {
+  it('a conversion is a kill for the converter and a lost unit for the victim (M11)', () => {
+    const { world, stats, detach } = setup();
+    // Knight 60 food + 75 gold = 135.
+    const knight = createUnit(world, { type: 'knight', tile: { tx: 1, ty: 1 }, playerId: 2 });
+    convertUnit(world, knight, 1, () => 'german');
+    expect(stats.of(1)).toMatchObject({ killValue: 135, unitsLost: 0 });
+    expect(stats.of(2)).toMatchObject({ killValue: 0, unitsLost: 1 });
+    detach();
+  });
+
   it('kill credit goes to the killer owner; deletes and Gaia deaths give none', () => {
     const { world, map, stats, detach } = setup();
     // Swordsman 60 food + 20 gold = 80; house 30 wood.

@@ -46,6 +46,8 @@ export class RenderSystem {
   private readonly world: EcsWorld;
   private readonly renderable: ReturnType<EcsWorld['with']>;
   private readonly sites = new Map<Entity, Phaser.GameObjects.Image>();
+  /** The owner each unit sprite's team layer is tinted for (a conversion changes it, M11). */
+  private readonly unitOwner = new Map<Renderable, number>();
   /** Unit body + team-colour overlay pairs. */
   private readonly units = new Map<Entity, UnitSprites>();
   /** Detaches shadows / glows / torches registered with the LightManager. */
@@ -85,6 +87,7 @@ export class RenderSystem {
       delete entity.sprite;
       this.units.get(entity)?.team.destroy();
       this.units.delete(entity);
+      this.unitOwner.delete(entity);
       this.sites.get(entity)?.destroy();
       this.sites.delete(entity);
       this.hitUntil.delete(entity);
@@ -213,6 +216,12 @@ export class RenderSystem {
         const { anim, i, heading } = unitAnimState(entity, now, siteOf);
         const { slot, flip } = headingSlot(heading);
         setUnitFrame(unit, frameIndex(unitSheetLayout(unit.type), slot, anim, i), flip);
+        // A conversion changed the owner: the team layer takes the new colour (M11).
+        const owner = entity.owner?.playerId ?? 1;
+        if (this.unitOwner.get(entity) !== owner) {
+          this.unitOwner.set(entity, owner);
+          unit.team.setTint(teamColor(owner));
+        }
         syncTeamSprite(unit);
         this.applyHitFlash(entity, unit, now);
         // Units whose textures were deferred get their cast shadow once they exist.
@@ -238,8 +247,11 @@ export class RenderSystem {
     const playerId = entity.owner?.playerId ?? 1;
     let sprite: Phaser.GameObjects.Sprite;
     if (entity.unit) {
-      const pair = createUnitSprites(this.scene, entity.unit.unitType, this.civOf(playerId), teamColor(playerId));
+      // A converted unit keeps its original civ's look (M11).
+      const civ = entity.originCiv?.civ ?? this.civOf(playerId);
+      const pair = createUnitSprites(this.scene, entity.unit.unitType, civ, teamColor(playerId));
       this.units.set(entity, pair);
+      this.unitOwner.set(entity, playerId);
       sprite = pair.body;
     } else {
       sprite = this.scene.add.sprite(0, 0, this.buildingKey(entity));

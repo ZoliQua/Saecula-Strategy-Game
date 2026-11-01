@@ -37,9 +37,10 @@ import {
  * add a migration) for every gameplay-relevant change once a save has
  * shipped. v2 (M7): the match statistics (`stats`). v3 (M8): the unit-type enum gains the unique units.
  * v4 (M9): the setup's victory enum gains the time-victory modes.
+ * v5 (M11): the monk and the monastery, and the monk components (convertIntent, converter, originCiv).
  */
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -91,6 +92,9 @@ export const EntityComponentsSchema = z
       .optional(),
     armor: z.object({ melee: num, pierce: num }).strict().optional(),
     attackIntent: z.object({ targetId: int, resumeTargetId: int.optional() }).strict().optional(),
+    convertIntent: z.object({ targetId: int, elapsedMs: nonNeg }).strict().optional(),
+    converter: z.object({ rechargeMs: nonNeg, healCarry: nonNeg, busy: z.boolean() }).strict().optional(),
+    originCiv: z.object({ civ: civId }).strict().optional(),
     dying: z.object({ ttlMs: num }).strict().optional(),
     wonder: z.object({ heldMs: nonNeg }).strict().optional(),
     fogEmitter: z.object({ sightRange: num }).strict().optional(),
