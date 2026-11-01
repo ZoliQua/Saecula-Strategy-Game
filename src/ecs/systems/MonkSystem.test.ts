@@ -145,41 +145,31 @@ describe('MonkSystem', () => {
     expect(takeConvertGivenUp(monk)).toBe(archer.id);
   });
 
-  it('a monk on blocked ground steps off it before the target is judged (never left stuck, M7)', () => {
-    const { map, world, step } = setup();
+  it('giving up on blocked ground still steps the monk off it, and marks the target (never left stuck, M7)', () => {
+    const { map, world, monks } = setup();
     island(map);
     const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
     map.setTile(4, 23, TERRAIN.water);
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    for (let t = 0; t < 30_000 && monk.convertIntent; t += 100) step(100);
+    monks.update(16);
     expect(monk.convertIntent).toBeUndefined();
-    expect(map.isPassable(monk.position!.tx, monk.position!.ty)).toBe(true);
+    expect(takeConvertGivenUp(monk)).toBe(archer.id);
+    const end = monk.movable!.path.at(-1);
+    expect(end && map.isPassable(end.tx, end.ty)).toBe(true);
   });
 
-  it('judges an unreachable target as soon as it has stepped off blocked ground', () => {
-    const { map, world, step } = setup();
-    island(map);
-    // Blocked ground at the far west: the shore nearest the island is far east of it.
-    const monk = createUnit(world, { type: 'monk', tile: { tx: 0, ty: 23 }, playerId: 1 });
-    const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
-    map.setTile(0, 23, TERRAIN.water);
-    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    step(3000);
-    expect(monk.convertIntent).toBeUndefined();
-    expect(monk.position!.tx).toBeLessThanOrEqual(2);
-  });
-
-  it('a monk walled in on blocked ground with no way off drops the order (no search every tick)', () => {
+  it('a monk walled in on blocked ground with no way off gives up and marks the target', () => {
     const { map, world, step } = setup();
     for (let ty = 0; ty < 40; ty++) for (let tx = 0; tx < 40; tx++) map.setTile(tx, ty, TERRAIN.water);
     map.setTile(30, 30, TERRAIN.grass);
     const monk = createUnit(world, { type: 'monk', tile: { tx: 5, ty: 5 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    step(1000);
+    step(100);
     expect(monk.convertIntent).toBeUndefined();
     expect(monk.moveIntent).toBeUndefined();
+    expect(takeConvertGivenUp(monk)).toBe(archer.id);
   });
 
   it('steps off blocked ground on the side of its target (the other side is cut off)', () => {

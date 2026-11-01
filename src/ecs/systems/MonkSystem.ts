@@ -3,6 +3,7 @@ import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert'
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import { escapeSteps } from '../../map/escape';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToAny } from '../../map/pathfinding';
 import { escapeRulesAt } from '../escapeRules';
@@ -30,8 +31,6 @@ export class MonkSystem {
   private readonly goals = new WeakMap<Entity, TileCoord>();
   /** The conversion order the approach state above belongs to (a new order starts afresh). */
   private readonly orderOf = new WeakMap<Entity, object>();
-  /** Monks sent off blocked ground by a move order (re-planned once they stand on walkable ground). */
-  private readonly offBlocked = new WeakSet<Entity>();
 
   constructor(
     private readonly world: EcsWorld,
@@ -89,42 +88,31 @@ export class MonkSystem {
 
   /**
    * Heads for the target, re-planning only when it has moved away from the
-   * last goal or the walk ended out of range. From walkable ground one
-   * budgeted search (as combat's: path written straight to the monk) finds
-   * the nearest tile, in steps, it can reach within convertRange; with none,
-   * the target is out of reach (an island, a walled-off pen) and the order
-   * is given up. On blocked ground (a foundation laid over it) it gets a
-   * move order toward the target instead: PathfindingSystem steps it off on
-   * that side, and it is re-planned as soon as it stands on walkable ground
-   * (with no way off, the order is dropped).
+   * last goal or the walk ended out of range. One budgeted search (as
+   * combat's: the monk's escape rules, stepping off blocked ground toward
+   * the target; the path written straight to the monk) finds the nearest
+   * tile, in steps, it can reach within convertRange. With none, the target
+   * is out of reach (an island, a walled-off pen): the order is given up,
+   * and a monk on blocked ground still steps off it (M7: never left stuck).
    */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
     const walking = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
-    const from = monk.position!;
-    const onBlocked = !this.map.isPassable(from.tx, from.ty);
-    const steppedOff = !onBlocked && this.offBlocked.has(monk);
-    if (goal && walking && !steppedOff && chebyshev(goal, at) < MONK.retargetTiles) return;
-    if (!monk.movable || (onBlocked && this.offBlocked.has(monk) && !walking)) {
-      // It cannot walk (or could not get off blocked ground): the order ends; the target is not judged.
+    if (goal && walking && chebyshev(goal, at) < MONK.retargetTiles) return;
+    if (!monk.movable) {
+      // It cannot walk: the order ends; the target is not judged.
       this.drop(monk);
       return;
     }
-    if (onBlocked) {
-      this.offBlocked.add(monk);
-      this.goals.set(monk, { tx: at.tx, ty: at.ty });
-      if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
-      else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });
-      return;
-    }
-    this.offBlocked.delete(monk);
     if (!this.paths.take()) return;
+    const from = monk.position!;
     const escape = escapeRulesAt(this.world, from, this.map, monk.owner?.playerId ?? 0);
     // Inline Chebyshev: called for every tile the search visits, with no allocation.
     const inRange = (tx: number, ty: number) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= MONK.convertRange;
     const path = findPathToAny(this.map, from, inRange, escape, at);
     if (!path) {
       this.giveUp(monk);
+      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape, at)?.slice(1) ?? [];
       return;
     }
     if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
@@ -153,7 +141,6 @@ export class MonkSystem {
   private forgetApproach(monk: Entity): void {
     this.goals.delete(monk);
     this.orderOf.delete(monk);
-    this.offBlocked.delete(monk);
   }
 
   private heal(monk: Entity & Required<Pick<Entity, 'converter' | 'position' | 'owner'>>, deltaMs: number): void {
