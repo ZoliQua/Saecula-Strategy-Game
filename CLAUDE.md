@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.5.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.6.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -213,6 +213,7 @@ Középkor:
 - `knight` — Lovag. Erős, gyors közelharci.
 - `pikeman` — Lándzsás. Lovasság-ellenes.
 - `crossbowman` — Számszeríjász. Erősebb távolsági.
+- `monk` — Szerzetes. Nem harcol: gyógyít és ellenséges egységet térít (M11).
 
 Felvilágosodás:
 - `musketeer` — Muskétás. Távolsági, új erősségi osztály.
@@ -238,6 +239,7 @@ népenként egy, amely a nép egyik alap egységét váltja le (lásd M8).
 - `blacksmith` — Kovácsműhely. Egység-fejlesztések. (2×2, 2. kortól)
 - `tower` — Őrtorony. Defenzív. (1×1)
 - `wall` — Fal. Defenzív, 1-tile szegmensek.
+- `monastery` — Kolostor. `monk` képzése. (3×3, 2. kortól, M11)
 - `foundry` — Ágyúöntöde. `cannon` képzése. (3×3, 3. kortól)
 - `wonder` — Csoda. Győzelmi feltétel (3. kortól, csak 1 építhető). (4×4)
 
@@ -580,7 +582,7 @@ scripts/perf/                    ← mérőszkriptek (textúra-memória, képkoc
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.5.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.6.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1072,6 +1074,17 @@ Az 1.3 „Vallási egységek / konverzió” pontja. Ág: `feat/M11-religious-un
   templom, vallási győzelem, népenkénti szerzetes-kinézet.
 - Keret (10.): az M9 keretei; a népenkénti 11. egységlap a textúra-memóriát a
   `scripts/perf/texmem.mjs` mérése szerint legfeljebb néhány MB-tal növeli.
+- **Állapot (2026-11-01):** kész — szerzetes és kolostor mind a 8 népnek (közös,
+  palettavezérelt kolostor-festő, csuklyás szerzetes pásztorbottal), gyógyítás,
+  térítés (parancs, kurzor, értesítés, harangszó, pontszám), AI `MonkPlay`
+  (Közepestől; a kolostor a kor katonai épületei után, a szerzetes csak az
+  ágyú-takarékosság fölötti aranyból), `schemaVersion` 5 migrációval. Mérve
+  (`scripts/perf/texmem.mjs`, distinct6, 1280×720, az M10 ágához képest): a nem
+  terep-textúrák +1,0 MB (117,6 → 118,6 MB), csúcs 143,6 MB (M10: 142,0 MB; a terep
+  ugyanazzal a szkripttel ±3 MB-ot ingadozik). A vegyes népes három-kori
+  szimuláció emberi helye a Közepes 2-es magra került (a söprés a teszt
+  megjegyzésében). Böngésző-smoke: a betöltött mentésben a szerzetes gyógyít
+  (11 → 31 HP) és áttérít egy francia lovagot, konzolhiba nélkül.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1179,4 +1192,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.5.0.*
+*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.6.0.*

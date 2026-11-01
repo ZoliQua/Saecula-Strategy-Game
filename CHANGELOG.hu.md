@@ -12,6 +12,36 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.6.0] — 2026-11-01
+
+Szerzetesek és kolostorok (M11 mérföldkő).
+
+### Új
+
+- **Szerzetes** minden népnek, a középkortól. Az új **Kolostorban** (3×3)
+  képezhető aranyért. A szerzetes nem harcol:
+  - Amíg áll, a közelében a legsérültebb saját egységet gyógyítja.
+  - Ha vele egy ellenséges egységre jobb klikkelsz, **térítés** indul. A
+    szerzetes odamegy, hat másodpercig imádkozik, és az egység átáll
+    hozzád. A saját népe szerinti kinézete megmarad, a korábbi parancsai
+    törlődnek. Utána a szerzetesnek 20 másodperc kell, mielőtt újra
+    téríthetne.
+  - Szerzetest és épületet nem lehet téríteni.
+  - A térítés pontszámban úgy számít, mint egy elpusztított egység.
+- Minden nép kolostora a saját építészetével készül: palettával, tetővel,
+  a hagymakupolás stílusoknál hagymakupolával. Van templomhajója,
+  harangtornya, kerengője és szálláshelye.
+- Térítés-kurzor, halk harangszó, és értesítés, ha egy egységedet
+  áttérítik, vagy egy ellenséges egység átáll hozzád.
+- A Közepes, Nehéz és Mesteri AI a középkorban kolostort épít, és két
+  szerzetest tart. A szerzetesek a sereggel mennek, gyógyítják, és a
+  közelükbe érő ellenséges egységeket térítik.
+
+### Változott
+
+- A mentés `schemaVersion` értéke 5 lett. A régebbi mentések automatikus
+  migrációval töltődnek be.
+
 ## [0.5.0] — 2026-11-01
 
 Megosztható mentések és mérőszkriptek (M10 mérföldkő).
@@ -175,7 +205,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
