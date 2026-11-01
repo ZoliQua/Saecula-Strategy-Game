@@ -90,7 +90,7 @@ export class ArmyControl {
     for (const u of units) if (u.id !== undefined && !this.isReserved(u)) this.wave.add(u.id);
     this.waveTarget = pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     this.log.add(ctx.timeMs, 'attack', String(this.wave.size));
-    this.steerWave(ctx, view);
+    this.steerWave(ctx, view, this.prune(view));
     return this.wave.size;
   }
 
@@ -100,10 +100,10 @@ export class ArmyControl {
    * wave falls back home.
    */
   update(ctx: AIContext, view: WorldView): void {
-    this.prune(view);
+    const members = this.prune(view);
     if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) this.retreat(ctx, view);
     this.defend(ctx, view);
-    if (this.attacking) this.steerWave(ctx, view);
+    if (this.attacking) this.steerWave(ctx, view, members);
   }
 
   /** True when hostile units are near the base. */
@@ -126,8 +126,8 @@ export class ArmyControl {
     }
   }
 
-  private steerWave(ctx: AIContext, view: WorldView): void {
-    const members = [...this.wave].map((id) => ownLiving(view, id)).filter((u): u is Entity => !!u);
+  /** `members`: the wave's living units, just pruned. */
+  private steerWave(ctx: AIContext, view: WorldView, members: readonly Entity[]): void {
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
     this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
     const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemy(e, ctx));
@@ -189,9 +189,9 @@ export class ArmyControl {
     for (const u of idle) ctx.world.addComponent(u, 'moveIntent', { target: this.exploreGoal });
   }
 
-  /** Drops members that are no longer the AI's own living units (dead, or converted away, M11). */
-  private prune(view: WorldView): void {
-    pruneOwnLiving(this.wave, view);
+  /** Drops members that are no longer the AI's own living units (dead, or converted away, M11); returns the rest. */
+  private prune(view: WorldView): Entity[] {
+    return pruneOwnLiving(this.wave, view);
   }
 
   /** Calls the wave home (it is spent or its job is done). */

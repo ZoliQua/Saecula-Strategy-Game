@@ -3,7 +3,7 @@ import { MONK } from '../config/balance';
 import type { MediumTuning } from '../config/aiMedium';
 import type { Entity } from '../ecs/components';
 import { isBuildingAvailable } from '../game/availability';
-import { canConvert } from '../game/convert';
+import { canConvert, takeConvertGivenUp } from '../game/convert';
 import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { BaseUnitType, BuildingType } from '../types';
 import type { AIContext } from './AIPlayer';
@@ -34,10 +34,8 @@ export interface MonkActions {
  *    (or stays home), where MonkSystem heals the wounded around it.
  */
 export class MonkPlay {
-  /** Each monk's conversion order as last seen, with the target's owner then (to notice one given up). */
-  private readonly lastOrder = new Map<number, { targetId: number; ownerId: number | undefined }>();
-  /** Targets each monk gave up on (unreachable), until a game time. Keyed `monkId:targetId`. */
-  private readonly avoid = new Map<string, number>();
+  /** Per monk id: the targets it gave up on (unreachable), each avoided until a game time. */
+  private readonly avoid = new Map<number, Map<number, number>>();
 
   constructor(
     private readonly tune: MediumTuning['monks'],
@@ -64,27 +62,26 @@ export class MonkPlay {
   }
 
   control(ctx: AIContext, view: WorldView): void {
+    this.forgetStale(ctx, view);
     const monks = MonkPlay.monksOf(ctx);
     if (monks.length === 0) return;
     const wave = [...this.act.waveMembers()].map((id) => ownLiving(view, id)).filter((u): u is Entity => !!u?.position);
     const rally = groupCentre(wave) ?? baseAnchor(view);
-    this.forgetStale(ctx, view);
     for (const monk of monks) {
-      this.noteGivenUp(ctx, view, monk);
+      this.noteGivenUp(ctx, monk);
       this.steer(ctx, view, monk, rally);
-      // The order as it leaves this tick: next tick tells whether MonkSystem gave it up.
-      if (monk.id === undefined) continue;
-      const order = monk.convertIntent;
-      if (order) this.lastOrder.set(monk.id, { targetId: order.targetId, ownerId: view.byId.get(order.targetId)?.owner?.playerId });
-      else this.lastOrder.delete(monk.id);
     }
   }
 
-  /** Drops the memory of monks no longer the AI's own living units, and avoidances that ran out. */
+  /** Drops the avoidances of monks no longer the AI's own living units, and those that ran out. */
   private forgetStale(ctx: AIContext, view: WorldView): void {
-    for (const id of [...this.lastOrder.keys()]) if (!ownLiving(view, id)) this.lastOrder.delete(id);
-    for (const [key, until] of [...this.avoid]) {
-      if (ctx.timeMs >= until || !ownLiving(view, Number(key.split(':')[0]))) this.avoid.delete(key);
+    for (const [monkId, targets] of [...this.avoid]) {
+      if (!ownLiving(view, monkId)) {
+        this.avoid.delete(monkId);
+        continue;
+      }
+      for (const [targetId, until] of [...targets]) if (ctx.timeMs >= until) targets.delete(targetId);
+      if (targets.size === 0) this.avoid.delete(monkId);
     }
   }
 
@@ -95,27 +92,17 @@ export class MonkPlay {
     if (chebyshev(monk.position!, rally) > AI_COMMON.monkFollowSlack) ctx.world.addComponent(monk, 'moveIntent', { target: { tx: rally.tx, ty: rally.ty } });
   }
 
-  /**
-   * A conversion order that ended while its target is still in sight, a
-   * convertible unit of the same owner as before, and the monk is not
-   * recharging, was given up (MonkSystem: out of reach): that target is
-   * avoided for AI_COMMON.monkAvoidMs. (A target converted by someone else
-   * changed owner; one out of sight is not judged.)
-   */
-  private noteGivenUp(ctx: AIContext, view: WorldView, monk: Entity): void {
-    const id = monk.id;
-    if (id === undefined) return;
-    const before = this.lastOrder.get(id);
-    if (before === undefined || monk.convertIntent || (monk.converter?.rechargeMs ?? 0) > 0) return;
-    const target = view.visibleEnemyUnits.find((e) => e.id === before.targetId);
-    if (target?.owner?.playerId === before.ownerId && canConvert(target, ctx.player.id)) {
-      this.avoid.set(`${id}:${before.targetId}`, ctx.timeMs + AI_COMMON.monkAvoidMs);
-    }
+  /** A target MonkSystem gave up on (out of reach) is avoided by that monk for AI_COMMON.monkAvoidMs. */
+  private noteGivenUp(ctx: AIContext, monk: Entity): void {
+    const targetId = takeConvertGivenUp(monk);
+    if (targetId === undefined || monk.id === undefined) return;
+    let targets = this.avoid.get(monk.id);
+    if (!targets) this.avoid.set(monk.id, (targets = new Map()));
+    targets.set(targetId, ctx.timeMs + AI_COMMON.monkAvoidMs);
   }
 
   private avoided(ctx: AIContext, monk: Entity, target: Entity): boolean {
-    const key = `${monk.id}:${target.id}`;
-    const until = this.avoid.get(key);
+    const until = monk.id === undefined || target.id === undefined ? undefined : this.avoid.get(monk.id)?.get(target.id);
     return until !== undefined && ctx.timeMs < until;
   }
 

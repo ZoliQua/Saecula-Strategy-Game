@@ -79,6 +79,7 @@ export class FlankControl {
   update(ctx: AIContext, view: WorldView): void {
     if (!this.active) return;
     pruneOwnLiving(this.flank, view);
+    for (const id of [...this.reorders.keys()]) if (!this.flank.has(id)) this.reorders.delete(id);
     if (!this.active) {
       this.goal = null;
       return;

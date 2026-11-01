@@ -3,6 +3,7 @@ import type { CivId } from '../../types';
 import { MONK, REPATH_RETRY_MS } from '../../config/balance';
 import { clearUnitOrders } from '../orders';
 import { TERRAIN } from '../../map/TerrainTypes';
+import { takeConvertGivenUp } from '../../game/convert';
 import { gameEvents } from '../../game/events';
 import { MapData } from '../../map/MapData';
 import { createUnit } from '../archetypes/createUnit';
@@ -172,7 +173,9 @@ describe('MonkSystem', () => {
       step(1000);
     }
     expect(monk.convertIntent).toBeUndefined();
-    // Giving up stops the monk: no leftover walk toward the target.
+    // Giving up is told (the AI avoids that target) and stops the monk: no leftover walk toward the target.
+    expect(takeConvertGivenUp(monk)).toBe(archer.id);
+    expect(takeConvertGivenUp(monk)).toBeUndefined();
     expect(monk.moveIntent).toBeUndefined();
     expect(monk.movable?.path).toEqual([]);
   });

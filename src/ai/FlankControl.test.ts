@@ -150,4 +150,16 @@ describe('FlankControl', () => {
     expect(turned.moveIntent?.target).toEqual({ tx: 3, ty: 44 });
     expect(turned.attackIntent).toBeUndefined();
   });
+
+  it('forgets the reorder count of a member that left the flank (it is not saved)', () => {
+    const { ctx, army, perception, wave, flank, enemyTc } = setup();
+    const view = perception.update(ctx);
+    wave.launchWave(ctx, view, army);
+    flank.launch(ctx, view, army.slice(0, 2), view.knownEnemyBuildings.find((b) => b.id === enemyTc.id)!);
+    const turned = army[0]!;
+    flank.restore({ ...flank.snapshot(), reorders: [[turned.id!, 2]] });
+    convertUnit(ctx.world, turned, 1, () => 'english');
+    flank.update(ctx, perception.update(ctx));
+    expect(flank.snapshot().reorders.map(([id]) => id)).not.toContain(turned.id);
+  });
 });

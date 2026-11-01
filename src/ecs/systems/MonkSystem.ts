@@ -1,5 +1,5 @@
 import { MONK, REPATH_RETRY_MS } from '../../config/balance';
-import { canConvert, convertUnit } from '../../game/convert';
+import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert';
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { CivId } from '../../types';
@@ -26,6 +26,8 @@ export class MonkSystem {
   private readonly retryAt = new WeakMap<Entity, number>();
   /** Whether the monk's last planned path ends within convertRange of its goal (unset until the path appears). */
   private readonly planOk = new WeakMap<Entity, boolean>();
+  /** The path the monk had when it last re-planned: the same array afterwards means no new path was found. */
+  private readonly planFrom = new WeakMap<Entity, readonly TileCoord[]>();
   /** Re-plans that ended short of the target, per monk. */
   private readonly failures = new WeakMap<Entity, number>();
   /** The conversion order the approach state above belongs to (a new order starts afresh). */
@@ -109,6 +111,7 @@ export class MonkSystem {
       }
     }
     this.planOk.delete(monk);
+    if (monk.movable) this.planFrom.set(monk, monk.movable.path);
     this.retryAt.set(monk, this.nowMs + REPATH_RETRY_MS);
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
     if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
@@ -118,12 +121,15 @@ export class MonkSystem {
   /** Once the planned path appears (the move order is consumed), notes whether it ends near the goal. */
   private judgePlan(monk: Entity, goal: TileCoord): void {
     if (monk.moveIntent || this.planOk.has(monk) || !monk.position) return;
-    const end = monk.movable?.path.at(-1) ?? monk.position;
+    // Pathfinding sets a fresh path array; an unchanged one is an old plan (none was found), so judge from here.
+    const path = monk.movable?.path;
+    const end = (path && path !== this.planFrom.get(monk) ? path.at(-1) : undefined) ?? monk.position;
     this.planOk.set(monk, chebyshev(end, goal) <= MONK.convertRange);
   }
 
-  /** The target cannot be reached: the order ends and the monk stops where it is. */
+  /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is. */
   private giveUp(monk: Entity): void {
+    if (monk.convertIntent) markConvertGivenUp(monk, monk.convertIntent.targetId);
     this.world.removeComponent(monk, 'convertIntent');
     if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
     if (monk.movable) {
@@ -138,6 +144,7 @@ export class MonkSystem {
     this.retryAt.delete(monk);
     this.failures.delete(monk);
     this.planOk.delete(monk);
+    this.planFrom.delete(monk);
     this.orderOf.delete(monk);
   }
 

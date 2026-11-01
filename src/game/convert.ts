@@ -9,6 +9,25 @@ export function readyToConvert(monk: Entity): boolean {
   return !!monk.converter && monk.converter.rechargeMs <= 0;
 }
 
+/**
+ * The target each monk last gave up converting (MonkSystem: out of reach).
+ * Transient, not saved (keyed by the entity, so it goes with it): the AI
+ * takes it to avoid that target for a while.
+ */
+const givenUp = new WeakMap<Entity, number>();
+
+/** MonkSystem gave up converting `targetId` with `monk`. */
+export function markConvertGivenUp(monk: Entity, targetId: number): void {
+  givenUp.set(monk, targetId);
+}
+
+/** The target `monk` last gave up on, once (the mark is taken), or undefined. */
+export function takeConvertGivenUp(monk: Entity): number | undefined {
+  const id = givenUp.get(monk);
+  givenUp.delete(monk);
+  return id;
+}
+
 /** Whether a monk of `playerId` may convert `target` (M11): a living enemy unit that is not a monk. */
 export function canConvert(target: Entity | undefined, playerId: number): target is Entity & Required<Pick<Entity, 'unit' | 'owner' | 'position'>> {
   return (
