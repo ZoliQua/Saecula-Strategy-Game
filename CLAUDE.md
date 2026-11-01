@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.3.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.4.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -579,7 +579,7 @@ docs/                            ← tervek és specifikációk (plans/specs)
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.3.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.4.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -981,6 +981,16 @@ A 4.8 harmadik pontja és az M6-ban nyitva hagyott terep-memória. Ág:
 - Keret (10.): az M8 keretei; a 0,65–1,0 nagyítási sáv terep-többlete
   (M6: ~13 MB) legalább a felére csökken, mérve ugyanazzal a szkripttel a `main`
   és az ág között.
+- **Állapot (2026-11-01):** kész — időgyőzelem (beállítás, HUD-óra, játék vége,
+  játéknapló, vezető AI visszafogása), `schemaVersion` 4 migrációval, háromnegyedes
+  terep-szint. Mérve (új szkript, Playwright + swiftshader, 128×128 Szigetek,
+  6 játékos, a nézet négy pontján a legrosszabb érték; a textúra-kezelő összege,
+  ezért a régi M5–M8-as számokkal nem, csak egymással összevethető): a terep a
+  0,65–0,9-es sávban 1280×720-on 49,2 → 33,0 MB (a sáv többlete a 1,2-es és 0,5-ös
+  nagyításhoz képest ~22 → ~9 MB), 1728×963-on 75,0 → 44,6 MB (~44 → ~14 MB);
+  1,0-s nagyításon (a sáv fölött) változatlan. JS-bundle 0,69 MB gzip. A teljes
+  tesztcsomag zöld, kivéve 40 rögzítő (art-hash) tesztet, amely a `main`-en is
+  ugyanígy bukik Node 22-n (a CI Node 26-on fut).
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1088,4 +1098,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-10-30. Zoli projekt — Saecula, v0.3.0.*
+*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.4.0.*

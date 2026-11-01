@@ -51,7 +51,8 @@ in English and Hungarian.
   personalities (rusher, economist, defender), with no cheating.
 - 🗺️ **Five map types** — Meadow, Wilderness, Islands, Fortress and Random, in
   three sizes (64², 96², 128²) for 2–6 players.
-- 🏆 **Two victory conditions** — Conquest, or holding a Wonder for ten minutes.
+- 🏆 **Three victory conditions** — Conquest, holding a Wonder for ten minutes,
+  or the best score when the 60-minute time limit runs out.
 - 🌗 **Living world** — dynamic 2D lighting with normal maps, a day–night cycle,
   cast shadows, fog of war, construction and collapse animations.
 - 🎵 **Procedural audio** — positional sound effects and generative music per
@@ -130,7 +131,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.3.0**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.4.0**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
@@ -140,6 +141,7 @@ each version contains.
 | M6 | Save/load, audio, Wonder victory, Master AI | ✅ 0.2.0 |
 | M7 | Playtest fixes, controls, scores, statistics | ✅ 0.2.0 |
 | M8 | Unique units and nation bonuses | ✅ 0.3.0 |
+| M9 | Time victory, lighter terrain when zoomed out | ✅ 0.4.0 |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, campaigns.

@@ -12,6 +12,34 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.4.0] — 2026-11-01
+
+Time victory and lighter terrain textures when zoomed out (milestone M9).
+
+### Added
+
+- **Time victory**: after 60 minutes of game time, the standing player with
+  the highest score wins. Ties go to the player who destroyed more enemy
+  value, then to the lower player number. Conquest and the Wonder can still
+  win before the time limit.
+- The victory setting has four options: Conquest, Conquest or Wonder (the
+  default, as before), Conquest or time, and All.
+- In a timed match, the HUD shows the time left and the current leader. In
+  the last five minutes the clock is highlighted and a notice appears. The
+  game-over screen and the match log show the new cause, “Time”.
+- In the last five minutes, an AI that leads on score launches no new
+  attack wave.
+
+### Changed
+
+- When zoomed out between 0.65 and 0.97, the terrain near the view uses a
+  three-quarter resolution texture instead of the full one. It looks as
+  sharp on screen as half resolution already does at 0.65. Measured on a
+  128×128 Islands map with six players, the terrain uses 49 → 33 MB at
+  1280×720 and 75 → 45 MB at 1728×963 in that zoom range.
+- Save `schemaVersion` is now 4. Older saves load through an automatic
+  migration and keep their victory setting.
+
 ## [0.3.0] — 2026-10-30
 
 Every nation now fields a unique unit and carries a permanent bonus
@@ -131,7 +159,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/releases/tag/v0.1.0

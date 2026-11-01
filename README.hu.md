@@ -50,7 +50,8 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
   személyiség (rohamozó, gazdálkodó, védekező), csalás nélkül.
 - 🗺️ **Öt térképtípus** — Mezőség, Vadon, Szigetek, Erődítmény és Véletlen,
   három méretben (64², 96², 128²), 2–6 játékosra.
-- 🏆 **Két győzelmi feltétel** — hódítás, vagy egy Csoda megtartása tíz percig.
+- 🏆 **Három győzelmi feltétel** — hódítás, egy Csoda megtartása tíz percig,
+  vagy a legtöbb pont, amikor lejár a 60 perces időkorlát.
 - 🌗 **Élő világ** — dinamikus 2D fények normal map-ekkel, napszakváltás,
   vetett árnyékok, háborús köd, építési és összeomlási animációk.
 - 🎵 **Procedurális hang** — térbeli hangeffektek és koronkénti generatív
@@ -129,7 +130,7 @@ megjelenítik. A teljes architektúra, a scope és a konvenciók a
 
 ## Állapot és ütemterv
 
-A Saecula jelenlegi verziója **0.3.0**. Az egyes verziók tartalmát a
+A Saecula jelenlegi verziója **0.4.0**. Az egyes verziók tartalmát a
 [változásnapló](CHANGELOG.hu.md) sorolja fel.
 
 | Mérföldkő | Tartalom | Állapot |
@@ -139,6 +140,7 @@ A Saecula jelenlegi verziója **0.3.0**. Az egyes verziók tartalmát a
 | M6 | Mentés, hang, Csoda-győzelem, Mesteri AI | ✅ 0.2.0 |
 | M7 | Playtest-javítások, irányítás, pontszám, statisztika | ✅ 0.2.0 |
 | M8 | Egyedi egységek és népbónuszok | ✅ 0.3.0 |
+| M9 | Időgyőzelem, könnyebb terep kicsinyítve | ✅ 0.4.0 |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, kampány.
