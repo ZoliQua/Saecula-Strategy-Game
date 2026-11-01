@@ -12,6 +12,31 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.8.1] — 2026-11-01
+
+Fixes from the code review of 0.4.0–0.8.0.
+
+### Fixed
+
+- A unit converted by your monk no longer stays under the AI's control;
+  the AI used to keep ordering it and overrode your commands.
+- A monk sent toward a target it cannot reach (for example across water)
+  now gives up at once and stays put, instead of re-planning its route
+  every frame, which wasted the shared path-finding budget. An AI monk
+  leaves such a target alone for a minute.
+- An AI attack wave, flank or raid now drops units converted away from it.
+- Right-clicking an enemy with a recharging monk now walks the monk there,
+  as the cursor shows, instead of losing the order.
+- The Enlightenment-age mission loads the art of the age it starts in,
+  instead of age-1 art that is never shown and the real art on demand in
+  the first seconds.
+- Winning an imported save of a still-locked mission no longer completes
+  it out of order.
+- A mission's map that cannot be generated no longer turns the skirmish
+  setup card into a hidden mission.
+- The campaign objectives panel no longer redraws the whole HUD every
+  second.
+
 ## [0.8.0] — 2026-11-01
 
 A three-mission campaign (milestone M13).
@@ -258,7 +283,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0

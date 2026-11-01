@@ -12,6 +12,34 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.8.1] — 2026-11-01
+
+Javítások a 0.4.0–0.8.0 code review-ja alapján.
+
+### Javítva
+
+- A szerzetesed által áttérített egység már nem marad az AI irányítása
+  alatt; az AI korábban tovább adott neki parancsot, és felülírta a
+  tieidet.
+- Az elérhetetlen célra (például víz túlpartjára) küldött szerzetes most
+  azonnal feladja a térítést és helyben marad. Korábban minden
+  képkockában újratervezte az útvonalát, amivel feleslegesen fogyasztotta
+  a közös útkeresési keretet. Az AI szerzetese egy percig nem próbálkozik
+  újra ugyanazzal a céllal.
+- Az AI támadó hulláma, oldaltámadása és portyája elengedi a tőle
+  áttérített egységeket.
+- Ha töltődő szerzetessel egy ellenségre jobb klikkelsz, a szerzetes oda
+  megy, ahogy a kurzor jelzi, és a parancs nem vész el.
+- A felvilágosodásból induló küldetés a kezdőkora grafikáját tölti be. Az
+  1. kori grafikát, amelyet semmi sem mutat, nem festi meg, és a valódi
+  grafika sem az első másodpercekben készül.
+- Egy még zárolt küldetés importált mentésének megnyerése már nem teszi
+  teljesítetté a küldetést soron kívül.
+- Ha egy küldetés térképe nem generálható, a skirmish beállítás-képernyő
+  már nem válik rejtett küldetéssé.
+- A kampány célpanelje már nem rajzolja újra másodpercenként az egész
+  HUD-ot.
+
 ## [0.8.0] — 2026-11-01
 
 Háromküldetéses kampány (M13 mérföldkő).
@@ -262,7 +290,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0

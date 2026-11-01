@@ -131,7 +131,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.8.0**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.8.1**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
