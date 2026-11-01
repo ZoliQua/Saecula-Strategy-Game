@@ -357,7 +357,14 @@ export class MediumStrategy extends BaseStrategy {
     const ready = (id: TechId) =>
       this.researchable(ctx, view, id) && canAfford(ctx.player.resources, TECH_SPECS[id].cost, reserve);
     const tech = pickResearch(this.tune.techPriority, ready);
-    if (tech) this.research(ctx, view, tech, reserve);
+    if (tech) {
+      this.research(ctx, view, tech, reserve);
+      return;
+    }
+    const savings = this.armySavings(ctx, view);
+    const extra = pickResearch(this.tune.extraTechPriority, (id) =>
+      this.researchable(ctx, view, id) && canAfford(ctx.player.resources, TECH_SPECS[id].cost, savings));
+    if (extra) this.research(ctx, view, extra, savings);
   }
 
   // ------------------------------------------------------------ overlay

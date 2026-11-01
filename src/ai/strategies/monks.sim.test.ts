@@ -39,6 +39,8 @@ describe('Medium AI monks (M11)', () => {
       // A human knight walks up to the monks: one of them converts it.
       const monk = monks()[0]!;
       const knight = createUnit(match.world, { type: 'knight', tile: { tx: monk.position!.tx + 5, ty: monk.position!.ty }, playerId: 1 });
+      // The AI's own army defends the base too: the knight must outlive the channel for the conversion to be what is tested.
+      knight.health = { current: 50_000, max: 50_000 };
       match.run(30_000, 100, () => knight.owner!.playerId === 2);
       expect(knight.owner!.playerId).toBe(2);
       expect(match.stats.of(2).killValue).toBeGreaterThan(0);

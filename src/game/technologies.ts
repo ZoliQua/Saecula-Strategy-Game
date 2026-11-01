@@ -22,8 +22,20 @@ export type TechEffect =
   | { readonly kind: 'stableHp'; readonly bonus: number }
   /** + fraction on the maximum HP of new buildings (civ bonus). */
   | { readonly kind: 'buildingHp'; readonly bonus: number }
-  /** + fraction on builder speed (civ bonus). */
-  | { readonly kind: 'buildSpeed'; readonly bonus: number };
+  /** + fraction on builder speed (civ bonus, treadmill crane). */
+  | { readonly kind: 'buildSpeed'; readonly bonus: number }
+  /** + fraction on villager speed (M12). */
+  | { readonly kind: 'villagerSpeed'; readonly bonus: number }
+  /** + fraction on monk speed (M12). */
+  | { readonly kind: 'monkSpeed'; readonly bonus: number }
+  /** + fraction on monk HP (M12; applied once, as cavalryHp). */
+  | { readonly kind: 'monkHp'; readonly bonus: number }
+  /** + pierce attack points for gunpowder units (bullet and cannonball shooters, M12). */
+  | { readonly kind: 'gunpowderAttack'; readonly bonus: number }
+  /** + fraction on the training speed of CONSCRIPTION_BUILDINGS (M12). */
+  | { readonly kind: 'trainSpeed'; readonly bonus: number }
+  /** − fraction of a monk's recharge after a conversion (M12). */
+  | { readonly kind: 'convertRecharge'; readonly bonus: number };
 
 export interface TechSpec {
   readonly id: TechId;
@@ -77,6 +89,17 @@ const SPECS: TechSpec[] = [
   tech('artisan_guilds', 'town_center', 2, [], (bonus) => ({ kind: 'houseCap', bonus })),
   tech('infantry_march', 'barracks', 2, [], (bonus) => ({ kind: 'infantrySpeed', bonus })),
   tech('cavalry_training', 'barracks', 2, [], (bonus) => ({ kind: 'cavalryHp', bonus })),
+  // M12
+  tech('wheelbarrow', 'town_center', 2, [], (bonus) => ({ kind: 'villagerSpeed', bonus })),
+  tech('treadmill_crane', 'town_center', 2, [], (bonus) => ({ kind: 'buildSpeed', bonus })),
+  tech('husbandry', 'stable', 2, [], (bonus) => ({ kind: 'cavalrySpeed', bonus })),
+  tech('cavalry_armor', 'stable', 3, ['cavalry_training'], (bonus) => ({ kind: 'cavalryHp', bonus })),
+  tech('forced_march', 'barracks', 3, ['infantry_march'], (bonus) => ({ kind: 'infantrySpeed', bonus })),
+  tech('conscription', 'barracks', 3, [], (bonus) => ({ kind: 'trainSpeed', bonus })),
+  tech('chemistry', 'blacksmith', 3, [], (bonus) => ({ kind: 'gunpowderAttack', bonus })),
+  tech('sanctity', 'monastery', 2, [], (bonus) => ({ kind: 'monkHp', bonus })),
+  tech('fervor', 'monastery', 2, [], (bonus) => ({ kind: 'monkSpeed', bonus })),
+  tech('illumination', 'monastery', 3, [], (bonus) => ({ kind: 'convertRecharge', bonus })),
 ];
 
 export const TECH_SPECS = Object.fromEntries(SPECS.map((s) => [s.id, s])) as Record<TechId, TechSpec>;

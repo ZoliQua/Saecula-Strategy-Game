@@ -1,5 +1,6 @@
 import { MONK } from '../../config/balance';
 import { canConvert, convertUnit } from '../../game/convert';
+import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import type { TileCoord } from '../../iso/coordinates';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
@@ -30,6 +31,8 @@ export class MonkSystem {
   constructor(
     private readonly world: EcsWorld,
     private readonly civOf: (playerId: number) => CivId,
+    /** A player's researched technologies (illumination shortens the recharge, M12); absent = none. */
+    private readonly researchOf: (playerId: number) => Researched | undefined = () => undefined,
   ) {}
 
   update(deltaMs: number): void {
@@ -69,7 +72,8 @@ export class MonkSystem {
     if (intent.elapsedMs < MONK.convertTimeMs) return;
     convertUnit(this.world, target, monk.owner.playerId, this.civOf);
     this.world.removeComponent(monk, 'convertIntent');
-    monk.converter.rechargeMs = MONK.rechargeMs;
+    const research = this.researchOf(monk.owner.playerId);
+    monk.converter.rechargeMs = MONK.rechargeMs * (research ? convertRechargeMultiplier(research) : 1);
   }
 
   /** Heads for the target, re-pathing only when it has moved away from the last goal. */

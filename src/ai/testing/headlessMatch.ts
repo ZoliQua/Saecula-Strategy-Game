@@ -225,7 +225,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor),
     combat: new CombatSystem(world, map, players, paths),
-    monks: new MonkSystem(world, (id) => players.get(id)?.civ ?? DEFAULT_CIV),
+    monks: new MonkSystem(world, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id)),
     projectiles: new ProjectileSystem(world, players),
     movement: new MovementSystem(world, players, map),
     death: new DeathSystem(world, map),

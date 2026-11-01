@@ -31,7 +31,18 @@ export type TechId =
   | 'mechanized_harvest'
   | 'artisan_guilds'
   | 'infantry_march'
-  | 'cavalry_training';
+  | 'cavalry_training'
+  // M12
+  | 'wheelbarrow'
+  | 'treadmill_crane'
+  | 'husbandry'
+  | 'cavalry_armor'
+  | 'forced_march'
+  | 'conscription'
+  | 'chemistry'
+  | 'sanctity'
+  | 'fervor'
+  | 'illumination';
 
 export type CivId =
   | 'hungarian'

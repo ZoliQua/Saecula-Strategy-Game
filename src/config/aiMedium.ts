@@ -49,6 +49,12 @@ export interface MediumTuning {
    * monastery and `count` monks; they follow the army, heal, and convert
    * enemy units that come within reach. 0 = none.
    */
+  /**
+   * The M12 technologies, researched only when no `techPriority` one can
+   * start, and only from what the army's savings (a cannon it is short of)
+   * leave over, so they never delay the army (monastery ones need a monastery).
+   */
+  readonly extraTechPriority: readonly TechId[];
   readonly monks: { readonly count: number; readonly minVillagers: number };
   readonly wonder: {
     readonly enabled: boolean;
@@ -127,6 +133,11 @@ export const AI_MEDIUM: MediumTuning = {
     'two_man_saw', 'gold_mining_2', 'heavy_plow', 'cavalry_training', 'infantry_march',
     'blade_sharpening_2', 'arrow_sharpening_2', 'armor_2', 'shield_2',
     'steam_saw', 'deep_mining', 'mechanized_harvest',
+  ],
+  // M12: only when nothing above can start, and only from what the army's savings leave over.
+  extraTechPriority: [
+    'wheelbarrow', 'husbandry', 'fervor', 'sanctity', 'treadmill_crane',
+    'chemistry', 'conscription', 'cavalry_armor', 'forced_march', 'illumination',
   ],
   /** Army mix per age (index = age); counters adjust it from what scouting saw. */
   armyByAge: [

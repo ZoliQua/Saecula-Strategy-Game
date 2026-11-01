@@ -1,7 +1,7 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
-import { bonusesFor, scaleHealth } from '../../game/modifiers';
+import { bonusesFor, scaleHealth, trainSpeedMultiplier } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { createUnit } from '../archetypes/createUnit';
 import type { Entity } from '../components';
@@ -44,7 +44,9 @@ export class TrainingSystem {
       if ((trainer as Entity).underConstruction || (trainer as Entity).dying) continue;
       const entry = trainer.trainingQueue.entries[0];
       if (!entry) continue;
-      entry.elapsed += dt;
+      // Conscription (M12) speeds up the barracks, archery range and stable.
+      const owner = this.players?.get(trainer.owner.playerId);
+      entry.elapsed += dt * (owner ? trainSpeedMultiplier(owner, trainer.building.type) : 1);
       if (entry.elapsed >= entry.totalTime) {
         this.completeEntry(trainer);
       }

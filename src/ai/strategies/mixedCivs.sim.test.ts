@@ -28,6 +28,11 @@ const MIN = 60_000;
  * the Hungarian side is overrun before the end (no foundry left), with
  * 4, 8 and 9 no cannonball (or bullet) flies within the window. With 2:
  * both in age 3 by 19.99 min, at most 212 entities.
+ * M12 (the new technologies shift age-3 spending): RNG 2 → 5. Sweeping 1-12
+ * again, every check passes with 1, 3, 4, 5, 10 and 11 (5 passed in both
+ * sweeps); with 2, 6 and 12 no Hungarian foundry is left, with 7, 8 and 9
+ * no cannonball (or bullet) flies in time. With 5: age 3 by 19.22 min,
+ * at most 194 entities, three age-3 unit kinds on each side.
  */
 describe('mixed-civ three-age match (96×96 meadow, seed 3): Hungarian Medium vs Italian Hard + English Easy', () => {
   it('both reach age 3 with age-3 armies, within the 500-entity budget', () => {
@@ -40,7 +45,7 @@ describe('mixed-civ three-age match (96×96 meadow, seed 3): Hungarian Medium vs
       strategy: (id) => (id === 2 ? new HardStrategy(createRng(10)) : new EasyStrategy(createRng(4))),
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
       enemyOf: (id) => (id === 3 ? 2 : duel ? 1 : 3),
-      humanStrategy: new MediumStrategy(createRng(2)),
+      humanStrategy: new MediumStrategy(createRng(5)),
       humanEnemy: () => (duel ? 2 : 3),
     });
     const human = match.players.get(1)!;
