@@ -45,19 +45,25 @@ export class CampaignRunner {
 
   /** Re-judges the objectives at game time `timeMs` and refreshes the HUD panel. */
   secondTick(timeMs: number): void {
-    const ctx = this.context(timeMs);
-    for (const i of this.tracker.update(ctx)) {
+    const { fresh, states } = this.tracker.tick(this.context(timeMs));
+    for (const i of fresh) {
       const o = this.tracker.objectives[i];
       if (o) this.notify(hu.campaign.objectiveDone(objectiveText(o)));
     }
-    const rows: ObjectiveRowInfo[] = this.tracker.states(ctx).map((s) => ({
+    const rows: ObjectiveRowInfo[] = states.map((s) => ({
       text: objectiveText(s.objective),
       done: s.done,
       have: s.progress.have,
       need: s.progress.need,
       counted: s.objective.kind !== 'reachAge' && s.objective.kind !== 'winMatch',
     }));
-    uiStore.getState().setObjectives({ title: hu.campaign.missions[this.mission].title, rows });
+    // Publish only on a change: a new store object re-renders the HUD.
+    const prev = uiStore.getState().objectives?.rows;
+    const same = !!prev && prev.length === rows.length && rows.every((r, i) => {
+      const p = prev[i];
+      return !!p && p.done === r.done && p.have === r.have && p.need === r.need && p.text === r.text;
+    });
+    if (!same) uiStore.getState().setObjectives({ title: hu.campaign.missions[this.mission].title, rows });
   }
 
   complete(): boolean {

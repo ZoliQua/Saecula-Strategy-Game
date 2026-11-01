@@ -67,5 +67,18 @@ describe('CampaignRunner', () => {
     expect(progress.status('age_of_wonders')).toBe('locked');
     expect(progress.completed().size).toBe(0);
   });
+
+  it('publishes the objectives only when they change (the HUD is not re-rendered every second)', () => {
+    const run = new CampaignRunner(createEcsWorld(), createPlayers('hungarian', ['english']), 'first_monastery', [], new CampaignProgress(memory()), () => undefined);
+    run.secondTick(1000);
+    const first = uiStore.getState().objectives;
+    let sets = 0;
+    const off = uiStore.subscribe(() => sets++);
+    run.secondTick(2000);
+    run.secondTick(3000);
+    off();
+    expect(sets).toBe(0);
+    expect(uiStore.getState().objectives).toBe(first);
+  });
 });
 

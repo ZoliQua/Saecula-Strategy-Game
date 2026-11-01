@@ -1,4 +1,4 @@
-import { objectiveMet, objectiveProgress, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
+import { objectiveProgress, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
 
 /** One objective's state for the HUD. */
 export interface ObjectiveState {
@@ -26,14 +26,22 @@ export class ObjectiveTracker {
 
   /** Marks the newly met objectives done; returns their indices. */
   update(ctx: ObjectiveContext): number[] {
+    return this.tick(ctx).fresh;
+  }
+
+  /** update and states in one pass over the objectives (each judged once). */
+  tick(ctx: ObjectiveContext): { fresh: number[]; states: ObjectiveState[] } {
     const fresh: number[] = [];
-    this.objectives.forEach((o, i) => {
-      if (!this.doneSet.has(i) && objectiveMet(o, ctx)) {
-        this.doneSet.add(i);
-        fresh.push(i);
+    const states = this.objectives.map((objective, index) => {
+      const progress = objectiveProgress(objective, ctx);
+      if (!this.doneSet.has(index) && objective.kind !== 'winMatch' && progress.have >= progress.need) {
+        this.doneSet.add(index);
+        fresh.push(index);
       }
+      const done = this.doneSet.has(index);
+      return { index, objective, done, progress: done ? { have: progress.need, need: progress.need } : progress };
     });
-    return fresh;
+    return { fresh, states };
   }
 
   /** Every objective with its state (done ones show as complete whatever the world now holds). */
