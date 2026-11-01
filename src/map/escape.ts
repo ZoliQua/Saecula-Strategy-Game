@@ -1,6 +1,6 @@
 import type { TileCoord } from '../iso/coordinates';
 import { hasExit, NEIGHBOUR_STEPS, reachMask, unwind } from './gridSteps';
-import type { MapData } from './MapData';
+import type { NavGrid } from './navGrid';
 
 /**
  * What an escape off blocked ground may pass. Only the structure the unit
@@ -42,7 +42,7 @@ export const STRICT_ESCAPE: EscapeRules = { crossable: () => false, cuttable: ()
  * Returns the steps from `start` (included) to the exit.
  */
 export function escapeSteps(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   rules: EscapeRules = STRICT_ESCAPE,
   toward?: TileCoord,
@@ -59,7 +59,7 @@ export function escapeSteps(
  * an empty list when there is no exit. Null when no escape is needed.
  * For a search that may leave by whichever exit leads to its goal.
  */
-export function escapeRoutes(map: MapData, start: TileCoord, rules: EscapeRules = STRICT_ESCAPE): TileCoord[][] | null {
+export function escapeRoutes(map: NavGrid, start: TileCoord, rules: EscapeRules = STRICT_ESCAPE): TileCoord[][] | null {
   const w = map.width;
   if (start.tx < 0 || start.ty < 0 || start.tx >= w || start.ty >= map.height) return [];
   if (map.isPassable(start.tx, start.ty) && hasExit(map, start.tx, start.ty)) return null;
@@ -68,7 +68,7 @@ export function escapeRoutes(map: MapData, start: TileCoord, rules: EscapeRules 
 }
 
 /** The exits off blocked ground with their search tree (escapeSteps' rules); null when no escape is needed or none exists. */
-function searchEscape(map: MapData, start: TileCoord, rules: EscapeRules): { parent: Int32Array; exits: number[] } | null {
+function searchEscape(map: NavGrid, start: TileCoord, rules: EscapeRules): { parent: Int32Array; exits: number[] } | null {
   const w = map.width;
   const h = map.height;
   if (start.tx < 0 || start.ty < 0 || start.tx >= w || start.ty >= h) return null;
@@ -83,7 +83,7 @@ function searchEscape(map: MapData, start: TileCoord, rules: EscapeRules): { par
 
 /** The breadth-first search of escapeSteps, crossing blocked tiles where `cross` allows: every exit, nearest first. */
 function searchExit(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   startFree: boolean,
   rules: EscapeRules,
@@ -122,7 +122,7 @@ function searchExit(
   return { parent, exits };
 }
 
-function pickExit(map: MapData, exits: readonly number[], toward: TileCoord | undefined): number | undefined {
+function pickExit(map: NavGrid, exits: readonly number[], toward: TileCoord | undefined): number | undefined {
   const w = map.width;
   const at = (i: number) => ({ tx: i % w, ty: Math.floor(i / w) });
   if (toward && exits.length > 1) {

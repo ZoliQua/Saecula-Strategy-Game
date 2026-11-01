@@ -1,5 +1,6 @@
 import { AI_COMMON, type FlankTuning } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
+import { canAttackTarget } from '../ecs/navLayer';
 import { clearUnitOrders } from '../ecs/orders';
 import type { AIContext } from './AIPlayer';
 import { pickEngageTarget } from './decisions/combat';
@@ -104,7 +105,7 @@ export class FlankControl {
       if ((u.movable?.path.length ?? 0) > 0 || u.attackIntent) this.reorders.delete(id);
       const current = u.attackIntent ? view.byId.get(u.attackIntent.targetId) : undefined;
       if (current && !current.dying && !current.building) continue;
-      const engage = pickEngageTarget(u.position, enemyUnits, [], AI_COMMON.engageRadius);
+      const engage = pickEngageTarget(u.position, enemyUnits.filter((e) => canAttackTarget(u, e)), [], AI_COMMON.engageRadius);
       if (engage?.id !== undefined) {
         this.reorders.delete(id);
         clearUnitOrders(ctx.world, u);

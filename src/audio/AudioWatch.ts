@@ -14,6 +14,8 @@ import type { ProjectileKind, ResourceType } from '../types';
 import type { AudioSink } from './AudioManager';
 import { tileDistance } from './mix';
 import type { SfxKey } from './sfx/catalogue';
+import { isNavalType } from '../config/balance';
+import { moveLayerOf } from '../ecs/navLayer';
 
 const SHOT_SOUND: Readonly<Record<ProjectileKind, SfxKey>> = {
   arrow: 'arrow_shot',
@@ -112,6 +114,10 @@ export class AudioWatch {
         if (playerId === this.humanId && !isAgeUp(techId)) this.sink.playSFX('notification_research_complete');
       }),
       gameEvents.on('wonderCompleted', () => this.sink.playSFX('notification_wonder')),
+      // A ship launched at one of the human's docks (M14).
+      gameEvents.on('unitTrained', ({ playerId, unitType }) => {
+        if (playerId === this.humanId && isNavalType(unitType)) this.sink.playSFX('ship_launch');
+      }),
     );
   }
 
@@ -135,7 +141,8 @@ export class AudioWatch {
         const last = this.lastGather.get(e) ?? -Infinity;
         if (realNowMs - last < GATHER_SOUND_INTERVAL_MS) continue;
         this.lastGather.set(e, realNowMs);
-        this.sink.playSFX(GATHER_SOUND[carryingType], 1, e.position);
+        // A fishing boat's net breaks the water (M14).
+        this.sink.playSFX(moveLayerOf(e) === 'water' ? 'ship_splash' : GATHER_SOUND[carryingType], 1, e.position);
       } else if (carrying === 0 && prev > 0) {
         this.sink.playSFX('resource_deposit', 1, e.position);
       }

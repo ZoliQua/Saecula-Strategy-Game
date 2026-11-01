@@ -1,5 +1,5 @@
 import { civUnitTypes } from '../../game/civUnits';
-import { BUILDING_BALANCE, UNIT_BALANCE } from '../../config/balance';
+import { BUILDING_BALANCE, isNavalType, UNIT_BALANCE } from '../../config/balance';
 import {
   BACKGROUND_ART_EVERY_FRAMES,
   BACKGROUND_ART_FORCE_AFTER_FRAMES,
@@ -22,18 +22,22 @@ export interface ArtPainters {
 
 /**
  * Unit sheets painted while loading: every type for the human's civ (the
- * HUD and the build/train panels show them), only the age-1 types for an
- * AI-only civ; its later sheets follow its age-ups (ageUpArtJobs) and a
- * unit trained before that is painted on demand (unitArt).
+ * HUD and the build/train panels show them), only the age-1 land types for
+ * an AI-only civ; its later sheets follow its age-ups (ageUpArtJobs) and a
+ * unit trained before that is painted on demand (unitArt). An AI civ's
+ * ships (M14) are always painted on demand: most maps have no water, so
+ * they never cost texture memory there.
  */
 export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
   const types = civUnitTypes(civ);
-  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1);
+  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1 && !isNavalType(t));
 }
 
-/** The unit sheets of the types introduced in `age`. */
+/** The land unit sheets of the types introduced in `age` (ships are painted on demand). */
 function unitArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
-  return civUnitTypes(civ).filter((t) => UNIT_BALANCE[t].age === age).map((t) => () => paint.unit(t, civ));
+  return civUnitTypes(civ)
+    .filter((t) => UNIT_BALANCE[t].age === age && !isNavalType(t))
+    .map((t) => () => paint.unit(t, civ));
 }
 
 /**

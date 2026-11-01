@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CIV_DEFS, CIV_IDS } from '../../../config/civs';
+import { isNavalType } from '../../../config/balance';
 import { baseUnitType, civUnitTypes } from '../../../game/civUnits';
 import type { CivId, UnitType } from '../../../types';
 import { ANIM_FRAMES, PAINTED_HEADINGS } from './layout';
@@ -18,7 +19,7 @@ import { sheetGeometry } from './sheet';
 const uniqueOf = (civ: CivId): UnitType => CIV_DEFS[civ].uniqueUnit;
 
 function human(look: UnitLook) {
-  if (look.kind === 'cannon') throw new Error('not a human');
+  if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
   return look.human;
 }
 
@@ -58,7 +59,8 @@ describe('unique unit looks', () => {
   it.each(CIV_IDS)('%s: the unique unit’s headgear is worn by none of the civ’s other units', (civ) => {
     const type = uniqueOf(civ);
     const hat = human(unitLook(type, civ)).hat;
-    for (const other of civUnitTypes(civ)) {
+    // Ships (M14) wear nothing.
+    for (const other of civUnitTypes(civ).filter((t) => !isNavalType(t))) {
       if (other === type || other === 'cannon') continue;
       expect(human(unitLook(other, civ)).hat, `${type} vs ${other}`).not.toBe(hat);
     }

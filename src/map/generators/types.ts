@@ -30,6 +30,10 @@ export interface GeneratedMap {
    * so centre-prize or random gold never stands in for a missing lode.
    */
   readonly outerLodes: readonly (readonly TileCoord[])[];
+  /** A water map (M14): every start must have a dock site and fish (validation). */
+  readonly naval?: boolean;
+  /** Starts may be on separate islands (M14): they must reach each other by land or across one sea. */
+  readonly seaLinked?: boolean;
 }
 
 export const MAX_PLAYER_SLOTS = 6;

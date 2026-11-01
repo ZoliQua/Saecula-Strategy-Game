@@ -66,3 +66,13 @@ describe('cursorFor: conversion (M11)', () => {
     expect(ctx([{ attacks: false, gathers: false, converts: false }], true)).toBe('move');
   });
 });
+
+describe('cursorFor: transports (M14)', () => {
+  it('an own transport is board for land units; land is unload for a loaded transport', () => {
+    expect(cursorFor({ ...base, units: [soldier], target: { kind: 'ownTransport' } })).toBe('board');
+    expect(cursorFor({ ...base, units: [{ attacks: false, gathers: false, boards: false }], target: { kind: 'ownTransport' } })).toBe('move');
+    const loaded = { attacks: false, gathers: false, boards: false, unloads: true };
+    expect(cursorFor({ ...base, units: [loaded], land: true })).toBe('unload');
+    expect(cursorFor({ ...base, units: [loaded], land: false })).toBe('move');
+  });
+});

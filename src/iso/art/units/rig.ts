@@ -1,5 +1,6 @@
 import type { CivId, UnitType } from '../../../types';
 import { cannonFall, drawCannon } from './cannon';
+import { drawShip } from './ship';
 import { Figure } from './figure';
 import { bitPoint, drawHorse, horseFall } from './horse';
 import { drawHuman } from './humanoid';
@@ -15,12 +16,19 @@ import { applyPoint, compose, headingBasis, IDENTITY, rotationAbout, translation
 const RIG_SCALE = 1.15;
 /** The field gun is modelled small; painted bigger so it reads as heavy artillery. */
 const CANNON_SCALE = 1.55;
+/** Ships (M14) are modelled at rig size and painted big enough to read as vessels beside the units. */
+const SHIP_SCALE = 2.2;
 
 /** Builds the posed 3D figure of `type` in a civ's look for one heading row and animation frame. */
 export function buildFigure(type: UnitType, civ: CivId, slot: number, anim: UnitAnim, i: number): Figure {
   const dir = PAINTED_HEADINGS[slot] ?? 'SE';
   const look = unitLook(type, civ);
-  const fig = new Figure(headingBasis(dir), look.kind === 'cannon' ? CANNON_SCALE : RIG_SCALE);
+  const fig = new Figure(headingBasis(dir), look.kind === 'cannon' ? CANNON_SCALE : look.kind === 'ship' ? SHIP_SCALE : RIG_SCALE);
+  if (look.kind === 'ship') {
+    // The sinking is part of the ship's own transform (drawShip).
+    drawShip(fig, look.ship, anim, i);
+    return fig;
+  }
   if (look.kind === 'cannon') {
     if (anim === 'death') fig.place(cannonFall(i));
     drawCannon(fig, anim, i, look.barrel);

@@ -8,6 +8,8 @@ import { cursorCss } from '../../ui/cursors';
 import { uiStore } from '../../ui/store';
 import { canConvert, readyToConvert } from '../../game/convert';
 import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
+import { canWorkNode, isBuilder } from '../../ecs/workers';
+import { canAttackTarget, moveLayerOf, navGridFor } from '../../ecs/navLayer';
 
 /** Re-checks the cursor this often while the pointer rests (targets walk under it, the selection changes). */
 const CURSOR_REFRESH_MS = 150;
@@ -33,11 +35,20 @@ export function cursorContext(
   const resource = target?.entity?.resourceNode?.type;
   return {
     placing,
-    units: units.map((e) => ({ attacks: e.attacker !== undefined, gathers: e.gatherer !== undefined, converts: readyToConvert(e) })),
+    units: units.map((e) => ({
+      attacks: e.attacker !== undefined && (!target?.entity || target.kind !== 'enemy' || canAttackTarget(e, target.entity)),
+      gathers: target?.entity?.resourceNode ? canWorkNode(e, target.entity) : e.gatherer !== undefined,
+      builds: isBuilder(e),
+      converts: readyToConvert(e),
+      boards: moveLayerOf(e) === 'land',
+      unloads: (e.cargo?.units.length ?? 0) > 0,
+    })),
+    land: tile ? map.isPassable(tile.tx, tile.ty) : false,
     target: resource
       ? { kind: target?.kind ?? 'none', resource }
       : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId) },
-    passable: tile ? map.isPassable(tile.tx, tile.ty) : null,
+    // A move is allowed where any selected unit can go: a ship on water, a land unit on land (M14).
+    passable: tile ? units.some((e) => navGridFor(map, e).isPassable(tile.tx, tile.ty)) || (units.length === 0 && map.isPassable(tile.tx, tile.ty)) : null,
   };
 }
 

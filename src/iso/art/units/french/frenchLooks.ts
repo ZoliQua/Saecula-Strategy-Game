@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { FRENCH_M } from './frenchMaterials';
+import { shipFleet } from '../ship';
 
 const F = FRENCH_M;
 
@@ -19,6 +20,8 @@ const F = FRENCH_M;
  * casaque with its white cross and the bandolier.
  */
 export const FRENCH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x8c6a46, 0x2c4a8c),
   villager: {
     kind: 'foot',
     human: {

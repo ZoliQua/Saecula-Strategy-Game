@@ -1,16 +1,22 @@
 import type { ResourceType } from '../types';
 
 /** The canvas cursor: what a command on the hovered tile would do. */
-export type CursorKind = 'default' | 'move' | 'gatherWood' | 'gatherGold' | 'gatherFood' | 'build' | 'attack' | 'convert' | 'forbidden';
-export const CURSOR_KINDS: readonly CursorKind[] = ['default', 'move', 'gatherWood', 'gatherGold', 'gatherFood', 'build', 'attack', 'convert', 'forbidden'];
+export type CursorKind = 'default' | 'move' | 'gatherWood' | 'gatherGold' | 'gatherFood' | 'build' | 'attack' | 'convert' | 'board' | 'unload' | 'forbidden';
+export const CURSOR_KINDS: readonly CursorKind[] = ['default', 'move', 'gatherWood', 'gatherGold', 'gatherFood', 'build', 'attack', 'convert', 'board', 'unload', 'forbidden'];
 
 /** One selected own unit, by what it can do with a target. */
 export interface CursorUnit {
   readonly attacks: boolean;
-  /** A villager: gathers and builds. */
+  /** It may work the hovered resource (a villager on land, a fishing boat on a fish school, M14). */
   readonly gathers: boolean;
+  /** It builds (villagers); absent: same as `gathers` (older callers). */
+  readonly builds?: boolean;
   /** A monk that may convert now (not recharging, M11). */
   readonly converts?: boolean;
+  /** A land unit that may board an own transport (M14); absent: true for a non-ship. */
+  readonly boards?: boolean;
+  /** A transport with cargo aboard (M14). */
+  readonly unloads?: boolean;
 }
 
 export interface CursorContext {
@@ -19,9 +25,11 @@ export interface CursorContext {
   /** The selected own units (selected buildings never change the cursor). */
   readonly units: readonly CursorUnit[];
   /** The hovered tile's target under OrderIssuer's rule (resolveOrderTarget). */
-  readonly target: { readonly kind: 'enemy' | 'ownSite' | 'resource' | 'none'; readonly resource?: ResourceType; readonly convertible?: boolean };
+  readonly target: { readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'none'; readonly resource?: ResourceType; readonly convertible?: boolean };
   /** Whether the hovered tile is passable; null when the pointer is off the map. */
   readonly passable: boolean | null;
+  /** Whether the hovered tile is walkable land (a loaded transport unloads there, M14). */
+  readonly land?: boolean;
 }
 
 const GATHER: Readonly<Record<ResourceType, CursorKind>> = { wood: 'gatherWood', gold: 'gatherGold', food: 'gatherFood' };
@@ -38,11 +46,14 @@ const GATHER: Readonly<Record<ResourceType, CursorKind>> = { wood: 'gatherWood',
  */
 export function cursorFor(ctx: CursorContext): CursorKind {
   if (ctx.placing || ctx.units.length === 0 || ctx.passable === null) return 'default';
-  const villagers = ctx.units.some((u) => u.gathers);
+  const gatherers = ctx.units.some((u) => u.gathers);
+  const builders = ctx.units.some((u) => u.builds ?? u.gathers);
   const { kind, resource } = ctx.target;
   if (kind === 'enemy' && ctx.units.some((u) => u.attacks)) return 'attack';
   if (kind === 'enemy' && ctx.target.convertible && ctx.units.some((u) => u.converts)) return 'convert';
-  if (kind === 'ownSite' && villagers) return 'build';
-  if (kind === 'resource' && villagers && resource) return GATHER[resource];
+  if (kind === 'ownSite' && builders) return 'build';
+  if (kind === 'resource' && gatherers && resource) return GATHER[resource];
+  if (kind === 'ownTransport' && ctx.units.some((u) => u.boards ?? true)) return 'board';
+  if (kind === 'none' && ctx.land && ctx.units.some((u) => u.unloads)) return 'unload';
   return ctx.passable ? 'move' : 'forbidden';
 }

@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { GERMAN_M } from './germanMaterials';
+import { shipFleet } from '../ship';
 
 const G = GERMAN_M;
 
@@ -18,6 +19,8 @@ const G = GERMAN_M;
  * hose and the Katzbalger at the hip.
  */
 export const GERMAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x7a5634, 0x2a2a2a),
   villager: {
     kind: 'foot',
     human: {

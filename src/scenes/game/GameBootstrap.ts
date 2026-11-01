@@ -10,6 +10,8 @@ import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
 import { generateMap, MapGenerationError, type PresetWall } from '../../map/generator';
 import type { MapData } from '../../map/MapData';
+import { TERRAIN } from '../../map/TerrainTypes';
+import { NAVAL } from '../../config/balance';
 import { townCenterOrigin, villagerSpawnTiles } from '../../map/startLayout';
 import { mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -57,7 +59,8 @@ export function spawnResourceNodes(world: EcsWorld, mapData: MapData): void {
   mapData.forEachTile(({ tx, ty }, terrain) => {
     const type = TERRAIN_RESOURCE[terrain];
     if (!type) return;
-    createResourceNode(world, { tile: { tx, ty }, type });
+    // A fish school (M14) holds its own amount.
+    createResourceNode(world, { tile: { tx, ty }, type, ...(terrain === TERRAIN.fish ? { amount: NAVAL.fishAmount, sea: true } : {}) });
   });
 }
 

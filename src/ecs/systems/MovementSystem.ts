@@ -3,6 +3,7 @@ import type { PlayerManager } from '../../game/PlayerManager';
 import type { MapData } from '../../map/MapData';
 import { directionFromDelta } from '../../types';
 import type { Entity } from '../components';
+import { navGridFor } from '../navLayer';
 import type { EcsWorld } from '../world';
 
 /**
@@ -64,9 +65,10 @@ export class MovementSystem {
 
   /** On passable ground, with a next tile that is blocked now. */
   private nextStepBlocked(entity: Entity): boolean {
-    const map = this.map;
     const next = entity.movable?.path[0];
-    if (!map || !next || !entity.position) return false;
+    if (!this.map || !next || !entity.position) return false;
+    // A ship (M14) checks the water layer.
+    const map = navGridFor(this.map, entity);
     if (!map.isPassable(entity.position.tx, entity.position.ty)) return false;
     return !map.isPassable(next.tx, next.ty);
   }

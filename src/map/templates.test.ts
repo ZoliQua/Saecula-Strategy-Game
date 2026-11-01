@@ -6,6 +6,8 @@ import { channelAngles } from './generators/islands';
 import { inBounds } from './generators/startArea';
 import { FORTRESS_RING_RADIUS } from './generators/fortress';
 import { TERRAIN } from './TerrainTypes';
+import { reachableFrom } from './generators/regions';
+import { villagerSpawnTiles } from './startLayout';
 import { ownedGold, startEconomy, validateMap } from './validation';
 
 const gen = (template: MapTemplate, size: number, seed: number, playerCount: number) =>
@@ -164,3 +166,33 @@ function gateTiles(g: ReturnType<typeof gen>) {
   });
   return out;
 }
+
+describe('water templates (M14)', () => {
+  const landFrom = (g: ReturnType<typeof gen>, i: number) => reachableFrom(g.map, [villagerSpawnTiles(g.playerStarts[i]!)[1]!]);
+  const at = (g: ReturnType<typeof gen>, i: number) => {
+    const v = villagerSpawnTiles(g.playerStarts[i]!)[1]!;
+    return v.ty * g.map.width + v.tx;
+  };
+
+  it('Szigetvilág: every start on an island of its own; fish round each', () => {
+    for (const [size, players] of [[64, 2], [96, 4], [128, 6]] as const) {
+      for (const seed of [1, 2, 3]) {
+        const g = gen('archipelago', size, seed, players);
+        expect(g.naval && g.seaLinked).toBe(true);
+        const land0 = landFrom(g, 0);
+        for (let i = 1; i < players; i++) expect(land0[at(g, i)], `${size} seed ${seed} player ${i}`).toBe(0);
+        expect(terrainShare(g.map, TERRAIN.fish)).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('Beltenger: a lake in the middle, every start walkable from every other round it', () => {
+    for (const [size, players] of [[64, 3], [96, 4], [128, 6]] as const) {
+      const g = gen('inland_sea', size, 5, players);
+      expect(g.naval).toBe(true);
+      expect(g.map.getTile(size / 2, size / 2)).not.toBe(TERRAIN.grass);
+      const land0 = landFrom(g, 0);
+      for (let i = 1; i < players; i++) expect(land0[at(g, i)]).toBe(1);
+    }
+  });
+});

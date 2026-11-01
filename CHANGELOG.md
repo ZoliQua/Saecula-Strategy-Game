@@ -12,6 +12,33 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.9.0] — 2026-11-01
+
+Ships and water maps (M14 milestone).
+
+### Added
+
+- Four ships, trained at the new **dock** (built on the shore, one side
+  along open water): the **fishing boat** fishes fish schools and brings
+  the food to the dock; the **transport** carries up to five land units;
+  the **galley** shoots ships and the shore; the **frigate** (Enlightenment)
+  batters ships and buildings. Every nation paints its hulls in its own
+  colours; the sails show the owner's colour.
+- **Transports**: right-click an own transport with land units selected to
+  board it (it comes to meet them); right-click land with a loaded
+  transport to put the units ashore there, or press **Kirakodás**. A sunk
+  transport takes its cargo down with it.
+- Ships move on water only. Melee units cannot attack a ship and monks
+  cannot convert one; archers, towers and other ships can.
+- **Fish schools** on the water, and two new map types: **Beltenger**
+  (inland sea: a lake in the middle, walkable all round) and
+  **Szigetvilág** (archipelago: every player on an island of their own;
+  armies cross only by transport). Every start gets a dock site and fish.
+- The AI builds a dock where it has water, fishes, keeps a fleet of galleys
+  (and frigates) and, on islands, lands its army from transports.
+- Cursors for boarding and unloading, and ship sounds.
+- Saves are schema version 9 (older saves load as before).
+
 ## [0.8.1] — 2026-11-01
 
 Fixes from the code review of 0.4.0–0.8.0.
@@ -288,7 +315,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0

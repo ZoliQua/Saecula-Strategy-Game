@@ -44,6 +44,7 @@ import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
 import { buildMatchAIs } from '../matchAIs';
+import { TransportSystem } from '../../ecs/systems/TransportSystem';
 
 export interface HeadlessMatchOptions {
   readonly seed: number;
@@ -238,6 +239,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths),
     projectiles: new ProjectileSystem(world, players),
     movement: new MovementSystem(world, players, map),
+    transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),
     wonders: new WonderSystem(world, wonderVictory),
     population: new PopulationSystem(world, 1, players),
@@ -258,6 +260,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.monks.update(dt);
     systems.projectiles.update(dt);
     systems.movement.update(dt);
+    systems.transports.update(dt);
     systems.death.update(dt);
     systems.wonders.update(dt);
     timeLimit?.advance(dt);

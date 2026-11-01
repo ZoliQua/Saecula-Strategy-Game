@@ -1,5 +1,5 @@
 import type { BaseUnitType, BuildingType, TechId } from '../types';
-import type { CounterTuning, GatherWeights, Span } from './aiBalance';
+import type { CounterTuning, GatherWeights, NavalTuning, Span } from './aiBalance';
 
 /**
  * Tuning of the Medium strategy family (Medium, and Hard which builds on
@@ -56,6 +56,8 @@ export interface MediumTuning {
    */
   readonly extraTechPriority: readonly TechId[];
   readonly monks: { readonly count: number; readonly minVillagers: number };
+  /** The navy (M14): see NavalTuning (none on a map without water near the base). */
+  readonly navy: NavalTuning;
   readonly wonder: {
     readonly enabled: boolean;
     /** Villagers the economy keeps before a Wonder goes up. */
@@ -156,5 +158,12 @@ export const AI_MEDIUM: MediumTuning = {
   counters: { threshold: 0.3, boost: 0.6 },
   /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
   monks: { count: 2, minVillagers: 18 },
+  navy: {
+    minVillagers: 10,
+    fishingBoats: 4,
+    galleys: [0, 2, 3, 2],
+    frigates: [0, 0, 0, 2],
+    transports: 2,
+  },
   wonder: { enabled: true, minVillagers: 20, builders: 8 },
 };

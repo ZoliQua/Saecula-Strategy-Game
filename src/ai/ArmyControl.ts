@@ -1,6 +1,7 @@
 import { AI_COMMON } from '../config/aiBalance';
 import { holdsTimeLead } from '../game/timeVictory';
 import type { Entity } from '../ecs/components';
+import { canAttackTarget } from '../ecs/navLayer';
 import { clearUnitOrders } from '../ecs/orders';
 import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
@@ -117,7 +118,8 @@ export class ArmyControl {
     let logged = false;
     for (const u of view.military) {
       if (u.id === undefined || this.wave.has(u.id) || u.attackIntent || !u.position || this.isReserved(u)) continue;
-      const threat = nearest(view.threats, u.position);
+      // A melee unit leaves a ship to the archers and towers (M14).
+      const threat = nearest(view.threats.filter((t) => canAttackTarget(u, t)), u.position);
       if (threat?.id === undefined) continue;
       clearUnitOrders(ctx.world, u);
       ctx.world.addComponent(u, 'attackIntent', { targetId: threat.id });
@@ -136,7 +138,7 @@ export class ArmyControl {
     for (const u of members) {
       if (!u.position) continue;
       if (u.attackIntent && !this.shouldSwitch(u, view, enemyUnits)) continue;
-      const engage = pickEngageTarget(u.position, enemyUnits, enemyBuildings, AI_COMMON.engageRadius);
+      const engage = pickEngageTarget(u.position, enemyUnits.filter((e) => canAttackTarget(u, e)), enemyBuildings, AI_COMMON.engageRadius);
       if (engage?.id !== undefined) {
         clearUnitOrders(ctx.world, u);
         ctx.world.addComponent(u, 'attackIntent', { targetId: engage.id });
@@ -174,7 +176,7 @@ export class ArmyControl {
   private shouldSwitch(u: Entity, view: WorldView, enemyUnits: readonly Entity[]): boolean {
     const current = view.byId.get(u.attackIntent!.targetId);
     if (current && !current.building) return false;
-    return enemyUnits.some((e) => e.attacker && e.position && chebyshev(e.position, u.position!) <= AI_COMMON.engageRadius);
+    return enemyUnits.some((e) => e.attacker && e.position && canAttackTarget(u, e) && chebyshev(e.position, u.position!) <= AI_COMMON.engageRadius);
   }
 
   /** No enemy known yet: the wave walks together to the next unexplored area. */

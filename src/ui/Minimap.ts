@@ -15,6 +15,7 @@ const TERRAIN_COLOR: Record<TerrainId, number> = {
   [TERRAIN.gold_mine]: 0xe2b84a,
   [TERRAIN.berries]: 0xc4505a,
   [TERRAIN.water]: 0x2f6f9a,
+  [TERRAIN.fish]: 0x4a8ab4,
   [TERRAIN.cliff]: 0x6a6460,
 };
 

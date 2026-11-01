@@ -4,6 +4,8 @@ import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToNearest } from '../../map/pathfinding';
 import type { Entity } from '../components';
 import { escapeRulesAt } from '../escapeRules';
+import { moveLayerOf, navGridFor } from '../navLayer';
+import { STRICT_ESCAPE } from '../../map/escape';
 import type { EcsWorld } from '../world';
 
 type PathableEntity = With<Entity, 'position' | 'moveIntent' | 'movable'>;
@@ -43,7 +45,11 @@ export class PathfindingSystem {
       return true;
     }
     if (!this.paths.take()) return false;
-    const path = findPathToNearest(this.mapData, entity.position, target, escapeRulesAt(this.world, entity.position, this.mapData, entity.owner?.playerId ?? 0));
+    // Ships (M14) search the water layer; nothing blocks them, so they never escape anything.
+    const water = moveLayerOf(entity) === 'water';
+    const grid = navGridFor(this.mapData, entity);
+    const escape = water ? STRICT_ESCAPE : escapeRulesAt(this.world, entity.position, this.mapData, entity.owner?.playerId ?? 0);
+    const path = findPathToNearest(grid, entity.position, target, escape);
     if (!path || path.length < 2) {
       this.world.removeComponent(entity as Entity, 'moveIntent');
       return true;

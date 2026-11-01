@@ -2,6 +2,7 @@ import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import type { EcsWorld } from '../ecs/world';
 import type { CivId } from '../types';
+import { isNavalType } from '../config/balance';
 import { gameEvents } from './events';
 
 /** A monk that may start a conversion now (not recharging): the order and the cursor share this rule. */
@@ -28,7 +29,7 @@ export function takeConvertGivenUp(monk: Entity): number | undefined {
   return id;
 }
 
-/** Whether a monk of `playerId` may convert `target` (M11): a living enemy unit that is not a monk. */
+/** Whether a monk of `playerId` may convert `target` (M11): a living enemy unit that is not a monk or a ship (M14). */
 export function canConvert(target: Entity | undefined, playerId: number): target is Entity & Required<Pick<Entity, 'unit' | 'owner' | 'position'>> {
   return (
     !!target &&
@@ -38,6 +39,8 @@ export function canConvert(target: Entity | undefined, playerId: number): target
     !target.dying &&
     !target.building &&
     target.unit.unitType !== 'monk' &&
+    // Ships (M14) cannot be converted.
+    !isNavalType(target.unit.unitType) &&
     target.owner.playerId !== playerId &&
     target.owner.playerId !== 0
   );

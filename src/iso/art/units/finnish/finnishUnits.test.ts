@@ -57,7 +57,7 @@ function teamCoverage(type: UnitType, civ: CivId): number {
 
 /** The silhouette cues of a look: headgear, shield and weapon style. */
 function cues(look: UnitLook): readonly unknown[] {
-  return look.kind === 'cannon' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
+  return look.kind === 'cannon' || look.kind === 'ship' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
 }
 
 describe('Finnish unit looks', () => {
@@ -84,7 +84,7 @@ describe('Finnish unit looks', () => {
   it('carries the brief’s cues: fur cap and round shield (age 1), nasal helm and cross shield (age 2), lobster-pot and karvalakki (age 3)', () => {
     const human = (type: UnitType) => {
       const look = unitLook(type, 'finnish');
-      if (look.kind === 'cannon') throw new Error('not a human');
+      if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
       return look.human;
     };
     expect(human('swordsman').hat).toBe('furCap');
@@ -102,7 +102,7 @@ describe('Finnish unit looks', () => {
     for (const civ of OTHER_LOOK_CIVS) {
       for (const type of TYPES) {
         const look = unitLook(type, civ);
-        if (look.kind !== 'cannon') expect(own.has(look.human.hat) || own.has(look.human.shield), `${civ} ${type}`).toBe(false);
+        if (look.kind !== 'cannon' && look.kind !== 'ship') expect(own.has(look.human.hat) || own.has(look.human.shield), `${civ} ${type}`).toBe(false);
       }
     }
   });

@@ -9,6 +9,8 @@ import type { WorldView } from '../perception';
 import { expectKind, type StrategyState } from '../strategyState';
 import { assignIdleVillagers } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
+import { AI_EASY_NAVY } from '../../config/aiBalance';
+import { NavalPlay } from '../NavalPlay';
 
 /**
  * Easy AI (PROGRAM_TERV.md §10.1): a slow decision every 20-30 s that
@@ -24,6 +26,8 @@ export class EasyStrategy extends BaseStrategy {
   /** Game time from which age-ups are attempted; Infinity when this game never ages up. */
   private ageUpFromMs: number;
   private firstAttackAtMs: number;
+  /** The Easy AI only fishes (M14). */
+  private readonly naval: NavalPlay;
 
   /** `rng` returns [0, 1); injectable so tests are deterministic. */
   constructor(rng: () => number = Math.random) {
@@ -33,6 +37,12 @@ export class EasyStrategy extends BaseStrategy {
     this.ageUpFromMs = ages ? delay : Infinity;
     this.firstAttackAtMs = this.roll(AI_EASY.firstAttackMs);
     this.army = new ArmyControl(this.log, rng);
+    this.naval = new NavalPlay(AI_EASY_NAVY, {
+      ownCount: (v, t, f) => this.ownCount(v, t, f),
+      startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a),
+      train: (c, v, t, n) => this.train(c, v, t, n),
+      transportsWanted: () => 0,
+    });
   }
 
   snapshot(): StrategyState {
@@ -56,12 +66,15 @@ export class EasyStrategy extends BaseStrategy {
   protected upkeep(ctx: AIContext, view: WorldView): void {
     assignIdleVillagers(ctx.world, view, AI_EASY.gather);
     this.army.update(ctx, view);
+    this.naval.control(ctx, view);
     this.maybeAgeUp(ctx, view);
   }
 
   protected decide(ctx: AIContext, view: WorldView): void {
     if (this.rng() < AI_EASY.buildOrderAdherence) this.followTree(ctx, view);
     else this.randomBuild(ctx, view);
+    this.naval.build(ctx, view);
+    this.naval.train(ctx, view);
     const swords = view.military.length;
     if (!this.army.attacking && attackReady({
       armySize: swords,

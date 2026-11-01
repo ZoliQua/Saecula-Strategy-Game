@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { SPANISH_M } from './spanishMaterials';
+import { shipFleet } from '../ship';
 
 const S = SPANISH_M;
 
@@ -21,6 +22,8 @@ const S = SPANISH_M;
  * rides a dark bay under a full team caparison.
  */
 export const SPANISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x9a6a3c, 0xc89a2a),
   villager: {
     kind: 'foot',
     human: {

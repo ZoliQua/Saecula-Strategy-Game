@@ -35,6 +35,9 @@ export const SFX_KEYS = [
   'musket_shot',
   'cannon_shot',
   'cannon_impact',
+  // M14
+  'ship_launch',
+  'ship_splash',
 ] as const;
 
 export type SfxKey = (typeof SFX_KEYS)[number];
@@ -282,6 +285,27 @@ export const SFX_CATALOGUE: Readonly<Record<SfxKey, SfxSpec>> = {
     90,
   ),
   // A load set down, with a small bright "reward" note.
+  // M14: a sail filling with a creak of rope and timber, a ship launched.
+  ship_launch: sfx(
+    [
+      { wave: 'noise', freq: [900, 400], attackMs: 40, decayMs: 260, sustain: 0, releaseMs: 80, durationMs: 380, filter: { type: 'lowpass', freq: 900, q: 0.6 }, gain: 0.55 },
+      { wave: 'triangle', freq: [180, 150], ...hit(8, 140, 180), gain: 0.25, delayMs: 60 },
+      { wave: 'sine', freq: [140, 120], ...hit(10, 120, 150), gain: 0.2, delayMs: 160 },
+    ],
+    0.35,
+    1,
+    400,
+  ),
+  // M14: an oar blade or a net breaking the water.
+  ship_splash: sfx(
+    [
+      { wave: 'noise', freq: [3200, 1200], attackMs: 6, decayMs: 160, sustain: 0, releaseMs: 40, durationMs: 210, filter: { type: 'bandpass', freq: 1400, q: 0.9 }, gain: 0.5 },
+      { wave: 'noise', freq: [1800, 700], attackMs: 10, decayMs: 120, sustain: 0, releaseMs: 40, durationMs: 170, filter: { type: 'lowpass', freq: 1100, q: 0.6 }, gain: 0.3, delayMs: 70 },
+    ],
+    0.25,
+    2,
+    150,
+  ),
   resource_deposit: sfx(
     [
       { wave: 'sine', freq: [300, 200], ...hit(3, 110, 130), gain: 0.4 },

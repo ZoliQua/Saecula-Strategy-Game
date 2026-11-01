@@ -1,5 +1,5 @@
 import type { TileCoord } from '../../../iso/coordinates';
-import type { MapData } from '../../../map/MapData';
+import type { NavGrid } from '../../../map/navGrid';
 import type { Entity } from '../../components';
 import { onFootprintRing } from '../../footprint';
 import type { Dropoff, ResourceNode } from './gatherTypes';
@@ -21,7 +21,7 @@ export function isAdjacentToFootprint(v: TileCoord, d: Dropoff): boolean {
 }
 
 export function findAdjacentPassable(
-  map: MapData,
+  map: NavGrid,
   target: TileCoord,
   preferNear: TileCoord,
 ): TileCoord | null {
@@ -39,7 +39,7 @@ export function findAdjacentPassable(
 }
 
 export function findAdjacentToBuildingNode(
-  map: MapData,
+  map: NavGrid,
   node: ResourceNode,
   preferNear: TileCoord,
 ): TileCoord | null {
@@ -66,7 +66,7 @@ export function findAdjacentToBuildingNode(
 }
 
 export function findAdjacentToFootprint(
-  map: MapData,
+  map: NavGrid,
   d: Dropoff,
   preferNear: TileCoord,
 ): TileCoord | null {

@@ -55,7 +55,7 @@ function teamCoverage(type: UnitType, civ: CivId): number {
 
 /** The silhouette cues of a look: headgear, shield and weapon style. */
 function cues(look: UnitLook): readonly unknown[] {
-  return look.kind === 'cannon' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
+  return look.kind === 'cannon' || look.kind === 'ship' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
 }
 
 /** Opaque non-team albedo pixels that read as near-black (the eagle, black leather). */
@@ -93,7 +93,7 @@ describe('German unit looks', () => {
   it('carries the brief’s cues: oval board shield (age 1), Landsknecht beret (age 2), spiked helm (age 3)', () => {
     const human = (type: UnitType) => {
       const look = unitLook(type, 'german');
-      if (look.kind === 'cannon') throw new Error('not a human');
+      if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
       return look.human;
     };
     expect(human('swordsman').shield).toBe('boardShield');

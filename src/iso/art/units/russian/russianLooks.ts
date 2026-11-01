@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { RUSSIAN_M } from './russianMaterials';
+import { shipFleet } from '../ship';
 
 const R = RUSSIAN_M;
 
@@ -22,6 +23,8 @@ const R = RUSSIAN_M;
  * small, fast steppe horse.
  */
 export const RUSSIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x6a4a2c, 0x3a6a8c),
   villager: {
     kind: 'foot',
     human: {

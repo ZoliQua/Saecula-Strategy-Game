@@ -20,6 +20,8 @@ export function computePopulation(
   for (const e of entities) {
     if (e.owner?.playerId !== playerId) continue;
     if (e.populationCost) current += e.populationCost.amount;
+    // A transport's cargo (M14) still counts.
+    for (const u of e.cargo?.units ?? []) current += u.populationCost?.amount ?? 0;
     if (!e.building || e.underConstruction || e.dying) continue;
     cap += BUILDING_BALANCE[e.building.type].popBonus;
     if (e.building.type === 'house') cap += perHouseBonus;

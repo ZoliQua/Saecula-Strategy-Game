@@ -103,3 +103,39 @@ export function paintBerryBush(variant: number): DecorArt {
   }
   return { canvas, originY: baseY / H };
 }
+
+export const FISH_VARIANTS = 2;
+
+/** A fish school on the water (M14): rings of ripples, silver backs breaking the surface and a little foam. */
+export function paintFishSchool(variant: number): DecorArt {
+  const W = 76;
+  const H = 40;
+  const baseY = 24;
+  const { canvas, ctx } = makeCanvas(W, H);
+  const r = rng(900 + variant * 17);
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 4; i++) {
+    const x = W / 2 + (r() - 0.5) * 30;
+    const y = baseY + (r() - 0.5) * 10;
+    for (const k of [1, 1.7]) {
+      ellipse(ctx, x, y, 7 * k, 3 * k);
+      ctx.strokeStyle = `rgba(214,236,244,${0.55 / k})`;
+      ctx.stroke();
+    }
+  }
+  for (let i = 0; i < 6; i++) {
+    const x = W / 2 + (r() - 0.5) * 40;
+    const y = baseY + (r() - 0.5) * 12;
+    ellipse(ctx, x, y, 4.2, 1.6);
+    ctx.fillStyle = css(shade(0x8fa6b4, 0.85 + r() * 0.35));
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.fillRect(x - 2, y - 1, 2, 1);
+  }
+  for (let i = 0; i < 8; i++) {
+    ellipse(ctx, W / 2 + (r() - 0.5) * 44, baseY + (r() - 0.5) * 14, 1.4, 0.9);
+    ctx.fillStyle = 'rgba(240,248,250,.8)';
+    ctx.fill();
+  }
+  return { canvas, originY: baseY / H };
+}

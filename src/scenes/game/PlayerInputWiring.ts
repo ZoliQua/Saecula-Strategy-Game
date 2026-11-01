@@ -36,7 +36,7 @@ export interface PlayerInputDeps {
  */
 export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildPlacement {
   const canSee = fogCanSee(d.fog, d.humanId);
-  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee });
+  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee, map: d.mapData });
   // The placement ghost and the cursor read the hover tile from the pointer handler.
   let pointer: PointerInput | null = null;
   const hoverTile = () => pointer?.getHoverTile() ?? null;

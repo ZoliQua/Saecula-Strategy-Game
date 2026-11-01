@@ -6,6 +6,8 @@ import { baseUnitType } from '../game/civUnits';
 import type { BuildingType, CivId, ResourceType, UnitType } from '../types';
 import type { AIContext } from './AIPlayer';
 import { copyKnown, copyTile, type PerceptionState } from './strategyState';
+import { isNavalType } from '../config/balance';
+import { isFishNode } from '../ecs/workers';
 
 /** An enemy building the AI has seen; kept until it sees the spot again without it. */
 export interface KnownBuilding {
@@ -34,8 +36,10 @@ export interface WorldView {
   /** Own standing buildings (sites included). */
   readonly buildings: readonly Entity[];
   readonly villagers: readonly Entity[];
-  /** Own fighting units, scouts excluded. */
+  /** Own fighting land units, scouts excluded. */
   readonly military: readonly Entity[];
+  /** Own ships (M14): kept out of the land army and the villager economy. */
+  readonly ships: readonly Entity[];
   readonly scouts: readonly Entity[];
   /** Hostile (other non-Gaia players') units the AI can see right now. */
   readonly visibleEnemyUnits: readonly Entity[];
@@ -43,8 +47,10 @@ export interface WorldView {
   readonly visibleEnemyBuildings: readonly Entity[];
   /** Hostile buildings seen (remembered while their spot stays out of sight). */
   readonly knownEnemyBuildings: readonly KnownBuilding[];
-  /** Resource nodes on tiles the AI has explored (own farms included, foreign farms not). */
+  /** Resource nodes on tiles the AI has explored (own farms included, foreign farms not); fish schools apart (`fish`). */
   readonly resources: Readonly<Record<ResourceType, readonly Entity[]>>;
+  /** Fish schools on explored tiles (M14): fishing boats' food, never a villager's. */
+  readonly fish: readonly Entity[];
   /** Hostile fighting units (not scouts or villagers passing by) seen near the base right now. */
   readonly threats: readonly Entity[];
   /**
@@ -142,6 +148,8 @@ export class Perception {
     const villagers: Entity[] = [];
     const military: Entity[] = [];
     const scouts: Entity[] = [];
+    const ships: Entity[] = [];
+    const fish: Entity[] = [];
     const visibleEnemyUnits: Entity[] = [];
     const visibleEnemyBuildings: Entity[] = [];
     const resources: Record<ResourceType, Entity[]> = { food: [], wood: [], gold: [] };
@@ -155,7 +163,8 @@ export class Perception {
       if (e.resourceNode && (e.resourceNode.amount > 0 || e.building)) {
         const foreign = e.owner !== undefined && e.owner.playerId !== me;
         if (!foreign && fog.get(e.position.tx, e.position.ty) !== FOG_UNEXPLORED) {
-          resources[e.resourceNode.type].push(e);
+          if (isFishNode(e)) fish.push(e);
+          else resources[e.resourceNode.type].push(e);
         }
       }
       if (!e.owner || e.dying) continue;
@@ -163,7 +172,8 @@ export class Perception {
         if (e.building) {
           buildings.push(e);
           if (e.building.type === 'town_center' && !e.underConstruction) townCenter ??= e;
-        } else if (e.unit && baseUnitType(e.unit.unitType) === 'villager') villagers.push(e);
+        } else if (e.unit && isNavalType(e.unit.unitType)) ships.push(e);
+        else if (e.unit && baseUnitType(e.unit.unitType) === 'villager') villagers.push(e);
         else if (e.unit && baseUnitType(e.unit.unitType) === 'scout') scouts.push(e);
         else if (e.unit && e.attacker) military.push(e);
         continue;
@@ -197,11 +207,13 @@ export class Perception {
       buildings,
       villagers,
       military,
+      ships,
       scouts,
       visibleEnemyUnits,
       visibleEnemyBuildings,
       knownEnemyBuildings: [...this.memory.values()],
       resources,
+      fish,
       threats: visibleEnemyUnits.filter((u) => isArmed(u) && nearAny(u.position!, home, AI_COMMON.defendRadius)),
       enemySightings: { ...this.sightings },
       enemyVillagers: [...this.villagerMemory.values()],

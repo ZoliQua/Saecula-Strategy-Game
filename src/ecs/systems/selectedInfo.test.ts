@@ -4,6 +4,7 @@ import type { Entity } from '../components';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { createBuilding } from '../archetypes/building';
+import { createUnit } from '../archetypes/createUnit';
 import { createEcsWorld } from '../world';
 import { infoKey, isLastTownCenter, toSelectedInfo } from './selectedInfo';
 
@@ -114,5 +115,21 @@ describe('toSelectedInfo trainable roster', () => {
     const trainable = trainableOf(range);
     expect(trainable).toContain('longbowman');
     expect(trainable).not.toContain('crossbowman');
+  });
+});
+
+describe('toSelectedInfo: transports (M14)', () => {
+  it("shows a transport's cargo count, and its key changes as units board", () => {
+    const world = createEcsWorld();
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 3, ty: 3 }, playerId: 1 });
+    const civ = (): CivId => 'english';
+    const empty = toSelectedInfo(ship as Parameters<typeof toSelectedInfo>[0], civ);
+    expect(empty?.kind === 'unit' && empty.cargo).toBe(0);
+    world.addComponent(ship, 'cargo', { units: [createUnit(createEcsWorld(), { type: 'archer', tile: { tx: 1, ty: 1 }, playerId: 1 })] });
+    const one = toSelectedInfo(ship as Parameters<typeof toSelectedInfo>[0], civ);
+    expect(one?.kind === 'unit' && one.cargo).toBe(1);
+    expect(infoKey(one)).not.toBe(infoKey(empty));
+    const archer = toSelectedInfo(createUnit(world, { type: 'archer', tile: { tx: 5, ty: 5 }, playerId: 1 }) as Parameters<typeof toSelectedInfo>[0], civ);
+    expect(archer?.kind === 'unit' && archer.cargo).toBeUndefined();
   });
 });

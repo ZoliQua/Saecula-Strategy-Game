@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.8.1 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.9.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -49,7 +49,7 @@ Ha a MVP stabil, ezek kerülhetnek be később (külön feature branch-ben):
 - Kampány mód (M13: három küldetés)
 - Tech fa (kutatási fejlesztések)
 - Vallási egységek / konverzió
-- Tengeri egységek és vízi térképek
+- Tengeri egységek és vízi térképek (M14)
 - Mentett játék megosztása linkkel (JSON export/import)
 
 ---
@@ -223,6 +223,12 @@ Felvilágosodás:
 - `cannon` — Ágyú. Épület-romboló, lassú.
 - `cavalry` — Lovasság. Gyors mozgó közelharci.
 
+Hajók (M14, a kikötő képzi, csak vízen járnak):
+- `fishing_boat` — Halászhajó. Halrajból gyűjt ételt.
+- `transport` — Szállítóhajó. Legfeljebb 5 szárazföldi egységet visz.
+- `galley` — Gálya. Távolsági hadihajó.
+- `frigate` — Fregatt (3. kortól). Ágyús, épület- és hajóromboló.
+
 **Egyedi (nép-specifikus) egységek:** MVP-ben nincsenek. Az M8-ban
 népenként egy, amely a nép egyik alap egységét váltja le (lásd M8).
 
@@ -244,6 +250,7 @@ népenként egy, amely a nép egyik alap egységét váltja le (lásd M8).
 - `wall` — Fal. Defenzív, 1-tile szegmensek.
 - `monastery` — Kolostor. `monk` képzése. (3×3, 2. kortól, M11)
 - `foundry` — Ágyúöntöde. `cannon` képzése. (3×3, 3. kortól)
+- `dock` — Kikötő. Hajókat képez, a halat fogadja. (3×3, a parton, M14)
 - `wonder` — Csoda. Győzelmi feltétel (3. kortól, csak 1 építhető). (4×4)
 
 ### 4.6 Nyersanyagok
@@ -586,7 +593,7 @@ scripts/perf/                    ← mérőszkriptek (textúra-memória, képkoc
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.8.1**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.9.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1183,6 +1190,88 @@ tulajdonos 2026-11-01-én jóváhagyta (a teljesített küldetés újrajátszhat
   kampánylista (teljesített / elérhető / zárolt), eligazítás, indítás, célpanel,
   konzolhiba nélkül.
 
+### M14 — Tengeri egységek és vízi térképek
+Az 1.3 „Tengeri egységek és vízi térképek” pontja. Ág: `feat/M14-naval` (a
+`main`-ből, a 0.8.1 után). Változat: 0.9.0. A scope-ot a tulajdonos
+2026-11-01-én jóváhagyta (szállítóhajó is legyen; a hajók: halászhajó,
+gálya, fregatt).
+- **Vízi mozgás:** a hajók csak vízen járnak (`TERRAIN.water`), a szárazföldi
+  egységek csak szárazon. Az útkeresés réteget kap (`land` / `water`): a
+  `findPath` és társai a mozgás rétegének járhatóságát használják, a közös
+  útkeresési keret (10.) mindkettőre vonatkozik. Épület vízre nem kerül.
+- **Kikötő (`dock`, Kikötő):** új épület, 3×3, 1. kortól; szárazföldön áll,
+  legalább egy oldala vízzel határos. Hajókat képez, a halászhajó ide viszi a
+  halat. Minden nép a saját stílusának palettájával kapja (egy közös,
+  palettavezérelt festő, a kolostor mintájára).
+- **Hal (`fish`):** új nyersanyag-lelőhely vízi mezőn (étel); a térképgenerátor
+  a víz széléhez és nyílt vízre helyezi.
+- **Hajók** (új `BaseUnitType`-ok, statisztika a `balance.ts`-ben, új osztály:
+  `naval`; minden népnek azonosak, a nép a hajótest és a díszítés színét adja,
+  a vitorla csapatszínű):
+
+  | Hajó (`UnitType`) | Magyar név | Kor | Szerep |
+  |---|---|---|---|
+  | `fishing_boat` | Halászhajó | 1 | halból ételt gyűjt, a kikötőbe viszi |
+  | `transport` | Szállítóhajó | 1 | legfeljebb 5 szárazföldi egységet visz; nem harcol |
+  | `galley` | Gálya | 1 | távolsági (nyíl), hajó és part menti egység ellen |
+  | `frigate` | Fregatt | 3 | ágyús, épület- és hajórombolás, lassú |
+
+- **Szállítás:** a kijelölt szárazföldi egységek jobb klikkje (vagy
+  parancs-gesztusa) egy saját szállítóhajóra beszállást indít: az egységek a
+  hajóhoz legközelebbi parti mezőre mennek, ott eltűnnek a hajóban (`cargo`
+  komponens a hajón; a rakomány nem látszik, nem harcol, nem gyógyul). A
+  kijelölt szállítóhajó jobb klikkje egy parti mezőre kiszállítást indít: a hajó
+  a parthoz megy, a rakomány a legközelebbi szabad szárazföldi mezőkre lép. A
+  kijelölés-panel mutatja a rakományt és egy „Kirakodás” gombot. Elsüllyedt
+  hajóval a rakomány is elvész (pontszámban elvesztett egységek). A népesség a
+  rakományt is számolja.
+- **Harc:** a hajók egymást és a partközeli szárazföldi egységeket,
+  épületeket a lőtávjukon belül támadják; a szárazföldi távolsági egységek és a
+  tornyok a hajókat. Közelharci egység hajót nem támadhat. A szerzetes hajót nem
+  téríthet.
+- **Térképek:** két új sablon: „Beltenger” (közepes, középen nagy tó, körbe
+  szárazon is járható) és „Szigetvilág” (minden játékos saját szigeten, a
+  szigetek között csak víz: szállítás nélkül nem lehet szárazföldön támadni). A
+  meglévő „Szigetek” (szirtek és hidak) változatlan.
+- **AI (Közepestől):** ha a bázisa közelében elég víz van, kikötőt épít,
+  halászhajókat képez, a korához illő hajóhadat tart (gálya, a 3. kortól
+  fregatt), a látott ellenséges hajókat és a part menti célokat támadja.
+  „Szigetvilágon” szállítóhajóval partra teszi a támadó hullámot (berakodás a
+  saját parton, kirakodás az ellenfél szigetének legközelebbi szabad partján).
+  A könnyű AI csak halászik.
+- **UI:** hajó-kurzorok (beszállás, kirakodás, halászat), a fejlődési fa a
+  kikötőt és a hajókat automatikusan mutatja, a minimap a hajókat. Hang:
+  procedurális vitorla-, evező- és ágyúhang. Minden szöveg a `hu.ts`-ben.
+- **Mentés:** `schemaVersion` 9, migrációval; új komponens: `cargo` (a hajóban
+  lévő egységek teljes állapota).
+- **Tesztek:** rétegzett útkeresés (hajó nem megy szárazra, egység nem megy
+  vízre), kikötő-elhelyezés, halászat, beszállás / kirakodás / elsüllyedés,
+  hajóharc (ki kit támadhat), népesség a rakománnyal, mentés oda-vissza
+  rakománnyal, v8 → v9 migráció valódi v8 mentéssel, a két új sablon játszható
+  (minden játékosnak van kikötőhelye és hala), AI-szimuláció: a Közepes AI
+  „Szigetvilágon” partra szállít és megtámadja az ellenfelet; „Beltengeren”
+  halászik és hajóhadat épít.
+- Nem része: kereskedelmi hajó, tűzhajó, sekély gázló, vízi fal, tengeri
+  technológiák, népenkénti hajókinézet, hajó-formáció.
+- Keret (10.): az M13 keretei; a négy hajó népenként négy új egységlapot jelent,
+  ezt a `scripts/perf/texmem.mjs`-szel mérjük (6 különböző nép), a ≤ 256 MB
+  textúra-keret köt; ha nem fér bele, a hajólapok koronként vagy csak vízi
+  térképen készülnek.
+- **Állapot (2026-11-01):** kész — vízi réteg (`map/navGrid`, `ecs/navLayer`), négy
+  hajó és a kikötő (népenkénti hajótest-paletta, közös, palettavezérelt
+  kikötő-festő), halrajok (`TERRAIN.fish`), halászat, tengeri harc, szállítás
+  (`TransportSystem`: beszállás, kirakodás, elsüllyedés, népesség), kurzorok,
+  „Kirakodás” gomb, hajóhangok, Beltenger és Szigetvilág sablon (kikötőhely és
+  hal minden kezdőhelynek, a validálás ellenőrzi), AI `NavalPlay` és
+  `LandingControl` (Közepestől; a Könnyű csak halászik), `schemaVersion` 9
+  migrációval. Az AI népek hajólapjai igény szerint készülnek. Mérve
+  (`scripts/perf/texmem.mjs`, distinct6, 1280×720, ugyanazzal a szkripttel a
+  `main`-en és az ágon): csúcs 148,2 → 150,0 MB, a nem terep-textúrák +5,3 MB.
+  Szimulációk: Beltengeren a Közepes AI kikötőt épít, halászik és gályákat tart;
+  Szigetvilágon ~21 perc alatt partra száll a másik szigeten. Böngésző-smoke:
+  kikötő az építési menüben, hajóképzés, halászat, beszállás, átkelés és
+  kirakodás, konzolhiba nélkül.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
@@ -1289,4 +1378,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.8.1.*
+*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.9.0.*
