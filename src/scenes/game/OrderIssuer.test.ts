@@ -9,6 +9,7 @@ import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { createMiniSim } from '../../ecs/testing/miniSim';
 import { FogOfWarData } from '../../map/FogOfWarData';
 import { cursorFor } from '../../ui/cursor';
+import { TERRAIN } from '../../map/TerrainTypes';
 import { cursorContext } from './CursorWiring';
 import { fogCanSee, OrderIssuer, orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 
@@ -171,3 +172,28 @@ describe('OrderIssuer: conversion (M11)', () => {
   });
 });
 
+
+describe('OrderIssuer: ships and workers (M14)', () => {
+  it('a fishing boat fishes a fish school, a villager does not; a boat neither builds nor picks berries', () => {
+    const sim = createMiniSim(32);
+    for (let ty = 0; ty < 32; ty++) for (let tx = 16; tx < 32; tx++) sim.map.setTile(tx, ty, TERRAIN.water);
+    sim.map.setTile(20, 10, TERRAIN.fish);
+    const fish = createResourceNode(sim.world, { tile: { tx: 20, ty: 10 }, type: 'food', sea: true });
+    sim.map.setTile(8, 8, TERRAIN.berries);
+    const bush = createResourceNode(sim.world, { tile: { tx: 8, ty: 8 }, type: 'food' });
+    const site = createBuilding(sim.world, { type: 'house', origin: { tx: 4, ty: 12 }, playerId: 1, mapData: sim.map, underConstruction: true });
+    const boat = createUnit(sim.world, { type: 'fishing_boat', tile: { tx: 18, ty: 10 }, playerId: 1 });
+    const v = createVillager(sim.world, { tile: { tx: 12, ty: 10 } });
+    const { orders } = issuer(sim, [boat, v]);
+    orders.issueOrders({ tx: 20, ty: 10 });
+    expect(boat.gatherIntent).toEqual({ nodeId: fish.id });
+    expect(v.gatherIntent).toBeUndefined();
+    const { orders: again } = issuer(sim, [boat]);
+    again.issueOrders({ tx: 8, ty: 8 });
+    expect(boat.gatherIntent).toBeUndefined();
+    expect(bush.resourceNode).toBeDefined();
+    again.issueOrders({ tx: 5, ty: 13 });
+    expect(boat.buildCommand).toBeUndefined();
+    expect(site.underConstruction).toBeDefined();
+  });
+});

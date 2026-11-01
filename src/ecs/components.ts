@@ -49,6 +49,8 @@ export interface Entity {
     type: ResourceType;
     amount: number;
     maxAmount: number;
+    /** A fish school on the water (M14): only fishing boats work it. */
+    sea?: boolean;
   };
   gatherer?: {
     /** Resource currently carried (null when empty). */

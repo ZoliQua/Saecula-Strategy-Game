@@ -63,7 +63,7 @@ export const EntityComponentsSchema = z
       .object({ speed: num, path: z.array(tile), progress: num, facing: enumOf(DIRECTIONS) })
       .strict()
       .optional(),
-    resourceNode: z.object({ type: resourceType, amount: num, maxAmount: num }).strict().optional(),
+    resourceNode: z.object({ type: resourceType, amount: num, maxAmount: num, sea: z.boolean().optional() }).strict().optional(),
     gatherer: z
       .object({
         carryingType: resourceType.nullable(),

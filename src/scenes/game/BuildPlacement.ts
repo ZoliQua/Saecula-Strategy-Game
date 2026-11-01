@@ -14,6 +14,7 @@ import type { AgeId, BuildingType, CivId } from '../../types';
 import { uiStore } from '../../ui/store';
 import { WallLinePlacement } from './WallLinePlacement';
 import { isShoreSite } from '../../game/shore';
+import { isBuilder } from '../../ecs/workers';
 
 /** Building placement: translucent ghost under the cursor and site creation. */
 export class BuildPlacement {
@@ -102,7 +103,7 @@ export class BuildPlacement {
     evictUnitsFrom(this.world, this.mapData, origin, { width: spec.width, height: spec.height });
     // Every selected own villager drops its work and builds the new site.
     for (const v of this.selection.getAllSelected()) {
-      if (!v.gatherer || v.owner?.playerId !== this.playerId || site.id === undefined) continue;
+      if (!isBuilder(v) || v.owner?.playerId !== this.playerId || site.id === undefined) continue;
       clearUnitOrders(this.world, v);
       this.world.addComponent(v, 'buildCommand', { targetId: site.id });
     }

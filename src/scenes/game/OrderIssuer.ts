@@ -3,6 +3,7 @@ import { canConvert, readyToConvert } from '../../game/convert';
 import type { Entity } from '../../ecs/components';
 import { insideFootprint } from '../../ecs/footprint';
 import { clearUnitOrders } from '../../ecs/orders';
+import { canWorkNode, isBuilder } from '../../ecs/workers';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { HUMAN_PLAYER_ID } from '../../config/constants';
@@ -91,12 +92,12 @@ export class OrderIssuer {
         ordered = 'unit_attack';
         continue;
       }
-      if (target.kind === 'ownSite' && entity.gatherer) {
+      if (target.kind === 'ownSite' && isBuilder(entity)) {
         this.world.addComponent(entity, 'buildCommand', { targetId });
         ordered ??= 'unit_move';
         continue;
       }
-      if (target.kind === 'resource' && entity.gatherer) {
+      if (target.kind === 'resource' && target.entity && canWorkNode(entity, target.entity)) {
         this.world.addComponent(entity, 'gatherIntent', { nodeId: targetId });
         ordered ??= 'unit_move';
         continue;

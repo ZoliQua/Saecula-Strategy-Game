@@ -7,8 +7,10 @@ export const CURSOR_KINDS: readonly CursorKind[] = ['default', 'move', 'gatherWo
 /** One selected own unit, by what it can do with a target. */
 export interface CursorUnit {
   readonly attacks: boolean;
-  /** A villager: gathers and builds. */
+  /** It may work the hovered resource (a villager on land, a fishing boat on a fish school, M14). */
   readonly gathers: boolean;
+  /** It builds (villagers); absent: same as `gathers` (older callers). */
+  readonly builds?: boolean;
   /** A monk that may convert now (not recharging, M11). */
   readonly converts?: boolean;
 }
@@ -38,11 +40,12 @@ const GATHER: Readonly<Record<ResourceType, CursorKind>> = { wood: 'gatherWood',
  */
 export function cursorFor(ctx: CursorContext): CursorKind {
   if (ctx.placing || ctx.units.length === 0 || ctx.passable === null) return 'default';
-  const villagers = ctx.units.some((u) => u.gathers);
+  const gatherers = ctx.units.some((u) => u.gathers);
+  const builders = ctx.units.some((u) => u.builds ?? u.gathers);
   const { kind, resource } = ctx.target;
   if (kind === 'enemy' && ctx.units.some((u) => u.attacks)) return 'attack';
   if (kind === 'enemy' && ctx.target.convertible && ctx.units.some((u) => u.converts)) return 'convert';
-  if (kind === 'ownSite' && villagers) return 'build';
-  if (kind === 'resource' && villagers && resource) return GATHER[resource];
+  if (kind === 'ownSite' && builders) return 'build';
+  if (kind === 'resource' && gatherers && resource) return GATHER[resource];
   return ctx.passable ? 'move' : 'forbidden';
 }

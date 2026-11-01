@@ -22,6 +22,8 @@ import { generateDamageArt } from './damageTextures';
 import { EXPLOSION_FRAMES, EXPLOSION_SIZE, paintExplosionStrip } from './art/explosionArt';
 import {
   BUSH_VARIANTS,
+  FISH_VARIANTS,
+  paintFishSchool,
   paintBerryBush,
   paintGoldRocks,
   paintStump,
@@ -41,6 +43,7 @@ export const decorKeys = {
   trees: 'decor_trees',
   gold: (i: number) => `decor_gold_${i}`,
   bush: (i: number) => `decor_bush_${i}`,
+  fish: (i: number) => `decor_fish_${i}`,
   stump: 'decor_stump',
 } as const;
 
@@ -104,6 +107,7 @@ export function generateArt(scene: Phaser.Scene): void {
   }
   for (let i = 0; i < ROCK_VARIANTS; i++) decor(decorKeys.gold(i), paintGoldRocks(i), false, false);
   for (let i = 0; i < BUSH_VARIANTS; i++) decor(decorKeys.bush(i), paintBerryBush(i), true, false);
+  for (let i = 0; i < FISH_VARIANTS; i++) decor(decorKeys.fish(i), paintFishSchool(i), false, false);
   decor(decorKeys.stump, paintStump(), false, false);
   generateFx(scene);
 }

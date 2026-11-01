@@ -5,6 +5,8 @@ export const TERRAIN = {
   berries: 3,
   water: 4,
   cliff: 5,
+  /** A fish school on water (M14): drawn as water, impassable, fished by boats from the water beside it. */
+  fish: 6,
 } as const;
 
 export type TerrainType = keyof typeof TERRAIN;
@@ -30,6 +32,11 @@ export function isPassable(terrain: TerrainId): boolean {
   return PASSABLE.has(terrain);
 }
 
+/** Sea terrain (M14): open water or a fish school; the shore, the water shader and the minimap treat both as water. */
+export function isSea(terrain: TerrainId): boolean {
+  return terrain === TERRAIN.water || terrain === TERRAIN.fish;
+}
+
 export function isWorkable(terrain: TerrainId): boolean {
   return WORKABLE.has(terrain);
 }
@@ -41,4 +48,5 @@ export const TERRAIN_TEXTURE_KEYS: Record<TerrainId, string> = {
   [TERRAIN.berries]: 'terrain_berries',
   [TERRAIN.water]: 'terrain_water',
   [TERRAIN.cliff]: 'terrain_cliff',
+  [TERRAIN.fish]: 'terrain_water',
 };

@@ -15,12 +15,15 @@ export const TERRAIN_RESOURCE: Partial<Record<TerrainId, ResourceType>> = {
   [TERRAIN.forest]: 'wood',
   [TERRAIN.gold_mine]: 'gold',
   [TERRAIN.berries]: 'food',
+  [TERRAIN.fish]: 'food',
 };
 
 export interface CreateResourceNodeOptions {
   readonly tile: TileCoord;
   readonly type: ResourceType;
   readonly amount?: number;
+  /** A fish school (M14): worked by fishing boats only. */
+  readonly sea?: boolean;
 }
 
 /**
@@ -39,6 +42,7 @@ export function createResourceNode(
       type: options.type,
       amount: max,
       maxAmount: max,
+      ...(options.sea ? { sea: true } : {}),
     },
     selectable: { selected: false },
   });

@@ -4,6 +4,8 @@ import type { Entity } from '../../components';
 import type { EcsWorld } from '../../world';
 import { footprintDistance, manhattan } from './gatherGeometry';
 import type { Dropoff, ResourceNode, Villager } from './gatherTypes';
+import { moveLayerOf } from '../../navLayer';
+import { isFishNode } from '../../workers';
 
 /* World look-ups of the gather cycle: drop-offs, the next node, free farms. */
 
@@ -14,12 +16,14 @@ export function findEntityById(world: EcsWorld, id: number): Entity | undefined 
   return undefined;
 }
 
-/** The owner's nearest standing drop-off that accepts `type`. */
+/** The owner's nearest standing drop-off that accepts `type`: a dock for a fishing boat, never a dock for a land gatherer (M14). */
 export function findNearestDropoff(world: EcsWorld, v: Villager, type: ResourceType): Dropoff | undefined {
   let best: Dropoff | undefined;
   let bestDist = Infinity;
+  const ship = moveLayerOf(v as Entity) === 'water';
   for (const d of world.with('position', 'resourceDropoff', 'building')) {
     if (!d.resourceDropoff.accepts.includes(type)) continue;
+    if ((d.building.type === 'dock') !== ship) continue;
     if (d.owner?.playerId !== v.owner.playerId || (d as Entity).dying) continue;
     const dist = footprintDistance(v.position, d);
     if (dist < bestDist) {
@@ -37,8 +41,11 @@ export function findNearestDropoff(world: EcsWorld, v: Villager, type: ResourceT
 export function findNearestNodeOfType(world: EcsWorld, v: Villager, type: ResourceType): ResourceNode | undefined {
   let best: ResourceNode | undefined;
   let bestDist = Infinity;
+  const ship = moveLayerOf(v as Entity) === 'water';
   for (const n of world.with('position', 'resourceNode')) {
     if (n.resourceNode.type !== type) continue;
+    // A fishing boat works fish schools only; a land gatherer never does (M14).
+    if (isFishNode(n) !== ship) continue;
     if (n.resourceNode.amount <= 0) continue;
     if (Math.max(Math.abs(n.position.tx - v.position.tx), Math.abs(n.position.ty - v.position.ty)) > GATHER_RETARGET_RADIUS) continue;
     const dist = manhattan(v.position, n.position);

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ART_SCALE } from '../iso/art/canvas';
-import { BUSH_VARIANTS, ROCK_VARIANTS } from '../iso/art/decor';
+import { BUSH_VARIANTS, FISH_VARIANTS, ROCK_VARIANTS } from '../iso/art/decor';
 import { hash2, tileVariant } from '../iso/art/palette';
 import { TERRAIN_LOOK } from '../config/visual';
 import { TerrainSurface } from './TerrainSurface';
@@ -45,7 +45,7 @@ const HOVER_COLOR = 0xf5a857;
 
 interface Decor {
   sprite: Phaser.GameObjects.Image;
-  kind: 'gold' | 'bush' | 'stump';
+  kind: 'gold' | 'bush' | 'stump' | 'fish';
 }
 
 /**
@@ -127,6 +127,8 @@ export class TileMap {
         return { key: decorKeys.gold(tileVariant(tx, ty, ROCK_VARIANTS)), kind: 'gold' };
       case TERRAIN.berries:
         return { key: decorKeys.bush(tileVariant(tx, ty, BUSH_VARIANTS)), kind: 'bush' };
+      case TERRAIN.fish:
+        return { key: decorKeys.fish(tileVariant(tx, ty, FISH_VARIANTS)), kind: 'fish' };
       default:
         return null;
     }
