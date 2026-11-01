@@ -88,13 +88,11 @@ export class MonkSystem {
 
   /**
    * Heads for the target, re-planning only when it has moved away from the
-   * last goal or the walk ended. One search from the shared budget (as
-   * combat does: the monk's escape rules, the path written straight to it)
-   * finds the nearest tile it can reach within range: a little inside it
-   * first, so a target that drifts by less than retargetTiles meanwhile is
-   * still in range on arrival, else anywhere within convertRange. With none,
-   * the target is out of reach (an island, a walled-off pen) and the order
-   * is given up.
+   * last goal or the walk ended (a target that drifted meanwhile is then
+   * re-planned for). One search from the shared budget (as combat does: the
+   * monk's escape rules, the path written straight to it) finds the nearest
+   * tile, in steps, it can reach within convertRange. With none, the target
+   * is out of reach (an island, a walled-off pen) and the order is given up.
    */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
@@ -102,15 +100,19 @@ export class MonkSystem {
     // Walking toward a goal the target is still near: keep going.
     if (goal && walking && chebyshev(goal, at) < MONK.retargetTiles) return;
     const from = monk.position;
-    if (!monk.movable || !from || !this.paths.take()) return;
+    if (!monk.movable || !from) {
+      this.giveUp(monk);
+      return;
+    }
+    if (!this.paths.take()) return;
     const escape = escapeRulesAt(this.world, from, this.map, monk.owner?.playerId ?? 0);
-    const within = (r: number) => (tx: number, ty: number) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= r;
-    const snug = MONK.convertRange - MONK.retargetTiles + 1;
-    const path = findPathToAny(this.map, from, within(snug), escape) ?? findPathToAny(this.map, from, within(MONK.convertRange), escape);
+    // Inline Chebyshev: the search calls it for every tile it visits.
+    const inRange = (tx: number, ty: number) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= MONK.convertRange;
+    const path = findPathToAny(this.map, from, inRange, escape, at);
     if (!path) {
       this.giveUp(monk);
       // On blocked ground (a foundation laid over it) it still steps off (M7: never left stuck).
-      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape)?.slice(1) ?? [];
+      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape, at)?.slice(1) ?? [];
       return;
     }
     if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');

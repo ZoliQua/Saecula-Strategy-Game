@@ -158,6 +158,21 @@ describe('MonkSystem', () => {
     expect(end && map.isPassable(end.tx, end.ty)).toBe(true);
   });
 
+  it('steps off blocked ground on the side of its target (the other side is cut off)', () => {
+    const { map, world, monks } = setup();
+    for (let ty = 0; ty < 40; ty++) map.setTile(20, ty, TERRAIN.water);
+    // Only the wall row the monks stand in matters; seal the rows apart so the other side cannot be walked round.
+    for (let tx = 0; tx < 40; tx++) map.setTile(tx, 10, TERRAIN.water);
+    for (const side of [1, -1]) {
+      const monk = createUnit(world, { type: 'monk', tile: { tx: 20, ty: 5 + side * 10 + 10 }, playerId: 1 });
+      const archer = createUnit(world, { type: 'archer', tile: { tx: 20 + side * 8, ty: 5 + side * 10 + 10 }, playerId: 2 });
+      world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+      monks.update(16);
+      expect(monk.convertIntent, `side ${side}`).toBeDefined();
+      expect(Math.sign(monk.movable!.path.at(-1)!.tx - 20), `side ${side}`).toBe(side);
+    }
+  });
+
   it('gives up on an unreachable target that keeps moving too', () => {
     const { map, world, step } = setup();
     island(map, 3);
@@ -254,7 +269,6 @@ describe('MonkSystem', () => {
     expect(monk.movable!.path.length).toBeGreaterThan(0);
     // The player clicks the same target again.
     clearUnitOrders(world, monk);
-    monk.movable!.path = [];
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
     const to = monk.movable!.path.at(-1)!;
