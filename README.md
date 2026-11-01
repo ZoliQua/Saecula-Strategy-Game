@@ -131,7 +131,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.7.0**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.8.0**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
@@ -145,6 +145,7 @@ each version contains.
 | M10 | Shareable saves (JSON), perf scripts | ✅ 0.5.0 |
 | M11 | Monks and monasteries: healing and conversion | ✅ 0.6.0 |
 | M12 | Ten new technologies | ✅ 0.7.0 |
+| M13 | A three-mission campaign | ✅ 0.8.0 |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, campaigns.

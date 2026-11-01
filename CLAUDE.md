@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.7.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.8.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -586,7 +586,7 @@ scripts/perf/                    ← mérőszkriptek (textúra-memória, képkoc
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.7.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.8.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1136,8 +1136,8 @@ Az 1.3 „Tech fa (kutatási fejlesztések)” pontja. Ág: `feat/M12-tech-tree`
 
 ### M13 — Kampány (három küldetés)
 Az 1.3 „Kampány mód” pontja; az 1.2 nem-célja ennyiben módosul. Ág:
-`feat/M13-campaign` (az M12 ágára épül). Változat: 0.8.0. **Jóváhagyásra vár:**
-a kód csak a scope elfogadása után készül.
+`feat/M13-campaign` (az M12 ágára épül). Változat: 0.8.0. A scope-ot a
+tulajdonos 2026-11-01-én jóváhagyta (a teljesített küldetés újrajátszható).
 - **Mit jelent itt a kampány:** a skirmish motorján futó, előre beállított
   küldetések (rögzített térképsablon, méret, mag, népek, AI-nehézség, győzelmi
   mód, kezdő nyersanyag és kor), mindegyik **célokkal** (pl. „Lépj a
@@ -1168,6 +1168,20 @@ a kód csak a scope elfogadása után készül.
 - Nem része: küldetés-szerkesztő, egyedi térképek, szkriptelt események,
   szinkronhang, nehézségi szint választása küldetésenként.
 - Keret (10.): az M12 keretei változatlanok.
+- **Állapot (2026-11-01):** kész — `src/campaign/` (három küldetés, tiszta
+  cél-kiértékelők, rögzülő `ObjectiveTracker`, `localStorage`-előrehaladás),
+  főmenü „Kampány” → küldetéslista → eligazítás → játék, HUD-célpanel
+  értesítéssel, `mission` győzelmi ok, zárószöveg a játék vége képernyőn,
+  `schemaVersion` 7 migrációval. A küldetés hódítással is megnyerhető (az is
+  győzelem). Az új küldetés kezdőállapota (kor, korváltó technológiák, többlet-
+  nyersanyag) a UI store-ba is átkerül, mert az ember nyersanyaga játék közben ott
+  él. Szimulációk: mind a három küldetés magja játszható térképet ad; az 1.
+  küldetés céljait egy Közepes AI 30 percen belül teljesíti; a 2. küldetésben egy
+  Nehéz AI kitart 20 percig két Közepes ellen (a tornyokat a teszt helyezi el,
+  mert az AI nem épít tornyot); a 3. küldetésben mindenki a felvilágosodásban
+  indul. A 3. küldetés megnyerhetőségét szimuláció nem ellenőrzi. Böngésző-smoke:
+  kampánylista (teljesített / elérhető / zárolt), eligazítás, indítás, célpanel,
+  konzolhiba nélkül.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1275,4 +1289,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.7.0.*
+*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.8.0.*
