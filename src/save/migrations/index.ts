@@ -3,6 +3,7 @@ import { v1ToV2 } from './v1ToV2';
 import { v2ToV3 } from './v2ToV3';
 import { v3ToV4 } from './v3ToV4';
 import { v4ToV5 } from './v4ToV5';
+import { v5ToV6 } from './v5ToV6';
 
 /**
  * One schema step: takes a save of version N (the key it is registered
@@ -12,7 +13,7 @@ import { v4ToV5 } from './v4ToV5';
 export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 
 /** Migrations by from-version. */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = { 1: v1ToV2, 2: v2ToV3, 3: v3ToV4, 4: v4ToV5 };
+export const MIGRATIONS: Readonly<Record<number, Migration>> = { 1: v1ToV2, 2: v2ToV3, 3: v3ToV4, 4: v4ToV5, 5: v5ToV6 };
 
 export type MigrateResult = { ok: true; data: Record<string, unknown> } | { ok: false; reason: 'corrupt' | 'newer' };
 

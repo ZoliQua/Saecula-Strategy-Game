@@ -38,9 +38,10 @@ import {
  * shipped. v2 (M7): the match statistics (`stats`). v3 (M8): the unit-type enum gains the unique units.
  * v4 (M9): the setup's victory enum gains the time-victory modes.
  * v5 (M11): the monk and the monastery, and the monk components (convertIntent, converter, originCiv).
+ * v6 (M12): the technology enum gains the ten M12 technologies.
  */
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();

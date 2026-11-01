@@ -361,7 +361,24 @@ export const TECH_BALANCE: Record<TechId, TechBalance> = {
   // 9.7 Barracks
   infantry_march: { cost: c(150, 0, 50), time: 45, value: 0.1 },
   cavalry_training: { cost: c(150, 0, 50), time: 45, value: 0.1 },
+  // M12: town centre
+  wheelbarrow: { cost: c(175, 50, 0), time: 60, value: 0.1 },
+  treadmill_crane: { cost: c(0, 200, 50), time: 45, value: 0.2 },
+  // M12: stable and barracks
+  husbandry: { cost: c(150, 0, 0), time: 50, value: 0.1 },
+  cavalry_armor: { cost: c(250, 0, 100), time: 60, value: 0.15 },
+  forced_march: { cost: c(200, 0, 100), time: 50, value: 0.1 },
+  conscription: { cost: c(300, 0, 200), time: 60, value: 0.25 },
+  // M12: blacksmith (gunpowder units' pierce attack)
+  chemistry: { cost: c(300, 0, 200), time: 70, value: 1 },
+  // M12: monastery
+  sanctity: { cost: c(0, 0, 120), time: 45, value: 0.5 },
+  fervor: { cost: c(0, 0, 140), time: 45, value: 0.15 },
+  illumination: { cost: c(0, 0, 250), time: 60, value: 0.5 },
 };
+
+/** Trainers whose queues `conscription` speeds up (M12). */
+export const CONSCRIPTION_BUILDINGS: readonly BuildingType[] = ['barracks', 'archery_range', 'stable'];
 
 /** A unit that found no path (walled-off target or site) waits this long before planning again (ms). */
 export const REPATH_RETRY_MS = 1500;

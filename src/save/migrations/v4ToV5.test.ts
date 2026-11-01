@@ -14,18 +14,17 @@ describe('v4 → v5 migration', () => {
   it('returns the data unchanged (enums widened, components added)', () => {
     const data = { schemaVersion: 4, entities: [{ id: 3 }] };
     expect(v4ToV5(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: 5 } });
-    expect(SCHEMA_VERSION).toBe(5);
+    expect(migrate(data, 5)).toEqual({ ok: true, data: { ...data, schemaVersion: 5 } });
   });
 
   it('the v4 fixture migrates, parses and plays on', () => {
     expect(v4Save.schemaVersion).toBe(4);
     const parsed = parseSave(JSON.stringify(v4Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save.schemaVersion).toBe(5);
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
     const match = resumeHeadlessMatch(parsed.save);
     match.run(2_000, STEP_MS);
-    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(5);
+    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('a save with a channelling monk, a recharging monk and a converted unit round-trips exactly', () => {

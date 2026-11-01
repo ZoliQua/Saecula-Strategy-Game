@@ -112,7 +112,7 @@ describe('modifiers', () => {
       for (const pre of spec.prerequisites) expect(TECH_SPECS[pre]).toBeDefined();
       expect(spec.time).toBeGreaterThan(0);
     }
-    expect(Object.keys(TECH_SPECS)).toHaveLength(22);
+    expect(Object.keys(TECH_SPECS)).toHaveLength(32);
   });
 });
 

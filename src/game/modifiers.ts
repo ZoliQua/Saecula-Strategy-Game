@@ -1,6 +1,6 @@
-import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS, UNIT_BALANCE } from '../config/balance';
+import { ARROW_UNITS, CAVALRY_CLASS, CONSCRIPTION_BUILDINGS, INFANTRY_CLASS, UNIT_BALANCE, UNIT_PROJECTILE } from '../config/balance';
 import { CIV_DEFS } from '../config/civs';
-import type { CivId, ResourceType, TechId, UnitType } from '../types';
+import type { BuildingType, CivId, ResourceType, TechId, UnitType } from '../types';
 import { baseUnitType } from './civUnits';
 import { TECH_SPECS, type TechEffect } from './technologies';
 
@@ -99,6 +99,12 @@ function effectsOf(player: Researched): readonly TechEffect[] {
   return cacheOf(player).effects;
 }
 
+/** Units that fire bullets or cannonballs (chemistry, M12). */
+function isGunpowder(type: UnitType): boolean {
+  const shot = UNIT_PROJECTILE[type];
+  return shot === 'bullet' || shot === 'cannonball';
+}
+
 function hasMeleeAttack(type: UnitType): boolean {
   return type !== 'villager' && UNIT_BALANCE[type].meleeAtk > 0;
 }
@@ -140,6 +146,18 @@ function computeUnitBonuses(effects: readonly TechEffect[], unitType: UnitType):
         break;
       case 'cavalrySpeed':
         if (CAVALRY_CLASS.includes(unitType)) speedMultiplier *= 1 + e.bonus;
+        break;
+      case 'villagerSpeed':
+        if (unitType === 'villager') speedMultiplier *= 1 + e.bonus;
+        break;
+      case 'monkSpeed':
+        if (unitType === 'monk') speedMultiplier *= 1 + e.bonus;
+        break;
+      case 'monkHp':
+        if (unitType === 'monk') hpMultiplier *= 1 + e.bonus;
+        break;
+      case 'gunpowderAttack':
+        if (isGunpowder(unitType)) pierceAtk += e.bonus;
         break;
       case 'stableHp':
         if (UNIT_BALANCE[baseUnitType(unitType)].trainers.includes('stable')) hpMultiplier *= 1 + e.bonus;
@@ -230,6 +248,21 @@ export function buildSpeedMultiplier(player: Researched): number {
     cache.buildSpeed = m;
   }
   return cache.buildSpeed;
+}
+
+/** Multiplier on the training speed of a unit queued at `trainer` (conscription, M12). */
+export function trainSpeedMultiplier(player: Researched, trainer: BuildingType): number {
+  if (!CONSCRIPTION_BUILDINGS.includes(trainer)) return 1;
+  let m = 1;
+  for (const e of effectsOf(player)) if (e.kind === 'trainSpeed') m *= 1 + e.bonus;
+  return m;
+}
+
+/** Share of MONK.rechargeMs a monk waits after a conversion (illumination, M12). */
+export function convertRechargeMultiplier(player: Researched): number {
+  let m = 1;
+  for (const e of effectsOf(player)) if (e.kind === 'convertRecharge') m *= 1 - e.bonus;
+  return m;
 }
 
 /** Scales current and max HP by `factor`, keeping the health ratio. */
