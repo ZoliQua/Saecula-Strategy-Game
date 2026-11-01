@@ -33,6 +33,7 @@ import { wirePause } from './game/PauseWiring';
 import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
 import { wireHudControls } from './game/HudControls';
+import { CampaignRunner } from './game/CampaignRunner';
 import { liveMatchState, MatchSave } from './game/MatchSave';
 import { MatchRecorder } from './game/MatchRecorder';
 import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
@@ -55,6 +56,8 @@ export class GameScene extends Phaser.Scene {
   private players!: PlayerManager;
   private runner!: SystemRunner;
   private placement!: BuildPlacement;
+  /** The campaign mission of this match (M13), or null. */
+  private campaign: CampaignRunner | null = null;
   private victoryChecker!: VictoryChecker;
   private hudSync!: HudSync;
   private setup!: GameSetupConfig;
@@ -225,7 +228,9 @@ export class GameScene extends Phaser.Scene {
     const wonderHoldMs = hasWonderVictory(config.victory) ? WONDER_HOLD_MS : null;
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     const time = timeRuleFor(config.victory, this.runner.stats, () => this.gameElapsedMs);
-    this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time);
+    this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, restored?.campaign?.done) : null;
+    if (this.campaign && !restored) CampaignRunner.publishStart(this.players);
+    this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time, this.campaign);
     this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time);
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
@@ -233,6 +238,7 @@ export class GameScene extends Phaser.Scene {
     this.recorder = MatchRecorder.forMatch({ matchId: this.matchId, setup: this.setup, world: this.world, players: this.players, stats: this.runner.stats, startMs: this.gameElapsedMs, now: () => this.gameElapsedMs });
 
     this.launchHud();
+    this.campaign?.secondTick(this.gameElapsedMs);
 
     const human = this.players.human();
     const openPause = wirePause(this, (slot) => this.saveTo(slot, { quiet: true }), this.storage, () => this.recorder?.abandon());
@@ -347,6 +353,7 @@ export class GameScene extends Phaser.Scene {
     if (Math.floor(this.gameElapsedMs / 1000) !== prevSecond) {
       uiStore.getState().setGameTime(this.gameElapsedMs);
       this.hudSync.secondTick();
+      this.campaign?.secondTick(this.gameElapsedMs);
     }
     this.checkVictory();
     this.matchSave?.update(delta, this.gameOverTriggered);
@@ -367,6 +374,7 @@ export class GameScene extends Phaser.Scene {
       camera: cameraView(this.cameras.main),
       lightPhase: this.lighting.getPhase(),
       stats: this.runner.stats,
+      ...(this.campaign ? { campaign: this.campaign.state() } : {}),
     });
   }
 
@@ -392,6 +400,7 @@ export class GameScene extends Phaser.Scene {
       durationMs: this.gameElapsedMs,
       cause: state.cause,
       players: gameOverRows(this.players.all(), winnerId, this.difficulty),
+      ...(this.campaign ? { missionText: this.campaign.finish(state.kind === 'victory') } : {}),
     };
     this.scene.launch('GameOverScene', data);
     this.scene.bringToTop('GameOverScene');

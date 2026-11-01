@@ -64,6 +64,16 @@ export type SelectedEntityInfo =
   | SelectedBuildingInfo
   | SelectedResourceInfo;
 
+/** One campaign objective on the HUD (M13). */
+export interface ObjectiveRowInfo {
+  readonly text: string;
+  readonly done: boolean;
+  readonly have: number;
+  readonly need: number;
+  /** Show "have / need" (counted objectives: buildings, units, minutes). */
+  readonly counted: boolean;
+}
+
 /** The time-victory clock on the HUD (HudSync, once a second). */
 export interface TimeLimitInfo {
   readonly remainingMs: number;
@@ -115,6 +125,8 @@ export interface UiState {
   wonders: readonly WonderClockInfo[];
   /** The time-victory clock (null: the match has no time limit). */
   timeLimit: TimeLimitInfo | null;
+  /** A campaign mission's objectives (null outside the campaign). */
+  objectives: { readonly title: string; readonly rows: readonly ObjectiveRowInfo[] } | null;
   /** Building whose delete button is armed (the next press deletes it), or null. */
   deleteArmedId: number | null;
   /** The refund percentage locked when the delete was armed: shown on the button and paid on confirm. */
@@ -139,6 +151,7 @@ export interface UiActions {
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
   setTimeLimit: (info: TimeLimitInfo | null) => void;
+  setObjectives: (objectives: UiStore['objectives']) => void;
   /** Arms the delete of building `id` with the refund `refundPct` locked (null disarms). */
   setDeleteArmed: (id: number | null, refundPct?: number) => void;
   /** Opens the side panel on `view`. */
@@ -165,6 +178,7 @@ const INITIAL: UiState = {
   gameTimeMs: 0,
   wonders: [],
   timeLimit: null,
+  objectives: null,
   deleteArmedId: null,
   deleteArmedPct: 0,
   sidePanel: { open: true, view: 'score' },
@@ -195,6 +209,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
     setTimeLimit: (timeLimit) => set({ timeLimit }),
+    setObjectives: (objectives) => set({ objectives }),
     setDeleteArmed: (id, refundPct = 0) => set({ deleteArmedId: id, deleteArmedPct: id === null ? 0 : refundPct }),
     showSidePanel: (view) => set({ sidePanel: { open: true, view } }),
     toggleSidePanel: () => set((state) => ({ sidePanel: { ...state.sidePanel, open: !state.sidePanel.open } })),
@@ -218,6 +233,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     gameTimeMs: 0,
     wonders: [],
     timeLimit: null,
+    objectives: null,
     deleteArmedId: null,
     deleteArmedPct: 0,
     sidePanel: { ...INITIAL.sidePanel },

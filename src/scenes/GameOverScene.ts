@@ -11,6 +11,8 @@ export interface GameOverData {
   cause: VictoryCause;
   /** The player table, in id order. */
   players: GameOverPlayerRow[];
+  /** A campaign mission's closing text (M13); replaces the cause's body line. */
+  missionText?: string;
 }
 
 /** Thin scene that owns the DOM game-over card (src/ui/screens/GameOver.ts). */

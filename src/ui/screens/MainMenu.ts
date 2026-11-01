@@ -27,8 +27,9 @@ export class MainMenu {
   private readonly loadBtn: HTMLButtonElement;
   private readonly settingsBtn: HTMLButtonElement;
   private readonly statsBtn: HTMLButtonElement;
+  private readonly campaignBtn: HTMLButtonElement;
 
-  constructor(onNewGame: () => void, onLoadGame: () => void, onSettings: () => void, onStats: () => void) {
+  constructor(onNewGame: () => void, onLoadGame: () => void, onSettings: () => void, onStats: () => void, onCampaign: () => void) {
     const play = el(
       'button',
       { class: 'btn btn-primary e-up', type: 'button', style: 'animation-delay:.78s' },
@@ -36,6 +37,14 @@ export class MainMenu {
       el('span', { class: 'arrow', html: ARROW }),
     );
     play.addEventListener('click', onNewGame);
+    const campaign = el(
+      'button',
+      { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:.82s' },
+      el('span', {}, hu.menu.campaign),
+      el('span', { class: 'arrow', html: ARROW }),
+    );
+    campaign.addEventListener('click', onCampaign);
+    this.campaignBtn = campaign;
     const load = el(
       'button',
       { class: 'btn btn-ghost btn-load e-up', type: 'button', style: 'animation-delay:.86s' },
@@ -73,7 +82,7 @@ export class MainMenu {
         el('span', { class: 'row' }, el('span', { class: 'rise' }, line2)),
       ),
       el('p', { class: 'menu-tagline e-up', style: 'animation-delay:.62s' }, hu.menu.tagline),
-      el('div', { class: 'menu-actions' }, play, load, stats, settings),
+      el('div', { class: 'menu-actions' }, play, campaign, load, stats, settings),
     );
     this.root = el(
       'div',
@@ -115,8 +124,8 @@ export class MainMenu {
   }
 
   /** Gives the keyboard focus back to the button whose card just closed. */
-  focusButton(which: 'load' | 'settings' | 'stats'): void {
-    const button = { load: this.loadBtn, settings: this.settingsBtn, stats: this.statsBtn }[which];
+  focusButton(which: 'load' | 'settings' | 'stats' | 'campaign'): void {
+    const button = { load: this.loadBtn, settings: this.settingsBtn, stats: this.statsBtn, campaign: this.campaignBtn }[which];
     button.focus({ preventScroll: true });
   }
 
