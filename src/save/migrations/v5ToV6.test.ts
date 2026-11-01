@@ -13,18 +13,17 @@ describe('v5 → v6 migration', () => {
   it('returns the data unchanged (the technology enum only widened)', () => {
     const data = { schemaVersion: 5, players: [{ researched: ['feudalism'] }] };
     expect(v5ToV6(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: 6 } });
-    expect(SCHEMA_VERSION).toBe(6);
+    expect(migrate(data, 6)).toEqual({ ok: true, data: { ...data, schemaVersion: 6 } });
   });
 
   it('the v5 fixture migrates, parses and plays on', () => {
     expect(v5Save.schemaVersion).toBe(5);
     const parsed = parseSave(JSON.stringify(v5Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save.schemaVersion).toBe(6);
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
     const match = resumeHeadlessMatch(parsed.save);
     match.run(2_000, STEP_MS);
-    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(6);
+    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('a save holding the new technologies round-trips exactly', () => {

@@ -1,3 +1,5 @@
+import { applyMissionStart } from '../../campaign/missionStart';
+import { missionSetup, type MissionId } from '../../campaign/missions';
 import { DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
@@ -65,6 +67,8 @@ export interface HeadlessMatchOptions {
   readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
   /** The match can be won by a Wonder: WonderSystem runs and the AIs play for Wonders (default false). */
   readonly wonderVictory?: boolean;
+  /** A campaign mission (M13): its fixed setup and start state replace the options' (seed, size and AI count must match it). */
+  readonly mission?: MissionId;
   /** The match ends on score at the time limit: the AIs see the limit (default false). */
   readonly timeVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
@@ -95,6 +99,11 @@ export interface HeadlessMatch {
 function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
   const mapSize = MAP_SIZE_IDS.find((id) => MAP_SIZES[id].tiles === options.size);
   if (!mapSize) throw new RangeError(`No map size has ${options.size} tiles`);
+  if (options.mission) {
+    const setup = missionSetup(options.mission);
+    if (setup.seed !== options.seed || setup.mapSize !== mapSize || setup.aiCount !== options.aiCount) throw new RangeError('options do not match the mission');
+    return setup;
+  }
   return {
     ...defaultSetupConfig(options.seed),
     aiCount: options.aiCount,
@@ -128,8 +137,9 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   });
   const map = generated.map;
   const world = createEcsWorld();
-  const civs = options.civs ?? matchCivs({ ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
+  const civs = options.civs ?? matchCivs(options.mission ? setup : { ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
   const players = createPlayers(civs.human, civs.ais);
+  if (options.mission) applyMissionStart(players, options.mission);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
   spawnPresetWalls(world, players, map, generated.walls);

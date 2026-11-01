@@ -10,6 +10,7 @@ import {
   VICTORY_MODES,
   type GameSetupConfig,
 } from '../game/GameSetupConfig';
+import { MISSION_IDS } from '../campaign/missions';
 import { MAP_TEMPLATES } from '../map/generator';
 import { DIRECTIONS } from '../types';
 import { AIPlayerStateSchema } from './aiSchema';
@@ -39,9 +40,10 @@ import {
  * v4 (M9): the setup's victory enum gains the time-victory modes.
  * v5 (M11): the monk and the monastery, and the monk components (convertIntent, converter, originCiv).
  * v6 (M12): the technology enum gains the ten M12 technologies.
+ * v7 (M13): a campaign mission (setup.mission) and its objective state (campaign).
  */
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -133,6 +135,7 @@ export const GameSetupConfigSchema = z
     aiCivs: z.union([z.literal('mixed'), civId]),
     seed: int,
     victory: enumOf(VICTORY_MODES),
+    mission: enumOf(MISSION_IDS).optional(),
   })
   .strict();
 
@@ -228,6 +231,8 @@ export const SaveDataSchema = z
     camera: z.object({ tx: num, ty: num, zoom: num.positive() }).strict(),
     lightPhase: num,
     stats: MatchStatsSchema,
+    /** A campaign mission's objective state (M13): indices of the objectives done. */
+    campaign: z.object({ done: z.array(int.nonnegative()) }).strict().optional(),
   })
   .strict();
 

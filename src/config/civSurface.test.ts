@@ -19,6 +19,8 @@ const ALLOWED = new Set([
   'types/index.ts',
   'config/civs.ts',
   'i18n/hu.ts',
+  // M13: the campaign's fixed match setups name their civs.
+  'campaign/missions.ts',
   'iso/art/architecture/registry.ts',
   'iso/art/architecture/charges.ts',
   'iso/art/walls/wallStyles.ts',

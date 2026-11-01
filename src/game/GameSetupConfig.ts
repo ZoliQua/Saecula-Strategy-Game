@@ -1,3 +1,4 @@
+import { MISSION_IDS, type MissionId } from '../campaign/missions';
 import { AVAILABLE_CIVS, DEFAULT_CIV } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import { createRng } from '../map/random';
@@ -59,6 +60,8 @@ export interface GameSetupConfig {
   readonly seed: number;
   /** Victory conditions in play. */
   readonly victory: VictoryMode;
+  /** A campaign mission (M13): the match is that mission's fixed setup with its objectives. */
+  readonly mission?: MissionId | undefined;
 }
 
 export type AiCivChoice = 'mixed' | CivId;
@@ -110,6 +113,7 @@ export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig
     aiCivs: next.aiCivs !== 'mixed' && AVAILABLE_CIVS.includes(next.aiCivs) ? next.aiCivs : 'mixed',
     seed: clampSeed(next.seed),
     victory: VICTORY_MODES.includes(next.victory) ? next.victory : 'conquest_wonder',
+    ...(next.mission !== undefined && (MISSION_IDS as readonly string[]).includes(next.mission) ? { mission: next.mission } : {}),
   };
 }
 

@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { defaultSetupConfig, hasTimeVictory, hasWonderVictory, matchCivs, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { applyMissionStart } from '../../campaign/missionStart';
 import { newMatchId } from '../../game/matchId';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
@@ -56,7 +57,9 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
   const generated = tryGenerateGameMap(setup);
   // No valid map for this seed: back to the setup card, with the choices kept and a message.
   if (!generated) return { ok: false, back: { config: setup, notice: hu.setup.mapFailed } };
-  return { ok: true, match: { matchId: newMatchId(), setup, players: createPlayers(civs.human, civs.ais), start: { kind: 'new', generated } } };
+  const players = createPlayers(civs.human, civs.ais);
+  if (setup.mission) applyMissionStart(players, setup.mission);
+  return { ok: true, match: { matchId: newMatchId(), setup, players, start: { kind: 'new', generated } } };
 }
 
 /**
