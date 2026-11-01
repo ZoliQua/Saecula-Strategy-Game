@@ -1,8 +1,7 @@
 import { hu } from '../../i18n/hu';
 import { el } from '../dom';
+import { GLYPHS } from '../screens/modalKeys';
 import type { ObjectiveRowInfo, UiStore } from '../store';
-
-const CHECK = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 
 /** The right side of an objective row: a progress count, or nothing. */
 export function objectiveCount(row: ObjectiveRowInfo): string | null {
@@ -46,7 +45,7 @@ export class ObjectivesPanel {
         return el(
           'li',
           { class: row.done ? 'objective done' : 'objective' },
-          el('span', { class: 'objective-mark', html: row.done ? CHECK : '' }),
+          el('span', { class: 'objective-mark', html: row.done ? GLYPHS.check : '' }),
           el('span', { class: 'objective-text' }, row.text),
           count ? el('span', { class: 'objective-count' }, count) : null,
         );
