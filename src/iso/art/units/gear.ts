@@ -15,7 +15,7 @@ import { cross, madd, norm, type V3, type Xform } from './rigMath';
 export type { BackItem, HatKind, ShieldKind, WeaponStyle };
 
 /** Weapon kinds (they also pick the pose, see poses.ts). */
-export type WeaponKind = 'tool' | 'gladius' | 'sabre' | 'bow' | 'pike' | 'spear' | 'crossbow' | 'musket' | 'lance';
+export type WeaponKind = 'tool' | 'gladius' | 'sabre' | 'bow' | 'pike' | 'spear' | 'crossbow' | 'musket' | 'lance' | 'staff';
 
 /** Paints a hat around the head centre `hc` (head axes fwd/left/up). */
 export type HatPainter = (fig: Figure, hc: V3, axes: Axes) => void;
@@ -98,6 +98,11 @@ export function drawWeapon(fig: Figure, kind: WeaponKind, w: WeaponPose, _hands:
     case 'spear':
       fig.capsule(at(-12), at(20), 0.8, M.wood);
       fig.cone(at(19.5), at(25.5), 1.45, 0.05, M.steel);
+      break;
+    case 'staff':
+      // The monk's crook (M11): a tall shaft with a gilt cross-piece at the top.
+      fig.capsule(at(-16), at(30), 0.75, M.darkWood);
+      fig.box(madd(at(27), side, 0), axesAlong(d, side), [0.7, 4.6, 0.7], M.gold);
       break;
     case 'pike':
       fig.capsule(at(-17), at(50), 0.8, M.darkWood);

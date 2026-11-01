@@ -12,6 +12,35 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.6.0] — 2026-11-01
+
+Monks and monasteries (milestone M11).
+
+### Added
+
+- **Monk** for every nation, from the Middle Ages, trained at the new
+  **Monastery** (3×3) for gold. A monk does not fight:
+  - While it stands, it heals the most wounded own unit nearby.
+  - Right-clicking an enemy unit with it starts a **conversion**. The monk
+    walks into range and prays for six seconds, and the unit then joins
+    you. It keeps its own nation's look, and its old orders are dropped.
+    Afterwards the monk needs 20 seconds before it can convert again.
+  - Monks and buildings cannot be converted.
+  - A conversion scores like a kill.
+- Each nation's monastery is drawn in its own architecture: palette, roof
+  and, for onion-domed styles, an onion. It has a nave, a bell tower, a
+  cloister and a dormitory.
+- A convert cursor, a soft bell sound, and notices when one of your units
+  is converted or an enemy unit joins you.
+- Medium, Hard and Master AIs build a monastery in the Middle Ages and keep
+  two monks. The monks follow the army, heal it, and convert enemy units
+  that come close.
+
+### Changed
+
+- Save `schemaVersion` is now 5. Older saves load through an automatic
+  migration.
+
 ## [0.5.0] — 2026-11-01
 
 Shareable saves and measurement scripts (milestone M10).
@@ -175,7 +204,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.2.0...v0.3.0

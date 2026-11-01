@@ -185,7 +185,27 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     range: 3, speed: 1.15, los: 8, cost: c(0, 30, 40), trainTime: 32,
     trainers: ['archery_range', 'barracks'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'archer',
   },
+  // M11: no attack (no attacker component); heals and converts instead (MONK).
+  monk: {
+    age: 2, hp: 30, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 0,
+    range: 0, speed: 0.7, los: 9, cost: c(0, 0, 100), trainTime: 50,
+    trainers: ['monastery'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
 };
+
+/** The monk's healing and conversion (M11). Ranges in tiles (Chebyshev), as unit ranges. */
+export const MONK = {
+  /** Friendly units within this range are healed by an idle monk. */
+  healRange: 4,
+  /** HP restored per second to one wounded unit. */
+  healPerSec: 1.5,
+  /** A conversion channels within this range. */
+  convertRange: 6,
+  /** Channel time of one conversion (it restarts when the target escapes out of range). */
+  convertTimeMs: 6000,
+  /** After a conversion the monk cannot convert again for this long. */
+  rechargeMs: 20000,
+} as const;
 
 export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   town_center: {
@@ -207,6 +227,7 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   stable: { age: 2, hp: 1200, width: 3, height: 3, cost: c(0, 175, 0), buildTime: 50, los: 4, popBonus: 0 },
   blacksmith: { age: 2, hp: 1200, width: 2, height: 2, cost: c(0, 150, 0), buildTime: 40, los: 4, popBonus: 0 },
   foundry: { age: 3, hp: 1500, width: 3, height: 3, cost: c(0, 175, 100), buildTime: 60, los: 4, popBonus: 0 },
+  monastery: { age: 2, hp: 1500, width: 3, height: 3, cost: c(0, 175, 0), buildTime: 50, los: 6, popBonus: 0 },
   tower: { age: 2, hp: 850, width: 1, height: 1, cost: c(0, 50, 125), buildTime: 80, los: 9, popBonus: 0 },
   wall: { age: 1, hp: 300, width: 1, height: 1, cost: c(0, 5, 0), buildTime: 6, los: 4, popBonus: 0 },
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },

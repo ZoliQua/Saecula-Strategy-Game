@@ -31,6 +31,7 @@ const TEXTURE_KEYS: Record<UnitType, string> = {
   musketeer: 'unit_musketeer',
   cannon: 'unit_cannon',
   cavalry: 'unit_cavalry',
+  monk: 'unit_monk',
   hussar: 'unit_hussar',
   longbowman: 'unit_longbowman',
   landsknecht: 'unit_landsknecht',

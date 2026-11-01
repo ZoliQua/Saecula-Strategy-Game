@@ -3,6 +3,7 @@ import type { TileCoord } from '../iso/coordinates';
 import type {
   AgeId,
   BuildingType,
+  CivId,
   TechId,
   Direction,
   ProjectileKind,
@@ -107,6 +108,16 @@ export interface Entity {
     /** Set while breaching: the real target to go back to once the blocking building falls. */
     resumeTargetId?: number;
   };
+  /** A monk's conversion order (M11): channel time so far, restarted when the target escapes. */
+  convertIntent?: { targetId: number; elapsedMs: number };
+  /**
+   * A monk's state (M11): `rechargeMs` before it may convert again,
+   * `healCarry` fractional HP not yet applied, `busy` while it heals or
+   * channels (its work animation).
+   */
+  converter?: { rechargeMs: number; healCarry: number; busy: boolean };
+  /** A converted unit's original civ: it keeps that look under its new owner (M11). */
+  originCiv?: { civ: CivId };
   dying?: { ttlMs: number };
   /** A finished Wonder's victory clock (only while the match's victory mode includes the Wonder). */
   wonder?: { heldMs: number };

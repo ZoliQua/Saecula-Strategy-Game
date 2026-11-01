@@ -1,4 +1,6 @@
+import { DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
+import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
@@ -223,6 +225,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor),
     combat: new CombatSystem(world, map, players, paths),
+    monks: new MonkSystem(world, (id) => players.get(id)?.civ ?? DEFAULT_CIV),
     projectiles: new ProjectileSystem(world, players),
     movement: new MovementSystem(world, players, map),
     death: new DeathSystem(world, map),
@@ -242,6 +245,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.research.update(dt);
     systems.towers.update(dt);
     systems.combat.update(dt);
+    systems.monks.update(dt);
     systems.projectiles.update(dt);
     systems.movement.update(dt);
     systems.death.update(dt);

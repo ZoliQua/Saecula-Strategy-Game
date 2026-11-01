@@ -1,0 +1,39 @@
+import type { Entity } from '../ecs/components';
+import { clearUnitOrders } from '../ecs/orders';
+import type { EcsWorld } from '../ecs/world';
+import type { CivId } from '../types';
+import { gameEvents } from './events';
+
+/** Whether a monk of `playerId` may convert `target` (M11): a living enemy unit that is not a monk. */
+export function canConvert(target: Entity | undefined, playerId: number): target is Entity & Required<Pick<Entity, 'unit' | 'owner' | 'position'>> {
+  return (
+    !!target &&
+    !!target.unit &&
+    !!target.owner &&
+    !!target.position &&
+    !target.dying &&
+    !target.building &&
+    target.unit.unitType !== 'monk' &&
+    target.owner.playerId !== playerId &&
+    target.owner.playerId !== 0
+  );
+}
+
+/**
+ * Hands `target` to `toPlayerId` (a monk's conversion, M11): its orders
+ * are dropped, it is deselected, it keeps its original civ's look
+ * (`originCiv`) and `unitConverted` is emitted (scores, toasts).
+ */
+export function convertUnit(world: EcsWorld, target: Entity, toPlayerId: number, civOf: (playerId: number) => CivId): void {
+  if (!target.owner || !target.unit) return;
+  const fromPlayerId = target.owner.playerId;
+  clearUnitOrders(world, target);
+  if (target.movable) {
+    target.movable.path = [];
+    target.movable.progress = 0;
+  }
+  if (!target.originCiv) world.addComponent(target, 'originCiv', { civ: civOf(fromPlayerId) });
+  target.owner.playerId = toPlayerId;
+  if (target.selectable) target.selectable.selected = false;
+  gameEvents.emit('unitConverted', { world, entityId: target.id ?? -1, fromPlayerId, toPlayerId, unitType: target.unit.unitType });
+}

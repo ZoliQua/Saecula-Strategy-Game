@@ -53,6 +53,8 @@ export function unitAnimState(entity: Entity, now: number, siteOf?: SiteLookup):
   }
   const a = entity.attacker;
   if (a && entity.attackIntent) return { anim: 'attack', i: attackFrame(a.cooldownMs, a.cooldownRemaining), heading };
+  // A monk heals / channels a conversion with its work frames (M11).
+  if (entity.converter?.busy) return { anim: 'work', i: Math.floor((now + phase) / WORK_FRAME_MS) % ANIM_FRAMES.work, heading };
   const g = entity.gatherer;
   const working = (!!g && g.targetNodeId !== undefined && g.carrying < g.capacity) || isBuilding(entity, siteOf);
   if (working) return { anim: 'work', i: Math.floor((now + phase) / WORK_FRAME_MS) % ANIM_FRAMES.work, heading };

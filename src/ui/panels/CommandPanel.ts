@@ -31,6 +31,7 @@ export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'archery_range',
   'stable',
   'blacksmith',
+  'monastery',
   'tower',
   'wall',
   'foundry',

@@ -134,9 +134,18 @@ export class Hud {
     const offLost = gameEvents.on('wonderLost', ({ entityId }) => {
       if (uiStore.getState().wonders.some((w) => w.entityId === entityId)) this.toast(hu.hud.wonderLost);
     });
+    // Conversions involving the human (M11).
+    const offConverted = gameEvents.on('unitConverted', ({ fromPlayerId, toPlayerId, unitType }) => {
+      const name = hu.units[unitType].toLowerCase();
+      if (toPlayerId === 1) {
+        audio().playSFX('unit_convert');
+        this.toast(hu.hud.convertedToYou(name), 'ok');
+      } else if (fromPlayerId === 1) this.toast(hu.hud.convertedFromYou(name));
+    });
     this.unsubscribeWonders = () => {
       offCompleted();
       offLost();
+      offConverted();
     };
   }
 

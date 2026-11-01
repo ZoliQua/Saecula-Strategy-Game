@@ -19,6 +19,7 @@ export const AGE_STYLED_BUILDINGS: readonly BuildingType[] = [
   'blacksmith',
   'tower',
   'wall',
+  'monastery',
 ];
 
 /** The art age a building of `type` shows when its owner is in `age`. */

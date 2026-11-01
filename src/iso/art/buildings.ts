@@ -44,7 +44,7 @@ function wonderArtFor(civ: CivId): WonderArt {
 
 const ALL_TYPES: readonly BuildingType[] = [
   'town_center', 'house', 'farm', 'lumber_camp', 'mining_camp', 'barracks', 'archery_range',
-  'stable', 'blacksmith', 'foundry', 'tower', 'wall', 'wonder',
+  'stable', 'blacksmith', 'foundry', 'tower', 'wall', 'wonder', 'monastery',
 ];
 
 export const BUILDING_ART_SIZES: Record<BuildingType, number> = Object.fromEntries(

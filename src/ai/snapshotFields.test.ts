@@ -44,6 +44,7 @@ const MEDIUM: Inventory = {
   tune: CONFIG,
   army: 'saved',
   wonder: 'saved',
+  monks: 'excluded: stateless (MonkPlay reads everything from the world)',
   pressure: 'saved',
   firstAttackAtMs: 'saved',
   lastScoutMs: 'saved',

@@ -6,6 +6,7 @@ import type { MapData } from '../../map/MapData';
 import { cursorFor, type CursorContext, type CursorKind } from '../../ui/cursor';
 import { cursorCss } from '../../ui/cursors';
 import { uiStore } from '../../ui/store';
+import { canConvert } from '../../game/convert';
 import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 
 /** Re-checks the cursor this often while the pointer rests (targets walk under it, the selection changes). */
@@ -32,8 +33,10 @@ export function cursorContext(
   const resource = target?.entity?.resourceNode?.type;
   return {
     placing,
-    units: units.map((e) => ({ attacks: e.attacker !== undefined, gathers: e.gatherer !== undefined })),
-    target: resource ? { kind: target?.kind ?? 'none', resource } : { kind: target?.kind ?? 'none' },
+    units: units.map((e) => ({ attacks: e.attacker !== undefined, gathers: e.gatherer !== undefined, converts: !!e.converter && e.converter.rechargeMs <= 0 })),
+    target: resource
+      ? { kind: target?.kind ?? 'none', resource }
+      : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId) },
     passable: tile ? map.isPassable(tile.tx, tile.ty) : null,
   };
 }

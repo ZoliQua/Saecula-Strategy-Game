@@ -15,6 +15,7 @@ import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { BuildingFxSystem } from '../../ecs/systems/BuildingFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
+import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
@@ -89,6 +90,7 @@ export class SystemRunner {
   private readonly research: ResearchSystem;
   private readonly population: PopulationSystem;
   private readonly combat: CombatSystem;
+  private readonly monks: MonkSystem;
   private readonly towers: TowerCombatSystem;
   private readonly projectiles: ProjectileSystem;
   private readonly projectileRender: ProjectileRenderSystem;
@@ -151,6 +153,7 @@ export class SystemRunner {
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
     this.combat = new CombatSystem(world, mapData, players, this.paths);
+    this.monks = new MonkSystem(world, (id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.projectiles = new ProjectileSystem(world, players);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
@@ -260,6 +263,7 @@ export class SystemRunner {
     this.research.update(delta);
     this.towers.update(delta);
     this.combat.update(delta);
+    this.monks.update(delta);
     this.projectiles.update(delta);
     this.movement.update(delta);
     this.death.update(delta);

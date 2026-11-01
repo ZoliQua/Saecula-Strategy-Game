@@ -128,3 +128,33 @@ describe('orderActor (fix round 1)', () => {
     expect(orderActor([foe, tc], 1)).toBe(null);
   });
 });
+
+describe('OrderIssuer: conversion (M11)', () => {
+  it('a monk ordered onto an enemy unit converts it; the swordsman beside it attacks; a building is just a walk', () => {
+    const sim = createMiniSim(32);
+    const monk = createUnit(sim.world, { type: 'monk', tile: { tx: 4, ty: 4 }, playerId: 1 });
+    const sword = createUnit(sim.world, { type: 'swordsman', tile: { tx: 5, ty: 4 }, playerId: 1 });
+    const knight = createUnit(sim.world, { type: 'knight', tile: { tx: 12, ty: 4 }, playerId: 2 });
+    createBuilding(sim.world, { type: 'house', origin: { tx: 20, ty: 20 }, playerId: 2, mapData: sim.map });
+    const { orders, played } = issuer(sim, [monk, sword]);
+    orders.issueOrders({ tx: 12, ty: 4 });
+    expect(monk.convertIntent).toEqual({ targetId: knight.id, elapsedMs: 0 });
+    expect(sword.attackIntent).toEqual({ targetId: knight.id });
+    expect(played).toEqual(['unit_attack']);
+    orders.issueOrders({ tx: 20, ty: 20 });
+    expect(monk.convertIntent).toBeUndefined();
+    expect(monk.moveIntent).toBeDefined();
+  });
+
+  it('the cursor shows convert for a ready monk on a convertible enemy, never for an enemy monk or while recharging', () => {
+    const sim = createMiniSim(32);
+    const monk = createUnit(sim.world, { type: 'monk', tile: { tx: 4, ty: 4 }, playerId: 1 });
+    createUnit(sim.world, { type: 'knight', tile: { tx: 12, ty: 4 }, playerId: 2 });
+    createUnit(sim.world, { type: 'monk', tile: { tx: 14, ty: 4 }, playerId: 2 });
+    const cursorAt = (tx: number) => cursorFor(cursorContext(sim.world, sim.map, selectionOf([monk]), { tx, ty: 4 }, 1));
+    expect(cursorAt(12)).toBe('convert');
+    expect(cursorAt(14)).toBe('move');
+    monk.converter!.rechargeMs = 5000;
+    expect(cursorAt(12)).toBe('move');
+  });
+});

@@ -27,6 +27,20 @@ export type UnitLook =
  * coats, shields, hoods, caparisons.
  */
 export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
+  // M11: a hooded habit in the team colour (ownership reads at a glance) and a crook.
+  monk: {
+    kind: 'foot',
+    human: {
+      hat: 'hood',
+      body: M.team,
+      skirt: { mat: M.team, length: 12 },
+      sleeves: M.team,
+      legs: M.trousers.brown,
+      boots: M.boot,
+      belt: M.string,
+      weapon: 'staff',
+    },
+  },
   villager: {
     kind: 'foot',
     human: {

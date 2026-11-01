@@ -26,6 +26,7 @@ import {
 import type { WorldView } from '../perception';
 import { expectKind, loadedTime, savedTime, type MediumFields, type StrategyState } from '../strategyState';
 import { PressureControl } from '../PressureControl';
+import { MonkPlay } from '../MonkPlay';
 import { WonderPlay } from '../WonderPlay';
 import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
@@ -44,6 +45,7 @@ export class MediumStrategy extends BaseStrategy {
   private lastScoutMs = -Infinity;
   private readonly pressure: PressureControl;
   private readonly wonder: WonderPlay;
+  private readonly monks: MonkPlay;
 
   /** `tune` is the strategy's table (AI_MEDIUM; Hard passes its own). */
   constructor(
@@ -57,6 +59,14 @@ export class MediumStrategy extends BaseStrategy {
       placeFor: (c, v, t, a) => this.placeFor(c, v, t, a),
       startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a),
       assignBuilders: (c, v, site, n) => this.assignBuilders(c, v, site, n),
+    });
+    this.monks = new MonkPlay(tune.monks, {
+      ownCount: (v, t, f) => this.ownCount(v, t, f),
+      militaryReady: (c, v) => (this.tune.militaryBuildings[c.player.age] ?? []).every((t) => this.ownCount(v, t, true) > 0),
+      startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a, this.reserve(c, v)),
+      // Monks spend only what the army's savings (a cannon it is short of) leave over.
+      train: (c, v, t, n) => this.train(c, v, t, n, this.armySavings(c, v)),
+      waveMembers: () => this.army.members(),
     });
     this.pressure = new PressureControl(tune, this.army, {
       isReserved: (u) => this.isReserved(u),
@@ -116,6 +126,7 @@ export class MediumStrategy extends BaseStrategy {
   protected upkeep(ctx: AIContext, view: WorldView): void {
     assignIdleVillagers(ctx.world, view, this.gatherWeights(ctx, view));
     this.army.update(ctx, view);
+    this.monks.control(ctx, view);
     this.army.scout(ctx, view);
     const waitingForTc = this.tryAgeUp(ctx, view);
     const first = this.tune.pressure.beforeFarms;
@@ -135,8 +146,10 @@ export class MediumStrategy extends BaseStrategy {
     this.rebalance(ctx, view);
     this.buildEconomy(ctx, view);
     this.buildMilitary(ctx, view);
+    this.monks.build(ctx, view);
     this.keepScouting(ctx, view);
     this.trainArmy(ctx, view);
+    this.monks.train(ctx, view);
     this.researchTechs(ctx, view);
     this.pressure.launch(ctx, view);
     this.pressure.recall(ctx, view);
@@ -293,7 +306,8 @@ export class MediumStrategy extends BaseStrategy {
   protected armyMix(ctx: AIContext, view: WorldView): ReturnType<typeof counterMix> {
     const base = this.tune.armyByAge[ctx.player.age] ?? {};
     const allowed = BASE_UNIT_TYPES.filter(
-      (t) => t !== 'villager' && t !== 'scout' && isUnitAvailable(t, ctx.player.age),
+      // Monks are trained apart (MonkPlay), never as part of the army mix.
+      (t) => t !== 'villager' && t !== 'scout' && t !== 'monk' && isUnitAvailable(t, ctx.player.age),
     );
     return counterMix(base, view.enemySightings, allowed, this.tune.counters);
   }
@@ -316,6 +330,19 @@ export class MediumStrategy extends BaseStrategy {
       if (!type || !this.train(ctx, view, type, this.tune.militaryQueue, type === goal ? reserve : saving)) return;
       counts[type] = (counts[type] ?? 0) + 1;
     }
+  }
+
+  /** What the army keeps back now: the reserve, raised to the cost of a unit it saves for (as trainArmy does). */
+  protected armySavings(ctx: AIContext, view: WorldView): Resources {
+    const reserve = this.reserve(ctx, view);
+    if (!this.trainsArmy(ctx)) return reserve;
+    const mix = this.armyMix(ctx, view);
+    const counts = countByType(view.military);
+    const trainable = (t: BaseUnitType) => this.trainersFor(view, t, this.tune.militaryQueue).length > 0;
+    const goal = savedForUnit(mix, counts, trainable, AI_COMMON.savesForUnits, workableNodes(view, 'gold').length);
+    if (!goal) return reserve;
+    const cost = UNIT_SPECS[civUnitType(ctx.player.civ, goal)].cost;
+    return reserveForGoal(goal, ctx.player.resources, cost, reserve, AI_COMMON.savesForUnits);
   }
 
   /** Base under attack and outnumbered: cheapest available infantry, no savings kept. */

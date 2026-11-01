@@ -66,6 +66,13 @@ const ART: Readonly<Record<Exclude<CursorKind, 'default'>, CursorArt>> = {
     fallback: 'pointer',
   },
   // A sword, point first: attack.
+  // A cross radiating light: convert (a monk's order, M11).
+  convert: {
+    shape: '<path d="M13.6 3h4.8v7.2h7.2v4.8h-7.2V29h-4.8V15H6.4v-4.8h7.2Z"/>',
+    detail: `<path d="M16 5.4v21.4M8.8 12.6h14.4" fill="none" stroke="${LIGHT}" stroke-width="1"/><path d="M4 4.5l2.4 2.4M28 4.5l-2.4 2.4M3 20l2.8-.6M29 20l-2.8-.6" fill="none" stroke="${LINE}" stroke-width="1.3" stroke-linecap="round"/>`,
+    hotspot: [16, 12],
+    fallback: 'pointer',
+  },
   attack: {
     shape: tilt(
       '<path d="M16 1.6l3 4.2v14.4h-6V5.8Z"/><path d="M8.8 20.2h14.4a1 1 0 0 1 1 1v1.6a1 1 0 0 1-1 1H8.8a1 1 0 0 1-1-1v-1.6a1 1 0 0 1 1-1Z"/>' +

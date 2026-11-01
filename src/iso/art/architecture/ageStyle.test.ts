@@ -12,7 +12,7 @@ describe('age styles', () => {
   });
 
   it('covers the civic / economic / military buildings, towers and walls', () => {
-    expect(AGE_STYLED_BUILDINGS).toHaveLength(11);
+    expect(AGE_STYLED_BUILDINGS).toHaveLength(12);
     expect(AGE_STYLED_BUILDINGS).toContain('tower');
     expect(AGE_STYLED_BUILDINGS).toContain('wall');
     expect(AGE_STYLED_BUILDINGS).not.toContain('wonder');

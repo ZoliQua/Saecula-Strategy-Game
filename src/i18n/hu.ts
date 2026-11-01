@@ -155,6 +155,7 @@ export const hu = {
     legionary: 'Légiós',
     cossack: 'Kozák',
     sissi: 'Sissi',
+    monk: 'Szerzetes',
   },
   buildings: {
     town_center: 'Városháza',
@@ -170,6 +171,7 @@ export const hu = {
     tower: 'Őrtorony',
     wall: 'Fal',
     wonder: 'Csoda',
+    monastery: 'Kolostor',
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -253,6 +255,9 @@ export const hu = {
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
     wonderLost: 'Egy Csoda elpusztult.',
+    /** Conversions (M11). */
+    convertedToYou: (unit: string) => `Egy ellenséges ${unit} áttért hozzád`,
+    convertedFromYou: (unit: string) => `Egy ${unit} egységedet áttérítették`,
     /** The selection panel's delete button; `pct` is the refund of a site (0 = none). */
     deleteBuilding: (pct: number) => (pct > 0 ? `Törlés · +${pct} %` : 'Törlés'),
     /** The armed button, waiting for the confirming second press. */
@@ -289,6 +294,7 @@ export const hu = {
     legionary: 'Nyílálló gyalogos',
     cossack: 'Portyázó lovas',
     sissi: 'Gyors portyázó íjász',
+    monk: 'Gyógyít · ellenséges egységet térít',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -304,6 +310,7 @@ export const hu = {
     tower: 'Védelmi torony',
     wall: 'Védőfal',
     wonder: 'Győzelmi emlékmű',
+    monastery: 'Szerzeteseket képez',
   },
   mapLoading: {
     kicker: 'Térkép előkészítése',

@@ -16,6 +16,7 @@ export const SFX_KEYS = [
   'unit_select',
   'unit_move',
   'unit_attack',
+  'unit_convert',
   'unit_die',
   'building_start',
   'building_complete',
@@ -189,6 +190,17 @@ export const SFX_CATALOGUE: Readonly<Record<SfxKey, SfxSpec>> = {
     0.45,
     1,
     80,
+  ),
+  // A soft bell chord rising a fifth: a monk's conversion (order and success, M11).
+  unit_convert: sfx(
+    [
+      { wave: 'sine', freq: [660, 660], ...hit(4, 220, 320), gain: 0.4 },
+      { wave: 'sine', freq: [990, 990], ...hit(4, 200, 300), gain: 0.28, delayMs: 90 },
+      { wave: 'triangle', freq: [1320, 1320], ...hit(3, 160, 240), gain: 0.12, delayMs: 180 },
+    ],
+    0.45,
+    1,
+    120,
   ),
   // A dull body fall: a low thud and a muffled dust burst.
   unit_die: battle(
