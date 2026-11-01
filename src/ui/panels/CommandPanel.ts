@@ -27,6 +27,7 @@ export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'farm',
   'lumber_camp',
   'mining_camp',
+  'dock',
   'barracks',
   'archery_range',
   'stable',

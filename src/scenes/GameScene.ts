@@ -1,3 +1,4 @@
+import { clearUnitOrders } from '../ecs/orders';
 import { buildingHpMultiplier } from '../game/modifiers';
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
@@ -283,6 +284,13 @@ export class GameScene extends Phaser.Scene {
         const trainer = find(cmd.trainerId);
         if (trainer && human && trainer.owner?.playerId === human.id) {
           queueUnit(trainer, cmd.unitType, human);
+        }
+      } else if (cmd.type === 'unload-transport') {
+        // Unload here: the cargo goes ashore on the land beside the transport (M14).
+        const ship = find(cmd.unitId);
+        if (ship?.position && ship.cargo && ship.cargo.units.length > 0 && ship.owner?.playerId === human?.id) {
+          clearUnitOrders(this.world, ship);
+          this.world.addComponent(ship, 'unloadIntent', { target: { tx: ship.position.tx, ty: ship.position.ty } });
         }
       } else if (cmd.type === 'cancel-queue') {
         const trainer = find(cmd.trainerId);

@@ -82,6 +82,20 @@ const ART: Readonly<Record<Exclude<CursorKind, 'default'>, CursorArt>> = {
     hotspot: [6, 6],
     fallback: 'crosshair',
   },
+  // A hull with an arrow rising into it: board the transport (M14).
+  board: {
+    shape: '<path d="M3 20h26l-4 7H7Z"/><path d="M15 9h2v8h-2Z"/><path d="M10 11l6-7 6 7Z"/>',
+    detail: `<path d="M7 23h18" fill="none" stroke="${LIGHT}" stroke-width="1"/>`,
+    hotspot: [16, 20],
+    fallback: 'pointer',
+  },
+  // A hull with an arrow coming down onto the shore: unload (M14).
+  unload: {
+    shape: '<path d="M2 9h18l-3 6H5Z"/><path d="M22 14h2v8h-2Z"/><path d="M18 21l5 6 5-6Z"/><path d="M14 29h17v2H14Z"/>',
+    detail: `<path d="M5 12h12" fill="none" stroke="${LIGHT}" stroke-width="1"/>`,
+    hotspot: [23, 28],
+    fallback: 'pointer',
+  },
   // A struck-through circle: nothing to do there.
   forbidden: {
     shape: '<circle cx="16" cy="16" r="11"/>',

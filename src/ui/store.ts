@@ -27,6 +27,8 @@ export interface SelectedUnitInfo {
   hp: { current: number; max: number };
   tile: { tx: number; ty: number };
   carrying?: { type: 'food' | 'wood' | 'gold'; amount: number };
+  /** A transport's cargo (M14): how many units are aboard. */
+  cargo?: number;
 }
 
 export interface SelectedBuildingInfo {

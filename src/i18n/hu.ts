@@ -222,6 +222,9 @@ export const hu = {
     /** Tooltip of the owner badge (player colour + civ name). */
     owner: 'Tulajdonos népe',
     carrying: 'Visz',
+    cargo: 'Rakomány',
+    unload: 'Kirakodás',
+    unloadTip: 'A rakomány partra száll a legközelebbi szárazföldön (jobb klikk a partra: ott száll ki).',
     amount: 'Készlet',
     queue: 'Kiképzési sor',
     build: 'Építés',

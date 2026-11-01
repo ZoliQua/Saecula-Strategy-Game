@@ -9,7 +9,7 @@ import { uiStore } from '../../ui/store';
 import { canConvert, readyToConvert } from '../../game/convert';
 import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
-import { navGridFor } from '../../ecs/navLayer';
+import { moveLayerOf, navGridFor } from '../../ecs/navLayer';
 
 /** Re-checks the cursor this often while the pointer rests (targets walk under it, the selection changes). */
 const CURSOR_REFRESH_MS = 150;
@@ -40,7 +40,10 @@ export function cursorContext(
       gathers: target?.entity?.resourceNode ? canWorkNode(e, target.entity) : e.gatherer !== undefined,
       builds: isBuilder(e),
       converts: readyToConvert(e),
+      boards: moveLayerOf(e) === 'land',
+      unloads: (e.cargo?.units.length ?? 0) > 0,
     })),
+    land: tile ? map.isPassable(tile.tx, tile.ty) : false,
     target: resource
       ? { kind: target?.kind ?? 'none', resource }
       : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId) },
