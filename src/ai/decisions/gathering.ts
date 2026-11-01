@@ -93,7 +93,6 @@ export function onEnemyGround(p: TileCoord, known: readonly KnownBuilding[], rad
   });
 }
 
-
 /**
  * Shifts gatherer weights toward what a savings goal still lacks: each
  * resource's share of the remaining shortfall (`goal - have`) is blended

@@ -3,6 +3,7 @@ import type { CivId } from '../../types';
 import { MONK, REPATH_RETRY_MS } from '../../config/balance';
 import { clearUnitOrders } from '../orders';
 import { TERRAIN } from '../../map/TerrainTypes';
+import type { MapData as MapDataType } from '../../map/MapData';
 import { gameEvents } from '../../game/events';
 import { MapData } from '../../map/MapData';
 import { createUnit } from '../archetypes/createUnit';
@@ -125,26 +126,65 @@ describe('MonkSystem', () => {
     expect(archer.selectable!.selected).toBe(false);
   });
 
-  it('a monk ordered onto an unreachable target retries its path only every REPATH_RETRY_MS, not every frame', () => {
+  /** A map whose middle is water with a grass island of `r` tiles around (23, 23), far beyond convert range of the shore. */
+  function island(map: MapDataType, r = 0): void {
+    for (let ty = 10; ty <= 36; ty++) for (let tx = 10; tx <= 36; tx++) map.setTile(tx, ty, TERRAIN.water);
+    for (let ty = 23 - r; ty <= 23 + r; ty++) for (let tx = 23 - r; tx <= 23 + r; tx++) map.setTile(tx, ty, TERRAIN.grass);
+  }
+
+  /** Steps until the monk stands still (it reached the shore), at most `maxMs`. */
+  function settle(step: (ms: number) => void, monk: ReturnType<typeof createUnit>, maxMs = 30_000): void {
+    for (let t = 0; t < maxMs; t += 100) {
+      step(100);
+      if (!monk.moveIntent && (monk.movable?.path.length ?? 0) === 0 && t > 500) return;
+    }
+  }
+
+  it('a monk ordered onto an unreachable target retries its path only every REPATH_RETRY_MS, then gives up', () => {
     const { map, world, step } = setup();
-    // The target stands on an island: water all around it, out of convert range of the shore.
-    for (let ty = 14; ty <= 32; ty++) for (let tx = 14; tx <= 32; tx++) map.setTile(tx, ty, TERRAIN.water);
-    map.setTile(23, 23, TERRAIN.grass);
-    const monk = createUnit(world, { type: 'monk', tile: { tx: 5, ty: 23 }, playerId: 1 });
+    island(map);
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    step(15_000); // walk to the shore and settle
+    settle(step, monk);
     let orders = 0;
     const add = world.addComponent.bind(world);
     (world as unknown as { addComponent: typeof add }).addComponent = ((e, c, v) => {
       if (c === 'moveIntent') orders++;
       return add(e, c, v);
     }) as typeof add;
-    step(6000);
-    expect(orders).toBeLessThanOrEqual(Math.ceil(6000 / REPATH_RETRY_MS) + 1);
-    // It gives up after MONK.maxFailedPaths re-plans (an AI monk would otherwise stand on the shore forever).
+    step(2 * REPATH_RETRY_MS - 100);
+    // Still trying, but at most once per REPATH_RETRY_MS (each frame before the fix).
+    expect(monk.convertIntent).toBeDefined();
+    expect(orders).toBeLessThanOrEqual(3);
     step((MONK.maxFailedPaths + 1) * REPATH_RETRY_MS);
     expect(monk.convertIntent).toBeUndefined();
+  });
+
+  it('gives up on an unreachable target that keeps moving too', () => {
+    const { map, world, step } = setup();
+    island(map, 3);
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 20, ty: 20 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    const spots = [{ tx: 20, ty: 20 }, { tx: 26, ty: 26 }, { tx: 20, ty: 26 }, { tx: 26, ty: 20 }];
+    for (let s = 0; s < 40 && monk.convertIntent; s++) {
+      archer.position = { ...spots[s % spots.length]! };
+      step(1000);
+    }
+    expect(monk.convertIntent).toBeUndefined();
+  });
+
+  it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {
+    const { world, step } = setup();
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 14, ty: 2 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    for (let s = 0; s < 8; s++) {
+      archer.position = { tx: Math.min(38, archer.position!.tx + 1), ty: 2 };
+      step(1000);
+    }
+    expect(monk.convertIntent).toBeDefined();
   });
 
   it('a new conversion order on the same target moves at once (the retry wait belongs to the old order)', () => {

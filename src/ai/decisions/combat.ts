@@ -1,8 +1,7 @@
+import { type TileCoord, chebyshev } from '../../iso/coordinates';
 import type { Entity } from '../../ecs/components';
-import type { TileCoord } from '../../iso/coordinates';
 import type { BuildingType } from '../../types';
 import type { KnownBuilding } from '../perception';
-import { chebyshev } from '../../iso/coordinates';
 
 export interface AttackReadiness {
   readonly armySize: number;

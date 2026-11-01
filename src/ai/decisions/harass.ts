@@ -1,6 +1,5 @@
-import type { TileCoord } from '../../iso/coordinates';
+import { type TileCoord, chebyshev } from '../../iso/coordinates';
 import type { BuildingType } from '../../types';
-import { chebyshev } from '../../iso/coordinates';
 
 /** A remembered enemy villager (see perception `enemyVillagers`). */
 export interface SeenVillager {

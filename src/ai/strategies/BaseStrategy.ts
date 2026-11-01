@@ -278,5 +278,3 @@ function insideFootprint(b: Entity, tx: number, ty: number): boolean {
   const { width, height } = b.building.footprint;
   return tx >= b.position.tx && ty >= b.position.ty && tx < b.position.tx + width && ty < b.position.ty + height;
 }
-
-

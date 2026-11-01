@@ -18,6 +18,8 @@ export const AI_COMMON = {
   monkConvertReach: 3,
   /** An AI monk further than this from its rally point (the wave, or home) walks back (tiles, M11). */
   monkFollowSlack: 4,
+  /** A target whose conversion was given up (unreachable) is not picked again by that monk for this long (ms). */
+  monkAvoidMs: 60_000,
   /** How often an AI rescans its own fog of war (ms); the human's runs every 250 ms. */
   fogScanMs: 400,
   /** Cheap per-tick upkeep (idle villagers, army orders, scout) runs this often (ms). */

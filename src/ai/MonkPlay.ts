@@ -24,8 +24,9 @@ export interface MonkActions {
 }
 
 /**
- * Monk play of the Medium strategy family (CLAUDE.md M11). Stateless (all
- * from the world), so nothing extra is saved:
+ * Monk play of the Medium strategy family (CLAUDE.md M11). Read from the
+ * world, apart from a short memory of given-up targets (not saved: after a
+ * load a monk may try one of them once more):
  *  - build: from age 2 with `minVillagers` and the age's military buildings standing, one monastery;
  *  - train: up to `count` monks there;
  *  - control: a ready monk converts the nearest visible enemy unit within
@@ -33,6 +34,11 @@ export interface MonkActions {
  *    (or stays home), where MonkSystem heals the wounded around it.
  */
 export class MonkPlay {
+  /** Each monk's conversion order as last seen (to notice one given up). */
+  private readonly lastOrder = new Map<number, number>();
+  /** Targets each monk gave up on (unreachable), until a game time. Keyed `monkId:targetId`. */
+  private readonly avoid = new Map<string, number>();
+
   constructor(
     private readonly tune: MediumTuning['monks'],
     private readonly act: MonkActions,
@@ -63,11 +69,44 @@ export class MonkPlay {
     const wave = [...this.act.waveMembers()].map((id) => ownLiving(view, id)).filter((u): u is Entity => !!u?.position);
     const rally = groupCentre(wave) ?? baseAnchor(view);
     for (const monk of monks) {
-      if (monk.convertIntent) continue;
-      if (this.tryConvert(ctx, view, monk)) continue;
-      if (!rally || monk.moveIntent || (monk.movable?.path.length ?? 0) > 0) continue;
-      if (chebyshev(monk.position!, rally) > AI_COMMON.monkFollowSlack) ctx.world.addComponent(monk, 'moveIntent', { target: { tx: rally.tx, ty: rally.ty } });
+      this.noteGivenUp(ctx, monk);
+      this.steer(ctx, view, monk, rally);
+      // The order as it leaves this tick: next tick tells whether MonkSystem gave it up.
+      if (monk.id !== undefined) {
+        if (monk.convertIntent) this.lastOrder.set(monk.id, monk.convertIntent.targetId);
+        else this.lastOrder.delete(monk.id);
+      }
     }
+  }
+
+  private steer(ctx: AIContext, view: WorldView, monk: Entity, rally: TileCoord | null): void {
+    if (monk.convertIntent) return;
+    if (this.tryConvert(ctx, view, monk)) return;
+    if (!rally || monk.moveIntent || (monk.movable?.path.length ?? 0) > 0) return;
+    if (chebyshev(monk.position!, rally) > AI_COMMON.monkFollowSlack) ctx.world.addComponent(monk, 'moveIntent', { target: { tx: rally.tx, ty: rally.ty } });
+  }
+
+  /**
+   * A conversion order that ended while its target is still a living enemy
+   * unit and the monk is not recharging was given up (MonkSystem: out of
+   * reach): that target is avoided for AI_COMMON.monkAvoidMs.
+   */
+  private noteGivenUp(ctx: AIContext, monk: Entity): void {
+    const id = monk.id;
+    if (id === undefined) return;
+    const before = this.lastOrder.get(id);
+    if (before === undefined || monk.convertIntent || (monk.converter?.rechargeMs ?? 0) > 0) return;
+    const target = ctx.world.entities.find((e) => e.id === before);
+    if (canConvert(target, ctx.player.id)) this.avoid.set(`${id}:${before}`, ctx.timeMs + AI_COMMON.monkAvoidMs);
+  }
+
+  private avoided(ctx: AIContext, monk: Entity, target: Entity): boolean {
+    const key = `${monk.id}:${target.id}`;
+    const until = this.avoid.get(key);
+    if (until === undefined) return false;
+    if (ctx.timeMs < until) return true;
+    this.avoid.delete(key);
+    return false;
   }
 
   private tryConvert(ctx: AIContext, view: WorldView, monk: Entity): boolean {
@@ -75,7 +114,7 @@ export class MonkPlay {
     let best: Entity | null = null;
     let bestDist = MONK.convertRange + AI_COMMON.monkConvertReach + 1;
     for (const e of view.visibleEnemyUnits) {
-      if (!canConvert(e, ctx.player.id)) continue;
+      if (!canConvert(e, ctx.player.id) || this.avoided(ctx, monk, e)) continue;
       const d = chebyshev(e.position, monk.position!);
       if (d < bestDist) {
         best = e;

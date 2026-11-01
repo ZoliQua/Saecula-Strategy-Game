@@ -2,11 +2,10 @@ import { AI_COMMON } from '../config/aiBalance';
 import { holdsTimeLead } from '../game/timeVictory';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
-import type { TileCoord } from '../iso/coordinates';
+import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
 import { nearest } from './decisions/gathering';
-import { chebyshev } from '../iso/coordinates';
 import { nextExploreTarget } from './decisions/scouting';
 import { ownLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, copyTile, type ArmyState } from './strategyState';
@@ -82,6 +81,7 @@ export class ArmyControl {
    * wave while the AI holds the lead in the time limit's final window.
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
+    this.prune(view);
     // Leading on score in the time limit's final minutes: keep the army home, a lost fight only costs the lead.
     if (holdsTimeLead(ctx.player.id, ctx.timeVictory)) {
       this.log.add(ctx.timeMs, 'stance', 'holdLead');
@@ -100,7 +100,7 @@ export class ArmyControl {
    * wave falls back home.
    */
   update(ctx: AIContext, view: WorldView): void {
-    for (const id of [...this.wave]) if (!ownLiving(view, id)) this.wave.delete(id);
+    this.prune(view);
     if (this.attacking && this.wave.size < AI_COMMON.retreatBelow) this.retreat(ctx, view);
     this.defend(ctx, view);
     if (this.attacking) this.steerWave(ctx, view);
@@ -187,6 +187,11 @@ export class ArmyControl {
     }
     if (!this.exploreGoal) return;
     for (const u of idle) ctx.world.addComponent(u, 'moveIntent', { target: this.exploreGoal });
+  }
+
+  /** Drops members that are no longer the AI's own living units (dead, or converted away, M11). */
+  private prune(view: WorldView): void {
+    for (const id of [...this.wave]) if (!ownLiving(view, id)) this.wave.delete(id);
   }
 
   /** Calls the wave home (it is spent or its job is done). */

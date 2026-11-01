@@ -24,6 +24,8 @@ export class MonkSystem {
   private readonly goals = new WeakMap<Entity, TileCoord>();
   /** A monk whose path ended short of its target (unreachable) re-plans no earlier than this (system clock, ms). */
   private readonly retryAt = new WeakMap<Entity, number>();
+  /** The closest each monk got to its target in this order (getting closer is progress). */
+  private readonly closest = new WeakMap<Entity, number>();
   /** Re-plans that ended short of the target, per monk. */
   private readonly failures = new WeakMap<Entity, number>();
   /** The conversion order the approach state above belongs to (a new order starts afresh). */
@@ -86,20 +88,27 @@ export class MonkSystem {
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
     const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
-    const sameGoal = !!goal && chebyshev(goal, at) < MONK.retargetTiles;
-    if (sameGoal && moving) return;
-    if (sameGoal) {
-      // Stopped short of the same goal: the target cannot be reached from here. Retry later, as
-      // combat does, and give up after MONK.maxFailedPaths tries (the order would never end).
-      if (this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
-      const failed = (this.failures.get(monk) ?? 0) + 1;
-      if (failed > MONK.maxFailedPaths) {
-        this.world.removeComponent(monk, 'convertIntent');
-        this.forgetApproach(monk);
-        return;
+    // Walking toward a goal the target is still near: keep going.
+    if (goal && moving && chebyshev(goal, at) < MONK.retargetTiles) return;
+    // Each re-plan measures progress: getting closer to the target than ever before in this order.
+    // Without it the target cannot be reached from here (an island, wherever it walks on it):
+    // a monk standing still retries only every REPATH_RETRY_MS, as combat does, and any monk
+    // gives up after MONK.maxFailedPaths re-plans without progress.
+    const d = monk.position ? chebyshev(monk.position, at) : 0;
+    if (goal) {
+      if (d < (this.closest.get(monk) ?? Infinity)) this.failures.delete(monk);
+      else {
+        if (!moving && this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
+        const failed = (this.failures.get(monk) ?? 0) + 1;
+        if (failed > MONK.maxFailedPaths) {
+          this.world.removeComponent(monk, 'convertIntent');
+          this.forgetApproach(monk);
+          return;
+        }
+        this.failures.set(monk, failed);
       }
-      this.failures.set(monk, failed);
-    } else this.failures.delete(monk);
+    }
+    this.closest.set(monk, Math.min(d, this.closest.get(monk) ?? Infinity));
     this.retryAt.set(monk, this.nowMs + REPATH_RETRY_MS);
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
     if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
@@ -110,6 +119,7 @@ export class MonkSystem {
     this.goals.delete(monk);
     this.retryAt.delete(monk);
     this.failures.delete(monk);
+    this.closest.delete(monk);
     this.orderOf.delete(monk);
   }
 

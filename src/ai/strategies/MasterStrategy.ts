@@ -4,8 +4,7 @@ import type { AIContext } from '../AIPlayer';
 import { pickFlankTarget } from '../decisions/combat';
 import { chebyshev } from '../../iso/coordinates';
 import { FlankControl } from '../FlankControl';
-import type { WorldView } from '../perception';
-import { ownLiving } from '../perception';
+import { ownLiving, type WorldView } from '../perception';
 import { expectKind, type StrategyState } from '../strategyState';
 import { HardStrategy } from './HardStrategy';
 
