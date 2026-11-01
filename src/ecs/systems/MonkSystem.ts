@@ -4,8 +4,6 @@ import { convertRechargeMultiplier, type Researched } from '../../game/modifiers
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
-import { escapeSteps } from '../../map/escape';
-import { canStep, NEIGHBOUR_STEPS } from '../../map/gridSteps';
 import { findPathToAny } from '../../map/pathfinding';
 import { escapeRulesAt } from '../escapeRules';
 import type { CivId } from '../../types';
@@ -89,42 +87,32 @@ export class MonkSystem {
 
   /**
    * Heads for the target, re-planning only when it has moved away from the
-   * last goal or the walk ended (a target that drifted meanwhile is then
-   * re-planned for). One search from the shared budget (as combat does: the
-   * monk's escape rules, the path written straight to it) finds the nearest
-   * tile, in steps, it can reach within convertRange (then one step further
-   * in, where open, for slack while channelling). With none, the target
-   * is out of reach (an island, a walled-off pen) and the order is given up.
+   * last goal or the walk ended out of range. From walkable ground one
+   * budgeted search (as combat's: path written straight to the monk) finds
+   * the nearest tile, in steps, it can reach within convertRange; with none,
+   * the target is out of reach (an island, a walled-off pen) and the order
+   * is given up. On blocked ground (a foundation laid over it) it gets a
+   * move order toward the target instead: PathfindingSystem steps it off on
+   * that side, and the next plan judges from there.
    */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
     const walking = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
-    // Walking toward a goal the target is still near: keep going.
     if (goal && walking && chebyshev(goal, at) < MONK.retargetTiles) return;
     const from = monk.position!;
-    if (!monk.movable) {
-      // Cannot walk at all: the order ends, but the target is not unreachable (no give-up mark).
-      this.world.removeComponent(monk, 'convertIntent');
-      this.forgetApproach(monk);
+    if (!this.map.isPassable(from.tx, from.ty)) {
+      this.goals.set(monk, { tx: at.tx, ty: at.ty });
+      if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
+      else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });
       return;
     }
-    if (!this.paths.take()) return;
+    if (!monk.movable || !this.paths.take()) return;
     const escape = escapeRulesAt(this.world, from, this.map, monk.owner?.playerId ?? 0);
-    // Inline Chebyshev: the search calls it for every tile it visits.
-    const inRange = (tx: number, ty: number) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= MONK.convertRange;
-    const path = findPathToAny(this.map, from, inRange, escape, at);
+    const path = findPathToAny(this.map, from, (tx, ty) => chebyshev({ tx, ty }, at) <= MONK.convertRange, escape, at);
     if (!path) {
       this.giveUp(monk);
-      // On blocked ground (a foundation laid over it) it still steps off (M7: never left stuck).
-      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape, at)?.slice(1) ?? [];
       return;
     }
-    // One step further in where it can, so a target shuffling a tile does not break the channel.
-    const end = path.at(-1)!;
-    const inner = NEIGHBOUR_STEPS.find(
-      ([dx, dy]) => canStep(this.map, end.tx, end.ty, dx, dy) && chebyshev({ tx: end.tx + dx, ty: end.ty + dy }, at) < chebyshev(end, at),
-    );
-    if (inner && path.length > 1) path.push({ tx: end.tx + inner[0], ty: end.ty + inner[1] });
     if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
     monk.movable.path = path.slice(1);
     monk.movable.progress = 0;

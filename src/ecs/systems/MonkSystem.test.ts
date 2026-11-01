@@ -140,37 +140,36 @@ describe('MonkSystem', () => {
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     step(100);
     expect(monk.convertIntent).toBeUndefined();
-    expect(monk.moveIntent).toBeUndefined();
     expect(monk.position).toEqual({ tx: 4, ty: 23 });
+    expect(monk.moveIntent).toBeUndefined();
     expect(takeConvertGivenUp(monk)).toBe(archer.id);
   });
 
-  it('giving up on blocked ground still steps the monk off it (never left stuck, M7)', () => {
-    const { map, world, monks } = setup();
+  it('a monk on blocked ground steps off it before the target is judged (never left stuck, M7)', () => {
+    const { map, world, step } = setup();
     island(map);
     const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
     map.setTile(4, 23, TERRAIN.water);
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    monks.update(16);
+    for (let t = 0; t < 30_000 && monk.convertIntent; t += 100) step(100);
     expect(monk.convertIntent).toBeUndefined();
-    const end = monk.movable!.path.at(-1);
-    expect(end && map.isPassable(end.tx, end.ty)).toBe(true);
+    expect(map.isPassable(monk.position!.tx, monk.position!.ty)).toBe(true);
   });
 
   it('steps off blocked ground on the side of its target (the other side is cut off)', () => {
-    const { map, world, monks } = setup();
+    const { map, world, step } = setup();
     for (let ty = 0; ty < 40; ty++) map.setTile(20, ty, TERRAIN.water);
-    // Only the wall row the monks stand in matters; seal the rows apart so the other side cannot be walked round.
+    // Rows apart, so neither side can be walked round.
     for (let tx = 0; tx < 40; tx++) map.setTile(tx, 10, TERRAIN.water);
-    for (const side of [1, -1]) {
-      const monk = createUnit(world, { type: 'monk', tile: { tx: 20, ty: 5 + side * 10 + 10 }, playerId: 1 });
-      const archer = createUnit(world, { type: 'archer', tile: { tx: 20 + side * 8, ty: 5 + side * 10 + 10 }, playerId: 2 });
+    const pairs = [1, -1].map((side) => {
+      const monk = createUnit(world, { type: 'monk', tile: { tx: 20, ty: 15 + side * 10 }, playerId: 1 });
+      const archer = createUnit(world, { type: 'archer', tile: { tx: 20 + side * 12, ty: 15 + side * 10 }, playerId: 2 });
       world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-      monks.update(16);
-      expect(monk.convertIntent, `side ${side}`).toBeDefined();
-      expect(Math.sign(monk.movable!.path.at(-1)!.tx - 20), `side ${side}`).toBe(side);
-    }
+      return { side, monk, archer };
+    });
+    step(30_000);
+    for (const { side, archer } of pairs) expect(archer.owner!.playerId, `side ${side}`).toBe(1);
   });
 
   it('gives up on an unreachable target that keeps moving too', () => {
@@ -225,8 +224,7 @@ describe('MonkSystem', () => {
 
   it('plans its walk only with a path search from the shared budget', () => {
     const { map, world } = setup();
-    const none = { take: () => false };
-    const monks = new MonkSystem(world, map, civOf, undefined, none);
+    const monks = new MonkSystem(world, map, civOf, undefined, { take: () => false });
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
@@ -248,16 +246,6 @@ describe('MonkSystem', () => {
     expect(d).toBeLessThanOrEqual(MONK.convertRange);
   });
 
-  it('stops a step inside its range on open ground, so a one-tile shuffle does not break the channel', () => {
-    const { world, monks } = setup();
-    const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 20 }, playerId: 1 });
-    const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 20 }, playerId: 2 });
-    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    monks.update(16);
-    const end = monk.movable!.path.at(-1)!;
-    expect(Math.max(Math.abs(end.tx - 30), Math.abs(end.ty - 20))).toBe(MONK.convertRange - 1);
-  });
-
   it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {
     const { world, step } = setup();
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
@@ -270,7 +258,7 @@ describe('MonkSystem', () => {
     expect(monk.convertIntent).toBeDefined();
   });
 
-  it('a new conversion order on the same target moves at once, toward a tile within range', () => {
+  it('a new conversion order on the same target re-plans at once', () => {
     const { world, monks } = setup();
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
@@ -278,7 +266,7 @@ describe('MonkSystem', () => {
     monks.update(16);
     const first = monk.movable!.path;
     expect(first.length).toBeGreaterThan(0);
-    // The player clicks the same target again: a new plan at once.
+    // The player clicks the same target again while the monk walks.
     clearUnitOrders(world, monk);
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
@@ -287,4 +275,3 @@ describe('MonkSystem', () => {
     expect(Math.max(Math.abs(to.tx - 30), Math.abs(to.ty - 30))).toBeLessThanOrEqual(MONK.convertRange);
   });
 });
-

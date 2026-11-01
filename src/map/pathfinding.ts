@@ -138,8 +138,9 @@ export function nearestReachableTile(
  * Breadth-first walk over passable tiles from `start` (the A* finder's
  * diagonal rule) to the nearest tile where `isGoal` holds; the path from
  * `start` to it (both included), or null when no reachable tile qualifies.
- * The fallback when the work tile a system picked turns out to be cut off
- * (e.g. a grass hole inside a forest) while another one is reachable.
+ * Used where any of several tiles will do: the fallback when the work tile
+ * a system picked turns out to be cut off (e.g. a grass hole inside a
+ * forest), and a monk's walk to any tile within its convert range.
  */
 export function findPathToAny(
   map: MapData,
