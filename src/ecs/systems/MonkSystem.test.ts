@@ -191,6 +191,21 @@ describe('MonkSystem', () => {
     expect(ownerOf()).toBe(1);
   });
 
+  it('walks to a reachable tile within range even when the straight-line nearest one is out of range', () => {
+    const { map, world, step } = setup();
+    for (let ty = 0; ty < 40; ty++) for (let tx = 0; tx < 40; tx++) map.setTile(tx, ty, TERRAIN.water);
+    for (let tx = 0; tx <= 20; tx++) map.setTile(tx, 0, TERRAIN.grass);
+    for (let ty = 0; ty <= 23; ty++) map.setTile(20, ty, TERRAIN.grass);
+    for (let ty = 0; ty <= 24; ty++) map.setTile(14, ty, TERRAIN.grass);
+    map.setTile(20, 30, TERRAIN.grass);
+    // (20, 23) is nearest to the target in a straight line but 7 tiles off; (14, 24) is within range 6.
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 0, ty: 0 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 20, ty: 30 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    step(120_000);
+    expect(archer.owner!.playerId).toBe(1);
+  });
+
   it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {
     const { world, step } = setup();
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
@@ -203,7 +218,7 @@ describe('MonkSystem', () => {
     expect(monk.convertIntent).toBeDefined();
   });
 
-  it('a new conversion order on the same target moves at once (the retry wait belongs to the old order)', () => {
+  it('a new conversion order on the same target moves at once, toward a tile within range', () => {
     const { world, monks } = setup();
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
@@ -214,7 +229,8 @@ describe('MonkSystem', () => {
     clearUnitOrders(world, monk);
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
-    expect(monk.moveIntent?.target).toEqual({ tx: 30, ty: 30 });
+    const to = monk.moveIntent!.target;
+    expect(Math.max(Math.abs(to.tx - 30), Math.abs(to.ty - 30))).toBeLessThanOrEqual(MONK.convertRange);
   });
 });
 

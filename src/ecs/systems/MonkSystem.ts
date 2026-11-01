@@ -3,7 +3,7 @@ import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert'
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
-import { reachesWithin } from '../../map/pathfinding';
+import { findPathToAny } from '../../map/pathfinding';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -81,31 +81,32 @@ export class MonkSystem {
     monk.converter.rechargeMs = MONK.rechargeMs * (research ? convertRechargeMultiplier(research) : 1);
   }
 
-  /** Heads for the target, re-pathing only when it has moved away from the last goal. */
+  /**
+   * Heads for the target, re-planning only when it has moved away from the
+   * last goal. The monk walks to the nearest tile (fewest steps) it can
+   * reach within convertRange of the target; with none, the target is out
+   * of reach (an island, a walled-off pen) and the order is given up. A monk
+   * on blocked ground (a foundation laid over it) heads for the target
+   * itself, unjudged, until its escape path has taken it off.
+   */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
     const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
     // Walking toward a goal the target is still near: keep going.
     if (goal && moving && chebyshev(goal, at) < MONK.retargetTiles) return;
-    if (!this.canReachNear(monk, at)) {
+    const from = monk.position;
+    let walkTo: TileCoord | undefined = { tx: at.tx, ty: at.ty };
+    if (from && this.map.isPassable(from.tx, from.ty)) {
+      const inRange = (tx: number, ty: number) => chebyshev({ tx, ty }, at) <= MONK.convertRange;
+      walkTo = findPathToAny(this.map, from, inRange)?.at(-1);
+    }
+    if (!walkTo) {
       this.giveUp(monk);
       return;
     }
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
-    if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
-    else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });
-  }
-
-  /**
-   * Whether some tile the monk can walk to lies within convertRange of `at`
-   * (else the target is out of reach: an island, a walled-off pen). A monk
-   * on blocked ground (a foundation laid over it) is not judged until its
-   * escape path has taken it off.
-   */
-  private canReachNear(monk: Entity, at: TileCoord): boolean {
-    const from = monk.position;
-    if (!from || !this.map.isPassable(from.tx, from.ty)) return true;
-    return reachesWithin(this.map, from, at, MONK.convertRange);
+    if (monk.moveIntent) monk.moveIntent.target = walkTo;
+    else this.world.addComponent(monk, 'moveIntent', { target: walkTo });
   }
 
   /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is. */

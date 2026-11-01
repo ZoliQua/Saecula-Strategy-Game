@@ -61,8 +61,9 @@ export class MasterStrategy extends HardStrategy {
   protected override onWaveLaunched(ctx: AIContext, view: WorldView): void {
     const tune = this.master.flank;
     const main = this.army.target;
+    if (this.flank.active || !main) return;
     const living = [...this.army.members()].map((id) => ownLiving(view, id)).filter((u): u is Entity => !!u?.position);
-    if (this.flank.active || !main || living.length < tune.minWave) return;
+    if (living.length < tune.minWave) return;
     const target = pickFlankTarget(view.knownEnemyBuildings, main, ctx.enemyPlayerId, tune.minSeparation);
     if (!target) return;
     const units = living
