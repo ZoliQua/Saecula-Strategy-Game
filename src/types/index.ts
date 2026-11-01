@@ -74,7 +74,12 @@ export type BaseUnitType =
   | 'musketeer'
   | 'cannon'
   | 'cavalry'
-  | 'monk';
+  | 'monk'
+  // M14: ships (the dock trains them; they move on water)
+  | 'fishing_boat'
+  | 'transport'
+  | 'galley'
+  | 'frigate';
 
 /** Civ-specific units (M8); each replaces one base unit for its civ. */
 export type UniqueUnitType =
@@ -101,6 +106,10 @@ export const BASE_UNIT_TYPES: readonly BaseUnitType[] = [
   'cannon',
   'cavalry',
   'monk',
+  'fishing_boat',
+  'transport',
+  'galley',
+  'frigate',
 ];
 
 export type BuildingType =
@@ -117,7 +126,8 @@ export type BuildingType =
   | 'tower'
   | 'wall'
   | 'wonder'
-  | 'monastery';
+  | 'monastery'
+  | 'dock';
 
 export interface Population {
   current: number;

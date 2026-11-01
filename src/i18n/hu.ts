@@ -167,6 +167,10 @@ export const hu = {
     cossack: 'Kozák',
     sissi: 'Sissi',
     monk: 'Szerzetes',
+    fishing_boat: 'Halászhajó',
+    transport: 'Szállítóhajó',
+    galley: 'Gálya',
+    frigate: 'Fregatt',
   },
   buildings: {
     town_center: 'Városháza',
@@ -183,6 +187,7 @@ export const hu = {
     wall: 'Fal',
     wonder: 'Csoda',
     monastery: 'Kolostor',
+    dock: 'Kikötő',
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -306,6 +311,10 @@ export const hu = {
     cossack: 'Portyázó lovas',
     sissi: 'Gyors portyázó íjász',
     monk: 'Gyógyít · ellenséges egységet térít',
+    fishing_boat: 'Halból ételt gyűjt · a kikötőbe viszi',
+    transport: 'Legfeljebb 5 szárazföldi egységet visz át a vízen',
+    galley: 'Távolsági hajó · hajók és a part ellen',
+    frigate: 'Ágyús hadihajó · épület- és hajórombolás',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -322,6 +331,7 @@ export const hu = {
     wall: 'Védőfal',
     wonder: 'Győzelmi emlékmű',
     monastery: 'Szerzeteseket képez',
+    dock: 'Hajókat képez · a halászhajók ide hozzák a halat',
   },
   mapLoading: {
     kicker: 'Térkép előkészítése',

@@ -39,7 +39,8 @@ function recordPlan(human: 'hungarian' | 'english', civs: Array<'hungarian' | 'e
 describe('N-civ art budget (M5 Task 1)', () => {
   it('AI-only civs prewarm only age-1 unit types', () => {
     expect(prewarmUnitTypes('english', 'hungarian').sort()).toEqual(['archer', 'scout', 'swordsman', 'villager']);
-    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(11);
+    // The human's civ: all eleven land units and the four ships (their train buttons show them, M14).
+    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(15);
   });
 
   it('age-up jobs paint that age’s unit sheets and the next age’s wall pieces', () => {

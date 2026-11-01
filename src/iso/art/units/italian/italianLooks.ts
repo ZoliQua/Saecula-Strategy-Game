@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { ITALIAN_M } from './italianMaterials';
+import { shipFleet } from '../ship';
 
 const I = ITALIAN_M;
 
@@ -22,6 +23,8 @@ const I = ITALIAN_M;
  * scutum with the gold winged thunderbolt.
  */
 export const ITALIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0xa06a40, 0x8c2a2a),
   villager: {
     kind: 'foot',
     human: {

@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { ENGLISH_M } from './englishMaterials';
+import { shipFleet } from '../ship';
 
 const E = ENGLISH_M;
 
@@ -17,6 +18,8 @@ const E = ENGLISH_M;
  * caparisons, so ownership still reads first.
  */
 export const ENGLISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x6e4a30, 0xb8362a),
   villager: {
     kind: 'foot',
     human: {

@@ -55,7 +55,7 @@ function teamCoverage(type: UnitType, civ: CivId): number {
 
 /** The silhouette cues of a look: headgear, shield and weapon style. */
 function cues(look: UnitLook): readonly unknown[] {
-  return look.kind === 'cannon' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
+  return look.kind === 'cannon' || look.kind === 'ship' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
 }
 
 /** Opaque non-team albedo pixels that read as gold (the castle, gilt trim). */
@@ -93,7 +93,7 @@ describe('Spanish unit looks', () => {
   it('carries the brief’s cues: caetra and falcata (age 1), heart-shaped adarga (age 2), crested morion (age 3)', () => {
     const human = (type: UnitType) => {
       const look = unitLook(type, 'spanish');
-      if (look.kind === 'cannon') throw new Error('not a human');
+      if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
       return look.human;
     };
     expect(human('swordsman').shield).toBe('caetra');

@@ -191,7 +191,48 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     range: 0, speed: 0.7, los: 9, cost: c(0, 0, 100), trainTime: 50,
     trainers: ['monastery'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
   },
+  // M14 ships: trained at the dock, moving on water (NAVAL_CLASS).
+  fishing_boat: {
+    age: 1, hp: 60, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 4,
+    range: 0, speed: 1.26, los: 5, cost: c(0, 75, 0), trainTime: 40,
+    trainers: ['dock'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
+  transport: {
+    age: 1, hp: 100, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 8,
+    range: 0, speed: 1.3, los: 5, cost: c(0, 125, 0), trainTime: 45,
+    trainers: ['dock'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
+  galley: {
+    age: 1, hp: 120, meleeAtk: 0, pierceAtk: 6, meleeDef: 0, pierceDef: 6,
+    range: 5, speed: 1.43, los: 7, cost: c(0, 90, 30), trainTime: 60,
+    trainers: ['dock'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS,
+  },
+  frigate: {
+    age: 3, hp: 180, meleeAtk: 0, pierceAtk: 35, meleeDef: 0, pierceDef: 6,
+    range: 7, speed: 1.0, los: 8, cost: c(0, 150, 175), trainTime: 60,
+    trainers: ['dock'], popCost: 2, cooldownMs: CANNON_COOLDOWN_MS,
+  },
 };
+
+/** Ships (M14): they move on water only; melee units and monks cannot touch them. */
+export const NAVAL_CLASS: readonly UnitType[] = ['fishing_boat', 'transport', 'galley', 'frigate'];
+
+/** Whether `type` is a ship (M14). */
+export function isNavalType(type: UnitType): boolean {
+  return NAVAL_CLASS.includes(type);
+}
+
+/** Naval rules (M14). */
+export const NAVAL = {
+  /** Land units a transport carries at most (population counted as usual). */
+  transportCapacity: 5,
+  /** Food a fishing boat carries per trip. */
+  fishCapacity: 15,
+  /** Food per second a fishing boat takes from a fish school beside it. */
+  fishRate: 0.6,
+  /** Food in one fish school. */
+  fishAmount: 225,
+} as const;
 
 /** The monk's healing and conversion (M11). Ranges in tiles (Chebyshev), as unit ranges. */
 export const MONK = {
@@ -230,6 +271,11 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   blacksmith: { age: 2, hp: 1200, width: 2, height: 2, cost: c(0, 150, 0), buildTime: 40, los: 4, popBonus: 0 },
   foundry: { age: 3, hp: 1500, width: 3, height: 3, cost: c(0, 175, 100), buildTime: 60, los: 4, popBonus: 0 },
   monastery: { age: 2, hp: 1500, width: 3, height: 3, cost: c(0, 175, 0), buildTime: 50, los: 6, popBonus: 0 },
+  // M14: on the shore (one side touching water); trains ships, takes fishing boats' food.
+  dock: {
+    age: 1, hp: 1800, width: 3, height: 3, cost: c(0, 150, 0), buildTime: 35,
+    los: 6, popBonus: 0, dropoff: ['food'],
+  },
   tower: { age: 2, hp: 850, width: 1, height: 1, cost: c(0, 50, 125), buildTime: 80, los: 9, popBonus: 0 },
   wall: { age: 1, hp: 300, width: 1, height: 1, cost: c(0, 5, 0), buildTime: 6, los: 4, popBonus: 0 },
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },
@@ -296,6 +342,8 @@ export const UNIT_PROJECTILE: Partial<Record<UnitType, ProjectileKind>> = {
   longbowman: 'arrow',
   sissi: 'arrow',
   mousquetaire: 'bullet',
+  galley: 'arrow',
+  frigate: 'cannonball',
 };
 
 /** Towers fire arrows (Task 11 wires the tower attacker to this). */
