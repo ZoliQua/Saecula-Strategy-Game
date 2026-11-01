@@ -1086,6 +1086,42 @@ Az 1.3 „Vallási egységek / konverzió” pontja. Ág: `feat/M11-religious-un
   megjegyzésében). Böngésző-smoke: a betöltött mentésben a szerzetes gyógyít
   (11 → 31 HP) és áttérít egy francia lovagot, konzolhiba nélkül.
 
+### M12 — Bővített fejlődési fa
+Az 1.3 „Tech fa (kutatási fejlesztések)” pontja. Ág: `feat/M12-tech-tree` (az M11
+ágára épül). Változat: 0.7.0.
+- **Tíz új technológia** (a `TECH_BALANCE`-ben, a meglévő `TechEffect` úton;
+  egyedi épület vagy egység nincs):
+
+  | Technológia (`TechId`) | Magyar név | Épület | Kor | Előfeltétel | Hatás |
+  |---|---|---|---|---|---|
+  | `wheelbarrow` | Talicska | városháza | 2 | — | falusiak +10 % sebesség |
+  | `treadmill_crane` | Taposókerekes daru | városháza | 2 | — | építés +20 % gyorsabb |
+  | `husbandry` | Lótenyésztés | istálló | 2 | — | lovasság +10 % sebesség |
+  | `cavalry_armor` | Lovas vértezet | istálló | 3 | `cavalry_training` | lovasság +15 % életerő |
+  | `forced_march` | Erőltetett menet | laktanya | 3 | `infantry_march` | gyalogság +10 % sebesség |
+  | `conscription` | Sorozás | laktanya | 3 | — | laktanya, lőtér, istálló +25 % gyorsabb képzés |
+  | `chemistry` | Kémia | kovácsműhely | 3 | — | lőfegyveres egységek (muskétás, ágyú és egyedi változataik) +1 távolsági támadás |
+  | `sanctity` | Szentség | kolostor | 2 | — | szerzetesek +50 % életerő |
+  | `fervor` | Buzgóság | kolostor | 2 | — | szerzetesek +15 % sebesség |
+  | `illumination` | Megvilágosodás | kolostor | 3 | — | a térítés utáni feltöltődés fele annyi ideig tart |
+
+- **Új hatás-fajták** (`src/game/modifiers.ts`): `villagerSpeed`, `monkSpeed`,
+  `monkHp`, `gunpowderAttack`, `trainSpeed`, `convertRecharge`; a többi a meglévő
+  (`buildSpeed`, `cavalrySpeed`, `cavalryHp`, `infantrySpeed`). Az életerő-bónusz a
+  meglévő egységekre a kutatáskor egyszer, az újakra képzéskor hat (mint eddig).
+- **UI:** a képző épületek kutatás-gombjai és a fejlődési fa az új
+  technológiákat automatikusan mutatják; a kolostor is kutatóhely lesz. Minden
+  szöveg a `hu.ts`-ben.
+- **AI:** a Közepes, Nehéz és Mesteri AI kutatási sorrendje a végén kibővül az új
+  technológiákkal (a szerzetes-fejlesztések csak kolostorral).
+- **Mentés:** `schemaVersion` 6, migrációval (a `TechId` enum bővül).
+- **Tesztek:** minden új hatás (módosító-függvények), a kutatáskori életerő-skálázás,
+  a gyorsabb képzés és feltöltődés, mentés oda-vissza, v5 → v6 migráció valódi v5
+  mentéssel, az AI-szimulációk.
+- Nem része: új épület, új egység, egyedi (népenkénti) technológia, tech-fa
+  szerkesztő.
+- Keret (10.): az M11 keretei változatlanok (nincs új textúra).
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
