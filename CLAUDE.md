@@ -1027,6 +1027,52 @@ reprodukálhatósága. Ág: `feat/M10-save-share-perf`. Változat: 0.5.0.
   Böngésző-smoke: mentés → export (98 KB-os fájl) → hibás fájl importja magyar
   üzenettel → a jó fájl importja betölti a meccset, konzolhiba nélkül.
 
+### M11 — Vallási egységek
+Az 1.3 „Vallási egységek / konverzió” pontja. Ág: `feat/M11-religious-units`
+(az M10 ágára épül). Változat: 0.6.0.
+- **Szerzetes (`monk`, Szerzetes):** új alap egység minden népnek (a
+  `BaseUnitType` bővül; népenként 11 egységlap). 2. kortól, a Kolostorban
+  képzik, aranyba kerül, nem harcol (nincs `attacker`), egyik osztályba sem
+  tartozik (lovas, gyalogos, nyíl), így fejlesztések és népbónuszok nem hatnak rá.
+- **Kolostor (`monastery`, Kolostor):** új épület, 3×3, 2. kortól, csak
+  szerzetest képez. Minden nép a saját építészeti stílusának palettájával
+  kapja (egy közös, palettavezérelt festő a `architecture/` alatt, a
+  `foundryArt` mintájára: templomhajó harangtoronnyal és kerengővel); egy
+  család később saját festőt kaphat.
+- **Gyógyítás:** a nem mozgó, nem térítő szerzetes automatikusan gyógyítja a
+  `MONK.healRange` sugarú körben a legsérültebb saját egységet
+  (`MONK.healPerSec`). Épületet nem gyógyít.
+- **Térítés:** a kijelölt szerzetes jobb klikkje (vagy parancs-gesztusa) egy
+  ellenséges egységre térítést indít: a szerzetes `MONK.convertRange`
+  távolságra megy, majd `MONK.convertTimeMs` ideig térít; ha a cél kilép a
+  távolságból, a szerzetes követi. Siker esetén az egység a szerzetes
+  tulajdonosáé lesz (parancsai törlődnek, a népe szerinti kinézete marad), a
+  szerzetes pedig `MONK.rechargeMs` ideig nem téríthet újra. Szerzetest és
+  épületet nem lehet téríteni. A térítés pontszámban úgy számít, mint egy
+  elpusztított egység (a térítőnek `killValue`, az áldozatnak elveszett egység).
+- **UI:** térítés-kurzor, a szerzetes térítés és gyógyítás közben „munka”
+  animációt játszik, a kijelölés-panel a szerzetes szerepét mutatja; a
+  fejlődési fa a Kolostort és a Szerzetest automatikusan mutatja. Hang:
+  egy procedurális térítés-hang. Minden szöveg a `hu.ts`-ben.
+- **AI (Közepestől):** a 2. korban Kolostort épít és néhány
+  (`armyByAge`-nél külön, kis számú) szerzetest képez; a szerzetesek a
+  sereggel mozognak, gyógyítanak, és a közelükbe érő ellenséges egységet
+  térítik. A könnyű AI nem képez szerzetest.
+- **Mentés:** `schemaVersion` 5, migrációval; új komponensek: `convertIntent`,
+  `converter` (feltöltődés), `originCiv` (a térített egység eredeti népe a
+  kinézethez).
+- **Tesztek:** gyógyítás, térítés (távolság, követés, megszakadás, feltöltődés,
+  tiltott célok, tulajdonosváltás, pontszám), AI-szimuláció (a Közepes AI képez
+  szerzetest és térít), mentés oda-vissza az új komponensekkel, v4 → v5 migráció
+  valódi v4 mentéssel, minden nép és kor kolostora és szerzetese megfesthető,
+  determinisztikus és nincs takart ablakfénye. A régi népek rögzítő hash-ei
+  változatlanok; az új grafikához hash-rögzítés nem készül, mert a hash a
+  Node-verziótól függ (a CI Node 26-on fut, a felhős munkamenet Node 22-n).
+- Nem része: épület-térítés, szerzetes-fejlesztések (kutatás), ereklyék,
+  templom, vallási győzelem, népenkénti szerzetes-kinézet.
+- Keret (10.): az M9 keretei; a népenkénti 11. egységlap a textúra-memóriát a
+  `scripts/perf/texmem.mjs` mérése szerint legfeljebb néhány MB-tal növeli.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
