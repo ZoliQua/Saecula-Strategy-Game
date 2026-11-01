@@ -13,6 +13,7 @@ import type { MapData } from '../../map/MapData';
 import type { AgeId, BuildingType, CivId } from '../../types';
 import { uiStore } from '../../ui/store';
 import { WallLinePlacement } from './WallLinePlacement';
+import { isShoreSite } from '../../game/shore';
 
 /** Building placement: translucent ghost under the cursor and site creation. */
 export class BuildPlacement {
@@ -61,7 +62,8 @@ export class BuildPlacement {
     return buildBlocker(type, this.getAge(), existing) === null;
   }
 
-  canPlaceBuilding(origin: TileCoord, w: number, h: number): boolean {
+  /** Free grass under the whole footprint; a dock (M14) also needs open water along a side. */
+  canPlaceBuilding(origin: TileCoord, w: number, h: number, type?: BuildingType): boolean {
     for (let dy = 0; dy < h; dy++) {
       for (let dx = 0; dx < w; dx++) {
         if (!this.mapData.isBuildable(origin.tx + dx, origin.ty + dy)) {
@@ -69,13 +71,13 @@ export class BuildPlacement {
         }
       }
     }
-    return true;
+    return type !== 'dock' || isShoreSite(this.mapData, origin, w, h);
   }
 
   tryPlaceBuilding(origin: TileCoord, type: BuildingType): void {
     const spec = BUILDING_SPECS[type];
     if (!this.canBuildType(type)) return;
-    if (!this.canPlaceBuilding(origin, spec.width, spec.height)) return;
+    if (!this.canPlaceBuilding(origin, spec.width, spec.height, type)) return;
     const state = uiStore.getState();
     if (
       state.resources.food < spec.cost.food ||
@@ -138,7 +140,7 @@ export class BuildPlacement {
     const { sx, sy } = tileToScreen(bottom);
     this.ghost.setPosition(sx, sy + 16);
     this.ghost.setOrigin(0.5, 1 - BUILDING_BOTTOM_PAD / this.ghost.height);
-    const valid = this.canBuildType(placement) && this.canPlaceBuilding(hover, spec.width, spec.height);
+    const valid = this.canBuildType(placement) && this.canPlaceBuilding(hover, spec.width, spec.height, placement);
     this.ghost.setTint(valid ? 0xbfffd0 : 0xff6666);
     this.ghost.setDepth(bottom.tx + bottom.ty + 0.25);
     this.ghost.setVisible(true);

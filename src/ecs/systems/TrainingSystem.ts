@@ -1,6 +1,8 @@
 import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import { gridOf, type NavGrid } from '../../map/navGrid';
+import { moveLayerOfType } from '../navLayer';
 import { bonusesFor, scaleHealth, trainSpeedMultiplier } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { createUnit } from '../archetypes/createUnit';
@@ -56,7 +58,7 @@ export class TrainingSystem {
   private completeEntry(trainer: Trainer): void {
     const entry = trainer.trainingQueue.entries.shift();
     if (!entry) return;
-    const spawn = this.findSpawnTile(trainer);
+    const spawn = this.findSpawnTile(trainer, gridOf(this.mapData, moveLayerOfType(entry.unitType)));
     if (!spawn) {
       // No free tile adjacent — push the entry back so the player can
       // try again after clearing space.
@@ -78,7 +80,8 @@ export class TrainingSystem {
     // tick; no need to increment here.
   }
 
-  private findSpawnTile(trainer: Trainer): TileCoord | null {
+  /** A free tile next to the footprint on the unit's layer (a dock's ships go on the water beside it, M14). */
+  private findSpawnTile(trainer: Trainer, grid: NavGrid): TileCoord | null {
     const { width, height } = trainer.building.footprint;
     const candidates: TileCoord[] = [];
     for (let dx = -1; dx <= width; dx++) {
@@ -90,7 +93,7 @@ export class TrainingSystem {
       candidates.push({ tx: trainer.position.tx + width, ty: trainer.position.ty + dy });
     }
     for (const t of candidates) {
-      if (this.mapData.isPassable(t.tx, t.ty)) return t;
+      if (grid.isPassable(t.tx, t.ty)) return t;
     }
     return null;
   }
