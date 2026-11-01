@@ -232,8 +232,8 @@ export const NAVAL = {
   fishRate: 0.6,
   /** Food in one fish school. */
   fishAmount: 225,
-  /** A boarding order not fulfilled in this much game time is dropped (the transport is out of reach), ms. */
-  boardTimeoutMs: 60_000,
+  /** A boarding order with no progress (neither the unit nor its transport moving) for this long is dropped, ms. */
+  boardTimeoutMs: 30_000,
   /** A transport that moved this far (tiles) from where a boarding unit last headed makes it re-plan. */
   boardRetargetTiles: 2,
   /** A transport within this many tiles of its unload target (and beside land) puts its cargo ashore there. */

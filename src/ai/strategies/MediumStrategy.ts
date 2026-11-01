@@ -40,6 +40,9 @@ function nearestTile(tiles: readonly TileCoord[], from: TileCoord): TileCoord | 
   return tiles.reduce<TileCoord | undefined>((best, t) => (!best || chebyshev(t, from) < chebyshev(best, from) ? t : best), undefined);
 }
 
+/** Enemy spots a stranded-wave check floods from (M14), at most. */
+const WAVE_REACH_SPOTS = 4;
+
 /** How long a walkability answer (M14) holds while the known enemy buildings stay the same. */
 const WALKABLE_RECHECK_MS = 60_000;
 
@@ -228,9 +231,10 @@ export class MediumStrategy extends BaseStrategy {
   /** Whether any wave member can walk to the enemy (it landed on the enemy's island, M14). */
   private waveReachesEnemy(ctx: AIContext, view: WorldView): boolean {
     const members = [...this.army.members()].map((id) => view.byId.get(id)?.position).filter((p): p is TileCoord => !!p);
-    // One flood from the enemy's spot (any one will do: they share the enemy's land) reaches every member it can.
-    const spot = this.enemySpots(ctx, view)[0];
-    return !!spot && landReachableFromAny(ctx.mapData, members, spot);
+    // One flood per known enemy spot (a few at most) reaches every member it can.
+    return this.enemySpots(ctx, view)
+      .slice(0, WAVE_REACH_SPOTS)
+      .some((spot) => landReachableFromAny(ctx.mapData, members, spot));
   }
 
   /** Where the enemy is known to be: its known buildings, else where its villagers were last seen (M14). */

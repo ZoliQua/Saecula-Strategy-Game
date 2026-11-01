@@ -9,7 +9,6 @@ import { clearUnitOrders } from '../orders';
 import type { EcsWorld } from '../world';
 import { findEntityById } from './gathering/gatherQueries';
 
-
 /**
  * Transports (M14):
  *  - a land unit with a `boardIntent` walks to a land tile beside its own
@@ -25,9 +24,12 @@ export class TransportSystem {
   private readonly headed = new WeakMap<Entity, TileCoord>();
   /** The unload order each transport has set sail for (a new order starts afresh). */
   private readonly sailing = new WeakMap<Entity, object>();
-  /** The boarding order each unit's clock belongs to, and when it began (system clock, ms). */
-  private readonly orderOf = new WeakMap<Entity, object>();
-  private readonly since = new WeakMap<Entity, number>();
+  /**
+   * Each boarding unit's wait: the order it belongs to, when the unit or its
+   * transport last made progress (system clock, ms; not saved: it restarts
+   * after a load), and where the transport stood when last called over.
+   */
+  private readonly waits = new WeakMap<Entity, { order: object; sinceMs: number; unitAt: TileCoord; shipAt: TileCoord; calledAt: TileCoord | null }>();
   private nowMs = 0;
   /** The unload order each transport has already sought an open shore for (once per order). */
   private readonly sought = new WeakMap<Entity, object>();
@@ -64,15 +66,12 @@ export class TransportSystem {
       return;
     }
     const shipBusy = !!t.unloadIntent || !!t.moveIntent || (t.movable?.path.length ?? 0) > 0;
-    // Too long without getting aboard (the shore by the transport is out of reach): the order is dropped.
-    const order = u.boardIntent;
-    if (this.orderOf.get(u) !== order) {
-      this.orderOf.set(u, order);
-      this.since.set(u, this.nowMs);
-    }
-    if (this.nowMs - (this.since.get(u) ?? this.nowMs) > NAVAL.boardTimeoutMs) {
+    // Too long with neither the unit nor its transport getting anywhere: the order is dropped.
+    const wait = this.waitOf(u, t);
+    if (this.nowMs - wait.sinceMs > NAVAL.boardTimeoutMs) {
       this.world.removeComponent(u, 'boardIntent');
       this.headed.delete(u);
+      this.waits.delete(u);
       return;
     }
     const beside = this.landBeside(t.position, u.position);
@@ -81,17 +80,43 @@ export class TransportSystem {
     const shipMoved = !last || chebyshev(last, t.position) >= NAVAL.boardRetargetTiles;
     if (last && !shipMoved) {
       // Walking toward it, or done walking and not beside it: no new search until the transport moves;
-      // an idle transport comes in to the shore by the unit.
-      if (!walking && !shipBusy) this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
+      // an idle transport is called in to the shore by the unit (once from where it stands).
+      if (!walking && !shipBusy) this.callOver(t, u, wait);
       return;
     }
     // Out at sea (no land beside it): the transport comes in to the shore by the unit.
-    if (!beside && !shipBusy) this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
+    if (!beside && !shipBusy) this.callOver(t, u, wait);
     // A land tile beside the transport, nearest the unit; else toward the transport (the shore nearest it).
     const shore = beside ?? t.position;
     this.headed.set(u, { tx: t.position.tx, ty: t.position.ty });
     if (u.moveIntent) u.moveIntent.target = shore;
     else this.world.addComponent(u, 'moveIntent', { target: shore });
+  }
+
+  /** The unit's wait record for its current order; any movement of the unit or the transport is progress. */
+  private waitOf(u: Entity & Required<Pick<Entity, 'boardIntent' | 'position'>>, t: Entity) {
+    const shipAt = t.position!;
+    const order = u.boardIntent;
+    let w = this.waits.get(u);
+    if (!w || w.order !== order) {
+      w = { order, sinceMs: this.nowMs, unitAt: { ...u.position }, shipAt: { ...shipAt }, calledAt: null };
+      this.waits.set(u, w);
+    }
+    const moved = (a: TileCoord, b: TileCoord) => a.tx !== b.tx || a.ty !== b.ty;
+    if (moved(w.unitAt, u.position) || moved(w.shipAt, shipAt)) {
+      w.sinceMs = this.nowMs;
+      w.unitAt = { ...u.position };
+      w.shipAt = { ...shipAt };
+    }
+    return w;
+  }
+
+  /** Calls the transport in to the shore by the unit, once per spot the transport stands on (no search every frame). */
+  private callOver(t: Entity, u: Entity & { position: TileCoord }, wait: { calledAt: TileCoord | null }): void {
+    const at = t.position!;
+    if (wait.calledAt && wait.calledAt.tx === at.tx && wait.calledAt.ty === at.ty) return;
+    wait.calledAt = { ...at };
+    this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
   }
 
   /** The unit leaves the world into the transport's cargo, whole (its orders dropped, deselected). */
