@@ -359,6 +359,20 @@ export const hu = {
       loadFailed: 'A mentés betöltése nem sikerült',
       saveFailed: 'A mentés nem sikerült',
     },
+    /** Save sharing (M10): a slot's save as a JSON file, and loading one. */
+    exportSlot: 'Exportálás',
+    exportSlotLabel: (slot: string) => `${slot} exportálása JSON-fájlba`,
+    exported: 'A mentés letöltése elindult',
+    importFile: 'Importálás fájlból',
+    importing: 'Fájl beolvasása…',
+    /** The exported file's name (slot: 1..5 or "auto", date: YYYY-MM-DD). */
+    exportFile: (slot: string, date: string) => `saecula-mentes-${slot}-${date}.json`,
+    importErrors: {
+      tooLarge: (mb: number) => `A fájl túl nagy (legfeljebb ${mb} MB)`,
+      unreadable: 'A fájl nem olvasható',
+      corrupt: 'Ez a fájl nem Saecula-mentés, vagy sérült',
+      newer: 'Újabb játékverzióval készült mentés',
+    },
   },
   /** The statistics screen (main menu): the local match log. */
   stats: {

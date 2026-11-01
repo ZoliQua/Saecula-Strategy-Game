@@ -39,6 +39,9 @@ export const BACKGROUND_ART_FORCE_AFTER_FRAMES = 30;
 export const AUTOSAVE_INTERVAL_MS = 300_000;
 /** Manual save slots (save:1 … save:SAVE_SLOTS), besides save:auto. */
 export const SAVE_SLOTS = 5;
+
+/** Save sharing (M10): the largest JSON file an import accepts (a 128×128, 6-player save is ~0.5 MB). */
+export const SAVE_SHARE = { maxBytes: 16 * 1024 * 1024 } as const;
 /** Records the local match log keeps (the oldest goes first, M7 Decision 11). */
 export const MATCH_LOG_CAP = 200;
 /** Matches the statistics screen lists, newest first. */

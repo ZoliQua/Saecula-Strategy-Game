@@ -12,7 +12,8 @@ import { techTreeModel } from '../ui/screens/techTreeModel';
 import { uiStore } from '../ui/store';
 import { buildingThumbnail, unitThumbnail } from '../ui/thumbnails';
 import type { SaveOutcome } from './game/MatchSave';
-import { startFromSlot } from './game/MatchStart';
+import { startFromFile, startFromSlot } from './game/MatchStart';
+import { exportSlot } from './game/SaveExport';
 
 /** What GameScene hands the pause (PauseWiring.openPause). */
 export interface PauseData {
@@ -118,6 +119,11 @@ export class PauseScene extends Phaser.Scene {
     const handlers = {
       onPick: (slot: SlotId): Promise<void> => (mode === 'save' ? this.saveTo(slots, slot) : this.loadFrom(slots, slot)),
       onBack: () => this.showMenu(),
+      onExport: async (slot: SlotId): Promise<void> => {
+        const result = await exportSlot(storage, slot);
+        if (this.slots === slots) slots.notice(result.message, result.ok ? 'ok' : 'error');
+      },
+      onImport: (file: File): Promise<void> => this.importFrom(slots, file),
     };
     // A load from the pause replaces the running match: it asks first.
     const slots: SaveSlots = new SaveSlots(mode, [], handlers, { confirmLoad: mode === 'load' });
@@ -146,6 +152,12 @@ export class PauseScene extends Phaser.Scene {
     }
     // The slot changed since the list was read: show it as it is now.
     if (this.slots === slots) slots.setRows(slotRows(await storage.list(), 'load'));
+  }
+
+  /** Loads a shared save file over the paused match (M10 import); choosing the file is the confirmation. */
+  private async importFrom(slots: SaveSlots, file: File): Promise<void> {
+    const started = await startFromFile(this.scene.get('GameScene'), file, (message) => slots.notice(message, 'error'), this.pause.onAbandon);
+    if (started) this.scene.stop();
   }
 
   private resumeGame(): void {

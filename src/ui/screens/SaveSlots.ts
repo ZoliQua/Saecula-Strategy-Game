@@ -13,6 +13,10 @@ export interface SaveSlotsHandlers {
   /** A slot was picked (after the overwrite confirmation in save mode). The list waits while a returned promise runs. */
   onPick(slot: SlotId): void | Promise<void>;
   onBack(): void;
+  /** Load mode: downloads a usable slot's save as a JSON file (M10); each such row gets an export button. */
+  onExport?(slot: SlotId): Promise<void>;
+  /** Load mode: loads a shared save file (M10); the list gets an import button. */
+  onImport?(file: File): Promise<void>;
 }
 
 /** Placeholder rows while the slots are being read (save mode has 5 slots, load mode 6). */
@@ -56,6 +60,7 @@ export class SaveSlots {
       el('span', {}, hu.common.back),
     );
     back.addEventListener('click', () => this.back());
+    const importer = mode === 'load' && handlers.onImport ? this.importButton(handlers.onImport) : null;
     const title = mode === 'save' ? hu.save.title : hu.save.loadTitle;
     this.card = el(
       'div',
@@ -69,7 +74,7 @@ export class SaveSlots {
       ),
       this.list,
       this.status,
-      el('div', { class: 'slots-foot' }, back, el('span', { class: 'pause-foot' }, el('kbd', {}, 'Esc'), el('span', {}, hu.common.back))),
+      el('div', { class: 'slots-foot' }, back, el('span', { class: 'pause-foot' }, el('kbd', {}, 'Esc'), el('span', {}, hu.common.back)), importer),
     );
     this.root = el('div', { class: 'screen pause-layer slots-layer' }, this.card);
     uiRoot().append(this.root);
@@ -138,7 +143,49 @@ export class SaveSlots {
       el('span', { class: 'slot-go', html: this.mode === 'save' ? GLYPHS.save : GLYPHS.arrow }),
     );
     btn.addEventListener('click', () => this.pick(row));
-    return btn;
+    const onExport = this.handlers.onExport;
+    if (this.mode !== 'load' || !onExport || row.status !== 'ok') return btn;
+    const share = el('button', {
+      class: 'slot-export',
+      type: 'button',
+      title: hu.save.exportSlot,
+      'aria-label': hu.save.exportSlotLabel(row.title),
+      disabled: this.busy,
+      'data-export': String(row.slot),
+      html: GLYPHS.download,
+    });
+    share.addEventListener('click', () => this.task(onExport(row.slot)));
+    return el('div', { class: 'slot-line', style: `--i:${i}` }, btn, share);
+  }
+
+  /** The footer's import button over a hidden file input (JSON only). */
+  private importButton(onImport: (file: File) => Promise<void>): HTMLElement {
+    const input = el('input', { type: 'file', accept: '.json,application/json', class: 'slots-file', tabindex: '-1', 'aria-hidden': 'true' });
+    const btn = el('button', { class: 'btn btn-ghost slots-import', type: 'button' }, el('span', { class: 'arrow', html: GLYPHS.upload }), el('span', {}, hu.save.importFile));
+    btn.addEventListener('click', () => {
+      if (!this.busy) input.click();
+    });
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file) return;
+      this.notice(hu.save.importing, 'ok');
+      this.task(onImport(file));
+    });
+    return el('span', { class: 'slots-import-wrap' }, btn, input);
+  }
+
+  /** Runs an export / import with the list busy meanwhile. */
+  private task(done: Promise<void>): void {
+    if (this.busy) return;
+    this.busy = true;
+    this.card.classList.add('busy');
+    this.render();
+    void done.finally(() => {
+      this.busy = false;
+      this.card.classList.remove('busy');
+      this.render();
+    });
   }
 
   private confirmRow(row: SlotRow, i: number): HTMLElement {
