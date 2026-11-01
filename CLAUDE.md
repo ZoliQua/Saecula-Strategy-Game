@@ -33,7 +33,10 @@ egyszerűbb scope-pal.
 - **Multiplayer.** Nincs netkód, nincs szerver, nincs state sync.
 - **Mobil touch interfész.** Desktop böngésző + egér + billentyűzet.
   (Reszponzív layout nem prioritás.)
-- **Kampány / küldetések / sztori.** Csak skirmish (szabad játék).
+- **Kampány / küldetések / sztori.** ~~Csak skirmish (szabad játék).~~
+  Az M13-tól egy rövid, egyjátékos kampány (három küldetés, lásd 9. szekció,
+  M13) a skirmish motorjára épül; hosszú sztori, átvezető videó, szerkesztő
+  továbbra sincs.
 - **Haladó hadviselés.** Nincs formáció, nincs morale rendszer, nincs
   terep-alapú harci bónusz (kezdetben).
 - **Moddolhatóság / custom content.** A játékos nem tölt be külső
@@ -43,7 +46,7 @@ egyszerűbb scope-pal.
 ### 1.3 Nem-cél, de jövőbeli bővítés opciók
 
 Ha a MVP stabil, ezek kerülhetnek be később (külön feature branch-ben):
-- Kampány mód
+- Kampány mód (M13: három küldetés)
 - Tech fa (kutatási fejlesztések)
 - Vallási egységek / konverzió
 - Tengeri egységek és vízi térképek
@@ -515,6 +518,7 @@ Saecula-Strategy-Game/
     │   ├── Minimap.ts
     │   ├── panels/
     │   └── screens/             ← főmenü, játék vége (DOM overlay)
+    ├── campaign/                ← küldetések, célok, kampány-előrehaladás (M13)
     ├── save/
     │   ├── schema.ts            ← TS típusok a save-hez
     │   ├── serializer.ts        ← ECS → JSON
@@ -1129,6 +1133,41 @@ Az 1.3 „Tech fa (kutatási fejlesztések)” pontja. Ág: `feat/M12-tech-tree`
   kutatja. A vegyes népes három-kori szimuláció emberi helye a Közepes 5-ös
   magra került (a söprés a teszt megjegyzésében). Böngésző-smoke: a fejlődési fa
   és a kolostor kutatás-gombjai az új technológiákkal, konzolhiba nélkül.
+
+### M13 — Kampány (három küldetés)
+Az 1.3 „Kampány mód” pontja; az 1.2 nem-célja ennyiben módosul. Ág:
+`feat/M13-campaign` (az M12 ágára épül). Változat: 0.8.0. **Jóváhagyásra vár:**
+a kód csak a scope elfogadása után készül.
+- **Mit jelent itt a kampány:** a skirmish motorján futó, előre beállított
+  küldetések (rögzített térképsablon, méret, mag, népek, AI-nehézség, győzelmi
+  mód, kezdő nyersanyag és kor), mindegyik **célokkal** (pl. „Lépj a
+  középkorba”, „Építs kolostort”, „Tarts ki 20 percig”), magyar
+  **eligazítással** a küldetés előtt és **zárószöveggel** utána. Új térkép-
+  vagy egységtípus, szkriptelt átvezető, párbeszéd-rendszer nincs.
+- **Három küldetés**, sorban feloldva:
+  1. *Az első kolostor* — magyar, kicsi Mezőség, 1 Könnyű AI. Célok: lépj a
+     középkorba; építs kolostort; képezz 2 szerzetest.
+  2. *A határ őrei* — angol, közepes Erődítmény, 2 Közepes AI. Célok: tarts ki
+     20 percig (a városháza álljon); építs 4 őrtornyot.
+  3. *Csodák kora* — olasz, közepes Szigetek, 2 Nehéz AI, a felvilágosodásból
+     indulva. Cél: nyerd meg a meccset (hódítás vagy Csoda).
+  A győzelem: minden elsődleges cél teljesült; a vereség: a városháza(k)
+  elvesztése (és a 2. küldetésben a 20 perc előtti bukás).
+- **Felépítés:** új top-level mappa `src/campaign/` (küldetés-definíciók,
+  tiszta cél-kiértékelők, előrehaladás-tároló), a `GameSetupConfig` opcionális
+  `mission` mezővel; a `VictoryChecker` új oka: `mission`. A célok állapota a
+  mentésbe kerül (`schemaVersion` 7, migrációval).
+- **UI:** főmenü „Kampány” gomb → küldetéslista (zárt / elérhető / teljesített)
+  → eligazítás → játék; a HUD-on célpanel (pipálva); a játék vége képernyő a
+  küldetés zárószövegét mutatja. Az előrehaladás `localStorage`-ban
+  (`isorts.campaign.v1`), sérült adatnál alapállapot.
+- **Tesztek:** a cél-kiértékelők, az előrehaladás-tároló, a küldetések
+  beállításai (érvényes `GameSetupConfig`, játszható térkép), mentés
+  oda-vissza küldetéssel, v6 → v7 migráció, és küldetésenként egy fej nélküli
+  szimuláció, hogy a célok elérhetők (AI vezérelte emberi hellyel).
+- Nem része: küldetés-szerkesztő, egyedi térképek, szkriptelt események,
+  szinkronhang, nehézségi szint választása küldetésenként.
+- Keret (10.): az M12 keretei változatlanok.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
