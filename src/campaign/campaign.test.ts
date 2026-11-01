@@ -138,4 +138,13 @@ describe('CampaignProgress', () => {
     const failing = new CampaignProgress({ getItem: () => null, setItem: () => { throw new Error('quota'); } });
     expect(() => failing.markCompleted('first_monastery')).not.toThrow();
   });
+
+  it('a mission setup sent back to the skirmish setup card loses its mission tag (no hidden mission)', async () => {
+    const { skirmishConfig } = await import('../game/GameSetupConfig');
+    const back = skirmishConfig(missionSetup('border_guards'));
+    expect(back.mission).toBeUndefined();
+    expect('mission' in back).toBe(false);
+    expect(back.civ).toBe('english');
+  });
 });
+

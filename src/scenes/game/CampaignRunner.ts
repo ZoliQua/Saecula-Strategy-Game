@@ -69,9 +69,13 @@ export class CampaignRunner {
     return { done: this.tracker.done };
   }
 
-  /** The match ended: a victory completes the mission; returns its closing text. */
+  /**
+   * The match ended: a victory completes the mission, unless the mission is
+   * still locked (a shared save of a later mission, M10 import): the
+   * campaign unlocks in order. Returns the closing text.
+   */
   finish(victory: boolean): string {
-    if (victory) this.progress.markCompleted(this.mission);
+    if (victory && this.progress.status(this.mission) !== 'locked') this.progress.markCompleted(this.mission);
     const t = hu.campaign.missions[this.mission];
     return victory ? t.victory : t.defeat;
   }

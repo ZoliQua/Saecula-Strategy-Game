@@ -59,4 +59,13 @@ describe('CampaignRunner', () => {
     expect(ui.resources).toEqual(players.human()!.resources);
     expect([...ui.researchedTechs].sort()).toEqual(['enlightenment', 'feudalism']);
   });
+
+  it('winning a mission that is still locked (an imported save) does not complete it nor unlock the next one', () => {
+    const progress = new CampaignProgress(memory());
+    const run = new CampaignRunner(createEcsWorld(), createPlayers('italian', ['german', 'french']), 'age_of_wonders', [], progress, () => undefined);
+    run.finish(true);
+    expect(progress.status('age_of_wonders')).toBe('locked');
+    expect(progress.completed().size).toBe(0);
+  });
 });
+
