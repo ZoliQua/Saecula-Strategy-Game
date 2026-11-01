@@ -1,5 +1,5 @@
 import { NAVAL } from '../../config/balance';
-import { chebyshev, type TileCoord } from '../../iso/coordinates';
+import { chebyshev, tileEquals, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { NEIGHBOUR_STEPS } from '../../map/gridSteps';
 import { waterGrid } from '../../map/navGrid';
@@ -8,6 +8,15 @@ import { moveLayerOf } from '../navLayer';
 import { clearUnitOrders } from '../orders';
 import type { EcsWorld } from '../world';
 import { findEntityById } from './gathering/gatherQueries';
+
+/** A boarding unit's wait (TransportSystem.waits). */
+interface BoardWait {
+  readonly order: object;
+  sinceMs: number;
+  unitAt: TileCoord;
+  shipAt: TileCoord;
+  calledAt: { ship: TileCoord; unit: TileCoord } | null;
+}
 
 /**
  * Transports (M14):
@@ -29,7 +38,7 @@ export class TransportSystem {
    * transport last made progress (system clock, ms; not saved: it restarts
    * after a load), and where the transport stood when last called over.
    */
-  private readonly waits = new WeakMap<Entity, { order: object; sinceMs: number; unitAt: TileCoord; shipAt: TileCoord; calledAt: TileCoord | null }>();
+  private readonly waits = new WeakMap<Entity, BoardWait>();
   private nowMs = 0;
   /** The unload order each transport has already sought an open shore for (once per order). */
   private readonly sought = new WeakMap<Entity, object>();
@@ -58,7 +67,7 @@ export class TransportSystem {
       (t.cargo?.units.length ?? 0) < NAVAL.transportCapacity;
     if (!valid || !t?.position) {
       this.world.removeComponent(u, 'boardIntent');
-      this.headed.delete(u);
+      this.forget(u);
       return;
     }
     if (chebyshev(u.position, t.position) <= 1 && this.map.isPassable(u.position.tx, u.position.ty)) {
@@ -70,8 +79,7 @@ export class TransportSystem {
     const wait = this.waitOf(u, t);
     if (this.nowMs - wait.sinceMs > NAVAL.boardTimeoutMs) {
       this.world.removeComponent(u, 'boardIntent');
-      this.headed.delete(u);
-      this.waits.delete(u);
+      this.forget(u);
       return;
     }
     const beside = this.landBeside(t.position, u.position);
@@ -93,6 +101,11 @@ export class TransportSystem {
     else this.world.addComponent(u, 'moveIntent', { target: shore });
   }
 
+  private forget(u: Entity): void {
+    this.headed.delete(u);
+    this.waits.delete(u);
+  }
+
   /** The unit's wait record for its current order; any movement of the unit or the transport is progress. */
   private waitOf(u: Entity & Required<Pick<Entity, 'boardIntent' | 'position'>>, t: Entity) {
     const shipAt = t.position!;
@@ -102,8 +115,7 @@ export class TransportSystem {
       w = { order, sinceMs: this.nowMs, unitAt: { ...u.position }, shipAt: { ...shipAt }, calledAt: null };
       this.waits.set(u, w);
     }
-    const moved = (a: TileCoord, b: TileCoord) => a.tx !== b.tx || a.ty !== b.ty;
-    if (moved(w.unitAt, u.position) || moved(w.shipAt, shipAt)) {
+    if (!tileEquals(w.unitAt, u.position) || !tileEquals(w.shipAt, shipAt)) {
       w.sinceMs = this.nowMs;
       w.unitAt = { ...u.position };
       w.shipAt = { ...shipAt };
@@ -112,10 +124,11 @@ export class TransportSystem {
   }
 
   /** Calls the transport in to the shore by the unit, once per spot the transport stands on (no search every frame). */
-  private callOver(t: Entity, u: Entity & { position: TileCoord }, wait: { calledAt: TileCoord | null }): void {
+  private callOver(t: Entity, u: Entity & { position: TileCoord }, wait: BoardWait): void {
     const at = t.position!;
-    if (wait.calledAt && wait.calledAt.tx === at.tx && wait.calledAt.ty === at.ty) return;
-    wait.calledAt = { ...at };
+    // Once per pair of spots: the transport where it stands, the unit where it waits.
+    if (wait.calledAt && tileEquals(wait.calledAt.ship, at) && tileEquals(wait.calledAt.unit, u.position)) return;
+    wait.calledAt = { ship: { ...at }, unit: { ...u.position } };
     this.world.addComponent(t, 'moveIntent', { target: { tx: u.position.tx, ty: u.position.ty } });
   }
 
@@ -128,7 +141,7 @@ export class TransportSystem {
       u.movable.progress = 0;
     }
     if (u.selectable) u.selectable.selected = false;
-    this.headed.delete(u);
+    this.forget(u);
     this.world.remove(u);
     if (t.cargo) t.cargo.units.push(u);
     else this.world.addComponent(t, 'cargo', { units: [u] });

@@ -83,9 +83,11 @@ export class LandingControl {
       return;
     }
     if (this.phase === 'boarding') {
-      const waiting = [...this.members].filter((id) => !aboard.has(id));
+      // A member whose boarding order was dropped (its transport out of reach) is not waited for.
+      const waiting = [...this.members].filter((id) => !aboard.has(id) && ownLiving(view, id)?.boardIntent);
       const timedOut = ctx.timeMs - this.sinceMs > AI_NAVAL.boardTimeoutMs;
       if (waiting.length > 0 && !timedOut) return;
+      for (const id of [...this.members]) if (!aboard.has(id) && !ownLiving(view, id)?.boardIntent) this.members.delete(id);
       // Whoever did not make it stays home.
       for (const id of waiting) {
         const u = ownLiving(view, id);

@@ -174,3 +174,24 @@ describe('TransportSystem: boarding at real frame rates (M14)', () => {
     expect(ship.cargo?.units).toHaveLength(1);
   });
 });
+
+describe('TransportSystem: calling the transport over (M14)', () => {
+  it('a transport that cannot come any closer is not sent a path search every frame', () => {
+    const { map, world } = setup();
+    // A lagoon the transport cannot leave; the unit's shore is out of its reach.
+    for (let ty = 0; ty < 30; ty++) map.setTile(4, ty, TERRAIN.water);
+    for (let ty = 0; ty < 30; ty++) map.setTile(5, ty, TERRAIN.cliff);
+    const pathing = new PathfindingSystem(world, map);
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 4, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'swordsman', tile: { tx: 9, ty: 10 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    let calls = 0;
+    for (let t = 0; t < 5_000; t += 16) {
+      if (ship.moveIntent) calls++;
+      pathing.update();
+      transports.update(16);
+    }
+    expect(calls).toBeLessThan(5);
+  });
+});

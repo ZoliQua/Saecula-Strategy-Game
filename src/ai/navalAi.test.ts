@@ -95,4 +95,21 @@ describe('AI navy (M14)', () => {
     const boats = s.world.entities.filter((e) => e.unit?.unitType === 'fishing_boat');
     for (const b of boats) expect(b.gatherIntent).toBeDefined();
   });
+
+  it('a landing does not wait for a member whose boarding order was dropped', () => {
+    const s = islands();
+    createBuilding(s.world, { type: 'town_center', origin: { tx: 3, ty: 12 }, playerId: 2, mapData: s.map });
+    const ship = createUnit(s.world, { type: 'transport', tile: { tx: 14, ty: 13 }, playerId: 2 });
+    const a = createUnit(s.world, { type: 'swordsman', tile: { tx: 13, ty: 13 }, playerId: 2 });
+    const b = createUnit(s.world, { type: 'swordsman', tile: { tx: 2, ty: 2 }, playerId: 2 });
+    const landing = new LandingControl(new ThoughtLog(), () => undefined);
+    landing.start(s.ctx(), [a, b], [ship], { tx: 38, ty: 13 });
+    // b's order is dropped (its transport out of reach, TransportSystem's timeout).
+    s.world.removeComponent(b, 'boardIntent');
+    // Well inside AI_NAVAL.boardTimeoutMs: the landing sails with a alone.
+    s.step(2_100, (c) => landing.update(c, s.perception.update(c)));
+    expect(ship.cargo?.units.map((u) => u.id)).toEqual([a.id]);
+    expect(landing.has(b)).toBe(false);
+    expect(ship.unloadIntent).toBeDefined();
+  });
 });
