@@ -3,7 +3,10 @@ import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert'
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
+import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
+import { escapeSteps } from '../../map/escape';
 import { findPathToAny } from '../../map/pathfinding';
+import { escapeRulesAt } from '../escapeRules';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -35,6 +38,8 @@ export class MonkSystem {
     private readonly civOf: (playerId: number) => CivId,
     /** A player's researched technologies (illumination shortens the recharge, M12); absent = none. */
     private readonly researchOf: (playerId: number) => Researched | undefined = () => undefined,
+    /** The shared per-tick path-search budget (CLAUDE.md §10). */
+    private readonly paths: PathAllowance = UNLIMITED_PATHS,
   ) {}
 
   update(deltaMs: number): void {
@@ -83,30 +88,35 @@ export class MonkSystem {
 
   /**
    * Heads for the target, re-planning only when it has moved away from the
-   * last goal. The monk walks to the nearest tile (fewest steps) it can
-   * reach within convertRange of the target; with none, the target is out
-   * of reach (an island, a walled-off pen) and the order is given up. A monk
-   * on blocked ground (a foundation laid over it) heads for the target
-   * itself, unjudged, until its escape path has taken it off.
+   * last goal or the walk ended. One search from the shared budget (as
+   * combat does: the monk's escape rules, the path written straight to it)
+   * finds the nearest tile it can reach within range: a little inside it
+   * first, so a target that drifts by less than retargetTiles meanwhile is
+   * still in range on arrival, else anywhere within convertRange. With none,
+   * the target is out of reach (an island, a walled-off pen) and the order
+   * is given up.
    */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
-    const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
+    const walking = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
     // Walking toward a goal the target is still near: keep going.
-    if (goal && moving && chebyshev(goal, at) < MONK.retargetTiles) return;
+    if (goal && walking && chebyshev(goal, at) < MONK.retargetTiles) return;
     const from = monk.position;
-    let walkTo: TileCoord | undefined = { tx: at.tx, ty: at.ty };
-    if (from && this.map.isPassable(from.tx, from.ty)) {
-      const inRange = (tx: number, ty: number) => chebyshev({ tx, ty }, at) <= MONK.convertRange;
-      walkTo = findPathToAny(this.map, from, inRange)?.at(-1);
-    }
-    if (!walkTo) {
+    if (!monk.movable || !from || !this.paths.take()) return;
+    const escape = escapeRulesAt(this.world, from, this.map, monk.owner?.playerId ?? 0);
+    const within = (r: number) => (tx: number, ty: number) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= r;
+    const snug = MONK.convertRange - MONK.retargetTiles + 1;
+    const path = findPathToAny(this.map, from, within(snug), escape) ?? findPathToAny(this.map, from, within(MONK.convertRange), escape);
+    if (!path) {
       this.giveUp(monk);
+      // On blocked ground (a foundation laid over it) it still steps off (M7: never left stuck).
+      if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape)?.slice(1) ?? [];
       return;
     }
+    if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
+    monk.movable.path = path.slice(1);
+    monk.movable.progress = 0;
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
-    if (monk.moveIntent) monk.moveIntent.target = walkTo;
-    else this.world.addComponent(monk, 'moveIntent', { target: walkTo });
   }
 
   /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is. */

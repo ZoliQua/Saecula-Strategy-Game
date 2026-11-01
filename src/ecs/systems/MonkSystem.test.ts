@@ -82,7 +82,7 @@ describe('MonkSystem', () => {
     archer.position = { tx: 5 + MONK.convertRange + 3, ty: 5 };
     monks.update(100);
     expect(monk.convertIntent?.elapsedMs).toBe(0);
-    expect(monk.moveIntent).toBeDefined();
+    expect(monk.movable!.path.length).toBeGreaterThan(0);
     archer.position = { tx: 8, ty: 5 };
     monks.update(MONK.convertTimeMs - 100);
     expect(archer.owner!.playerId).toBe(2);
@@ -145,15 +145,17 @@ describe('MonkSystem', () => {
     expect(takeConvertGivenUp(monk)).toBe(archer.id);
   });
 
-  it('does not give up while standing on blocked ground (it first steps off it)', () => {
-    const { map, world, step } = setup();
+  it('giving up on blocked ground still steps the monk off it (never left stuck, M7)', () => {
+    const { map, world, monks } = setup();
     island(map);
     const monk = createUnit(world, { type: 'monk', tile: { tx: 4, ty: 23 }, playerId: 1 });
     const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 23 }, playerId: 2 });
     map.setTile(4, 23, TERRAIN.water);
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
-    step(100);
-    expect(monk.convertIntent).toBeDefined();
+    monks.update(16);
+    expect(monk.convertIntent).toBeUndefined();
+    const end = monk.movable!.path.at(-1);
+    expect(end && map.isPassable(end.tx, end.ty)).toBe(true);
   });
 
   it('gives up on an unreachable target that keeps moving too', () => {
@@ -206,6 +208,31 @@ describe('MonkSystem', () => {
     expect(archer.owner!.playerId).toBe(1);
   });
 
+  it('plans its walk only with a path search from the shared budget', () => {
+    const { map, world } = setup();
+    const none = { take: () => false };
+    const monks = new MonkSystem(world, map, civOf, undefined, none);
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    monks.update(16);
+    expect(monk.movable!.path).toEqual([]);
+    expect(monk.moveIntent).toBeUndefined();
+    expect(monk.convertIntent).toBeDefined();
+  });
+
+  it('arrives within range of a target that drifted less than retargetTiles meanwhile', () => {
+    const { world, step } = setup();
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 20 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 20, ty: 20 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    step(100);
+    archer.position = { tx: 20 + MONK.retargetTiles - 1, ty: 20 };
+    for (let t = 0; t < 60_000 && (monk.movable!.path.length > 0 || monk.moveIntent); t += 100) step(100);
+    const d = Math.max(Math.abs(monk.position!.tx - archer.position.tx), Math.abs(monk.position!.ty - archer.position.ty));
+    expect(d).toBeLessThanOrEqual(MONK.convertRange);
+  });
+
   it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {
     const { world, step } = setup();
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
@@ -224,12 +251,13 @@ describe('MonkSystem', () => {
     const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
-    expect(monk.moveIntent).toBeDefined();
-    // The player clicks the same target again before the path exists.
+    expect(monk.movable!.path.length).toBeGreaterThan(0);
+    // The player clicks the same target again.
     clearUnitOrders(world, monk);
+    monk.movable!.path = [];
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
-    const to = monk.moveIntent!.target;
+    const to = monk.movable!.path.at(-1)!;
     expect(Math.max(Math.abs(to.tx - 30), Math.abs(to.ty - 30))).toBeLessThanOrEqual(MONK.convertRange);
   });
 });

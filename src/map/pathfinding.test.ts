@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MapData } from './MapData';
-import { findPath, findPathToNearest } from './pathfinding';
+import { findPath, findPathToAny, findPathToNearest } from './pathfinding';
 import { TERRAIN } from './TerrainTypes';
 
 function grass(w: number, h: number): MapData {
@@ -143,5 +143,19 @@ describe('findPathToNearest', () => {
   it('returns null when the unit is already as close as it can get', () => {
     const map = ring();
     expect(findPathToNearest(map, { tx: 3, ty: 6 }, { tx: 6, ty: 6 })).toBeNull();
+  });
+});
+
+describe('findPathToAny', () => {
+  it('reaches a goal tile that is not the straight-line nearest reachable one (a range around a cut-off target)', () => {
+    const map = new MapData(30, 30);
+    for (let ty = 0; ty < 30; ty++) for (let tx = 0; tx < 30; tx++) map.setTile(tx, ty, TERRAIN.water);
+    for (let tx = 0; tx <= 16; tx++) map.setTile(tx, 0, TERRAIN.grass);
+    for (let ty = 0; ty <= 3; ty++) map.setTile(16, ty, TERRAIN.grass);
+    for (let ty = 0; ty <= 4; ty++) map.setTile(10, ty, TERRAIN.grass);
+    // Target (16, 10): (16, 3) is nearest in a straight line but 7 off; (10, 4) is within 6.
+    const within = (r: number) => (tx: number, ty: number) => Math.max(Math.abs(tx - 16), Math.abs(ty - 10)) <= r;
+    expect(findPathToAny(map, { tx: 0, ty: 0 }, within(6))?.at(-1)).toEqual({ tx: 10, ty: 4 });
+    expect(findPathToAny(map, { tx: 0, ty: 0 }, within(5))).toBeNull();
   });
 });
