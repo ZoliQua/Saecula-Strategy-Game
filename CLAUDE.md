@@ -530,6 +530,7 @@ Saecula-Strategy-Game/
         └── index.ts             ← globális típusok (CivId, UnitType, stb.)
 
 docs/                            ← tervek és specifikációk (plans/specs)
+scripts/perf/                    ← mérőszkriptek (textúra-memória, képkockaidő; Playwright, M10)
 ```
 
 ---
@@ -991,6 +992,33 @@ A 4.8 harmadik pontja és az M6-ban nyitva hagyott terep-memória. Ág:
   1,0-s nagyításon (a sáv fölött) változatlan. JS-bundle 0,69 MB gzip. A teljes
   tesztcsomag zöld, kivéve 40 rögzítő (art-hash) tesztet, amely a `main`-en is
   ugyanígy bukik Node 22-n (a CI Node 26-on fut).
+
+### M10 — Mentés megosztása és mérőszkriptek
+Az 1.3 „Mentett játék megosztása (JSON export/import)” pontja, és a mérések
+reprodukálhatósága. Ág: `feat/M10-save-share-perf`. Változat: 0.5.0.
+- **Export:** a betöltési lista (főmenü és szünet) minden használható mentése
+  mellett egy „Exportálás” gomb: a mentés JSON-fájlként letöltődik
+  (`saecula-mentes-<hely>-<dátum>.json`), az aktuális `schemaVersion`-nel
+  (régebbi mentés migrálva). Szerver, link-rövidítő nincs: a fájlt a játékos
+  maga küldi tovább.
+- **Import:** a betöltési lista „Importálás fájlból” gombja egy JSON-fájlt
+  olvas be, ugyanazzal az ellenőrzéssel, mint a tárolt mentést (migráció, zod,
+  konzisztencia), és azonnal betölti a meccset. Nem ír mentési helyre (a
+  játékos utána elmentheti). Legfeljebb `SAVE_SHARE.maxBytes` (16 MB) méretű
+  fájlt fogad el. Hibás, túl nagy, újabb verziójú vagy olvashatatlan fájlnál
+  magyar hibaüzenet, sosem omlik össze.
+- **Mérőszkriptek:** új top-level `scripts/perf/` mappa (Node + Playwright, a
+  fejlesztői szerverrel, a `window.__game` hookon át): `texmem.mjs` (textúra-
+  memória forgatókönyvenként és nagyításonként, a nézet több pontján a
+  legrosszabb érték; a terep külön), `frametime.mjs` (képkocka-CPU átlag / p95 /
+  legrosszabb). `npm run perf:texmem` / `npm run perf:frame`; az eredmény JSON a
+  `scripts/perf/results/` alá (gitignore). A szkriptek nem részei a buildnek és a
+  teszteknek.
+- **Tesztek:** az export–import oda-vissza azonossága, a méretkorlát, a sérült és
+  újabb verziójú fájl, a fájlnév; a letöltés-segéd közös a statisztika
+  exportjával.
+- Nem része: online megosztás, mentés URL-ben, felhőmentés (1.2).
+- Keret (10.): az M9 keretei változatlanok.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
