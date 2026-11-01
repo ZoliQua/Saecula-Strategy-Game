@@ -1,10 +1,14 @@
 import type Phaser from 'phaser';
 import { TERRAIN_STREAM } from '../config/visual';
 import { attachNormalMap, flatGroundNormal } from '../iso/art/lighting/litTextures';
-import { chunkWants, type ChunkRect, type WorldView } from './chunkPlan';
+import { CHUNK_LEVELS, chunkWants, type ChunkLevel, type ChunkRect, type ChunkWants, type WorldView } from './chunkPlan';
 import type { BakedChunk } from './TerrainBake';
 
-type Level = 'full' | 'half';
+type Level = ChunkLevel;
+const rank = (l: Level): number => CHUNK_LEVELS.indexOf(l);
+const perLevel = <T>(make: (l: Level) => T): Record<Level, T> => ({ full: make('full'), mid: make('mid'), half: make('half') });
+/** Linear resolution of each streamed level (of the full texture). */
+const SCALE: Readonly<Record<Level, number>> = { full: 1, mid: TERRAIN_STREAM.midScale, half: 0.5 };
 
 /** Decodes a stored chunk PNG, optionally resized (createImageBitmap; injectable for tests). */
 export type ChunkDecoder = (blob: Blob, resize?: { readonly width: number; readonly height: number }) => Promise<ImageBitmap>;
@@ -43,14 +47,15 @@ interface Slot {
  * in the first update after it.
  *
  * Every chunk is baked once, behind the loading card, and kept as a PNG
- * blob (~150 KB). Near the view a chunk holds its full-resolution texture;
- * in an outer ring, or everywhere when zoomed out below `lodZoom`, a
+ * blob (~150 KB). Near the view a chunk holds its full-resolution texture
+ * (or, zoomed out between `lodZoom` and `midZoom`, a three-quarter mid
+ * one); in an outer ring, or everywhere when zoomed out below `lodZoom`, a
  * half-resolution one; far away nothing (chunkWants decides). Restores
- * are decoded, and halved, off the main thread (createImageBitmap) ahead
+ * are decoded, and scaled, off the main thread (createImageBitmap) ahead
  * of the view margin; installing one is a texture upload of a bitmap
- * (~0.2 ms), done within TERRAIN_STREAM.budgetMs per frame. A full
- * texture is dropped only once its half one is resident, so panning
- * never drops below half resolution.
+ * (~0.2 ms), done within TERRAIN_STREAM.budgetMs per frame. A texture is
+ * dropped only once another kept one is resident (or none is kept), so
+ * panning and zooming never drop to a hole.
  */
 export class ChunkStreamer {
   private readonly slots: Slot[];
@@ -66,13 +71,13 @@ export class ChunkStreamer {
       image: b.image,
       rect: b.rect,
       baked: b,
-      keys: { full: b.key, half: `${b.key}~half` },
-      has: { full: true, half: false },
-      bitmap: { full: null, half: null },
-      decoding: { full: false, half: false },
-      ready: { full: null, half: null },
-      failures: { full: 0, half: 0 },
-      retryAt: { full: 0, half: 0 },
+      keys: { full: b.key, mid: `${b.key}~mid`, half: `${b.key}~half` },
+      has: { full: true, mid: false, half: false },
+      bitmap: perLevel(() => null),
+      decoding: perLevel(() => false),
+      ready: perLevel(() => null),
+      failures: perLevel(() => 0),
+      retryAt: perLevel(() => 0),
       shown: b.key,
     }));
   }
@@ -82,15 +87,16 @@ export class ChunkStreamer {
    * diagnostics, memory tally): decoded bitmaps behind resident streamed
    * textures and the stored PNG blobs.
    */
-  stats(): { full: number; half: number; chunks: number; bitmapBytes: number; blobBytes: number } {
+  stats(): { full: number; mid: number; half: number; chunks: number; bitmapBytes: number; blobBytes: number } {
     let bitmapBytes = 0;
     let blobBytes = 0;
     for (const s of this.slots) {
-      for (const bm of [s.bitmap.full, s.bitmap.half, s.ready.full, s.ready.half]) if (bm) bitmapBytes += bm.width * bm.height * 4;
+      for (const l of CHUNK_LEVELS) for (const bm of [s.bitmap[l], s.ready[l]]) if (bm) bitmapBytes += bm.width * bm.height * 4;
       blobBytes += s.baked.blob?.size ?? 0;
     }
     return {
       full: this.slots.filter((s) => s.has.full).length,
+      mid: this.slots.filter((s) => s.has.mid).length,
       half: this.slots.filter((s) => s.has.half).length,
       chunks: this.slots.length,
       bitmapBytes,
@@ -103,29 +109,36 @@ export class ChunkStreamer {
     let installed = false;
     for (const s of this.slots) {
       const w = chunkWants(s.rect, view, zoom, TERRAIN_STREAM);
-      // A resident full texture makes the half one redundant while the chunk stays in the full ring.
-      const keepHalf = w.keepHalf && !(s.has.full && w.want === 'full');
-      // The half texture first: cheap, and the fallback before a full one may go.
-      if (w.want !== 'none' && !s.has.half && (!s.has.full || w.want === 'half')) this.fetch(s, 'half');
-      if (w.want === 'full' && !s.has.full) this.fetch(s, 'full');
-      for (const level of ['half', 'full'] as const) {
+      const keep = keptLevels(s, w);
+      // Any streamed texture resident covers the wait for the wanted one (the low texture is the last resort).
+      const bare = !CHUNK_LEVELS.some((l) => s.has[l]);
+      if (w.want !== 'none' && !s.has[w.want]) this.fetch(s, w.want);
+      // The half texture as the cheap fallback first, when nothing streamed is resident.
+      if (w.want !== 'none' && w.want !== 'half' && bare) this.fetch(s, 'half');
+      for (const level of [...CHUNK_LEVELS].reverse()) {
         const bm = s.ready[level];
         if (!bm || (installed && this.now() >= deadline)) continue;
         s.ready[level] = null;
-        const wanted = level === 'full' ? w.want === 'full' : w.want !== 'none' && (keepHalf || !s.has.full);
-        if (wanted && !s.has[level]) {
+        const fallback = w.want !== 'none' && rank(level) > rank(w.want) && !CHUNK_LEVELS.some((l) => s.has[l]);
+        if ((level === w.want || fallback || (keep[level] && level === 'half')) && !s.has[level]) {
           this.install(s, level, bm);
           installed = true;
         } else bm.close();
       }
-      // Never a hole: the full texture goes only once the half one exists (or none is wanted).
+      // Never a hole: a texture goes only once another kept one is resident (or none is kept).
       // Drops share the frame budget (freeing many baked canvases at once is a GC spike).
-      const mayDrop = !installed || this.now() < deadline;
-      if (mayDrop && s.has.full && !w.keepFull && s.baked.blob && (s.has.half || !w.keepHalf)) {
-        this.drop(s, 'full');
-        installed = true;
+      const anyKept = CHUNK_LEVELS.some((l) => keep[l]);
+      for (const level of CHUNK_LEVELS) {
+        if (!s.has[level] || keep[level]) continue;
+        if (level === 'full' && !s.baked.blob) continue;
+        const replaced = CHUNK_LEVELS.some((l) => l !== level && s.has[l] && keep[l]);
+        if (!replaced && anyKept) continue;
+        if (level !== 'half') {
+          if (installed && this.now() >= deadline) continue;
+          installed = true;
+        }
+        this.drop(s, level);
       }
-      if (s.has.half && !keepHalf && (s.has.full || !w.keepHalf)) this.drop(s, 'half');
       this.show(s, w.show);
     }
   }
@@ -146,7 +159,7 @@ export class ChunkStreamer {
     this.destroyed = true;
     for (const s of this.slots) {
       s.image.destroy();
-      for (const level of ['full', 'half'] as const) {
+      for (const level of CHUNK_LEVELS) {
         if (this.scene.textures.exists(s.keys[level])) this.scene.textures.remove(s.keys[level]);
         s.bitmap[level]?.close();
         s.ready[level]?.close();
@@ -167,7 +180,8 @@ export class ChunkStreamer {
     if (!blob || s.decoding[level] || s.ready[level]) return;
     if (s.failures[level] > TERRAIN_STREAM.decodeRetries || this.now() < s.retryAt[level]) return;
     s.decoding[level] = true;
-    const resize = level === 'half' ? { width: Math.ceil(s.rect.w / 2), height: Math.ceil(s.rect.h / 2) } : undefined;
+    const f = SCALE[level];
+    const resize = f === 1 ? undefined : { width: Math.ceil(s.rect.w * f), height: Math.ceil(s.rect.h * f) };
     this.decoder(blob, resize).then(
       (bm) => {
         s.decoding[level] = false;
@@ -205,7 +219,8 @@ export class ChunkStreamer {
 
   /** Points the image at its best resident texture (at worst the low one), drawn at the chunk's world size. */
   private show(s: Slot, inView: boolean): void {
-    const key = s.has.full ? s.keys.full : s.has.half ? s.keys.half : s.baked.lowKey;
+    const best = CHUNK_LEVELS.find((l) => s.has[l]);
+    const key = best ? s.keys[best] : s.baked.lowKey;
     if (s.shown !== key) {
       s.image.setTexture(key);
       s.image.setDisplaySize(s.rect.w, s.rect.h);
@@ -213,4 +228,15 @@ export class ChunkStreamer {
     }
     s.image.setVisible(inView);
   }
+}
+
+/**
+ * Which resident levels may stay this frame: those chunkWants keeps, less
+ * the coarser ones made redundant by the wanted level being resident.
+ */
+function keptLevels(s: Pick<Slot, 'has'>, w: ChunkWants): Record<Level, boolean> {
+  const base: Record<Level, boolean> = { full: w.keepFull, mid: w.keepMid, half: w.keepHalf };
+  if (w.want === 'none' || !s.has[w.want]) return base;
+  const wantRank = rank(w.want);
+  return perLevel((l) => base[l] && rank(l) <= wantRank);
 }

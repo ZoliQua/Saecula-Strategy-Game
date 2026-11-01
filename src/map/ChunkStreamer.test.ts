@@ -42,11 +42,12 @@ function fakeBitmap(width: number, height: number) {
 
 /** A decoder whose calls stay pending until the test settles them. */
 function controlledDecoder() {
-  const calls: Array<{ half: boolean; resolve: () => ReturnType<typeof fakeBitmap>; reject: () => void }> = [];
+  const calls: Array<{ half: boolean; level: 'full' | 'mid' | 'half'; resolve: () => ReturnType<typeof fakeBitmap>; reject: () => void }> = [];
   const decoder: ChunkDecoder = (_blob, resize) =>
     new Promise((resolve, reject) => {
       calls.push({
         half: resize !== undefined,
+        level: !resize ? 'full' : resize.width === 260 ? 'half' : 'mid',
         resolve: () => {
           const bm = resize ? fakeBitmap(resize.width, resize.height) : fakeBitmap(520, 520);
           resolve(bm as unknown as ImageBitmap);
@@ -142,4 +143,77 @@ describe('ChunkStreamer', () => {
     await settle();
     expect(late.every((bm) => bm.closed)).toBe(true);
   });
+
+  it('zoomed between lodZoom and midZoom a chunk coming into view gets the mid texture (half first as the fallback)', async () => {
+    const { key, tm, image, streamer, dec, far, inView, settle } = setup();
+    const z = (TERRAIN_STREAM.lodZoom + TERRAIN_STREAM.midZoom) / 2;
+    streamer.update(far, z);
+    streamer.update(inView, z);
+    expect(dec.calls.map((c) => c.level).sort()).toEqual(['half', 'mid']);
+    for (const c of dec.calls.splice(0)) c.resolve();
+    await settle();
+    streamer.update(inView, z);
+    expect(image.key).toBe(`${key}~mid`);
+    streamer.update(inView, z);
+    expect(tm.keys.has(`${key}~half`)).toBe(false);
+    expect(tm.keys.has(key)).toBe(false);
+    expect(streamer.stats()).toMatchObject({ full: 0, mid: 1, half: 0 });
+  });
+
+  it('zooming out from full to the mid band swaps full for mid without a hole', async () => {
+    const { key, tm, image, streamer, dec, inView, settle } = setup();
+    const z = (TERRAIN_STREAM.lodZoom + TERRAIN_STREAM.midZoom) / 2;
+    streamer.update(inView, 1);
+    expect(image.key).toBe(key);
+    streamer.update(inView, z);
+    // The resident full texture covers the wait: only the mid one is decoded, and full stays meanwhile.
+    expect(dec.calls.map((c) => c.level)).toEqual(['mid']);
+    expect(image.key).toBe(key);
+    dec.calls.splice(0)[0]!.resolve();
+    await settle();
+    streamer.update(inView, z);
+    expect(image.key).toBe(`${key}~mid`);
+    expect(tm.keys.has(key)).toBe(false);
+  });
+
+  it('zooming back in from the mid band decodes full and drops mid once full is shown', async () => {
+    const { key, tm, image, streamer, dec, far, inView, settle } = setup();
+    const z = (TERRAIN_STREAM.lodZoom + TERRAIN_STREAM.midZoom) / 2;
+    streamer.update(far, z);
+    streamer.update(inView, z);
+    for (const c of dec.calls.splice(0)) c.resolve();
+    await settle();
+    streamer.update(inView, z);
+    streamer.update(inView, z);
+    expect(image.key).toBe(`${key}~mid`);
+    streamer.update(inView, 1);
+    expect(dec.calls.map((c) => c.level)).toEqual(['full']);
+    expect(image.key).toBe(`${key}~mid`);
+    dec.calls.splice(0)[0]!.resolve();
+    await settle();
+    streamer.update(inView, 1);
+    expect(image.key).toBe(key);
+    // The mid texture is redundant next to the full one: gone by the next frame.
+    streamer.update(inView, 1);
+    expect(tm.keys.has(`${key}~mid`)).toBe(false);
+  });
+
+  it('zooming out below lodZoom from the mid band ends on half only', async () => {
+    const { key, tm, image, streamer, dec, far, inView, settle } = setup();
+    const z = (TERRAIN_STREAM.lodZoom + TERRAIN_STREAM.midZoom) / 2;
+    streamer.update(far, z);
+    streamer.update(inView, z);
+    for (const c of dec.calls.splice(0)) c.resolve();
+    await settle();
+    streamer.update(inView, z);
+    streamer.update(inView, z);
+    streamer.update(inView, TERRAIN_STREAM.lodZoom / 2);
+    expect(image.key).toBe(`${key}~mid`);
+    dec.calls.splice(0)[0]!.resolve();
+    await settle();
+    streamer.update(inView, TERRAIN_STREAM.lodZoom / 2);
+    expect(image.key).toBe(`${key}~half`);
+    expect(tm.keys.has(`${key}~mid`)).toBe(false);
+  });
 });
+

@@ -233,6 +233,7 @@ export const XRAY = {
  * keeps its full-resolution texture only near the view, and a
  * half-resolution one a little further out (or everywhere in view when
  * zoomed out so far that half resolution is ≥ 1 texel per screen px).
+ * Between lodZoom and midZoom the view gets a three-quarter (mid) texture.
  * Margins are screen px around the view; evictions use the wider `keep`
  * margins (hysteresis). Restores decode a stored PNG off the main thread
  * and install within `budgetMs` per frame.
@@ -240,6 +241,10 @@ export const XRAY = {
 export const TERRAIN_STREAM = {
   /** Below this zoom chunks show their half-resolution texture. */
   lodZoom: 0.65,
+  /** From lodZoom up to this zoom chunks near the view show the mid texture instead of the full one (M9). */
+  midZoom: 0.97,
+  /** The mid texture's resolution (linear, of the full one): mid at midZoom is as sharp as half at lodZoom. */
+  midScale: 0.75,
   fullMargin: 96,
   fullKeepMargin: 160,
   halfMargin: 192,
