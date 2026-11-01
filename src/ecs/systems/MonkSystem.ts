@@ -21,7 +21,7 @@ import { findEntityById } from './gathering/gatherQueries';
  *    (restarted whenever the target escapes) and converts it
  *    (convertUnit); a recharging monk or an invalid target ends the order,
  *    and a target no walkable tile within convertRange leads to is given
- *    up at once (the monk stops; markConvertGivenUp tells the AI);
+ *    up at once (the monk stops, or steps off blocked ground; markConvertGivenUp tells the AI);
  *  - otherwise a monk standing still heals the most wounded own unit
  *    within MONK.healRange at MONK.healPerSec (whole HP; fractions carry).
  * `busy` marks a healing / channelling monk for its work animation.
@@ -121,7 +121,7 @@ export class MonkSystem {
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
   }
 
-  /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is. */
+  /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is (approach() then steps one on blocked ground off it). */
   private giveUp(monk: Entity): void {
     if (monk.convertIntent) markConvertGivenUp(monk, monk.convertIntent.targetId);
     this.drop(monk);
