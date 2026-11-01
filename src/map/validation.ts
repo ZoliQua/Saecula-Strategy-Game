@@ -72,10 +72,22 @@ export function validateMap(generated: GeneratedMap): MapValidation {
   if (problems.length > 0 || playerStarts.length === 0) return { ok: problems.length === 0, problems };
 
   const reached = floodFrom([villagerSpawnTiles(playerStarts[0]!)[1]!], w, h, walkable);
+  // Islands (M14 seaLinked): a start off player 0's land must share a sea with it (a transport crosses).
+  const sea0 = generated.seaLinked ? seaTouching(generated, reached) : null;
   playerStarts.forEach((start, i) => {
     const v = villagerSpawnTiles(start)[1]!;
-    if (!reached[v.ty * w + v.tx]) problems.push(`player ${i} cannot be reached from player 0`);
+    if (reached[v.ty * w + v.tx]) return;
+    if (sea0 && sharesSea(generated, floodFrom([v], w, h, walkable), sea0)) return;
+    problems.push(`player ${i} cannot be reached from player 0`);
   });
+  // Water maps (M14): every start has a dock site on its own land and fish its boats can reach.
+  if (generated.naval) {
+    playerStarts.forEach((start, i) => {
+      const own = floodFrom([villagerSpawnTiles(start)[1]!], w, h, walkable);
+      const problem = navalProblem(generated, start, own);
+      if (problem) problems.push(`player ${i}: ${problem}`);
+    });
+  }
   playerStarts.forEach((start, i) => {
     const reachedFrom = i === 0 ? reached : floodFrom([villagerSpawnTiles(start)[1]!], w, h, walkable);
     const eco = startEconomy(generated, start, reachedFrom);
@@ -180,4 +192,86 @@ export function startEconomy(generated: GeneratedMap, start: TileCoord, reached?
     }
   }
   return out;
+}
+
+/** Dock sites are looked for within this many tiles of a start; its fish within NAVAL_FISH_RADIUS (M14). */
+export const NAVAL_DOCK_RADIUS = 22;
+export const NAVAL_FISH_RADIUS = 28;
+/** Fish schools a start's boats must be able to reach at least. */
+export const NAVAL_MIN_FISH = 2;
+
+/** Water tiles (open sea) 4-connected from `from`. */
+function floodSea(map: GeneratedMap['map'], from: readonly TileCoord[]): Uint8Array {
+  const w = map.width;
+  const h = map.height;
+  const water = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < w && ty < h && map.getTile(tx, ty) === TERRAIN.water;
+  return floodFrom(from, w, h, water);
+}
+
+/** The sea (open water reachable by ship) touching the land in `land`. */
+function seaTouching(generated: GeneratedMap, land: Uint8Array): Uint8Array {
+  const { map } = generated;
+  const w = map.width;
+  const shore: TileCoord[] = [];
+  map.forEachTile(({ tx, ty }, terrain) => {
+    if (terrain !== TERRAIN.water) return;
+    for (const [dx, dy] of STEPS) {
+      const x = tx + dx;
+      const y = ty + dy;
+      if (x >= 0 && y >= 0 && x < w && y < map.height && land[y * w + x]) {
+        shore.push({ tx, ty });
+        return;
+      }
+    }
+  });
+  return floodSea(map, shore);
+}
+
+function sharesSea(generated: GeneratedMap, land: Uint8Array, sea: Uint8Array): boolean {
+  const mine = seaTouching(generated, land);
+  for (let i = 0; i < sea.length; i++) if (sea[i] && mine[i]) return true;
+  return false;
+}
+
+/**
+ * Why a start of a water map cannot play the sea (M14), or null: it needs
+ * a dock site (3×3 free grass on its own land with open water along a
+ * side) within NAVAL_DOCK_RADIUS, and NAVAL_MIN_FISH fish schools within
+ * NAVAL_FISH_RADIUS that a boat from that dock reaches.
+ */
+function navalProblem(generated: GeneratedMap, start: TileCoord, own: Uint8Array): string | null {
+  const { map } = generated;
+  const w = map.width;
+  const h = map.height;
+  const water = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < w && ty < h && map.getTile(tx, ty) === TERRAIN.water;
+  const coreFree = (tx: number, ty: number) => Math.max(Math.abs(tx - start.tx), Math.abs(ty - start.ty)) > TOWN_CENTER_SIZE;
+  let launch: TileCoord[] | null = null;
+  for (let dy = -NAVAL_DOCK_RADIUS; dy <= NAVAL_DOCK_RADIUS && !launch; dy++) {
+    for (let dx = -NAVAL_DOCK_RADIUS; dx <= NAVAL_DOCK_RADIUS && !launch; dx++) {
+      const ox = start.tx + dx;
+      const oy = start.ty + dy;
+      let fits = true;
+      for (let y = oy; y < oy + 3 && fits; y++) {
+        for (let x = ox; x < ox + 3 && fits; x++) {
+          fits = x >= 0 && y >= 0 && x < w && y < h && map.getTile(x, y) === TERRAIN.grass && own[y * w + x] === 1 && coreFree(x, y);
+        }
+      }
+      if (!fits) continue;
+      const shore: TileCoord[] = [];
+      for (let k = 0; k < 3; k++) {
+        for (const t of [{ tx: ox + k, ty: oy - 1 }, { tx: ox + k, ty: oy + 3 }, { tx: ox - 1, ty: oy + k }, { tx: ox + 3, ty: oy + k }]) {
+          if (water(t.tx, t.ty)) shore.push(t);
+        }
+      }
+      if (shore.length >= 2) launch = shore;
+    }
+  }
+  if (!launch) return 'no dock site by the start';
+  const sea = floodSea(map, launch);
+  let fish = 0;
+  map.forEachTile(({ tx, ty }, terrain) => {
+    if (terrain !== TERRAIN.fish || Math.hypot(tx - start.tx, ty - start.ty) > NAVAL_FISH_RADIUS) return;
+    if (STEPS.some(([dx, dy]) => sea[(ty + dy) * w + tx + dx] === 1 && tx + dx >= 0 && tx + dx < w)) fish++;
+  });
+  return fish >= NAVAL_MIN_FISH ? null : `only ${fish} fish schools its boats reach`;
 }

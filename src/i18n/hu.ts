@@ -47,6 +47,8 @@ export const hu = {
       islands: { name: 'Szigetek', desc: 'Szigetek sziklák között, keskeny hidak' },
       fortress: { name: 'Erődítmény', desc: 'Falakkal védett kezdőzónák' },
       random: { name: 'Véletlen', desc: 'Zajalapú, változatos' },
+      inland_sea: { name: 'Beltenger', desc: 'Nagy tó középen, körbe járható part' },
+      archipelago: { name: 'Szigetvilág', desc: 'Mindenki saját szigeten, csak hajóval' },
     },
     size: 'Térkép mérete',
     sizes: { small: 'Kicsi', medium: 'Közepes', large: 'Nagy' },
