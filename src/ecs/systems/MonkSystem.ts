@@ -3,7 +3,7 @@ import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert'
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
-import { nearestReachableTile } from '../../map/pathfinding';
+import { reachesWithin } from '../../map/pathfinding';
 import type { CivId } from '../../types';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
@@ -105,8 +105,7 @@ export class MonkSystem {
   private canReachNear(monk: Entity, at: TileCoord): boolean {
     const from = monk.position;
     if (!from || !this.map.isPassable(from.tx, from.ty)) return true;
-    const nearest = nearestReachableTile(this.map, from, at);
-    return !!nearest && chebyshev(nearest, at) <= MONK.convertRange;
+    return reachesWithin(this.map, from, at, MONK.convertRange);
   }
 
   /** The target cannot be reached: the order ends (marked as given up) and the monk stops where it is. */

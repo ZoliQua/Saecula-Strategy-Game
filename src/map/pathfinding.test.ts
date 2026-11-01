@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MapData } from './MapData';
-import { findPath, findPathToNearest } from './pathfinding';
+import { findPath, findPathToNearest, reachesWithin } from './pathfinding';
 import { TERRAIN } from './TerrainTypes';
 
 function grass(w: number, h: number): MapData {
@@ -143,5 +143,28 @@ describe('findPathToNearest', () => {
   it('returns null when the unit is already as close as it can get', () => {
     const map = ring();
     expect(findPathToNearest(map, { tx: 3, ty: 6 }, { tx: 6, ty: 6 })).toBeNull();
+  });
+});
+
+describe('reachesWithin', () => {
+  /** Water everywhere except a corridor from the start to `ends`. */
+  function corridorMap(ends: readonly { tx: number; ty: number }[]): MapData {
+    const map = new MapData(30, 30);
+    for (let ty = 0; ty < 30; ty++) for (let tx = 0; tx < 30; tx++) map.setTile(tx, ty, TERRAIN.water);
+    for (let tx = 0; tx <= 16; tx++) map.setTile(tx, 0, TERRAIN.grass);
+    for (const e of ends) for (let ty = 0; ty <= e.ty; ty++) map.setTile(e.tx, ty, TERRAIN.grass);
+    return map;
+  }
+
+  it('counts any reachable tile within the Chebyshev range, not only the nearest by straight distance', () => {
+    // Target at (16, 10): (16, 3) is 7 away (Chebyshev), (10, 4) is 6 away but farther in a straight line.
+    const map = corridorMap([{ tx: 16, ty: 3 }, { tx: 10, ty: 4 }]);
+    expect(reachesWithin(map, { tx: 0, ty: 0 }, { tx: 16, ty: 10 }, 6)).toBe(true);
+    expect(reachesWithin(map, { tx: 0, ty: 0 }, { tx: 16, ty: 10 }, 5)).toBe(false);
+  });
+
+  it('is true at once when the start is already within range', () => {
+    const map = corridorMap([]);
+    expect(reachesWithin(map, { tx: 0, ty: 0 }, { tx: 3, ty: 3 }, 3)).toBe(true);
   });
 });

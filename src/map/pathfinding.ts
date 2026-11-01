@@ -135,6 +135,34 @@ export function nearestReachableTile(
 }
 
 /**
+ * Whether some tile reachable from `start` (the A* finder's diagonal rule)
+ * lies within Chebyshev distance `range` of `goal`. Stops at the first such
+ * tile; floods the whole reachable area only when there is none.
+ */
+export function reachesWithin(map: MapData, start: TileCoord, goal: TileCoord, range: number): boolean {
+  const near = (tx: number, ty: number) => Math.max(Math.abs(tx - goal.tx), Math.abs(ty - goal.ty)) <= range;
+  if (near(start.tx, start.ty)) return true;
+  const w = map.width;
+  const seen = new Uint8Array(w * map.height);
+  const queue: number[] = [start.ty * w + start.tx];
+  seen[queue[0]!] = 1;
+  for (let head = 0; head < queue.length; head++) {
+    const idx = queue[head]!;
+    const tx = idx % w;
+    const ty = (idx - tx) / w;
+    for (const [dx, dy] of NEIGHBOUR_STEPS) {
+      if (!canStep(map, tx, ty, dx, dy)) continue;
+      const n = (ty + dy) * w + tx + dx;
+      if (seen[n]) continue;
+      if (near(tx + dx, ty + dy)) return true;
+      seen[n] = 1;
+      queue.push(n);
+    }
+  }
+  return false;
+}
+
+/**
  * Breadth-first walk over passable tiles from `start` (the A* finder's
  * diagonal rule) to the nearest tile where `isGoal` holds; the path from
  * `start` to it (both included), or null when no reachable tile qualifies.
