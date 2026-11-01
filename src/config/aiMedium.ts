@@ -44,6 +44,12 @@ export interface MediumTuning {
   /** Counter-unit reaction to sightings. */
   readonly counters: CounterTuning;
   /** Wonder play (only when the match can be won by a Wonder). */
+  /**
+   * Monks (M11): from age 2, once the economy has `minVillagers`, one
+   * monastery and `count` monks; they follow the army, heal, and convert
+   * enemy units that come within reach. 0 = none.
+   */
+  readonly monks: { readonly count: number; readonly minVillagers: number };
   readonly wonder: {
     readonly enabled: boolean;
     /** Villagers the economy keeps before a Wonder goes up. */
@@ -138,5 +144,6 @@ export const AI_MEDIUM: MediumTuning = {
   ],
   counters: { threshold: 0.3, boost: 0.6 },
   /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
+  monks: { count: 2, minVillagers: 18 },
   wonder: { enabled: true, minVillagers: 20, builders: 8 },
 };

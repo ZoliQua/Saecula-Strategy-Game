@@ -121,7 +121,8 @@ function play(seed: number, slots: readonly Slot[], lateMin = 6, stopAtFirstCann
     for (const e of match.world.entities) {
       if (e.projectile?.kind === 'cannonball' && firstCannonballAt === Infinity) firstCannonballAt = t;
       if (e.unit?.unitType === 'cannon') cannonOwners.add(e.owner?.playerId ?? 0);
-      if (sampleFielded && e.unit && e.owner) {
+      // A converted unit (M11, originCiv) is trained by another civ: it does not count against the owner's roster.
+      if (sampleFielded && e.unit && e.owner && !e.originCiv) {
         const types = fielded.get(e.owner.playerId) ?? new Set<UnitType>();
         fielded.set(e.owner.playerId, types.add(e.unit.unitType));
       }
