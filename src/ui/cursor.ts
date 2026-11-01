@@ -21,7 +21,7 @@ export interface CursorContext {
   /** The selected own units (selected buildings never change the cursor). */
   readonly units: readonly CursorUnit[];
   /** The hovered tile's target under OrderIssuer's rule (resolveOrderTarget). */
-  readonly target: { readonly kind: 'enemy' | 'ownSite' | 'resource' | 'none'; readonly resource?: ResourceType; readonly convertible?: boolean };
+  readonly target: { readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'none'; readonly resource?: ResourceType; readonly convertible?: boolean };
   /** Whether the hovered tile is passable; null when the pointer is off the map. */
   readonly passable: boolean | null;
 }

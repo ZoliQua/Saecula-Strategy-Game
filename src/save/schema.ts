@@ -42,17 +42,17 @@ import {
  * v6 (M12): the technology enum gains the ten M12 technologies.
  * v7 (M13): a campaign mission (setup.mission) and its objective state (campaign).
  * v8 (0.8.1): a Medium-family AI's given-up monk targets (strategy.monkAvoid).
+ * v9 (M14): ships and the dock, fish-school terrain, transport cargo and orders.
  */
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
 const attackValues = { meleeAtk: num, pierceAtk: num, bonusVsCavalry: num };
 
-/** Every ECS component but `id` (kept beside it) and `sprite` (a render proxy, never saved). */
-export const EntityComponentsSchema = z
-  .object({
+/** The component shapes every saved entity can have (a transport's cargo units too, M14). */
+const COMPONENT_SHAPE = {
     position: tile.optional(),
     renderable: z.object({ textureKey: z.string(), frame: z.union([z.string(), num]).optional() }).strict().optional(),
     unit: z.object({ unitType }).strict().optional(),
@@ -118,7 +118,16 @@ export const EntityComponentsSchema = z
       })
       .strict()
       .optional(),
-  })
+    boardIntent: z.object({ transportId: int }).strict().optional(),
+    unloadIntent: z.object({ target: tile }).strict().optional(),
+};
+
+/** A unit in a transport's cargo (M14): its id and components, never a cargo of its own. */
+const CargoUnitSchema = z.object({ id: int.optional(), ...COMPONENT_SHAPE }).strict();
+
+/** Every ECS component but `id` (kept beside it) and `sprite` (a render proxy, never saved). */
+export const EntityComponentsSchema = z
+  .object({ ...COMPONENT_SHAPE, cargo: z.object({ units: z.array(CargoUnitSchema) }).strict().optional() })
   .strict();
 
 export type EntityComponents = z.infer<typeof EntityComponentsSchema>;

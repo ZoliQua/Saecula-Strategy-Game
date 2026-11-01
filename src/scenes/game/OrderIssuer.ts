@@ -10,10 +10,12 @@ import { HUMAN_PLAYER_ID } from '../../config/constants';
 import { canViewerSee } from '../../ecs/systems/renderPlacement';
 import type { TileCoord } from '../../iso/coordinates';
 import type { FogOfWarData } from '../../map/FogOfWarData';
+import type { MapData } from '../../map/MapData';
+import { moveLayerOf } from '../../ecs/navLayer';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
-  readonly kind: 'enemy' | 'ownSite' | 'resource' | 'none';
+  readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'none';
   readonly entity: Entity | null;
 }
 
@@ -41,6 +43,8 @@ export function resolveOrderTarget(world: EcsWorld, tile: TileCoord, actor: Enti
   if (enemy) return { kind: 'enemy', entity: enemy };
   const site = findOwnSiteAt(world, tile, actor);
   if (site) return { kind: 'ownSite', entity: site };
+  const transport = findOwnTransportAt(world, tile, actor);
+  if (transport) return { kind: 'ownTransport', entity: transport };
   const node = findResourceNodeAt(world, tile);
   if (node) return { kind: 'resource', entity: node };
   return { kind: 'none', entity: null };
@@ -50,12 +54,15 @@ export interface OrderIssuerOptions {
   readonly humanId?: number;
   /** The human's fog (fogCanSee): a fogged enemy is no target, the units just move there. */
   readonly canSee?: CanSee;
+  /** The map (M14): a loaded transport sent onto land unloads there. Absent: transports just sail. */
+  readonly map?: MapData;
 }
 
 /** Translates a command (right-click or the gesture) on a tile into move / attack / gather / help-build orders. */
 export class OrderIssuer {
   private readonly humanId: number;
   private readonly canSee: CanSee;
+  private readonly map: MapData | undefined;
 
   constructor(
     private readonly world: EcsWorld,
@@ -65,6 +72,7 @@ export class OrderIssuer {
   ) {
     this.humanId = options.humanId ?? HUMAN_PLAYER_ID;
     this.canSee = options.canSee ?? (() => true);
+    this.map = options.map;
   }
 
   issueOrders(tile: TileCoord): void {
@@ -74,6 +82,7 @@ export class OrderIssuer {
     if (!actor) return;
     const target = resolveOrderTarget(this.world, tile, actor, this.canSee);
     let ordered: 'unit_move' | 'unit_attack' | 'unit_convert' | null = null;
+    const boarders: Entity[] = [];
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== this.humanId || entity.unit === undefined) continue;
       // Any new right-click order overrides whatever the unit was
@@ -97,6 +106,19 @@ export class OrderIssuer {
         ordered ??= 'unit_move';
         continue;
       }
+      // Land units board an own transport (M14); the transport itself, and other ships, just move.
+      if (target.kind === 'ownTransport' && target.entity && target.entity !== entity && moveLayerOf(entity) === 'land') {
+        this.world.addComponent(entity, 'boardIntent', { transportId: targetId });
+        boarders.push(entity);
+        ordered ??= 'unit_move';
+        continue;
+      }
+      // A loaded transport sent onto land unloads there (M14).
+      if (entity.cargo && entity.cargo.units.length > 0 && this.map?.isPassable(tile.tx, tile.ty)) {
+        this.world.addComponent(entity, 'unloadIntent', { target: { tx: tile.tx, ty: tile.ty } });
+        ordered ??= 'unit_move';
+        continue;
+      }
       if (target.kind === 'resource' && target.entity && canWorkNode(entity, target.entity)) {
         this.world.addComponent(entity, 'gatherIntent', { nodeId: targetId });
         ordered ??= 'unit_move';
@@ -104,6 +126,13 @@ export class OrderIssuer {
       }
       this.world.addComponent(entity, 'moveIntent', { target: tile });
       ordered ??= 'unit_move';
+    }
+    // The transport comes to meet the units it takes aboard (unless it was given its own order).
+    const ship = target.kind === 'ownTransport' ? target.entity : null;
+    const centre = boarders[0]?.position;
+    if (ship && centre && boarders.length > 0 && !selectedAll.includes(ship)) {
+      clearUnitOrders(this.world, ship);
+      this.world.addComponent(ship, 'moveIntent', { target: { tx: centre.tx, ty: centre.ty } });
     }
     // The order's acknowledgement (UI feedback: not positional).
     if (ordered) this.sounds.playSFX(ordered);
@@ -123,6 +152,15 @@ function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: Ca
   if (actorPlayer === undefined) return null;
   for (const c of world.with('position', 'owner', 'health')) {
     if (c.owner.playerId !== actorPlayer && covers(c, tile) && canSee(c)) return c;
+  }
+  return null;
+}
+
+/** An own, living transport on the tile (M14): a boarding target. */
+function findOwnTransportAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity | null {
+  const actorPlayer = actor.owner?.playerId;
+  for (const t of world.with('position', 'owner', 'unit')) {
+    if (t.unit.unitType === 'transport' && t.owner.playerId === actorPlayer && !t.dying && covers(t, tile)) return t;
   }
   return null;
 }

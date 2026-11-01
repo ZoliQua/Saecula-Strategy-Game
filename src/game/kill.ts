@@ -24,6 +24,11 @@ export function applyDamage(
   target.health.current -= amount;
   if (target.health.current > 0) return false;
   killEntity(world, target);
+  // A sunk transport's cargo (M14) goes down with it: each unit is lost to the same killer.
+  for (const u of target.cargo?.units ?? []) {
+    gameEvents.emit('entityKilled', { world, killerId, victimOwnerId: u.owner?.playerId ?? 0, ...(u.unit ? { unitType: u.unit.unitType } : {}) });
+  }
+  if (target.cargo) target.cargo.units = [];
   gameEvents.emit('entityKilled', {
     world,
     killerId,

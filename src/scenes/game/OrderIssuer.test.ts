@@ -18,7 +18,7 @@ const selectionOf = (selected: Entity[]) => ({ getAllSelected: () => selected })
 function issuer(sim: ReturnType<typeof createMiniSim>, selected: Entity[], canSee?: CanSee) {
   const played: string[] = [];
   const sounds: AudioSink = { playSFX: (k) => void played.push(k) };
-  return { orders: new OrderIssuer(sim.world, selectionOf(selected), sounds, canSee ? { canSee } : {}), played };
+  return { orders: new OrderIssuer(sim.world, selectionOf(selected), sounds, canSee ? { canSee, map: sim.map } : { map: sim.map }), played };
 }
 
 describe('OrderIssuer: help build (M7 decision 2)', () => {
@@ -195,5 +195,40 @@ describe('OrderIssuer: ships and workers (M14)', () => {
     again.issueOrders({ tx: 5, ty: 13 });
     expect(boat.buildCommand).toBeUndefined();
     expect(site.underConstruction).toBeDefined();
+  });
+});
+
+describe('OrderIssuer: transports (M14)', () => {
+  function coast() {
+    const sim = createMiniSim(32);
+    for (let ty = 0; ty < 32; ty++) for (let tx = 16; tx < 32; tx++) sim.map.setTile(tx, ty, TERRAIN.water);
+    return sim;
+  }
+
+  it('a right-click on an own transport sends the selected land units aboard and the transport toward them', () => {
+    const sim = coast();
+    const ship = createUnit(sim.world, { type: 'transport', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const a = createUnit(sim.world, { type: 'swordsman', tile: { tx: 5, ty: 10 }, playerId: 1 });
+    const v = createVillager(sim.world, { tile: { tx: 6, ty: 10 } });
+    const galley = createUnit(sim.world, { type: 'galley', tile: { tx: 20, ty: 20 }, playerId: 1 });
+    const { orders } = issuer(sim, [a, v, galley]);
+    orders.issueOrders({ tx: 22, ty: 10 });
+    expect(a.boardIntent).toEqual({ transportId: ship.id });
+    expect(v.boardIntent).toEqual({ transportId: ship.id });
+    expect(galley.boardIntent).toBeUndefined();
+    expect(ship.moveIntent).toBeDefined();
+  });
+
+  it('a right-click on land with a loaded transport selected unloads it there; on water it just sails', () => {
+    const sim = coast();
+    const ship = createUnit(sim.world, { type: 'transport', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    sim.world.addComponent(ship, 'cargo', { units: [] });
+    ship.cargo!.units.push(createUnit(createMiniSim(8).world, { type: 'archer', tile: { tx: 1, ty: 1 }, playerId: 1 }));
+    const { orders } = issuer(sim, [ship]);
+    orders.issueOrders({ tx: 5, ty: 10 });
+    expect(ship.unloadIntent).toEqual({ target: { tx: 5, ty: 10 } });
+    orders.issueOrders({ tx: 25, ty: 25 });
+    expect(ship.unloadIntent).toBeUndefined();
+    expect(ship.moveIntent?.target).toEqual({ tx: 25, ty: 25 });
   });
 });

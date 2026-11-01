@@ -16,6 +16,9 @@ import { escapeRulesAt } from '../escapeRules';
 import { faceToward } from './facing';
 import { towerLaunchHeight } from './combatFx/fxMath';
 import type { EcsWorld } from '../world';
+import { canAttackTarget, moveLayerOf, navGridFor } from '../navLayer';
+import type { NavGrid } from '../../map/navGrid';
+import { STRICT_ESCAPE } from '../../map/escape';
 
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
@@ -88,13 +91,14 @@ export class CombatSystem {
       this.endTarget(a);
       return;
     }
-    if (target.owner.playerId === a.owner.playerId) {
+    // An own unit, or one this attacker cannot reach (a ship, for a melee unit, M14): no fight.
+    if (target.owner.playerId === a.owner.playerId || !canAttackTarget(a as Entity, target as Entity)) {
       this.world.removeComponent(a as Entity, 'attackIntent');
       return;
     }
     const dist = targetDistance(a.position, target);
     // A unit on blocked ground (a foundation laid over it) steps out before it fights.
-    const stranded = !!a.movable && !this.mapData.isPassable(a.position.tx, a.position.ty);
+    const stranded = !!a.movable && !navGridFor(this.mapData, a as Entity).isPassable(a.position.tx, a.position.ty);
     if (dist > a.attacker.range || stranded) {
       this.walkIntoRange(a, target);
       return;
@@ -179,11 +183,15 @@ export class CombatSystem {
     if (!this.paths.take()) return;
     // Every tile in reach blocked (e.g. ringed by walls): head for the target itself;
     // findPathToNearest stops at the closest reachable tile.
-    const goal = findAdjacentToTarget(this.mapData, target, a.position, a.attacker.range) ?? target.position;
-    const path = findPathToNearest(this.mapData, a.position, goal, escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0));
+    // A ship (M14) closes in on the water layer and never breaches anything.
+    const ship = moveLayerOf(a as Entity) === 'water';
+    const grid = navGridFor(this.mapData, a as Entity);
+    const goal = findAdjacentToTarget(grid, target, a.position, a.attacker.range) ?? target.position;
+    const escape = ship ? STRICT_ESCAPE : escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0);
+    const path = findPathToNearest(grid, a.position, goal, escape);
     if (!path || path.length < 2) {
       // Walled off and already as close as possible: breach, or retry later (not every tick).
-      if (this.tryBreach(a, target)) return;
+      if (!ship && this.tryBreach(a, target)) return;
       this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
       return;
     }
@@ -218,7 +226,7 @@ function targetDistance(v: TileCoord, target: Target): number {
 }
 
 function findAdjacentToTarget(
-  map: MapData,
+  map: NavGrid,
   target: Target,
   from: TileCoord,
   range: number,

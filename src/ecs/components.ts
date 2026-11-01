@@ -24,6 +24,9 @@ export interface UnitTag {
   readonly unitType: UnitType;
 }
 
+/** A unit carried in a transport (M14): its id and components, never a sprite or a cargo of its own. */
+export type CargoUnit = Omit<Entity, 'sprite' | 'cargo'>;
+
 export interface Entity {
   id?: number;
   position?: TileCoord;
@@ -110,6 +113,15 @@ export interface Entity {
     /** Set while breaching: the real target to go back to once the blocking building falls. */
     resumeTargetId?: number;
   };
+  /** A land unit's order to board an own transport (M14). */
+  boardIntent?: { transportId: number };
+  /** A transport's order to put its cargo ashore near `target` (M14). */
+  unloadIntent?: { target: TileCoord };
+  /**
+   * A transport's cargo (M14): the boarded units, whole, out of the world
+   * (not drawn, not fighting, not healed) until they are put ashore.
+   */
+  cargo?: { units: CargoUnit[] };
   /** A monk's conversion order (M11): channel time so far, restarted when the target escapes. */
   convertIntent?: { targetId: number; elapsedMs: number };
   /**
