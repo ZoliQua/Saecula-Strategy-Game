@@ -5,7 +5,7 @@
 **Izometrikus, történelmi, valós idejű stratégiai játék a böngésződben.**
 Három kor · nyolc nép · AI ellenfelek — Rómától a felvilágosodásig.
 
-[![Verzió](https://img.shields.io/badge/verzi%C3%B3-0.2.0-f5a857)](CHANGELOG.hu.md)
+[![Verzió](https://img.shields.io/badge/verzi%C3%B3-0.9.0-f5a857)](CHANGELOG.hu.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
 [![Licenc: MIT](https://img.shields.io/badge/licenc-MIT-blue)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -41,15 +41,19 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
   finn. Minden népnek koronként saját építészete, falai, egységviselete és
   saját Csodája van (Speyer, Versailles, Alhambra, Firenze, Szent Vazul,
   Petäjävesi…).
-- ⚔️ **Tíz egységtípus** — falusi, felderítő, kardforgató, íjász, lovag,
-  lándzsás, számszeríjász, muskétás, ágyú és könnyűlovas.
+- ⚔️ **Tizenöt egységtípus** — falusi, felderítő, kardforgató, íjász, lovag,
+  lándzsás, számszeríjász, muskétás, ágyú, könnyűlovas és szerzetes, valamint
+  négy hajó: halászhajó, szállítóhajó, gálya és fregatt.
 - 🎖️ **Egyedi egységek és bónuszok** — minden nép egyik alap egységét a
   sajátjára váltja (huszár, hosszúíjász, landsknecht, királyi muskétás,
   konkvisztádor, légiós, kozák, sissi), és állandó bónusza van.
 - 🤖 **AI ellenfelek** — négy nehézségi szint (Könnyűtől Mesteriig) és három
   személyiség (rohamozó, gazdálkodó, védekező), csalás nélkül.
-- 🗺️ **Öt térképtípus** — Mezőség, Vadon, Szigetek, Erődítmény és Véletlen,
-  három méretben (64², 96², 128²), 2–6 játékosra.
+- 🗺️ **Hét térképtípus** — Mezőség, Vadon, Szigetek, Erődítmény, Véletlen és
+  két vízi térkép, Beltenger és Szigetvilág, három méretben (64², 96², 128²),
+  2–6 játékosra.
+- ⛵ **Hajóhad** — kikötő a parton, halászat, tengeri harc, és a sereg
+  szállítóhajón kel át a vízen (az AI is így tesz).
 - 🏆 **Három győzelmi feltétel** — hódítás, egy Csoda megtartása tíz percig,
   vagy a legtöbb pont, amikor lejár a 60 perces időkorlát.
 - 🌗 **Élő világ** — dinamikus 2D fények normal map-ekkel, napszakváltás,
@@ -130,7 +134,7 @@ megjelenítik. A teljes architektúra, a scope és a konvenciók a
 
 ## Állapot és ütemterv
 
-A Saecula jelenlegi verziója **0.8.1**. Az egyes verziók tartalmát a
+A Saecula jelenlegi verziója **0.9.0**. Az egyes verziók tartalmát a
 [változásnapló](CHANGELOG.hu.md) sorolja fel.
 
 | Mérföldkő | Tartalom | Állapot |
@@ -145,9 +149,10 @@ A Saecula jelenlegi verziója **0.8.1**. Az egyes verziók tartalmát a
 | M11 | Szerzetesek és kolostorok: gyógyítás és térítés | ✅ 0.6.0 |
 | M12 | Tíz új technológia | ✅ 0.7.0 |
 | M13 | Háromküldetéses kampány | ✅ 0.8.0 |
+| M14 | Hajók, kikötő, halászat és két vízi térkép | ✅ 0.9.0 |
 | Következő | A tesztjátékok alapján | 🔜 |
 
-Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, kampány.
+Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, hosszú sztori-kampány.
 
 ## Dokumentumok
 
