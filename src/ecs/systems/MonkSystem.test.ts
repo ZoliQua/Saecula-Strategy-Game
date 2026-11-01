@@ -248,6 +248,16 @@ describe('MonkSystem', () => {
     expect(d).toBeLessThanOrEqual(MONK.convertRange);
   });
 
+  it('stops a step inside its range on open ground, so a one-tile shuffle does not break the channel', () => {
+    const { world, monks } = setup();
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 20 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 20 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    monks.update(16);
+    const end = monk.movable!.path.at(-1)!;
+    expect(Math.max(Math.abs(end.tx - 30), Math.abs(end.ty - 20))).toBe(MONK.convertRange - 1);
+  });
+
   it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {
     const { world, step } = setup();
     const monk = createUnit(world, { type: 'monk', tile: { tx: 2, ty: 2 }, playerId: 1 });
@@ -266,11 +276,13 @@ describe('MonkSystem', () => {
     const archer = createUnit(world, { type: 'archer', tile: { tx: 30, ty: 30 }, playerId: 2 });
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
-    expect(monk.movable!.path.length).toBeGreaterThan(0);
-    // The player clicks the same target again.
+    const first = monk.movable!.path;
+    expect(first.length).toBeGreaterThan(0);
+    // The player clicks the same target again: a new plan at once.
     clearUnitOrders(world, monk);
     world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
     monks.update(16);
+    expect(monk.movable!.path).not.toBe(first);
     const to = monk.movable!.path.at(-1)!;
     expect(Math.max(Math.abs(to.tx - 30), Math.abs(to.ty - 30))).toBeLessThanOrEqual(MONK.convertRange);
   });

@@ -5,6 +5,7 @@ import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { escapeSteps } from '../../map/escape';
+import { canStep, NEIGHBOUR_STEPS } from '../../map/gridSteps';
 import { findPathToAny } from '../../map/pathfinding';
 import { escapeRulesAt } from '../escapeRules';
 import type { CivId } from '../../types';
@@ -91,7 +92,8 @@ export class MonkSystem {
    * last goal or the walk ended (a target that drifted meanwhile is then
    * re-planned for). One search from the shared budget (as combat does: the
    * monk's escape rules, the path written straight to it) finds the nearest
-   * tile, in steps, it can reach within convertRange. With none, the target
+   * tile, in steps, it can reach within convertRange (then one step further
+   * in, where open, for slack while channelling). With none, the target
    * is out of reach (an island, a walled-off pen) and the order is given up.
    */
   private approach(monk: Entity, at: TileCoord): void {
@@ -99,9 +101,11 @@ export class MonkSystem {
     const walking = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
     // Walking toward a goal the target is still near: keep going.
     if (goal && walking && chebyshev(goal, at) < MONK.retargetTiles) return;
-    const from = monk.position;
-    if (!monk.movable || !from) {
-      this.giveUp(monk);
+    const from = monk.position!;
+    if (!monk.movable) {
+      // Cannot walk at all: the order ends, but the target is not unreachable (no give-up mark).
+      this.world.removeComponent(monk, 'convertIntent');
+      this.forgetApproach(monk);
       return;
     }
     if (!this.paths.take()) return;
@@ -115,6 +119,12 @@ export class MonkSystem {
       if (!this.map.isPassable(from.tx, from.ty)) monk.movable.path = escapeSteps(this.map, from, escape, at)?.slice(1) ?? [];
       return;
     }
+    // One step further in where it can, so a target shuffling a tile does not break the channel.
+    const end = path.at(-1)!;
+    const inner = NEIGHBOUR_STEPS.find(
+      ([dx, dy]) => canStep(this.map, end.tx, end.ty, dx, dy) && chebyshev({ tx: end.tx + dx, ty: end.ty + dy }, at) < chebyshev(end, at),
+    );
+    if (inner && path.length > 1) path.push({ tx: end.tx + inner[0], ty: end.ty + inner[1] });
     if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
     monk.movable.path = path.slice(1);
     monk.movable.progress = 0;
