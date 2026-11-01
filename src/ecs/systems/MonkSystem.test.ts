@@ -3,7 +3,6 @@ import type { CivId } from '../../types';
 import { MONK, REPATH_RETRY_MS } from '../../config/balance';
 import { clearUnitOrders } from '../orders';
 import { TERRAIN } from '../../map/TerrainTypes';
-import type { MapData as MapDataType } from '../../map/MapData';
 import { gameEvents } from '../../game/events';
 import { MapData } from '../../map/MapData';
 import { createUnit } from '../archetypes/createUnit';
@@ -127,7 +126,7 @@ describe('MonkSystem', () => {
   });
 
   /** A map whose middle is water with a grass island of `r` tiles around (23, 23), far beyond convert range of the shore. */
-  function island(map: MapDataType, r = 0): void {
+  function island(map: MapData, r = 0): void {
     for (let ty = 10; ty <= 36; ty++) for (let tx = 10; tx <= 36; tx++) map.setTile(tx, ty, TERRAIN.water);
     for (let ty = 23 - r; ty <= 23 + r; ty++) for (let tx = 23 - r; tx <= 23 + r; tx++) map.setTile(tx, ty, TERRAIN.grass);
   }
@@ -173,6 +172,24 @@ describe('MonkSystem', () => {
       step(1000);
     }
     expect(monk.convertIntent).toBeUndefined();
+    // Giving up stops the monk: no leftover walk toward the target.
+    expect(monk.moveIntent).toBeUndefined();
+    expect(monk.movable?.path).toEqual([]);
+  });
+
+  it('does not give up a reachable target behind a long detour, even while the target drifts', () => {
+    const { map, world, step } = setup();
+    // A water wall between them with one gap far to the south: the way round is long.
+    for (let ty = 0; ty < 36; ty++) map.setTile(20, ty, TERRAIN.water);
+    const monk = createUnit(world, { type: 'monk', tile: { tx: 10, ty: 5 }, playerId: 1 });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 28, ty: 5 }, playerId: 2 });
+    world.addComponent(monk, 'convertIntent', { targetId: archer.id!, elapsedMs: 0 });
+    const ownerOf = (): number => archer.owner!.playerId;
+    for (let s = 0; s < 30 && ownerOf() === 2; s++) {
+      archer.position = { tx: 28 + (s % 2) * 3, ty: 5 + (s % 3) };
+      step(1000);
+      expect(monk.convertIntent !== undefined || ownerOf() === 1, `second ${s}`).toBe(true);
+    }
   });
 
   it('keeps chasing a reachable target that walks away slower than it (progress is not a failure)', () => {

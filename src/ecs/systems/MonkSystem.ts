@@ -24,8 +24,8 @@ export class MonkSystem {
   private readonly goals = new WeakMap<Entity, TileCoord>();
   /** A monk whose path ended short of its target (unreachable) re-plans no earlier than this (system clock, ms). */
   private readonly retryAt = new WeakMap<Entity, number>();
-  /** The closest each monk got to its target in this order (getting closer is progress). */
-  private readonly closest = new WeakMap<Entity, number>();
+  /** Whether the monk's last planned path ends within convertRange of its goal (unset until the path appears). */
+  private readonly planOk = new WeakMap<Entity, boolean>();
   /** Re-plans that ended short of the target, per monk. */
   private readonly failures = new WeakMap<Entity, number>();
   /** The conversion order the approach state above belongs to (a new order starts afresh). */
@@ -87,39 +87,57 @@ export class MonkSystem {
   /** Heads for the target, re-pathing only when it has moved away from the last goal. */
   private approach(monk: Entity, at: TileCoord): void {
     const goal = this.goals.get(monk);
+    if (goal) this.judgePlan(monk, goal);
     const moving = !!monk.moveIntent || (monk.movable?.path.length ?? 0) > 0;
     // Walking toward a goal the target is still near: keep going.
     if (goal && moving && chebyshev(goal, at) < MONK.retargetTiles) return;
-    // Each re-plan measures progress: getting closer to the target than ever before in this order.
-    // Without it the target cannot be reached from here (an island, wherever it walks on it):
-    // a monk standing still retries only every REPATH_RETRY_MS, as combat does, and any monk
-    // gives up after MONK.maxFailedPaths re-plans without progress.
-    const d = monk.position ? chebyshev(monk.position, at) : 0;
+    // Each re-plan looks at the last plan: a path that ended near its goal (however long the
+    // detour) shows the target can be reached. A path that fell short could not get there
+    // (an island, wherever the target walks on it): a monk standing still retries only every
+    // REPATH_RETRY_MS, as combat does, and any monk gives up after MONK.maxFailedPaths such plans.
     if (goal) {
-      if (d < (this.closest.get(monk) ?? Infinity)) this.failures.delete(monk);
-      else {
+      const ok = this.planOk.get(monk);
+      if (ok === true) this.failures.delete(monk);
+      else if (ok === false) {
         if (!moving && this.nowMs < (this.retryAt.get(monk) ?? 0)) return;
         const failed = (this.failures.get(monk) ?? 0) + 1;
         if (failed > MONK.maxFailedPaths) {
-          this.world.removeComponent(monk, 'convertIntent');
-          this.forgetApproach(monk);
+          this.giveUp(monk);
           return;
         }
         this.failures.set(monk, failed);
       }
     }
-    this.closest.set(monk, Math.min(d, this.closest.get(monk) ?? Infinity));
+    this.planOk.delete(monk);
     this.retryAt.set(monk, this.nowMs + REPATH_RETRY_MS);
     this.goals.set(monk, { tx: at.tx, ty: at.ty });
     if (monk.moveIntent) monk.moveIntent.target = { tx: at.tx, ty: at.ty };
     else this.world.addComponent(monk, 'moveIntent', { target: { tx: at.tx, ty: at.ty } });
   }
 
+  /** Once the planned path appears (the move order is consumed), notes whether it ends near the goal. */
+  private judgePlan(monk: Entity, goal: TileCoord): void {
+    if (monk.moveIntent || this.planOk.has(monk) || !monk.position) return;
+    const end = monk.movable?.path.at(-1) ?? monk.position;
+    this.planOk.set(monk, chebyshev(end, goal) <= MONK.convertRange);
+  }
+
+  /** The target cannot be reached: the order ends and the monk stops where it is. */
+  private giveUp(monk: Entity): void {
+    this.world.removeComponent(monk, 'convertIntent');
+    if (monk.moveIntent) this.world.removeComponent(monk, 'moveIntent');
+    if (monk.movable) {
+      monk.movable.path = [];
+      monk.movable.progress = 0;
+    }
+    this.forgetApproach(monk);
+  }
+
   private forgetApproach(monk: Entity): void {
     this.goals.delete(monk);
     this.retryAt.delete(monk);
     this.failures.delete(monk);
-    this.closest.delete(monk);
+    this.planOk.delete(monk);
     this.orderOf.delete(monk);
   }
 

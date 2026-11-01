@@ -7,7 +7,7 @@ import type { AIContext } from './AIPlayer';
 import { groupCentre, pickAttackTarget, pickEngageTarget, type WonderTargeting } from './decisions/combat';
 import { nearest } from './decisions/gathering';
 import { nextExploreTarget } from './decisions/scouting';
-import { ownLiving, type KnownBuilding, type WorldView } from './perception';
+import { ownLiving, pruneOwnLiving, type KnownBuilding, type WorldView } from './perception';
 import { copyKnown, copyTile, type ArmyState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -55,7 +55,7 @@ export class ArmyControl {
     return this.wave.size;
   }
 
-  /** Ids of the units on the attack wave. */
+  /** Ids of the units on the attack wave (as of the last upkeep: check each with `ownLiving`). */
   members(): ReadonlySet<number> {
     return this.wave;
   }
@@ -191,7 +191,7 @@ export class ArmyControl {
 
   /** Drops members that are no longer the AI's own living units (dead, or converted away, M11). */
   private prune(view: WorldView): void {
-    for (const id of [...this.wave]) if (!ownLiving(view, id)) this.wave.delete(id);
+    pruneOwnLiving(this.wave, view);
   }
 
   /** Calls the wave home (it is spent or its job is done). */

@@ -7,7 +7,7 @@ import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
 import { nearest } from './decisions/gathering';
 import { pickHarassTarget, raidOutnumbered, type HarassTarget } from './decisions/harass';
-import { ownLiving, type WorldView } from './perception';
+import { pruneOwnLiving, type WorldView } from './perception';
 import { copyTile, loadedTime, savedTime, type HarassState } from './strategyState';
 import type { ThoughtLog } from './thoughts';
 
@@ -96,8 +96,7 @@ export class HarassControl {
   /** Upkeep: fight villagers in sight, ride on, or fall back. */
   update(ctx: AIContext, view: WorldView): void {
     if (!this.active) return;
-    for (const id of [...this.raid]) if (!ownLiving(view, id)) this.raid.delete(id);
-    const members = [...this.raid].map((id) => ownLiving(view, id)).filter((u): u is Entity => !!u?.position);
+    const members = pruneOwnLiving(this.raid, view).filter((u) => !!u.position);
     if (members.length === 0) return this.end(ctx, view, members, '');
     const centre = groupCentre(members)!;
     const enemies = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
