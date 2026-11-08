@@ -6,7 +6,6 @@ import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { BaseUnitType, BuildingType } from '../types';
 import type { AIContext } from './AIPlayer';
 import { nearest } from './decisions/gathering';
-import { findDockSite } from './decisions/naval';
 import { baseAnchor } from './economyBuildings';
 import type { WorldView } from './perception';
 import { FOG_UNEXPLORED } from '../map/FogOfWarData';
@@ -42,8 +41,8 @@ export class NavalPlay {
   build(ctx: AIContext, view: WorldView): void {
     if (view.villagers.length < this.tune.minVillagers || this.act.ownCount(view, 'dock') > 0) return;
     const anchor = baseAnchor(view);
-    if (!anchor || !findDockSite(ctx.mapData, anchor, AI_NAVAL.dockSearchRadius, (tx, ty) => ctx.fog.get(tx, ty) !== FOG_UNEXPLORED)) return;
-    this.act.startBuilding(ctx, view, 'dock', anchor);
+    // startBuilding searches for the dock site (placeFor: findDockSite) and builds nothing without one.
+    if (anchor) this.act.startBuilding(ctx, view, 'dock', anchor);
   }
 
   train(ctx: AIContext, view: WorldView): void {
