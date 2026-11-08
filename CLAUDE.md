@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.9.0 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.9.1 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -544,6 +544,7 @@ Saecula-Strategy-Game/
 
 docs/                            ← tervek és specifikációk (plans/specs)
 scripts/perf/                    ← mérőszkriptek (textúra-memória, képkockaidő; Playwright, M10)
+scripts/smoke/                   ← böngészős smoke-szkriptek (fej nélküli Chrome, CDP; függőség nélkül, 0.9.1)
 ```
 
 ---
@@ -593,7 +594,7 @@ scripts/perf/                    ← mérőszkriptek (textúra-memória, képkoc
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.9.0**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.9.1**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1272,6 +1273,36 @@ gálya, fregatt).
   kikötő az építési menüben, hajóképzés, halászat, beszállás, átkelés és
   kirakodás, konzolhiba nélkül.
 
+### 0.9.1 — Egyensúly-ellenőrzés (javító kiadás)
+Ág: `fix/0.9.1-balance` (a `main`-ből, a 0.9.0 után). Változat: 0.9.1. A régi
+`feat/M9-playtest` ág (v0.3.0-ra épült, sosem került a `main`-be) mérőeszközeinek
+átvétele a mai kódra, és az egyensúly újramérése az M11–M14 után.
+- **Mérőeszközök:** (1) egyenlő költségű párviadal (`src/ai/testing/unitDuel.ts`,
+  1500 nyersanyag oldalanként, népbónusz és fejlesztés nélkül, CI-ben fut):
+  (a) minden egyedi egység a leváltott alap egység közelében marad
+  (|eredmény| ≤ a keret fele), (b) és kikap az alap egység minden szárazföldi
+  ellenegységétől (falusi, ágyú, szerzetes és hajó nélkül); (2) körmérkőzés-
+  szimuláció (`src/ai/strategies/civBalance.sim.test.ts`), csak `BALANCE=1`
+  mellett: 64×64-es rét, 1v1, minden rendezett népár magonként; népenkénti
+  győzelmi arányt ír ki.
+- **Cél:** Nehéz szinten minden nép 40–60 % (magok 3, 7, 11, 19; népenként
+  56 meccs), Mesteri szinten 35–65 % (magok 3, 7; népenként 28 meccs), egy meccs
+  tűréssel: `[alsó × meccs − 1, felső × meccs + 1]`.
+- **Hangolás:** csak a `balance.ts` számai, és csak annyi, amennyit a mérés
+  megkövetel; kiindulópont a régi ág értékei (kozák, légiós, landsknecht,
+  spanyol aranygyűjtés). A változott számokat idéző szövegek (M8) is frissülnek.
+- **Böngészős bemenet-smoke:** `npm run smoke:input` (`scripts/smoke/`) — fej
+  nélküli Chrome-ban, valódi (CDP) egéreseményekkel ellenőrzi a húzással
+  kijelölést, a jobb klikkes parancsot, a kattintásos kijelölést, a Ctrl+klikkes
+  parancsot és a kijelölés törlését. Futó fejlesztői szervert kér (alapból az
+  5196-os port), a CI-ben nem fut. Új függőség nincs (Node beépített
+  `WebSocket`/`fetch`; a `scripts/perf/` Playwrightját nem használja).
+- Nem része: új egység vagy képesség, a hosszúíjász hangolása, a mentési séma
+  változása (`schemaVersion` 9 marad), a régi ág köztes terep-szintje (a `main`
+  M9-e már tartalmazza), új AI-viselkedés.
+- Keret (10.): az M14 keretei változatlanok.
+- **Állapot (2026-11-08):** folyamatban.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
@@ -1315,7 +1346,8 @@ Kötelező tesztek:
 
 MVP-ben elegendő a manuális "smoke test": új játék → villager épít
 házat → egység képződik → megtámad másikat → meghal. Ha ez OK, a fő
-hurok él.
+hurok él. A 0.9.1-től a bemenet (kijelölés, parancs) gépi smoke-ja:
+`npm run smoke:input` (futó fejlesztői szerver mellett, `scripts/smoke/`).
 
 ### 11.3 Playtesting
 
@@ -1378,4 +1410,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-01. Zoli projekt — Saecula, v0.9.0.*
+*Utolsó frissítés: 2026-11-08. Zoli projekt — Saecula, v0.9.1.*
