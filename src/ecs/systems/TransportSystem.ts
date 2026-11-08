@@ -42,6 +42,8 @@ export class TransportSystem {
   private nowMs = 0;
   /** The unload order each transport has already sought an open shore for (once per order). */
   private readonly sought = new WeakMap<Entity, object>();
+  /** The land region of each unload order's target (a reachMask, one land flood per order). */
+  private readonly targetLand = new WeakMap<object, Uint8Array>();
 
   constructor(
     private readonly world: EcsWorld,
@@ -156,37 +158,58 @@ export class TransportSystem {
     const target = t.unloadIntent.target;
     const walking = !!t.moveIntent || (t.movable?.path.length ?? 0) > 0;
     const sailed = this.sailing.get(t) === t.unloadIntent;
-    const besideLand = this.landBeside(t.position, target) !== null;
-    // Ashore near the target, or wherever the voyage toward it ended beside land.
-    if (besideLand && (chebyshev(t.position, target) <= NAVAL.unloadReach || (sailed && !walking))) {
-      this.putAshore(t, target);
+    const land = this.landOf(t.unloadIntent);
+    const besideOwn = this.landBeside(t.position, target, land) !== null;
+    // Ashore on the target's own land (never the far bank of a strait) when near it,
+    // or when the voyage toward it ended there.
+    if (besideOwn && (chebyshev(t.position, target) <= NAVAL.unloadReach || (sailed && !walking))) {
+      this.putAshore(t, target, land);
       return;
     }
     if (walking) return;
     if (sailed) {
-      // The voyage ended with no land beside it (a built-up shore): on to the nearest open shore, once.
-      const shore = this.sought.get(t) === t.unloadIntent ? null : this.shoreWaterNear(target);
+      // The voyage ended beside other land or none (a built-up shore): on to the nearest open shore
+      // of the target's land (else of any land), once.
+      const shore = this.sought.get(t) === t.unloadIntent ? null : this.shoreWaterNear(target, land);
       if (shore && (shore.tx !== t.position.tx || shore.ty !== t.position.ty)) {
         this.sought.set(t, t.unloadIntent);
         this.world.addComponent(t, 'moveIntent', { target: shore });
         return;
       }
-      // As near as it gets, nothing to unload onto.
-      this.world.removeComponent(t, 'unloadIntent');
+      // As near as it gets: ashore on whatever land lies beside it, else nothing to unload onto.
+      if (this.landBeside(t.position, target) !== null) this.putAshore(t, target, land);
+      else this.world.removeComponent(t, 'unloadIntent');
       return;
     }
     this.sailing.set(t, t.unloadIntent);
     this.world.addComponent(t, 'moveIntent', { target: { tx: target.tx, ty: target.ty } });
   }
 
+  /** The land region `target` of an unload order lies in (walkable tiles that reach it), flooded once per order. */
+  private landOf(order: { target: TileCoord }): Uint8Array {
+    let mask = this.targetLand.get(order);
+    if (!mask) {
+      mask = reachMask(this.map, order.target);
+      this.targetLand.set(order, mask);
+    }
+    return mask;
+  }
+
   /**
    * Puts the cargo on free land tiles nearest the transport, all on the land
-   * it landed at (the shore beside it nearest `target`, never the far bank of
-   * a strait); each unit walks on to `target`.
+   * it landed at: the target's own land when it lies beside the transport
+   * (never the far bank of a strait), else the shore beside it nearest
+   * `target`; each unit walks on to `target`.
    */
-  private putAshore(t: Entity & Required<Pick<Entity, 'unloadIntent' | 'position' | 'cargo'>>, target: TileCoord): void {
-    const landing = this.landBeside(t.position, target);
-    const spots = landing ? this.landNear(t.position, t.cargo.units.length, reachMask(this.map, landing)) : [];
+  private putAshore(
+    t: Entity & Required<Pick<Entity, 'unloadIntent' | 'position' | 'cargo'>>,
+    target: TileCoord,
+    targetLand: Uint8Array,
+  ): void {
+    const own = this.landBeside(t.position, target, targetLand);
+    const landing = own ?? this.landBeside(t.position, target);
+    const land = own ? targetLand : landing ? reachMask(this.map, landing) : null;
+    const spots = landing && land ? this.landNear(t.position, t.cargo.units.length, land) : [];
     const stay: Entity[] = [];
     t.cargo.units.forEach((u, i) => {
       const spot = spots[i];
@@ -208,28 +231,38 @@ export class TransportSystem {
     this.world.removeComponent(t, 'unloadIntent');
   }
 
-  /** The open-water tile beside walkable land nearest `target` (rings outward, at most NAVAL.shoreSearch tiles away). */
-  private shoreWaterNear(target: TileCoord): TileCoord | null {
+  /**
+   * The open-water tile beside walkable land nearest `target` (rings outward, at most
+   * NAVAL.shoreSearch tiles away): beside the target's own land (`land`) if any, else any land.
+   */
+  private shoreWaterNear(target: TileCoord, land: Uint8Array): TileCoord | null {
     const water = waterGrid(this.map);
+    let fallback: TileCoord | null = null;
     for (let r = 0; r <= NAVAL.shoreSearch; r++) {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           const tile = { tx: target.tx + dx, ty: target.ty + dy };
-          if (water.isPassable(tile.tx, tile.ty) && this.landBeside(tile, target)) return tile;
+          if (!water.isPassable(tile.tx, tile.ty)) continue;
+          if (this.landBeside(tile, target, land)) return tile;
+          if (!fallback && this.landBeside(tile, target)) fallback = tile;
         }
       }
     }
-    return null;
+    return fallback;
   }
 
-  /** A passable land tile next to `at`, the one nearest `toward`; null when `at` is not beside land. */
-  private landBeside(at: TileCoord, toward: TileCoord): TileCoord | null {
+  /**
+   * A passable land tile next to `at` (only tiles of `within`, a reachMask, when given),
+   * the one nearest `toward`; null when there is none.
+   */
+  private landBeside(at: TileCoord, toward: TileCoord, within?: Uint8Array): TileCoord | null {
     let best: TileCoord | null = null;
     let bestD = Infinity;
     for (const [dx, dy] of NEIGHBOUR_STEPS) {
       const tile = { tx: at.tx + dx, ty: at.ty + dy };
       if (!this.map.isPassable(tile.tx, tile.ty)) continue;
+      if (within && within[tile.ty * this.map.width + tile.tx] !== 1) continue;
       const d = chebyshev(tile, toward);
       if (d < bestD) {
         bestD = d;

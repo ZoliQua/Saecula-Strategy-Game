@@ -233,4 +233,46 @@ describe('TransportSystem: unloading in a narrow strait (M14)', () => {
     expect(ship.cargo?.units ?? []).toHaveLength(0);
     for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeGreaterThanOrEqual(13);
   });
+
+  it('beside both banks of a one-tile strait, lands on the bank the target is on (probe A)', () => {
+    // West bank x <= 10, a one-tile strait (x 11), east bank x >= 12; the target is on the west bank.
+    const map = new MapData(30, 20, TERRAIN.grass);
+    for (let ty = 0; ty < 20; ty++) map.setTile(11, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 11, ty: 7 }, playerId: 1 });
+    const units = Array.from({ length: NAVAL.transportCapacity }, (_, i) =>
+      createUnit(world, { type: 'swordsman', tile: { tx: 20, ty: 2 + i }, playerId: 1 }),
+    );
+    for (const u of units) world.remove(u);
+    world.addComponent(ship, 'cargo', { units: [...units] });
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 10, ty: 10 } });
+    transports.update(16);
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeLessThanOrEqual(10);
+  });
+
+  it('within reach of the target but beside only the far bank, sails on to the bank of the target (probe B)', () => {
+    // West bank x <= 10, a two-tile strait (x 11-12), east bank x >= 13; the ship touches only the west bank.
+    const map = new MapData(30, 20, TERRAIN.grass);
+    for (let ty = 0; ty < 20; ty++) for (const tx of [11, 12]) map.setTile(tx, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    const pathing = new PathfindingSystem(world, map);
+    const movement = new MovementSystem(world, null, map);
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 11, ty: 7 }, playerId: 1 });
+    const units = Array.from({ length: NAVAL.transportCapacity }, (_, i) =>
+      createUnit(world, { type: 'swordsman', tile: { tx: 2, ty: 2 + i }, playerId: 1 }),
+    );
+    for (const u of units) world.remove(u);
+    world.addComponent(ship, 'cargo', { units: [...units] });
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 13, ty: 10 } });
+    for (let t = 0; t < 10_000 && (ship.cargo?.units.length ?? 0) > 0; t += 100) {
+      pathing.update();
+      movement.update(100);
+      transports.update(100);
+    }
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeGreaterThanOrEqual(13);
+  });
 });
