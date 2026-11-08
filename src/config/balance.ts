@@ -244,6 +244,8 @@ export const NAVAL = {
   unloadSpread: 4,
   /** Open water tiles a dock site needs alongside, so its ships can launch and come in. */
   dockMinShore: 2,
+  /** A ship gives an attack up once its target has stayed out of reach from its water this long, ms (a target only briefly inland keeps the order). */
+  shipUnreachableGiveUpMs: 8_000,
 } as const;
 
 /** The monk's healing and conversion (M11). Ranges in tiles (Chebyshev), as unit ranges. */

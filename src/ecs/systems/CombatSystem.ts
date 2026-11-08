@@ -3,7 +3,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToNearest } from '../../map/pathfinding';
-import { BREACH_SEARCH_RADIUS, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
+import { BREACH_SEARCH_RADIUS, NAVAL, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { findBreachTarget } from '../../game/breach';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
@@ -46,6 +46,8 @@ export class CombatSystem {
   /** Clock and per-unit earliest next repath, so walled-off targets are not re-planned every tick. */
   private nowMs = 0;
   private readonly repathAt = new WeakMap<object, number>();
+  /** Per ship: since when (system clock) its current target has been out of reach from its water (M14). */
+  private readonly unreachableSince = new WeakMap<object, { readonly targetId: number; readonly sinceMs: number }>();
 
   constructor(
     world: EcsWorld,
@@ -188,12 +190,14 @@ export class CombatSystem {
     const ship = moveLayerOf(a as Entity) === 'water';
     const grid = navGridFor(this.mapData, a as Entity);
     // A ship shoots only from water it can sail to: none in range of the target (far inland, or only
-    // a lake beyond the land) and it gives the attack up.
+    // a lake beyond the land) and it retries later; out of reach for NAVAL.shipUnreachableGiveUpMs,
+    // it gives the attack up (never retried forever, never dropped for a target only briefly inland).
     const goal = findAdjacentToTarget(ship ? ownWater(grid, a.position) : grid, target, a.position, a.attacker.range);
     if (ship && !goal) {
-      this.endTarget(a);
+      this.shipOutOfReach(a);
       return;
     }
+    if (ship) this.unreachableSince.delete(a);
     const escape = ship ? STRICT_ESCAPE : escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0);
     const path = findPathToNearest(grid, a.position, goal ?? target.position, escape);
     if (!path || path.length < 2) {
@@ -204,6 +208,20 @@ export class CombatSystem {
     }
     a.movable.path = path.slice(1);
     a.movable.progress = 0;
+  }
+
+  /** The ship's target is out of reach from its water: retry later, or give it up once out of reach long enough. */
+  private shipOutOfReach(a: Attacker): void {
+    const targetId = a.attackIntent.targetId;
+    const since = this.unreachableSince.get(a);
+    if (!since || since.targetId !== targetId) {
+      this.unreachableSince.set(a, { targetId, sinceMs: this.nowMs });
+    } else if (this.nowMs - since.sinceMs >= NAVAL.shipUnreachableGiveUpMs) {
+      this.unreachableSince.delete(a);
+      this.endTarget(a);
+      return;
+    }
+    this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
   }
 
   private findEntityById(id: number): Entity | undefined {

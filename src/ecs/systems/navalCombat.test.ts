@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NAVAL, REPATH_RETRY_MS } from '../../config/balance';
 import { canConvert } from '../../game/convert';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
@@ -106,6 +107,31 @@ describe('naval combat: a target out of reach from the water (M14)', () => {
     const villager = createUnit(world, { type: 'villager', tile: { tx: 5, ty: 10 }, playerId: 2 });
     world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
     step(30_000);
+    expect(galley.attackIntent).toBeUndefined();
+  });
+
+  it('a target only briefly out of reach (it walked inland and back) keeps the order', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    // Inland at first, out of reach from the water.
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(Math.floor(NAVAL.shipUnreachableGiveUpMs / 2));
+    expect(galley.attackIntent?.targetId).toBe(villager.id);
+    // Back on the shore: the ship closes in and shoots.
+    villager.position = { tx: 14, ty: 10 };
+    step(15_000);
+    expect(villager.health!.current).toBeLessThan(villager.health!.max);
+  });
+
+  it('a target that stays out of reach is given up after NAVAL.shipUnreachableGiveUpMs, not before', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(NAVAL.shipUnreachableGiveUpMs - REPATH_RETRY_MS);
+    expect(galley.attackIntent?.targetId).toBe(villager.id);
+    step(2 * REPATH_RETRY_MS);
     expect(galley.attackIntent).toBeUndefined();
   });
 });
