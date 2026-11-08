@@ -64,19 +64,21 @@ function play(seed: number, human: CivId, ai: CivId, difficulty: Difficulty): 0 
     humanEnemy: () => 2,
     enemyOf: () => 1,
   });
-  const hasTc = (id: number) =>
-    match.world.entities.some(
-      (e) =>
-        e.building?.type === 'town_center' &&
-        e.owner?.playerId === id &&
-        !e.underConstruction &&
-        !e.dying &&
-        (e.health?.current ?? 0) > 0,
-    );
+  // One pass over the building index per step: which players still hold a completed, live town centre.
+  const buildings = match.world.with('building', 'owner');
+  const townCentres = (): { one: boolean; two: boolean } => {
+    let one = false;
+    let two = false;
+    for (const e of buildings) {
+      if (e.building.type !== 'town_center' || e.underConstruction || e.dying || (e.health?.current ?? 0) <= 0) continue;
+      if (e.owner.playerId === 1) one = true;
+      else if (e.owner.playerId === 2) two = true;
+    }
+    return { one, two };
+  };
   let winner: 0 | 1 | 2 = 0;
   match.run(CAP_MIN * MIN, 100, () => {
-    const one = hasTc(1);
-    const two = hasTc(2);
+    const { one, two } = townCentres();
     if (one && two) return false;
     winner = one ? 1 : two ? 2 : 0;
     return true;
