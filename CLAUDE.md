@@ -1322,6 +1322,27 @@ gálya, fregatt).
   (`monks.sim.test.ts`) népe rögzített (magyar): a 3-as mag kevert sorsolása spanyol
   AI-t adott, amelynek két szerzetese a +25 % arannyal 40 perc fölé csúszott.
 
+### 0.9.2 — Apró javítások
+Ág: `fix/0.9.2-small-fixes` (a `main`-ből, a 0.9.1 után). Változat: 0.9.2.
+- **Szigetvilág-generálás:** a 64×64-es, 6 játékosos „Szigetvilág” a 273-as
+  magon `MapGenerationError`-t dob (800 magból 1). Javítás után minden kezdőhely
+  a saját szigetén áll, a szigetek továbbra sem érnek össze; a több magos
+  generátorteszt ezt a magot is lefedi.
+- **Szállítóhajó-leírás:** a `hu.unitRoles.transport` szövegében a befogadóképesség
+  (5) nem beírt szám, hanem a `NAVAL` konstansból származik.
+- **Közepes AI szerzetesei:** a 3-as magon a spanyol, a német és a francia
+  Közepes AI nem képez két szerzetest 40 percen belül (a sereg előbb elkölti az
+  aranyat). A gyökérok megkeresése, minimális AI-változtatás (hangolás az AI
+  konfigurációjában), és a `monks.sim.test.ts` ismét több népet fed le (legalább
+  magyar, spanyol, német, francia).
+- **Vízi körmérkőzés:** a `civBalance.sim.test.ts` kap egy kérésre futó vízi
+  mérést (`BALANCE=water`: Beltenger, Nehéz, kevesebb mag, ≲ 10 perc), amely
+  népenkénti győzelmi arányt ír ki. A `balance.ts` nem változik; ha egy nép
+  messze a 35–65 % sávon kívül esik, azt jelentjük, a tulajdonos dönt.
+- Nem része: új funkció, a rajzrögzítő tesztek Linux-javítása, a mentési séma
+  változása (`schemaVersion` 9 marad).
+- Keret (10.): az M14 keretei változatlanok.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
