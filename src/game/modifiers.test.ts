@@ -147,8 +147,8 @@ describe('civ bonuses', () => {
     expect(gatherMultiplier(civ('english'), 'wood')).toBe(1);
   });
 
-  it('Spanish gold and Russian wood gathering are boosted', () => {
-    expect(gatherMultiplier(civ('spanish'), 'gold')).toBeCloseTo(1.15, 10);
+  it('Spanish gold (+25 %, 0.9.1) and Russian wood gathering are boosted', () => {
+    expect(gatherMultiplier(civ('spanish'), 'gold')).toBeCloseTo(1.25, 10);
     expect(gatherMultiplier(civ('russian'), 'wood')).toBeCloseTo(1.15, 10);
   });
 

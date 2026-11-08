@@ -41,7 +41,7 @@ export const CIV_BONUS = {
   farmFood: 0.15,
   buildingHp: 0.15,
   stableHp: 0.15,
-  goldGather: 0.15,
+  goldGather: 0.25,
   buildSpeed: 0.15,
   woodGather: 0.15,
   infantrySpeed: 0.1,
@@ -156,7 +156,7 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     trainers: ['archery_range'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'crossbowman',
   },
   landsknecht: {
-    age: 2, hp: 70, meleeAtk: 7, pierceAtk: 0, meleeDef: 1, pierceDef: 0,
+    age: 2, hp: 68, meleeAtk: 7, pierceAtk: 0, meleeDef: 1, pierceDef: 0,
     range: 1, speed: 1.0, los: 4, cost: c(50, 20, 25), trainTime: 24,
     trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'pikeman',
   },
@@ -176,7 +176,7 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'swordsman',
   },
   cossack: {
-    age: 1, hp: 60, meleeAtk: 6, pierceAtk: 0, meleeDef: 0, pierceDef: 2,
+    age: 1, hp: 50, meleeAtk: 5, pierceAtk: 0, meleeDef: 0, pierceDef: 2,
     range: 1, speed: 1.55, los: 8, cost: c(85, 0, 15), trainTime: 30,
     trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'scout',
   },

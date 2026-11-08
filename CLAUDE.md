@@ -934,7 +934,7 @@ A 4.3 első két pontja. Ág: `feat/M8-unique-units`. Változat: 0.3.0.
   számolva, `src/game/modifiers.ts`):
   magyar — lovas egységek +10 % sebesség; angol — farm +15 % étel;
   német — épületek +15 % HP; francia — istállóban képzett egységek +15 % HP;
-  spanyol — aranygyűjtés +15 %; olasz — építés +15 % gyorsabb;
+  spanyol — aranygyűjtés +25 % (0.9.1-től; előtte +15 %); olasz — építés +15 % gyorsabb;
   orosz — fagyűjtés +15 %; finn — gyalogság +10 % sebesség.
 - **UI:** a nép-választó, a fejlődési fa és a képző gombok a nép egyedi
   egységét mutatják; a nép-választó egy sorban a bónuszt is. Minden szöveg

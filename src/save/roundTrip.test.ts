@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION } from './schema';
 import { resumeHeadlessMatch } from '../ai/testing/headlessMatch';
+import { UNIT_BALANCE } from '../config/balance';
 import { createBuilding } from '../ecs/archetypes/building';
+import { createUnit } from '../ecs/archetypes/createUnit';
 import { parseSave } from './parse';
 import { FIXED_DATE, MIN, STEP_MS, savableMatch } from './savedMatch.testkit';
 
@@ -60,6 +62,29 @@ describe('save round trip', () => {
     // The selection is never saved.
     expect(s2.entities.find((e) => e.id === selected?.id)?.components.selectable?.selected).toBe(false);
   }, 120_000);
+
+  /**
+   * 0.9.1: a save from before a unit's HP cut (e.g. a 0.9.0 cossack at 60 HP) holds a unit above
+   * today's max. It loads with its saved health (no clamp, no crash) and keeps it through play; a
+   * newly trained one gets today's max.
+   */
+  it('a unit saved above the current max HP keeps its saved health', () => {
+    const match = savableMatch();
+    const old = UNIT_BALANCE.cossack.hp + 10;
+    const cossack = createUnit(match.world, { type: 'cossack', tile: { tx: 2, ty: 2 }, playerId: 2 });
+    cossack.health = { current: old, max: old };
+    const parsed = parseSave(JSON.stringify(match.snapshot(FIXED_DATE)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
+    const restored = resumeHeadlessMatch(parsed.save);
+    const back = restored.world.entities.find((e) => e.id === cossack.id);
+    expect(back?.health).toEqual({ current: old, max: old });
+    restored.run(2_000, STEP_MS);
+    expect(back?.health).toEqual({ current: old, max: old });
+    const fresh = createUnit(restored.world, { type: 'cossack', tile: { tx: 3, ty: 3 }, playerId: 2 });
+    expect(fresh.health).toEqual({ current: UNIT_BALANCE.cossack.hp, max: UNIT_BALANCE.cossack.hp });
+  }, 60_000);
 
   it('a 128×128, 6-player save after 6 minutes stays under 1.5 MB of JSON and parses', () => {
     const match = savableMatch({ size: 128, aiCount: 5 });
