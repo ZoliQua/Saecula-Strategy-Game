@@ -36,7 +36,8 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
     "perf:texmem": "node scripts/perf/texmem.mjs",
-    "perf:frame": "node scripts/perf/frametime.mjs"
+    "perf:frame": "node scripts/perf/frametime.mjs",
+    "smoke:input": "node scripts/smoke/input.mjs"
   },
   "dependencies": {
     "localforage": "^1.10.0",
