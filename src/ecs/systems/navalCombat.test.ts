@@ -85,3 +85,27 @@ describe('naval combat (M14)', () => {
     expect(canConvert(createUnit(world, { type: 'transport', tile: { tx: 17, ty: 5 }, playerId: 2 }), 1)).toBe(false);
   });
 });
+
+describe('naval combat: a target out of reach from the water (M14)', () => {
+  it('a ship ordered onto a target far inland gives up instead of keeping the order forever', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    // 13 tiles from the sea, far beyond a galley's range.
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(30_000);
+    expect(galley.attackIntent).toBeUndefined();
+    expect(villager.health!.current).toBe(villager.health!.max);
+  });
+
+  it('a target in range only from a lake the ship cannot sail to: the ship gives up', () => {
+    const { map, world, step } = setup();
+    // A lake inland; the target stands on its shore, out of range of the sea.
+    for (let ty = 9; ty <= 11; ty++) for (let tx = 2; tx <= 4; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 5, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(30_000);
+    expect(galley.attackIntent).toBeUndefined();
+  });
+});
