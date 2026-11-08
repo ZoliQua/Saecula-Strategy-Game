@@ -7,8 +7,7 @@ import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { ProjectileSystem } from '../../ecs/systems/ProjectileSystem';
 import { createEcsWorld } from '../../ecs/world';
-import { createPlayer } from '../../game/Player';
-import { PlayerManager } from '../../game/PlayerManager';
+import type { PlayerManager } from '../../game/PlayerManager';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import type { UnitType } from '../../types';
@@ -49,13 +48,16 @@ function nearestEnemy(self: Entity, enemies: readonly Entity[]): Entity | null {
  * `a` wins (sum of survivors' hp/maxHp x unitValue), negative when `b` wins, 0 for mutual
  * wipe-out or when the 240 s cap runs out.
  *
+ * The systems get no player manager by default, so no civ bonus applies (a default
+ * `createPlayer` is Hungarian, whose +10 % cavalry speed would leak into every duel);
+ * `players` exists for the test that pins this.
+ *
  * Limit of the arena: units only charge the nearest enemy, there is no kiting, so ranged
  * units lose open charges to melee units that close the distance.
  */
-export function duel(a: UnitType, b: UnitType, budget = DUEL_BUDGET): number {
+export function duel(a: UnitType, b: UnitType, budget = DUEL_BUDGET, players: PlayerManager | null = null): number {
   const map = new MapData(ARENA_TILES, ARENA_TILES, TERRAIN.grass);
   const world = createEcsWorld();
-  const players = new PlayerManager([createPlayer({ id: 1, isHuman: true }), createPlayer({ id: 2 })]);
   const spawn = (type: UnitType, playerId: number, tx0: number): Entity[] => {
     const count = Math.floor(budget / unitValue(type));
     const out: Entity[] = [];
@@ -100,4 +102,13 @@ export function duel(a: UnitType, b: UnitType, budget = DUEL_BUDGET): number {
   const vb = value(sideB, b);
   if (va > 0 && vb > 0) return 0;
   return va - vb;
+}
+
+/**
+ * The duel scored from both sides: `(duel(a, b) - duel(b, a)) / 2`. The arena's starting blocks
+ * are not symmetric (a mirror match can lean up to ~15 % of the budget to one side), so the
+ * balance rules use this average, which is exactly antisymmetric: a mirror match scores 0.
+ */
+export function fairDuel(a: UnitType, b: UnitType, budget = DUEL_BUDGET): number {
+  return (duel(a, b, budget) - duel(b, a, budget)) / 2;
 }
