@@ -1,4 +1,4 @@
-import { CIV_BONUS } from '../config/balance';
+import { CIV_BONUS, NAVAL } from '../config/balance';
 
 /** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
 const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
@@ -317,7 +317,7 @@ export const hu = {
     sissi: 'Gyors portyázó íjász',
     monk: 'Gyógyít · ellenséges egységet térít',
     fishing_boat: 'Halból ételt gyűjt · a kikötőbe viszi',
-    transport: 'Legfeljebb 5 szárazföldi egységet visz át a vízen',
+    transport: `Legfeljebb ${NAVAL.transportCapacity} szárazföldi egységet visz át a vízen`,
     galley: 'Távolsági hajó · hajók és a part ellen',
     frigate: 'Ágyús hadihajó · épület- és hajórombolás',
   },
