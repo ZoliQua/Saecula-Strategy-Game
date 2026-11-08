@@ -326,4 +326,29 @@ describe('TransportSystem: unloading in a narrow strait (M14)', () => {
     expect(ship.cargo?.units ?? []).toHaveLength(0);
     expect(u.position!.tx).toBeGreaterThan(27);
   });
+
+  it('a target buried in a block by a one-tile strait: its land is found through the block, never across the water', () => {
+    // A one-tile strait (x 11) down to ty 20, a cliff below it; a 4x4 block (x 7-10, y 10-13) on the west bank.
+    const map = new MapData(30, 30, TERRAIN.grass);
+    for (let ty = 0; ty < 30; ty++) map.setTile(11, ty, ty <= 20 ? TERRAIN.water : TERRAIN.cliff);
+    for (let ty = 10; ty <= 13; ty++) for (let tx = 7; tx <= 10; tx++) map.setBlocked(tx, ty, true);
+    const world = createEcsWorld();
+    const pathing = new PathfindingSystem(world, map);
+    const movement = new MovementSystem(world, null, map);
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 11, ty: 2 }, playerId: 1 });
+    const units = Array.from({ length: NAVAL.transportCapacity }, (_, i) =>
+      createUnit(world, { type: 'swordsman', tile: { tx: 20, ty: 2 + i }, playerId: 1 }),
+    );
+    for (const u of units) world.remove(u);
+    world.addComponent(ship, 'cargo', { units: [...units] });
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 10, ty: 12 } });
+    for (let t = 0; t < 20_000 && (ship.cargo?.units.length ?? 0) > 0; t += 100) {
+      pathing.update();
+      movement.update(100);
+      transports.update(100);
+    }
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeLessThanOrEqual(10);
+  });
 });

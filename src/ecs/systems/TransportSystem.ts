@@ -2,6 +2,7 @@ import { NAVAL } from '../../config/balance';
 import { chebyshev, tileEquals, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { NEIGHBOUR_STEPS, reachMask } from '../../map/gridSteps';
+import { TERRAIN } from '../../map/TerrainTypes';
 import { seaAt } from '../../map/waterBodies';
 import type { Entity } from '../components';
 import { moveLayerOf } from '../navLayer';
@@ -197,17 +198,39 @@ export class TransportSystem {
 
   /**
    * Where to flood a target's land from: the target itself when it or a tile beside it is walkable
-   * (reachMask seeds those), else the nearest walkable tile (a building's centre, a forest's heart;
-   * rings outward, at most NAVAL.shoreSearch tiles away).
+   * (reachMask seeds those), else the nearest walkable tile reached by growing from the target
+   * through blocked land only (a building's centre, a forest's heart), never across water, so the
+   * far bank of a strait is never taken for the target's land (at most NAVAL.shoreSearch tiles away).
    */
   private landSeed(target: TileCoord): TileCoord {
-    for (let r = 0; r <= NAVAL.shoreSearch; r++) {
-      for (let dy = -r; dy <= r; dy++) {
-        for (let dx = -r; dx <= r; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-          if (!this.map.isPassable(target.tx + dx, target.ty + dy)) continue;
-          return r <= 1 ? target : { tx: target.tx + dx, ty: target.ty + dy };
-        }
+    const map = this.map;
+    const inside = (tx: number, ty: number) => tx >= 0 && ty >= 0 && tx < map.width && ty < map.height;
+    if (!inside(target.tx, target.ty)) return target;
+    if (map.isPassable(target.tx, target.ty)) return target;
+    for (const [dx, dy] of NEIGHBOUR_STEPS) if (map.isPassable(target.tx + dx, target.ty + dy)) return target;
+    const wet = (tx: number, ty: number) => {
+      const k = map.getTile(tx, ty);
+      return k === TERRAIN.water || k === TERRAIN.fish;
+    };
+    const w = map.width;
+    const seen = new Uint8Array(w * map.height);
+    const queue: number[] = [target.ty * w + target.tx];
+    seen[queue[0]!] = 1;
+    for (let head = 0; head < queue.length; head++) {
+      const idx = queue[head]!;
+      const tx = idx % w;
+      const ty = (idx - tx) / w;
+      for (const [dx, dy] of NEIGHBOUR_STEPS) {
+        const nx = tx + dx;
+        const ny = ty + dy;
+        if (!inside(nx, ny) || Math.max(Math.abs(nx - target.tx), Math.abs(ny - target.ty)) > NAVAL.shoreSearch) continue;
+        const n = ny * w + nx;
+        if (seen[n] || wet(nx, ny)) continue;
+        // A diagonal step never slips between two water tiles.
+        if (dx !== 0 && dy !== 0 && wet(nx, ty) && wet(tx, ny)) continue;
+        seen[n] = 1;
+        if (map.isPassable(nx, ny)) return { tx: nx, ty: ny };
+        queue.push(n);
       }
     }
     return target;
