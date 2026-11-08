@@ -46,8 +46,11 @@ export class CombatSystem {
   /** Clock and per-unit earliest next repath, so walled-off targets are not re-planned every tick. */
   private nowMs = 0;
   private readonly repathAt = new WeakMap<object, number>();
-  /** Per ship: since when (system clock) its current target has been out of reach from its water (M14). */
-  private readonly unreachableSince = new WeakMap<object, { readonly targetId: number; readonly sinceMs: number }>();
+  /**
+   * Per ship (M14): the attack order (and target) out of reach from its water, since when (system clock),
+   * and when it looks again. A new order, a new target or a reachable / in-range target starts afresh.
+   */
+  private readonly outOfReach = new WeakMap<object, { readonly order: object; readonly targetId: number; readonly sinceMs: number; retryAt: number }>();
 
   constructor(
     world: EcsWorld,
@@ -106,6 +109,8 @@ export class CombatSystem {
       this.walkIntoRange(a, target);
       return;
     }
+    // In range: no longer out of reach (a ship's wait starts afresh next time).
+    this.outOfReach.delete(a);
     // In range — halt any residual motion and swing if ready.
     if (a.movable) {
       a.movable.path = [];
@@ -182,27 +187,22 @@ export class CombatSystem {
     if (!a.movable) return;
     // Already moving toward something? Keep going; we'll re-check next tick.
     if (a.movable.path.length > 0) return;
+    // A ship (M14) closes in on the water layer and never breaches anything.
+    if (moveLayerOf(a as Entity) === 'water') {
+      this.sailIntoRange(a, target);
+      return;
+    }
     if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
     if (!this.paths.take()) return;
     // Every tile in reach blocked (e.g. ringed by walls): head for the target itself;
     // findPathToNearest stops at the closest reachable tile.
-    // A ship (M14) closes in on the water layer and never breaches anything.
-    const ship = moveLayerOf(a as Entity) === 'water';
     const grid = navGridFor(this.mapData, a as Entity);
-    // A ship shoots only from water it can sail to: none in range of the target (far inland, or only
-    // a lake beyond the land) and it retries later; out of reach for NAVAL.shipUnreachableGiveUpMs,
-    // it gives the attack up (never retried forever, never dropped for a target only briefly inland).
-    const goal = findAdjacentToTarget(ship ? ownWater(this.mapData, a.position) : grid, target, a.position, a.attacker.range);
-    if (ship && !goal) {
-      this.shipOutOfReach(a);
-      return;
-    }
-    if (ship) this.unreachableSince.delete(a);
-    const escape = ship ? STRICT_ESCAPE : escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0);
+    const goal = findAdjacentToTarget(grid, target, a.position, a.attacker.range);
+    const escape = escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0);
     const path = findPathToNearest(grid, a.position, goal ?? target.position, escape);
     if (!path || path.length < 2) {
       // Walled off and already as close as possible: breach, or retry later (not every tick).
-      if (!ship && this.tryBreach(a, target)) return;
+      if (this.tryBreach(a, target)) return;
       this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
       return;
     }
@@ -210,18 +210,39 @@ export class CombatSystem {
     a.movable.progress = 0;
   }
 
-  /** The ship's target is out of reach from its water: retry later, or give it up once out of reach long enough. */
-  private shipOutOfReach(a: Attacker): void {
-    const targetId = a.attackIntent.targetId;
-    const since = this.unreachableSince.get(a);
-    if (!since || since.targetId !== targetId) {
-      this.unreachableSince.set(a, { targetId, sinceMs: this.nowMs });
-    } else if (this.nowMs - since.sinceMs >= NAVAL.shipUnreachableGiveUpMs) {
-      this.unreachableSince.delete(a);
-      this.endTarget(a);
+  /**
+   * A ship shoots only from water it can sail to. None in range of the target (far inland, or only
+   * a lake beyond the land): it looks again every REPATH_RETRY_MS (no path search spent) and gives
+   * the attack up once out of reach for NAVAL.shipUnreachableGiveUpMs (never retried forever,
+   * never dropped for a target only briefly inland).
+   */
+  private sailIntoRange(a: Attacker, target: Target): void {
+    const order = a.attackIntent;
+    let wait = this.outOfReach.get(a);
+    if (wait && (wait.order !== order || wait.targetId !== order.targetId)) wait = undefined;
+    if (wait && wait.retryAt > this.nowMs) return;
+    const goal = findAdjacentToTarget(ownWater(this.mapData, a.position), target, a.position, a.attacker.range);
+    if (!goal) {
+      if (!wait) {
+        this.outOfReach.set(a, { order, targetId: order.targetId, sinceMs: this.nowMs, retryAt: this.nowMs + REPATH_RETRY_MS });
+      } else if (this.nowMs - wait.sinceMs >= NAVAL.shipUnreachableGiveUpMs) {
+        this.outOfReach.delete(a);
+        this.endTarget(a);
+      } else {
+        wait.retryAt = this.nowMs + REPATH_RETRY_MS;
+      }
       return;
     }
-    this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
+    this.outOfReach.delete(a);
+    if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
+    if (!this.paths.take()) return;
+    const path = findPathToNearest(navGridFor(this.mapData, a as Entity), a.position, goal, STRICT_ESCAPE);
+    if (!path || path.length < 2) {
+      this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
+      return;
+    }
+    a.movable!.path = path.slice(1);
+    a.movable!.progress = 0;
   }
 
   private findEntityById(id: number): Entity | undefined {
