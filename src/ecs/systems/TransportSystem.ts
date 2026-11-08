@@ -239,10 +239,10 @@ export class TransportSystem {
     return best;
   }
 
-  /** Up to `n` distinct passable land tiles of `land` (a reachMask), nearest `at` first (rings outward, at most 4 tiles away). */
+  /** Up to `n` distinct passable land tiles of `land` (a reachMask), nearest `at` first (rings outward, at most NAVAL.unloadSpread tiles away). */
   private landNear(at: TileCoord, n: number, land: Uint8Array): TileCoord[] {
     const out: TileCoord[] = [];
-    for (let r = 1; r <= 4 && out.length < n; r++) {
+    for (let r = 1; r <= NAVAL.unloadSpread && out.length < n; r++) {
       for (let dy = -r; dy <= r && out.length < n; dy++) {
         for (let dx = -r; dx <= r && out.length < n; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;

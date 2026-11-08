@@ -240,6 +240,10 @@ export const NAVAL = {
   unloadReach: 3,
   /** How far (tiles) from an unload target a transport looks for an open shore. */
   shoreSearch: 14,
+  /** How far (tiles, Chebyshev) from the transport its cargo is put ashore at most. */
+  unloadSpread: 4,
+  /** Open water tiles a dock site needs alongside, so its ships can launch and come in. */
+  dockMinShore: 2,
 } as const;
 
 /** The monk's healing and conversion (M11). Ranges in tiles (Chebyshev), as unit ranges. */

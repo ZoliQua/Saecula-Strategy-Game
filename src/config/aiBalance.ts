@@ -185,6 +185,10 @@ export const AI_EASY_NAVY: NavalTuning = {
 
 /** Naval play common to every AI (M14). */
 export const AI_NAVAL = {
+  /** The base-to-enemy walkability check is redone at most this often while what is known of the enemy stays the same (ms). */
+  walkableRecheckMs: 60_000,
+  /** How far (tiles) round its starting points the land-walk check looks for a free tile to start from (a town centre's own tiles). */
+  reachSlack: 3,
   /** How far from its base anchor the AI looks for a dock site (tiles). */
   dockSearchRadius: 24,
   /** A warship engages visible enemies this close (tiles), if it can shoot them from the water. */

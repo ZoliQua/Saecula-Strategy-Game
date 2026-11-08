@@ -1,3 +1,4 @@
+import { NAVAL } from '../config/balance';
 import type { TileCoord } from '../iso/coordinates';
 import type { MapData } from '../map/MapData';
 import { waterGrid } from '../map/navGrid';
@@ -20,10 +21,7 @@ export function shoreWaterTiles(map: MapData, origin: TileCoord, width: number, 
   return out;
 }
 
-/** Water tiles a dock site needs alongside, so its ships can launch and come in (M14). */
-export const DOCK_MIN_SHORE = 2;
-
-/** Whether a dock may stand with its footprint at `origin`: at least DOCK_MIN_SHORE open water tiles along its sides. */
+/** Whether a dock may stand with its footprint at `origin`: at least NAVAL.dockMinShore open water tiles along its sides (M14). */
 export function isShoreSite(map: MapData, origin: TileCoord, width: number, height: number): boolean {
-  return shoreWaterTiles(map, origin, width, height).length >= DOCK_MIN_SHORE;
+  return shoreWaterTiles(map, origin, width, height).length >= NAVAL.dockMinShore;
 }

@@ -1,4 +1,4 @@
-import { AI_COMMON, AI_MEDIUM, type GatherWeights, type MediumTuning } from '../../config/aiBalance';
+import { AI_COMMON, AI_MEDIUM, AI_NAVAL, type GatherWeights, type MediumTuning } from '../../config/aiBalance';
 import type { Entity } from '../../ecs/components';
 import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
@@ -39,9 +39,6 @@ import { BaseStrategy } from './BaseStrategy';
 function nearestTile(tiles: readonly TileCoord[], from: TileCoord): TileCoord | undefined {
   return tiles.reduce<TileCoord | undefined>((best, t) => (!best || chebyshev(t, from) < chebyshev(best, from) ? t : best), undefined);
 }
-
-/** How long a walkability answer (M14) holds while the known enemy buildings stay the same. */
-const WALKABLE_RECHECK_MS = 60_000;
 
 /**
  * Medium AI (PROGRAM_TERV.md §10.2): a preset build order, age-ups as
@@ -211,7 +208,7 @@ export class MediumStrategy extends BaseStrategy {
   /**
    * Whether the enemy's known buildings can be walked to from the base
    * (M14); with none known yet, true (the army explores as before).
-   * Re-checked when what is known changes, at most every WALKABLE_RECHECK_MS.
+   * Re-checked when what is known changes, at most every AI_NAVAL.walkableRecheckMs.
    */
   protected enemyWalkable(ctx: AIContext, view: WorldView): boolean {
     const enemy = this.enemySpots(ctx, view);
@@ -219,7 +216,7 @@ export class MediumStrategy extends BaseStrategy {
     if (enemy.length === 0 || !home) return true;
     const key = enemy.map((p) => `${p.tx},${p.ty}`).join(';');
     const last = this.walkable;
-    if (last && last.key === key && ctx.timeMs - last.atMs < WALKABLE_RECHECK_MS) return last.answer;
+    if (last && last.key === key && ctx.timeMs - last.atMs < AI_NAVAL.walkableRecheckMs) return last.answer;
     // One flood from the base reaches every enemy spot on its land.
     const answer = landReachableFromAny(ctx.mapData, enemy, home);
     this.walkable = { answer, atMs: ctx.timeMs, key };

@@ -1,3 +1,4 @@
+import { AI_NAVAL } from '../../config/aiBalance';
 import { isShoreSite } from '../../game/shore';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
@@ -34,7 +35,7 @@ export function findDockSite(
 
 /**
  * Whether `to` (or a tile beside it, for a building) can be walked to over
- * the terrain (walls and buildings ignored: they can be breached) from `from` or a tile within FROM_SLACK of it (a
+ * the terrain (walls and buildings ignored: they can be breached) from `from` or a tile within AI_NAVAL.reachSlack of it (a
  * town centre's own tiles are blocked; its villagers stand round it).
  */
 export function landReachable(map: MapData, from: TileCoord, to: TileCoord): boolean {
@@ -46,8 +47,8 @@ export function landReachableFromAny(map: MapData, froms: readonly TileCoord[], 
   if (froms.length === 0) return false;
   const mask = landReachMask(map, to);
   for (const from of froms) {
-    for (let dy = -FROM_SLACK; dy <= FROM_SLACK; dy++) {
-      for (let dx = -FROM_SLACK; dx <= FROM_SLACK; dx++) {
+    for (let dy = -AI_NAVAL.reachSlack; dy <= AI_NAVAL.reachSlack; dy++) {
+      for (let dx = -AI_NAVAL.reachSlack; dx <= AI_NAVAL.reachSlack; dx++) {
         const tx = from.tx + dx;
         const ty = from.ty + dy;
         if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && mask[ty * map.width + tx] === 1) return true;
@@ -67,6 +68,3 @@ export function landReachMask(map: MapData, to: TileCoord): Uint8Array {
   };
   return reachMask(terrain, to);
 }
-
-/** How far round `from` landReachable looks for a free tile to start from. */
-const FROM_SLACK = 3;
