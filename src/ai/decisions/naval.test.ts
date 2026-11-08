@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isShoreSite } from '../../game/shore';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
-import { findDockSite, landReachable } from './naval';
+import { findDockSite, landReachable, landReachableFromAny } from './naval';
 
 /** Land on the west (x < 20), sea on the east. */
 function coast(): MapData {
@@ -26,6 +26,14 @@ describe('naval decisions (M14)', () => {
     map.setTile(30, 30, TERRAIN.grass);
     expect(landReachable(map, { tx: 2, ty: 2 }, { tx: 18, ty: 35 })).toBe(true);
     expect(landReachable(map, { tx: 2, ty: 2 }, { tx: 30, ty: 30 })).toBe(false);
+  });
+
+  it('several enemy spots in one flood: walkable when any lies on the base\'s land', () => {
+    const map = coast();
+    map.setTile(30, 30, TERRAIN.grass);
+    const home = { tx: 2, ty: 2 };
+    expect(landReachableFromAny(map, [{ tx: 30, ty: 30 }, { tx: 18, ty: 35 }], home)).toBe(true);
+    expect(landReachableFromAny(map, [{ tx: 30, ty: 30 }], home)).toBe(false);
   });
 
   it('a walled-in enemy is still walkable (walls are breached), only water cuts the land off', () => {

@@ -11,7 +11,7 @@ import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import { ArmyControl } from '../ArmyControl';
 import { countByType, counterMix, nextUnitToTrain, reserveForGoal, savedForUnit } from '../decisions/army';
 import { attackReady, pickAttackTarget } from '../decisions/combat';
-import { landReachable, landReachableFromAny } from '../decisions/naval';
+import { landReachableFromAny } from '../decisions/naval';
 import { LandingControl } from '../LandingControl';
 import { NavalPlay } from '../NavalPlay';
 import { weightsForGoal } from '../decisions/gathering';
@@ -220,7 +220,8 @@ export class MediumStrategy extends BaseStrategy {
     const key = enemy.map((p) => `${p.tx},${p.ty}`).join(';');
     const last = this.walkable;
     if (last && last.key === key && ctx.timeMs - last.atMs < WALKABLE_RECHECK_MS) return last.answer;
-    const answer = enemy.some((p) => landReachable(ctx.mapData, home, p));
+    // One flood from the base reaches every enemy spot on its land.
+    const answer = landReachableFromAny(ctx.mapData, enemy, home);
     this.walkable = { answer, atMs: ctx.timeMs, key };
     return answer;
   }
