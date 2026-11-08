@@ -7,8 +7,9 @@
 Valódi meccset vezérel fej nélküli Chrome-mal (CDP, SwiftShader), és az egérbemenetet ellenőrzi:
 
 1. a húzott keret kijelöli a 3 kezdő falusit;
-2. a jobb klikk üres talajra mindegyik kijelölt egységnek utat ad;
-3. az egyszeri kattintás pontosan egy falusit jelöl ki;
+2. a jobb klikk üres talajra (a térképadatokban ellenőrzött szabad fűmezőre) mindegyik
+   kijelölt egységnek utat ad;
+3. az egyszeri kattintás pontosan egy, a saját falusidat jelöli ki;
 4. a Ctrl+klikk (az alapértelmezett parancs-gesztus) mozgatja a kijelölést, és megtartja;
 5. a sima kattintás üres fűre törli a kijelölést.
 
@@ -22,4 +23,5 @@ Futtatás: `npm run smoke:input -- [--url http://localhost:5196] [--chrome <út>
 
 Kimenet: ellenőrzésenként egy `PASS <ellenőrzés>` / `FAIL <ellenőrzés>` sor. A kilépési kód
 0, ha minden ellenőrzés sikeres, különben 1 (a `FAIL server/chrome` is ide tartozik, ha a
-szerver nem érhető el, vagy a Chrome 10 s alatt nem indul). A CI-nek nem része.
+szerver nem érhető el, vagy a Chrome 10 s alatt nem indul); Ctrl+C-re 130, SIGTERM-re 143.
+A CI-nek nem része.

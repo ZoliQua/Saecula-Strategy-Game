@@ -43,10 +43,14 @@ async function cleanup() {
     retryDelay: 200,
   });
 }
-for (const sig of ['SIGINT', 'SIGTERM']) {
+// Conventional exit codes: 128 + signal number (SIGINT 2 -> 130, SIGTERM 15 -> 143).
+for (const [sig, code] of [
+  ['SIGINT', 130],
+  ['SIGTERM', 143],
+]) {
   process.on(sig, async () => {
     await cleanup();
-    process.exit(130);
+    process.exit(code);
   });
 }
 
@@ -192,9 +196,17 @@ const selectedPaths = () =>
   ev(
     `${GAME}.world.entities.filter(e=>e.selectable?.selected).map(e=>e.movable?.path?.length??0)`,
   );
+// Stops every unit through the game's own order helper (world.removeComponent keeps Miniplex's
+// query indexes right; a bare `delete` would leave the entity in the moveIntent query).
 const clearPaths = () =>
   ev(
-    `${GAME}.world.entities.forEach(e=>{if(e.movable){e.movable.path=null;} if(e.moveIntent){delete e.moveIntent;}}); 1`,
+    `(async()=>{const {clearUnitOrders}=await import('/src/ecs/orders.ts');const g=${GAME};
+    for(const e of [...g.world.entities]){if(!e.movable)continue;clearUnitOrders(g.world,e);e.movable.path=[];e.movable.progress=0;}
+    return 1})()`,
+  );
+const selectedEntities = () =>
+  ev(
+    `${GAME}.world.entities.filter(e=>e.selectable?.selected).map(e=>({type:e.unit?.unitType??e.building?.type,owner:e.owner?.playerId}))`,
   );
 
 try {
@@ -246,7 +258,25 @@ try {
   };
   const info = await villagerPoints();
   let { x0, y0, x1, y1 } = bounds(info.pts);
-  const empty = { x: x1 + 150, y: (y0 + y1) / 2 };
+  // A verified free target: passable, unblocked grass with no entity within 1.5 tiles, on
+  // screen and outside the villagers' drag box, searched in rings around the villagers.
+  const empty = await ev(`(async()=>{const {tileToScreen}=await import('/src/iso/coordinates.ts');const g=${GAME};const map=g.mapData;const cam=g.cameras.main;
+    const c=window.__game.canvas.getBoundingClientRect();const k=c.width/window.__game.canvas.width;
+    const toClient=(t)=>{const s=tileToScreen(t);return {x:c.left+(s.sx-cam.worldView.x)*cam.zoom*k,y:c.top+(s.sy-cam.worldView.y)*cam.zoom*k}};
+    const vs=g.world.entities.filter(e=>e.unit?.unitType==='villager'&&e.owner?.playerId===1);
+    const cx=Math.round(vs.reduce((a,e)=>a+e.position.tx,0)/vs.length), cy=Math.round(vs.reduce((a,e)=>a+e.position.ty,0)/vs.length);
+    const box=${JSON.stringify({ x0, y0, x1, y1 })};
+    const near=(tx,ty)=>g.world.entities.some(e=>e.position&&Math.abs(e.position.tx-(tx+0.5))<1.5&&Math.abs(e.position.ty-(ty+0.5))<1.5);
+    for(let r=4;r<=12;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+      if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const tx=cx+dx,ty=cy+dy;
+      if(!map.isBuildable(tx,ty)||!map.isBuildable(tx-1,ty)||!map.isBuildable(tx,ty-1)||near(tx,ty))continue;
+      const p=toClient({tx:tx+0.5,ty:ty+0.5});
+      if(p.x<c.left+40||p.x>c.right-40||p.y<c.top+80||p.y>c.bottom-160)continue;
+      if(p.x>box.x0-20&&p.x<box.x1+20&&p.y>box.y0-20&&p.y<box.y1+20)continue;
+      return {x:p.x,y:p.y,tx,ty};
+    }
+    return null})()`);
+  if (!empty) throw new Error('no free grass tile near the villagers');
 
   // 1. Drag a box around the villagers.
   await drag(x0, y0, x1, y1);
@@ -272,8 +302,14 @@ try {
   const now3 = await villagerPoints();
   const p = now3.pts[0];
   await click(p.x, p.y - 10);
-  sel = await selected();
-  report('click-select', sel.length === 1, `selected ${JSON.stringify(sel)}`);
+  const picked = await selectedEntities();
+  report(
+    'click-select',
+    picked.length === 1 &&
+      picked[0].type === 'villager' &&
+      picked[0].owner === 1,
+    `selected ${JSON.stringify(picked)}`,
+  );
 
   // 4. Re-select all, then Ctrl+click (default command gesture) on empty ground.
   ({ x0, y0, x1, y1 } = bounds((await villagerPoints()).pts));

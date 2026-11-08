@@ -7,8 +7,9 @@
 Drives a real match in headless Chrome (CDP, SwiftShader) and checks mouse input:
 
 1. a drag box selects the 3 starting villagers;
-2. a right-click on empty ground gives each selected unit a path;
-3. a single click selects exactly one villager;
+2. a right-click on empty ground (a free grass tile, checked in the map data) gives each
+   selected unit a path;
+3. a single click selects exactly one villager, your own;
 4. Ctrl+click (the default command gesture) moves the selection and keeps it;
 5. a plain click on empty grass clears the selection.
 
@@ -21,5 +22,5 @@ Node 22+ (global `fetch`/`WebSocket`), and a running dev server, started separat
 Run: `npm run smoke:input -- [--url http://localhost:5196] [--chrome <path>] [--port 9334]`
 
 Output: one `PASS <check>` / `FAIL <check>` line per check. Exit code 0 when every
-check passes, 1 otherwise (including `FAIL server/chrome` when the server is not
+check passes, 1 otherwise (130 on Ctrl+C, 143 on SIGTERM) (including `FAIL server/chrome` when the server is not
 reachable or Chrome does not start within 10 s). Not part of CI.
