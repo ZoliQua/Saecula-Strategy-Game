@@ -75,7 +75,7 @@ function cases(): [string, object, Inventory][] {
   return [
     ['Perception', new Perception(), { memory: 'saved', sightings: 'saved', villagerMemory: 'saved', lastMs: 'saved' }],
     ['ArmyControl', army, { wave: 'saved', waveTarget: 'saved', exploreGoal: 'saved', log: LOG, rng: RNG, isReserved: CONFIG }],
-    ['HarassControl', new HarassControl(log, AI_HARD.harass), { raid: 'saved', target: 'saved', raidsSent: 'saved', endedAtMs: 'saved', log: LOG, tune: CONFIG }],
+    ['HarassControl', new HarassControl(log, AI_HARD.harass), { raid: 'saved', target: 'saved', raidsSent: 'saved', endedAtMs: 'saved', walkable: 'excluded: a cache of the walkability check, recomputed after a load', log: LOG, tune: CONFIG }],
     ['FlankControl', new FlankControl(log, AI_MASTER.flank), { flank: 'saved', reorders: 'saved', goal: 'saved', launched: 'saved', log: LOG, tune: CONFIG }],
     ['PressureControl', new PressureControl(AI_MEDIUM, army, noPressure), { sentFlag: 'saved', raidOutSinceMs: 'saved', tune: CONFIG, army: CONFIG, act: CONFIG }],
     ['WonderSiteCheck', new WonderSiteCheck(1), { nextSearchMs: 'saved', found: 'saved', retryMs: CONFIG }],

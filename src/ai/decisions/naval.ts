@@ -44,13 +44,7 @@ export function landReachable(map: MapData, from: TileCoord, to: TileCoord): boo
 /** landReachable for several starting points at the cost of one flood: true when any of them can walk to `to`. */
 export function landReachableFromAny(map: MapData, froms: readonly TileCoord[], to: TileCoord): boolean {
   if (froms.length === 0) return false;
-  // Terrain only: walls and buildings can be breached, water cannot.
-  const terrain: NavGrid = {
-    width: map.width,
-    height: map.height,
-    isPassable: (tx, ty) => tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && isPassable(map.getTile(tx, ty)),
-  };
-  const mask = reachMask(terrain, to);
+  const mask = landReachMask(map, to);
   for (const from of froms) {
     for (let dy = -FROM_SLACK; dy <= FROM_SLACK; dy++) {
       for (let dx = -FROM_SLACK; dx <= FROM_SLACK; dx++) {
@@ -61,6 +55,17 @@ export function landReachableFromAny(map: MapData, froms: readonly TileCoord[], 
     }
   }
   return false;
+}
+
+/** The tiles `to` can be walked to from over the terrain (walls and buildings ignored, water not), as a map mask. */
+export function landReachMask(map: MapData, to: TileCoord): Uint8Array {
+  // Terrain only: walls and buildings can be breached, water cannot.
+  const terrain: NavGrid = {
+    width: map.width,
+    height: map.height,
+    isPassable: (tx, ty) => tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && isPassable(map.getTile(tx, ty)),
+  };
+  return reachMask(terrain, to);
 }
 
 /** How far round `from` landReachable looks for a free tile to start from. */
