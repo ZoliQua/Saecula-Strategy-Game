@@ -12,6 +12,31 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.9.1] — 2026-11-08
+
+Balance check of the unique units and nations after M11–M14.
+
+### Changed
+
+- The **Cossack** (Russian) has 50 HP instead of 60 and attack 5 instead
+  of 6: at equal cost it no longer beats the swordsman, the scout's
+  counter, and Russian AIs no longer win three games in four. It stays a
+  fast raider.
+- The **Spanish** gold-gathering bonus is +25 % instead of +15 %; Spain
+  was the weakest nation in AI-against-AI games.
+- Saves from 0.9.0 load as before: a Cossack saved at 60 HP keeps its
+  60 HP (a test now guards this); newly trained Cossacks have 50.
+
+### Added
+
+- Balance checks for developers: an equal-cost duel test (in CI) that
+  keeps every unique unit near the unit it replaces and beaten by that
+  unit's counters, and an opt-in round-robin of AI matches between all
+  eight nations (`BALANCE=1`) that reports each nation's win rate.
+- `npm run smoke:input`: a dependency-free headless-Chrome check of
+  drag-select, click-select, right-click and Ctrl+click commands against
+  a running dev server (`scripts/smoke/`).
+
 ## [0.9.0] — 2026-11-01
 
 Ships and water maps (M14 milestone).
@@ -328,7 +353,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
