@@ -19,7 +19,7 @@ import type { EcsWorld } from '../world';
 import { canAttackTarget, moveLayerOf, navGridFor } from '../navLayer';
 import type { NavGrid } from '../../map/navGrid';
 import { STRICT_ESCAPE } from '../../map/escape';
-import { reachMask } from '../../map/gridSteps';
+import { seaAt } from '../../map/waterBodies';
 
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
@@ -192,7 +192,7 @@ export class CombatSystem {
     // A ship shoots only from water it can sail to: none in range of the target (far inland, or only
     // a lake beyond the land) and it retries later; out of reach for NAVAL.shipUnreachableGiveUpMs,
     // it gives the attack up (never retried forever, never dropped for a target only briefly inland).
-    const goal = findAdjacentToTarget(ship ? ownWater(grid, a.position) : grid, target, a.position, a.attacker.range);
+    const goal = findAdjacentToTarget(ship ? ownWater(this.mapData, a.position) : grid, target, a.position, a.attacker.range);
     if (ship && !goal) {
       this.shipOutOfReach(a);
       return;
@@ -250,14 +250,10 @@ function targetDistance(v: TileCoord, target: Target): number {
   return Math.max(Math.abs(v.tx - cx) - (b.footprint.width - 1) / 2, Math.abs(v.ty - cy) - (b.footprint.height - 1) / 2);
 }
 
-/** The part of the water layer `grid` a ship at `from` can sail to (its own sea, M14). */
-function ownWater(grid: NavGrid, from: TileCoord): NavGrid {
-  const sea = reachMask(grid, from);
-  return {
-    width: grid.width,
-    height: grid.height,
-    isPassable: (tx, ty) => grid.isPassable(tx, ty) && sea[ty * grid.width + tx] === 1,
-  };
+/** The part of the water layer a ship at `from` can sail to (its own sea, M14): a label lookup, no flood. */
+function ownWater(map: MapData, from: TileCoord): NavGrid {
+  const sea = seaAt(map, from);
+  return { width: map.width, height: map.height, isPassable: (tx, ty) => sea.has(tx, ty) };
 }
 
 function findAdjacentToTarget(

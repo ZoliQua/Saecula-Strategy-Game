@@ -12,6 +12,7 @@ export class MapData {
   public readonly height: number;
   private readonly tiles: Uint8Array;
   private readonly blocked: Uint8Array;
+  private waterRev = 0;
 
   constructor(width: number, height: number, fill: TerrainId = TERRAIN.grass) {
     this.width = width;
@@ -51,7 +52,20 @@ export class MapData {
         `Tile (${tx}, ${ty}) is outside map ${this.width}x${this.height}`,
       );
     }
-    this.tiles[ty * this.width + tx] = terrain;
+    const idx = ty * this.width + tx;
+    const was = this.tiles[idx];
+    if (was === terrain) return;
+    if (was === TERRAIN.water || terrain === TERRAIN.water) this.waterRev++;
+    this.tiles[idx] = terrain;
+  }
+
+  /**
+   * Bumped whenever open water changes (a tile turns to or from water, or a
+   * water tile is blocked or freed), so water-layer caches (waterBodies)
+   * know to rebuild.
+   */
+  get waterRevision(): number {
+    return this.waterRev;
   }
 
   isPassable(tx: number, ty: number): boolean {
@@ -71,7 +85,11 @@ export class MapData {
 
   setBlocked(tx: number, ty: number, blocked: boolean): void {
     if (!isInsideMap({ tx, ty }, this.width, this.height)) return;
-    this.blocked[ty * this.width + tx] = blocked ? 1 : 0;
+    const idx = ty * this.width + tx;
+    const value = blocked ? 1 : 0;
+    if (this.blocked[idx] === value) return;
+    if (this.tiles[idx] === TERRAIN.water) this.waterRev++;
+    this.blocked[idx] = value;
   }
 
   isBlocked(tx: number, ty: number): boolean {
