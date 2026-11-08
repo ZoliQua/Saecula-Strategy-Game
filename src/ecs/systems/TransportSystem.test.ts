@@ -275,4 +275,55 @@ describe('TransportSystem: unloading in a narrow strait (M14)', () => {
     expect(ship.cargo?.units ?? []).toHaveLength(0);
     for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeGreaterThanOrEqual(13);
   });
+
+  it('a target inside a built-up block (no free tile beside it) still decides the bank', () => {
+    // A one-tile strait (x 11) that ends at ty 7; a cliff below it keeps the banks apart.
+    const map = new MapData(30, 20, TERRAIN.grass);
+    for (let ty = 0; ty < 20; ty++) map.setTile(11, ty, ty <= 7 ? TERRAIN.water : TERRAIN.cliff);
+    // The target stands in the middle of a 3x3 block on the west bank (a building's centre tile).
+    for (let ty = 11; ty <= 13; ty++) for (let tx = 8; tx <= 10; tx++) map.setBlocked(tx, ty, true);
+    const world = createEcsWorld();
+    const pathing = new PathfindingSystem(world, map);
+    const movement = new MovementSystem(world, null, map);
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 11, ty: 7 }, playerId: 1 });
+    const units = Array.from({ length: NAVAL.transportCapacity }, (_, i) =>
+      createUnit(world, { type: 'swordsman', tile: { tx: 20, ty: 2 + i }, playerId: 1 }),
+    );
+    for (const u of units) world.remove(u);
+    world.addComponent(ship, 'cargo', { units: [...units] });
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 9, ty: 12 } });
+    for (let t = 0; t < 10_000 && (ship.cargo?.units.length ?? 0) > 0; t += 100) {
+      pathing.update();
+      movement.update(100);
+      transports.update(100);
+    }
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeLessThanOrEqual(10);
+  });
+
+  it('seeks an open shore only on water it can sail to, never a pond inland', () => {
+    // Land x < 12, sea x 12-27, land x > 27; the shore by the target is built up.
+    const map = new MapData(40, 30, TERRAIN.grass);
+    for (let ty = 0; ty < 30; ty++) for (let tx = 12; tx <= 27; tx++) map.setTile(tx, ty, TERRAIN.water);
+    for (let ty = 5; ty <= 15; ty++) map.setBlocked(28, ty, true);
+    // A pond right by the target, nearer to it than any open sea shore.
+    for (let ty = 12; ty <= 13; ty++) for (let tx = 32; tx <= 33; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    const pathing = new PathfindingSystem(world, map);
+    const movement = new MovementSystem(world, null, map);
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 14, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'archer', tile: { tx: 2, ty: 2 }, playerId: 1 });
+    world.remove(u);
+    world.addComponent(ship, 'cargo', { units: [u] });
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 33, ty: 10 } });
+    for (let t = 0; t < 60_000 && (ship.cargo?.units.length ?? 0) > 0; t += 100) {
+      pathing.update();
+      movement.update(100);
+      transports.update(100);
+    }
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    expect(u.position!.tx).toBeGreaterThan(27);
+  });
 });

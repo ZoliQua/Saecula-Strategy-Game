@@ -2,7 +2,7 @@ import { NAVAL } from '../../config/balance';
 import { chebyshev, tileEquals, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { NEIGHBOUR_STEPS, reachMask } from '../../map/gridSteps';
-import { waterGrid } from '../../map/navGrid';
+import { seaAt } from '../../map/waterBodies';
 import type { Entity } from '../components';
 import { moveLayerOf } from '../navLayer';
 import { clearUnitOrders } from '../orders';
@@ -170,7 +170,7 @@ export class TransportSystem {
     if (sailed) {
       // The voyage ended beside other land or none (a built-up shore): on to the nearest open shore
       // of the target's land (else of any land), once.
-      const shore = this.sought.get(t) === t.unloadIntent ? null : this.shoreWaterNear(target, land);
+      const shore = this.sought.get(t) === t.unloadIntent ? null : this.shoreWaterNear(t.position, target, land);
       if (shore && (shore.tx !== t.position.tx || shore.ty !== t.position.ty)) {
         this.sought.set(t, t.unloadIntent);
         this.world.addComponent(t, 'moveIntent', { target: shore });
@@ -189,10 +189,28 @@ export class TransportSystem {
   private landOf(order: { target: TileCoord }): Uint8Array {
     let mask = this.targetLand.get(order);
     if (!mask) {
-      mask = reachMask(this.map, order.target);
+      mask = reachMask(this.map, this.landSeed(order.target));
       this.targetLand.set(order, mask);
     }
     return mask;
+  }
+
+  /**
+   * Where to flood a target's land from: the target itself when it or a tile beside it is walkable
+   * (reachMask seeds those), else the nearest walkable tile (a building's centre, a forest's heart;
+   * rings outward, at most NAVAL.shoreSearch tiles away).
+   */
+  private landSeed(target: TileCoord): TileCoord {
+    for (let r = 0; r <= NAVAL.shoreSearch; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          if (!this.map.isPassable(target.tx + dx, target.ty + dy)) continue;
+          return r <= 1 ? target : { tx: target.tx + dx, ty: target.ty + dy };
+        }
+      }
+    }
+    return target;
   }
 
   /**
@@ -232,18 +250,19 @@ export class TransportSystem {
   }
 
   /**
-   * The open-water tile beside walkable land nearest `target` (rings outward, at most
-   * NAVAL.shoreSearch tiles away): beside the target's own land (`land`) if any, else any land.
+   * The open-water tile of the transport's own sea (the water it can sail to from `from`, never a
+   * pond inland) beside walkable land nearest `target` (rings outward, at most NAVAL.shoreSearch
+   * tiles away): beside the target's own land (`land`) if any, else any land.
    */
-  private shoreWaterNear(target: TileCoord, land: Uint8Array): TileCoord | null {
-    const water = waterGrid(this.map);
+  private shoreWaterNear(from: TileCoord, target: TileCoord, land: Uint8Array): TileCoord | null {
+    const sea = seaAt(this.map, from);
     let fallback: TileCoord | null = null;
     for (let r = 0; r <= NAVAL.shoreSearch; r++) {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           const tile = { tx: target.tx + dx, ty: target.ty + dy };
-          if (!water.isPassable(tile.tx, tile.ty)) continue;
+          if (!sea.has(tile.tx, tile.ty)) continue;
           if (this.landBeside(tile, target, land)) return tile;
           if (!fallback && this.landBeside(tile, target)) fallback = tile;
         }
