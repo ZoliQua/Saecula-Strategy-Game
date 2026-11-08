@@ -10,21 +10,7 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ## [Kiadatlan]
 
-### Javítva
-
-- Az ugyanarra a szállítóhajóra újra beszállásra küldött egység ismét a
-  hajóhoz megy, nem áll egy helyben.
-- A szoros mindkét partja mellett, vagy a célja közelében csak a túlpart
-  mellett álló szállítóhajó arra a szárazföldre teszi ki az egységeit,
-  amelyen a cél van (előbb átevez arra a partra).
-- A hajó már nem adja fel azonnal a támadást, ha a célja rövid időre
-  elérhetetlenné válik a vízről (egy falusi a part mögé, majd vissza
-  sétál); csak akkor adja fel, ha a cél egy ideig elérhetetlen marad.
-- A hajók úgy találják meg a vizet, amelyen hajózhatnak, hogy nem vizsgálják
-  át minden alkalommal az egész tengert; ez megszünteti a képkocka-akadásokat
-  a nagy vízi térképeken, ahol sok a tétlen hajó.
-- A térképgenerátor kikötőhelyei ugyanazt a partminimumot követik, mint a
-  kikötő elhelyezése.
+Még nincs.
 
 ## [0.9.1] — 2026-11-08
 
@@ -51,6 +37,22 @@ Az egyedi egységek és a népek egyensúlyának ellenőrzése az M11–M14 utá
 - `npm run smoke:input`: függőség nélküli, fej nélküli Chrome-os ellenőrzés
   a húzással és kattintással kijelölésre, a jobb klikkes és a Ctrl+klikkes
   parancsra, futó fejlesztői szerver mellett (`scripts/smoke/`).
+
+### Javítva
+
+- Az ugyanarra a szállítóhajóra újra beszállásra küldött egység ismét a
+  hajóhoz megy, nem áll egy helyben.
+- A szoros mindkét partja mellett, vagy a célja közelében csak a túlpart
+  mellett álló szállítóhajó arra a szárazföldre teszi ki az egységeit,
+  amelyen a cél van (előbb átevez arra a partra).
+- A hajó már nem adja fel azonnal a támadást, ha a célja rövid időre
+  elérhetetlenné válik a vízről (egy falusi a part mögé, majd vissza
+  sétál); csak akkor adja fel, ha a cél egy ideig elérhetetlen marad.
+- A hajók úgy találják meg a vizet, amelyen hajózhatnak, hogy nem vizsgálják
+  át minden alkalommal az egész tengert; ez megszünteti a képkocka-akadásokat
+  a nagy vízi térképeken, ahol sok a tétlen hajó.
+- A térképgenerátor kikötőhelyei ugyanazt a partminimumot követik, mint a
+  kikötő elhelyezése.
 
 ## [0.9.0] — 2026-11-01
 
