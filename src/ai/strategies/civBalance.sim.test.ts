@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CIV_DEFS } from '../../config/civs';
 import type { Difficulty } from '../../game/GameSetupConfig';
+import type { MapTemplate } from '../../map/generator';
 import { createRng } from '../../map/random';
 import type { CivId } from '../../types';
 import type { AIStrategy } from '../AIPlayer';
@@ -43,6 +44,25 @@ const CAP_MIN = 40;
  * (+698 of the 750 limit), so it keeps HP 70.
  */
 
+/** The map a round-robin plays on: the 64×64 meadow, or (BALANCE=water) a water map. */
+interface Arena {
+  readonly template: MapTemplate;
+  readonly size: number;
+}
+
+const MEADOW: Arena = { template: 'meadow', size: 64 };
+/**
+ * The water measurement (0.9.2), opt-in on its own: `BALANCE=water npx vitest run
+ * src/ai/strategies/civBalance.sim.test.ts`. Hard on a 96×96 Beltenger (the lake template's
+ * medium size: docks, fishing and galleys, the armies walking round the lake), seeds 3 and 7
+ * (28 games per civ). It prints the win rates and asserts no band: a civ far outside 35–65 % is
+ * reported to the owner, not tuned here. About 11 min.
+ * First measurement (0.9.2), wins/games: HU 11/28 (39 %), EN 16, DE 18 (64 %), FR 16, ES 14,
+ * IT 2 (7 %, far outside), RU 19 (68 %), FI 16; 6 draws. Italy lost 26 of 28, from both slots;
+ * the opening scout raids decide many of these games (as on the meadow).
+ */
+const WATER: Arena = { template: 'inland_sea', size: 96 };
+
 interface Tally {
   wins: number;
   games: number;
@@ -54,10 +74,11 @@ function strategy(difficulty: Difficulty, seed: number): AIStrategy {
 }
 
 /** One game; the winner's player id (1 or 2), or 0 for a draw. */
-function play(seed: number, human: CivId, ai: CivId, difficulty: Difficulty): 0 | 1 | 2 {
+function play(seed: number, human: CivId, ai: CivId, difficulty: Difficulty, arena: Arena): 0 | 1 | 2 {
   const match = createHeadlessMatch({
     seed,
-    size: 64,
+    size: arena.size,
+    template: arena.template,
     aiCount: 1,
     civs: { human, ais: [ai] },
     strategy: () => strategy(difficulty, seed * 31 + 2),
@@ -88,7 +109,7 @@ function play(seed: number, human: CivId, ai: CivId, difficulty: Difficulty): 0 
   return winner;
 }
 
-function roundRobin(difficulty: Difficulty, seeds: readonly number[]): Map<CivId, Tally> {
+function roundRobin(difficulty: Difficulty, seeds: readonly number[], arena: Arena = MEADOW): Map<CivId, Tally> {
   const civs = Object.keys(CIV_DEFS) as CivId[];
   const tally = new Map<CivId, Tally>(civs.map((c) => [c, { wins: 0, games: 0 }]));
   const credit = (civ: CivId, points: number) => {
@@ -100,19 +121,23 @@ function roundRobin(difficulty: Difficulty, seeds: readonly number[]): Map<CivId
     for (const human of civs) {
       for (const ai of civs) {
         if (human === ai) continue;
-        const w = play(seed, human, ai, difficulty);
+        const w = play(seed, human, ai, difficulty, arena);
         credit(human, w === 1 ? 1 : w === 0 ? 0.5 : 0);
         credit(ai, w === 2 ? 1 : w === 0 ? 0.5 : 0);
-        if (process.env['PRINT_SIM']) console.log(`${difficulty} seed ${seed} ${human} vs ${ai}: ${w === 0 ? 'draw' : w === 1 ? human : ai}`);
+        if (process.env['PRINT_SIM']) console.log(`${difficulty} ${arena.template} seed ${seed} ${human} vs ${ai}: ${w === 0 ? 'draw' : w === 1 ? human : ai}`);
       }
     }
   }
   return tally;
 }
 
-function report(difficulty: Difficulty, tally: Map<CivId, Tally>, lo: number, hi: number): void {
+function print(title: string, tally: Map<CivId, Tally>): void {
   const lines = [...tally].map(([civ, t]) => `${civ} ${t.wins}/${t.games} ${Math.round((100 * t.wins) / t.games)}%`);
-  console.log(`${difficulty} round-robin:\n${lines.join('\n')}`);
+  console.log(`${title}:\n${lines.join('\n')}`);
+}
+
+function report(difficulty: Difficulty, tally: Map<CivId, Tally>, lo: number, hi: number): void {
+  print(`${difficulty} round-robin`, tally);
   for (const [civ, t] of tally) {
     // One-game tolerance (see the file comment).
     const label = `${difficulty} ${civ} ${t.wins}/${t.games} (band ${(lo * t.games - 1).toFixed(1)}–${(hi * t.games + 1).toFixed(1)})`;
@@ -121,12 +146,24 @@ function report(difficulty: Difficulty, tally: Map<CivId, Tally>, lo: number, hi
   }
 }
 
+/** BALANCE=1 (or any value but `water`) runs the meadow round-robins; BALANCE=water only the water one. */
+const BALANCE = process.env['BALANCE'];
+const meadow = !!BALANCE && BALANCE !== 'water';
+
 describe('civ round-robin (BALANCE=1)', () => {
-  it.skipIf(!process.env['BALANCE'])('Hard: every civ wins 40–60 %, within one game (seeds 3, 7, 11, 19)', () => {
+  it.skipIf(!meadow)('Hard: every civ wins 40–60 %, within one game (seeds 3, 7, 11, 19)', () => {
     report('hard', roundRobin('hard', [3, 7, 11, 19]), 0.4, 0.6);
   }, 1_200_000);
 
-  it.skipIf(!process.env['BALANCE'])('Master: every civ wins 35–65 %, within one game (seeds 3, 7)', () => {
+  it.skipIf(!meadow)('Master: every civ wins 35–65 %, within one game (seeds 3, 7)', () => {
     report('master', roundRobin('master', [3, 7]), 0.35, 0.65);
+  }, 1_200_000);
+});
+
+describe('civ round-robin on water (BALANCE=water)', () => {
+  it.skipIf(BALANCE !== 'water')('Hard on a 96×96 Beltenger: per-civ win rates (seeds 3, 7)', () => {
+    const tally = roundRobin('hard', [3, 7], WATER);
+    print('hard inland_sea 96×96 round-robin', tally);
+    for (const [civ, t] of tally) expect(t.games, civ).toBe(28);
   }, 1_200_000);
 });
