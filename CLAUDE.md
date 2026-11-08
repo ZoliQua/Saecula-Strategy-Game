@@ -1336,7 +1336,7 @@ gálya, fregatt).
   konfigurációjában), és a `monks.sim.test.ts` ismét több népet fed le (legalább
   magyar, spanyol, német, francia).
 - **Vízi körmérkőzés:** a `civBalance.sim.test.ts` kap egy kérésre futó vízi
-  mérést (`BALANCE=water`: Beltenger, Nehéz, kevesebb mag, ≲ 10 perc), amely
+  mérést (`BALANCE=water`: Beltenger, Nehéz, kevesebb mag, kb. 11 perc), amely
   népenkénti győzelmi arányt ír ki. A `balance.ts` nem változik; ha egy nép
   messze a 35–65 % sávon kívül esik, azt jelentjük, a tulajdonos dönt.
 - Nem része: új funkció, a rajzrögzítő tesztek Linux-javítása, a mentési séma
@@ -1345,28 +1345,55 @@ gálya, fregatt).
 - **Állapot (2026-11-08):** kész. Szigetvilág: a 64×64-es, 6 játékosos térkép
   első próbálkozásra 800 magból 304 helyett 4-szer érvénytelen, és egyik mag sem
   fogy ki az újrapróbálkozásokból (előtte 273, 451, 573, 775). Okok: a kezdő
-  aranyér véletlen próbái egy kis sziget rossz oldalára mutattak (most a teljes
-  gyűrűt végigpásztázza, véletlen húzás nélkül, így a sikeres elhelyezések
-  változatlanok), a parthoz simuló aranyér egyik mezőjét víz zárta körül (a
-  Szigetvilágon a kezdő aranyér nem érinti a vizet), az erdős kis szigeten nem
-  jutott hely a külső aranyérnek (a sziget peremének fái kivágódnak, és újra
-  próbálja), és a kikötőhely-készítő csak a 3×3-as hely sarkát tartotta távol a
-  városházától (most az egészet). A többi sablon 64×64/3 és 96×96/4 térképei
-  bitre azonosak. Szállítóhajó-szöveg a `NAVAL.transportCapacity`-ből. Szerzetes:
-  a gyökérok, hogy a szerzetes csak az ágyú-takarékosság fölötti aranyból és a
-  sereg *után* képezhetett, a muskétások pedig minden többletet elköltöttek;
-  a 64×64-es rét aranya 32 perc körül elfogy. `AI_MEDIUM.monks.beforeArmy`
-  (igaz): a szerzetes a sereg előtt képződik, továbbra is csak a takarékosság
-  fölötti aranyból; a Nehéz és a Mesteri változatlan (`beforeArmy: false`), így
-  a 0.9.1-es körmérkőzés érvényes. A 3, 5 és 11-es magon mind a 8 nép két
-  szerzetese 19–25 perc alatt kész; a `monks.sim.test.ts` a magyar, spanyol,
-  német és francia népet futtatja. A `threeAges.sim.test.ts` emberi helyének
-  Közepes RNG-je 12 → 7 (a söprés a teszt megjegyzésében). Vízi körmérkőzés
-  (Nehéz, 96×96 Beltenger, magok 3 és 7, népenként 28 meccs, kb. 11 perc):
-  magyar 11/28 (39 %), angol 16, német 18 (64 %), francia 16, spanyol 14,
-  **olasz 2/28 (7 %)**, **orosz 19/28 (68 %)**, finn 16; 6 döntetlen. Az olasz
-  messze a sávon kívül esik (mindkét helyről kikap), az orosz kissé fölötte: a
-  tulajdonos dönt, a `balance.ts` nem változott.
+  aranyér véletlen próbái egy kis sziget rossz oldalára mutattak (most, ha mind
+  elhibázza, a teljes gyűrűt végigpásztázza, véletlen húzás nélkül), a parthoz
+  simuló aranyér egyik mezőjét víz zárta körül (a Szigetvilágon a kezdő aranyér
+  nem érinti a vizet), az erdős kis szigeten nem jutott hely a külső aranyérnek
+  (a sziget peremének fái kivágódnak, és újra próbálja), és a kikötőhely-készítő
+  csak a 3×3-as hely sarkát tartotta távol a városházától (most az egészet).
+  **Ugyanaz a mag más térképet ad, mint a 0.9.1-ben** a 64×64-es, 6 játékosos
+  Szigetvilágon és néhány 64×64-es, 6 játékosos Beltengeren (a part menti
+  aranyér-szabály, a külső aranyér újrapróbálása és az egész 3×3-as kikötőhely
+  szabálya miatt), ritkán egy 64×64-es, 6 játékosos Véletlen térképen is (a
+  gyűrű-pásztázás miatt; az 1–100-as magok között egy sem). Minden más sablon, és
+  minden sablon 64×64/2, 64×64/3, 96×96/4, 96×96/6 és 128×128/6 térképe bitre
+  azonos (mérve: az 1–100. mag, 128×128-on az 1–40. mag terep-hash-e a 0.9.1 és az ág
+  kódjával). A mentéseket
+  nem érinti: a mentés a terepet tárolja. Szállítóhajó-szöveg a
+  `NAVAL.transportCapacity`-ből. Szerzetes: a gyökérok, hogy a szerzetes csak az
+  ágyú-takarékosság fölötti aranyból és a sereg *után* képezhetett, a muskétások
+  pedig minden többletet elköltöttek; a 64×64-es rét aranya 32 perc körül elfogy.
+  `AI_MEDIUM.monks.beforeArmy` (igaz): a szerzetes a sereg előtt képződik,
+  továbbra is csak a takarékosság fölötti aranyból; a Nehéz és a Mesteri
+  változatlan (`beforeArmy: false`), így a 0.9.1-es körmérkőzés érvényes. A 3, 5
+  és 11-es magon mind a 8 nép két szerzetese 19–25 perc alatt kész; a
+  `monks.sim.test.ts` a magyar, spanyol, német és francia népet futtatja. A
+  `threeAges.sim.test.ts` emberi helyének Közepes RNG-je 12 → 7 (a söprés a teszt
+  megjegyzésében). A kódáttekintő megfigyelése: ugyanebben a söprésben a Közepes
+  emberi hely ágyút képző aránya 5/10-ről 3/10-re esett a szerzetes-előrehozás
+  után (kis minta).
+  Vízi körmérkőzés (`BALANCE=water`: Nehéz, 96×96 Beltenger, magok 3 és 7,
+  népenként 28 meccs, kb. 11 perc) és ellenőrző mérés ugyanígy 96×96-os réten
+  (kb. 10 perc; nem a tárolóban, egyszeri futás):
+
+  | Nép | Beltenger 96×96 | Rét 96×96 |
+  |---|---|---|
+  | magyar | 11/28 (39 %) | 18/28 (64 %) |
+  | angol | 16 (57 %) | 12,5 (45 %) |
+  | német | 18 (64 %) | 14,5 (52 %) |
+  | francia | 16 (57 %) | 14,5 (52 %) |
+  | spanyol | 14 (50 %) | 13,5 (48 %) |
+  | olasz | **2 (7 %)** | 15 (54 %) |
+  | orosz | **19 (68 %)** | 9,5 (34 %) |
+  | finn | 16 (57 %) | 14,5 (52 %) |
+
+  Döntetlen: 6, illetve 5. Az olasz a 96×96-os réten sávon belül van, tehát nem
+  a térképméret és valószínűleg nem a statisztikái okozzák a Beltengeren mért
+  2/28-at: a gyanú az AI vízi térképes játéka (hajók, nyitás). A réten erős a
+  helyhatás (az olasz AI-helyről 13/14, emberi helyről 2/14), a Beltengeren
+  mindkét helyről kikap. Az orosz 68 % / 34 % kilengése két maggal térkép- és
+  mintazaj. **Nyitott tulajdonosi döntés:** az olasz 2/28 a Beltengeren; az orosz
+  68 %-át zajnak olvassuk. A `balance.ts` nem változott.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét

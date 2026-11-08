@@ -21,7 +21,12 @@ Small fixes.
 - **Szigetvilág** (archipelago) on a small map with six players no longer
   fails to generate on some seeds (e.g. 273): every start's gold lodes now
   find room on its island, and dock sites keep clear of the town centre.
-  Islands still never join.
+  Islands still never join. The same seed now gives a different map than
+  in 0.9.1 for six-player Szigetvilág on 64×64, some six-player Beltenger
+  maps on 64×64 and, rarely, a six-player Véletlen (random) map on 64×64.
+  All other templates, and every template's 64×64 two- and three-player,
+  96×96 four- and six-player and 128×128 six-player maps, are unchanged.
+  Saves are not affected (they store the terrain).
 - The **Medium AI** gets its two monks in time with every nation: it trains
   them ahead of its army (still only from gold its cannon savings leave).
   Hard and Master AIs are unchanged.

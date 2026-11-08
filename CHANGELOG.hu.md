@@ -21,7 +21,12 @@ Apró javítások.
 - A **Szigetvilág** kis térképen, hat játékossal néhány magon (pl. 273)
   nem tudott elkészülni; most minden kezdőhely aranyerei elférnek a saját
   szigetén, és a kikötőhely nem kerül a városháza tövébe. A szigetek
-  továbbra sem érnek össze.
+  továbbra sem érnek össze. Ugyanaz a mag más térképet ad, mint a 0.9.1-ben
+  a 64×64-es, hat játékosos Szigetvilágon, néhány 64×64-es, hat játékosos
+  Beltengeren és ritkán egy 64×64-es, hat játékosos Véletlen térképen. Minden
+  más sablon, és minden sablon 64×64-es két- és háromjátékos, valamint
+  96×96-os négy- és hatjátékos és 128×128-as hatjátékos térképe változatlan.
+  A mentéseket nem érinti (a mentés a terepet tárolja).
 - A **Közepes AI** minden néppel időben kiképzi a két szerzetesét: a sereg
   előtt képzi őket (továbbra is csak az ágyú-takarékosság fölötti aranyból).
   A Nehéz és a Mesteri AI változatlan.
