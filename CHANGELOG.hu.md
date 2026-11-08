@@ -12,6 +12,34 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.9.1] — 2026-11-08
+
+Az egyedi egységek és a népek egyensúlyának ellenőrzése az M11–M14 után.
+
+### Változott
+
+- A **kozák** (orosz) életereje 60 helyett 50, támadása 6 helyett 5:
+  azonos költségen már nem győzi le a kardforgatót, a felderítő
+  ellenegységét, és az orosz AI már nem nyer négyből három meccset.
+  Gyors portyázó marad.
+- A **landsknecht** (német) életereje 70 helyett 68, így közel marad a
+  lándzsáshoz, amelyet levált.
+- A **spanyol** aranygyűjtési bónusz +15 % helyett +25 %; az AI-k
+  egymás elleni meccseiben a spanyol volt a leggyengébb nép.
+- A 0.9.0-s mentések ugyanúgy betöltődnek: a 60 életerővel mentett kozák
+  megtartja a 60-at (ezt most teszt őrzi); az újonnan képzett kozák 50-et kap.
+
+### Hozzáadva
+
+- Egyensúly-ellenőrzés fejlesztőknek: egyenlő költségű párviadal-teszt
+  (a CI-ben fut), amely minden egyedi egységet a leváltott egység közelében
+  tart, és az annak ellenegységeitől kikap; valamint a nyolc nép AI-meccseinek
+  körmérkőzése (csak `BALANCE=1` mellett), amely népenként kiírja a
+  győzelmi arányt.
+- `npm run smoke:input`: függőség nélküli, fej nélküli Chrome-os ellenőrzés
+  a húzással és kattintással kijelölésre, a jobb klikkes és a Ctrl+klikkes
+  parancsra, futó fejlesztői szerver mellett (`scripts/smoke/`).
+
 ## [0.9.0] — 2026-11-01
 
 Hajók és vízi térképek (M14 mérföldkő).
@@ -336,7 +364,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
