@@ -221,8 +221,8 @@ export class CombatSystem {
     let wait = this.outOfReach.get(a);
     if (wait && (wait.order !== order || wait.targetId !== order.targetId)) wait = undefined;
     if (wait && wait.retryAt > this.nowMs) return;
-    const goal = findAdjacentToTarget(ownWater(this.mapData, a.position), target, a.position, a.attacker.range);
-    if (!goal) {
+    const sea = ownWater(this.mapData, a.position);
+    if (!anyTileInReach(sea, target, a.attacker.range)) {
       if (!wait) {
         this.outOfReach.set(a, { order, targetId: order.targetId, sinceMs: this.nowMs, retryAt: this.nowMs + REPATH_RETRY_MS });
       } else if (this.nowMs - wait.sinceMs >= NAVAL.shipUnreachableGiveUpMs) {
@@ -236,6 +236,8 @@ export class CombatSystem {
     this.outOfReach.delete(a);
     if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
     if (!this.paths.take()) return;
+    // Reachable: the candidate list and its sort only once a path search will run.
+    const goal = findAdjacentToTarget(sea, target, a.position, a.attacker.range)!;
     const path = findPathToNearest(navGridFor(this.mapData, a as Entity), a.position, goal, STRICT_ESCAPE);
     if (!path || path.length < 2) {
       this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
@@ -277,34 +279,48 @@ function ownWater(map: MapData, from: TileCoord): NavGrid {
   return { width: map.width, height: map.height, isPassable: (tx, ty) => sea.has(tx, ty) };
 }
 
+/**
+ * Visits each tile within `range` of `target` (around a building's footprint, or around a unit)
+ * in a fixed order; stops and returns true as soon as `visit` returns true.
+ */
+function someTileInReach(target: Target, range: number, visit: (tx: number, ty: number) => boolean): boolean {
+  const b = (target as Entity).building;
+  const span = Math.max(1, Math.floor(range));
+  const { tx: ox, ty: oy } = target.position;
+  if (b) {
+    // A ring of tiles around the footprint at `span` distance.
+    for (let dy = -span; dy <= b.footprint.height - 1 + span; dy++) {
+      for (let dx = -span; dx <= b.footprint.width - 1 + span; dx++) {
+        const inside = dx >= 0 && dx < b.footprint.width && dy >= 0 && dy < b.footprint.height;
+        if (!inside && visit(ox + dx, oy + dy)) return true;
+      }
+    }
+    return false;
+  }
+  for (let dy = -span; dy <= span; dy++) {
+    for (let dx = -span; dx <= span; dx++) {
+      if ((dx !== 0 || dy !== 0) && visit(ox + dx, oy + dy)) return true;
+    }
+  }
+  return false;
+}
+
+/** Whether some passable tile of `map` lies within `range` of `target` (no allocation). */
+function anyTileInReach(map: NavGrid, target: Target, range: number): boolean {
+  return someTileInReach(target, range, (tx, ty) => map.isPassable(tx, ty));
+}
+
 function findAdjacentToTarget(
   map: NavGrid,
   target: Target,
   from: TileCoord,
   range: number,
 ): TileCoord | null {
-  const b = (target as Entity).building;
-  const candidates: TileCoord[] = [];
-  const span = Math.max(1, Math.floor(range));
-  if (b) {
-    // Generate a ring of tiles around the footprint at `span` distance.
-    for (let dy = -span; dy <= b.footprint.height - 1 + span; dy++) {
-      for (let dx = -span; dx <= b.footprint.width - 1 + span; dx++) {
-        const inside =
-          dx >= 0 && dx < b.footprint.width && dy >= 0 && dy < b.footprint.height;
-        if (inside) continue;
-        candidates.push({ tx: target.position.tx + dx, ty: target.position.ty + dy });
-      }
-    }
-  } else {
-    for (let dy = -span; dy <= span; dy++) {
-      for (let dx = -span; dx <= span; dx++) {
-        if (dx === 0 && dy === 0) continue;
-        candidates.push({ tx: target.position.tx + dx, ty: target.position.ty + dy });
-      }
-    }
-  }
-  const passable = candidates.filter((t) => map.isPassable(t.tx, t.ty));
+  const passable: TileCoord[] = [];
+  someTileInReach(target, range, (tx, ty) => {
+    if (map.isPassable(tx, ty)) passable.push({ tx, ty });
+    return false;
+  });
   if (passable.length === 0) return null;
   passable.sort(
     (a, b2) =>
