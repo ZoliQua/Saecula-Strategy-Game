@@ -1,7 +1,7 @@
 import { NAVAL } from '../../config/balance';
 import { chebyshev, tileEquals, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
-import { NEIGHBOUR_STEPS } from '../../map/gridSteps';
+import { NEIGHBOUR_STEPS, reachMask } from '../../map/gridSteps';
 import { waterGrid } from '../../map/navGrid';
 import type { Entity } from '../components';
 import { moveLayerOf } from '../navLayer';
@@ -179,9 +179,14 @@ export class TransportSystem {
     this.world.addComponent(t, 'moveIntent', { target: { tx: target.tx, ty: target.ty } });
   }
 
-  /** Puts the cargo on free land tiles nearest the transport; each unit walks on to `target`. */
+  /**
+   * Puts the cargo on free land tiles nearest the transport, all on the land
+   * it landed at (the shore beside it nearest `target`, never the far bank of
+   * a strait); each unit walks on to `target`.
+   */
   private putAshore(t: Entity & Required<Pick<Entity, 'unloadIntent' | 'position' | 'cargo'>>, target: TileCoord): void {
-    const spots = this.landNear(t.position, t.cargo.units.length);
+    const landing = this.landBeside(t.position, target);
+    const spots = landing ? this.landNear(t.position, t.cargo.units.length, reachMask(this.map, landing)) : [];
     const stay: Entity[] = [];
     t.cargo.units.forEach((u, i) => {
       const spot = spots[i];
@@ -234,14 +239,16 @@ export class TransportSystem {
     return best;
   }
 
-  /** Up to `n` distinct passable land tiles, nearest `at` first (rings outward, at most 4 tiles away). */
-  private landNear(at: TileCoord, n: number): TileCoord[] {
+  /** Up to `n` distinct passable land tiles of `land` (a reachMask), nearest `at` first (rings outward, at most 4 tiles away). */
+  private landNear(at: TileCoord, n: number, land: Uint8Array): TileCoord[] {
     const out: TileCoord[] = [];
     for (let r = 1; r <= 4 && out.length < n; r++) {
       for (let dy = -r; dy <= r && out.length < n; dy++) {
         for (let dx = -r; dx <= r && out.length < n; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-          if (this.map.isPassable(at.tx + dx, at.ty + dy)) out.push({ tx: at.tx + dx, ty: at.ty + dy });
+          const tx = at.tx + dx;
+          const ty = at.ty + dy;
+          if (this.map.isPassable(tx, ty) && land[ty * this.map.width + tx] === 1) out.push({ tx, ty });
         }
       }
     }

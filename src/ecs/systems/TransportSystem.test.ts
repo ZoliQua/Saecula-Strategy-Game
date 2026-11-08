@@ -213,3 +213,24 @@ describe('TransportSystem: a boarding order given again (M14)', () => {
     expect(u.moveIntent?.target).toEqual({ tx: 11, ty: 10 });
   });
 });
+
+describe('TransportSystem: unloading in a narrow strait (M14)', () => {
+  it('puts the cargo ashore only on the land it sailed for, never on the far bank', () => {
+    // West bank x <= 10, a two-tile strait (x 11-12), east bank x >= 13.
+    const map = new MapData(30, 20, TERRAIN.grass);
+    for (let ty = 0; ty < 20; ty++) for (const tx of [11, 12]) map.setTile(tx, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 12, ty: 10 }, playerId: 1 });
+    const units = Array.from({ length: NAVAL.transportCapacity }, (_, i) =>
+      createUnit(world, { type: 'swordsman', tile: { tx: 2, ty: 2 + i }, playerId: 1 }),
+    );
+    for (const u of units) world.remove(u);
+    world.addComponent(ship, 'cargo', { units: [...units] });
+    // Within NAVAL.unloadReach of the target, on the east bank: ashore at once.
+    world.addComponent(ship, 'unloadIntent', { target: { tx: 15, ty: 10 } });
+    transports.update(16);
+    expect(ship.cargo?.units ?? []).toHaveLength(0);
+    for (const u of units) expect(u.position!.tx, `${u.position!.tx},${u.position!.ty}`).toBeGreaterThanOrEqual(13);
+  });
+});
