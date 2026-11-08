@@ -186,6 +186,22 @@ describe('water templates (M14)', () => {
     }
   });
 
+  it('Szigetvilág: separate islands at every size and player count, playable through the retries', () => {
+    for (const size of [64, 96, 128]) {
+      for (const players of [2, 3, 4, 5, 6]) {
+        for (const seed of [1, 2, 3, 4, 5, 6]) {
+          const label = `${size}/${players} seed ${seed}`;
+          // The raw template never joins two starts' land, whatever the seed.
+          const raw = gen('archipelago', size, seed, players);
+          const rawLand0 = landFrom(raw, 0);
+          for (let i = 1; i < players; i++) expect(rawLand0[at(raw, i)], `${label} player ${i}`).toBe(0);
+          // The game's path (validation and retries) always yields a map.
+          expect(() => crowded('archipelago', size, seed, players), label).not.toThrow();
+        }
+      }
+    }
+  });
+
   it('Beltenger: a lake in the middle, every start walkable from every other round it', () => {
     for (const [size, players] of [[64, 3], [96, 4], [128, 6]] as const) {
       const g = gen('inland_sea', size, 5, players);

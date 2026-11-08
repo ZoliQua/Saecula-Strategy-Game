@@ -4,9 +4,9 @@ import { MapData } from '../MapData';
 import { createRng, randInt } from '../random';
 import { TERRAIN } from '../TerrainTypes';
 import { placeOuterGoldLodes } from './outerGold';
-import { fillPockets } from './regions';
+import { fillPockets, terrainShare } from './regions';
 import { ensureDockSites, placeFish } from './seaArea';
-import { clearDisk, nearAnyStart, placeStartEconomies, scatterForestClusters } from './startArea';
+import { inBounds, nearAnyStart, placeStartEconomies, scatterForestClusters } from './startArea';
 import { assertPlayerCount, type GeneratedMap, type TemplateOptions } from './types';
 
 /** Largest island radius (tiles): room for the start economy and the outer gold lode. */
@@ -15,8 +15,12 @@ const ISLAND_MAX_RADIUS = 20;
 const STRAIT = 6;
 /** Open water along the map edge (tiles). */
 const EDGE = 2;
-/** Solid land kept round every start whatever the noise did (tiles). */
+/** Solid land kept round every start whatever the noise did (tiles), never across the strait to a neighbour. */
 const CORE = 9;
+/** Forest scattered, as a share of the whole map (the land templates' share)... */
+const FOREST_DENSITY = 0.12;
+/** ...but at most this share of the island land: a few islands on a big sea are not all wood. */
+const FOREST_LAND_SHARE = 0.22;
 
 /**
  * "Szigetvilág" (archipelago, M14): every start on an island of its own,
@@ -41,15 +45,41 @@ export function generateArchipelago(options: TemplateOptions): GeneratedMap {
       if (d1 < ISLAND_MAX_RADIUS + wobble && d2 - d1 > STRAIT + wobble * 0.4) map.setTile(tx, ty, TERRAIN.grass);
     }
   }
-  // The core of every island stays solid land whatever the noise did.
-  for (const s of playerStarts) clearDisk(map, s, CORE);
-  scatterForestClusters(map, rng, nearAnyStart(playerStarts, 7), 0.12);
+  // The core of every island stays solid land whatever the noise did (on its own side of the strait:
+  // starts crowded on a small map would otherwise join).
+  playerStarts.forEach((_, i) => keepCore(map, playerStarts, i));
+  const forest = Math.min(FOREST_DENSITY, FOREST_LAND_SHARE * terrainShare(map, TERRAIN.grass));
+  // The beach stays open (docks, landings): no scattered forest beside the water.
+  const nearStart = nearAnyStart(playerStarts, 7);
+  scatterForestClusters(map, rng, (tx, ty) => nearStart(tx, ty) || besideWater(map, tx, ty), forest);
   placeStartEconomies(map, rng, playerStarts);
   const outerLodes = placeOuterGoldLodes(map, rng, playerStarts);
   fillPockets(map, playerStarts, TERRAIN.forest);
   ensureDockSites(map, playerStarts);
   placeFish(map, rng, playerStarts, randInt(rng, 4, 8));
   return { map, playerStarts, walls: [], outerLodes, naval: true, seaLinked: true };
+}
+
+/** Grass within CORE of start `index`, on tiles at least STRAIT nearer to it than to any other start. */
+function keepCore(map: MapData, starts: readonly TileCoord[], index: number): void {
+  const s = starts[index]!;
+  for (let ty = Math.max(0, s.ty - CORE); ty <= Math.min(map.height - 1, s.ty + CORE); ty++) {
+    for (let tx = Math.max(0, s.tx - CORE); tx <= Math.min(map.width - 1, s.tx + CORE); tx++) {
+      const own = Math.hypot(tx - s.tx, ty - s.ty);
+      if (own > CORE) continue;
+      if (starts.every((o, j) => j === index || Math.hypot(tx - o.tx, ty - o.ty) - own > STRAIT)) map.setTile(tx, ty, TERRAIN.grass);
+    }
+  }
+}
+
+/** Whether a tile next to (tx, ty) is water. */
+function besideWater(map: MapData, tx: number, ty: number): boolean {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (inBounds(map, tx + dx, ty + dy) && map.getTile(tx + dx, ty + dy) === TERRAIN.water) return true;
+    }
+  }
+  return false;
 }
 
 /** Island centres: a ring for three or more starts; opposite corners for two (the most room on a small map). */

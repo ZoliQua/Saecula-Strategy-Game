@@ -50,6 +50,12 @@ export function placeFish(map: MapData, rng: () => number, starts: readonly Tile
   }
 }
 
+/** Whether (tx, ty) lies nearer `start` than any other of `starts`. */
+function nearestTo(starts: readonly TileCoord[], start: TileCoord, tx: number, ty: number): boolean {
+  const own = Math.hypot(tx - start.tx, ty - start.ty);
+  return starts.every((o) => o === start || Math.hypot(tx - o.tx, ty - o.ty) > own);
+}
+
 /** How far (tiles) from a start ensureDockSites looks for a shore site. */
 const DOCK_SITE_RADIUS = 20;
 
@@ -71,6 +77,8 @@ export function ensureDockSites(map: MapData, starts: readonly TileCoord[]): voi
       for (let dx = -DOCK_SITE_RADIUS; dx <= DOCK_SITE_RADIUS; dx++) {
         // Outside the town centre's core.
         if (Math.max(Math.abs(dx), Math.abs(dy)) < 5) continue;
+        // On its own side: never a neighbour's shore (crowded starts, separate islands).
+        if (!nearestTo(starts, s, s.tx + dx + 1, s.ty + dy + 1)) continue;
         sites.push({ tx: s.tx + dx, ty: s.ty + dy });
       }
     }
