@@ -40,7 +40,8 @@ const GATHER: Readonly<Record<ResourceType, CursorKind>> = { wood: 'gatherWood',
  * attacks, else convert if a ready monk is selected and the enemy is a
  * convertible unit (M11); an own unfinished building → build if a villager is
  * selected; a resource node → that resource's gather kind for
- * villagers. Otherwise the units would just move there: forbidden on
+ * villagers; an own transport → board for land units (M14); walkable land
+ * → unload for a loaded transport (M14). Otherwise the units would just move there: forbidden on
  * an impassable tile, else move. No own unit, placement mode or off the
  * map: the default cursor.
  */
@@ -54,6 +55,7 @@ export function cursorFor(ctx: CursorContext): CursorKind {
   if (kind === 'ownSite' && builders) return 'build';
   if (kind === 'resource' && gatherers && resource) return GATHER[resource];
   if (kind === 'ownTransport' && ctx.units.some((u) => u.boards ?? true)) return 'board';
-  if (kind === 'none' && ctx.land && ctx.units.some((u) => u.unloads)) return 'unload';
+  // A loaded transport sent onto land unloads there, whatever stands on the tile (as OrderIssuer orders it).
+  if (ctx.land && ctx.units.some((u) => u.unloads)) return 'unload';
   return ctx.passable ? 'move' : 'forbidden';
 }
