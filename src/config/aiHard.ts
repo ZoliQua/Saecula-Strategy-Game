@@ -83,6 +83,8 @@ export const AI_HARD: HardTuning = {
   rebalanceMs: 12_000,
   /** Full reserve through the Middle age too (see AI_MEDIUM.ageUpReserve; Hard reached age 3 on 1 of 3 seeds otherwise). */
   ageUpReserve: [0, 1, 1, 0.2],
+  /** Monks after the army, as before 0.9.2: the Hard and Mesteri round-robin (0.9.1) stands as measured. */
+  monks: { ...AI_MEDIUM.monks, beforeArmy: false },
   minDefenders: 6,
   attackWave: 10,
   firstAttackMs: { min: 3 * 60_000, max: 5 * 60_000 },

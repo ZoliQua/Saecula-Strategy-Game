@@ -43,21 +43,24 @@ export interface MediumTuning {
   readonly militaryBuildings: readonly (readonly BuildingType[])[];
   /** Counter-unit reaction to sightings. */
   readonly counters: CounterTuning;
-  /** Wonder play (only when the match can be won by a Wonder). */
-  /**
-   * Monks (M11): from age 2, once the economy has `minVillagers`, one
-   * monastery and `count` monks; they follow the army, heal, and convert
-   * enemy units that come within reach. 0 = none.
-   */
   /**
    * The M12 technologies, researched only when no `techPriority` one can
    * start, and only from what the army's savings (a cannon it is short of)
    * leave over, so they never delay the army (monastery ones need a monastery).
    */
   readonly extraTechPriority: readonly TechId[];
-  readonly monks: { readonly count: number; readonly minVillagers: number };
+  /**
+   * Monks (M11): from age 2, once the economy has `minVillagers`, one
+   * monastery and `count` monks; they follow the army, heal, and convert
+   * enemy units that come within reach. 0 = none. Monks spend only what the
+   * army's savings (a cannon it is short of) leave over; with `beforeArmy`
+   * they are trained ahead of the army each decision (0.9.2), else after it,
+   * when the army has usually spent that surplus already.
+   */
+  readonly monks: { readonly count: number; readonly minVillagers: number; readonly beforeArmy: boolean };
   /** The navy (M14): see NavalTuning (none on a map without water near the base). */
   readonly navy: NavalTuning;
+  /** Wonder play (only when the match can be won by a Wonder). */
   readonly wonder: {
     readonly enabled: boolean;
     /** Villagers the economy keeps before a Wonder goes up. */
@@ -156,8 +159,12 @@ export const AI_MEDIUM: MediumTuning = {
     ['barracks', 'archery_range', 'stable', 'blacksmith', 'foundry'],
   ],
   counters: { threshold: 0.3, boost: 0.6 },
-  /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
-  monks: { count: 2, minVillagers: 18 },
+  /**
+   * Two monks ahead of the army (0.9.2): trained after it, they waited for a surplus above the
+   * cannon savings that musketeers kept spending, and came after 40 min for some civs (or never,
+   * once a 64×64 meadow's gold ran out).
+   */
+  monks: { count: 2, minVillagers: 18, beforeArmy: true },
   navy: {
     minVillagers: 10,
     fishingBoats: 4,
@@ -165,5 +172,6 @@ export const AI_MEDIUM: MediumTuning = {
     frigates: [0, 0, 0, 2],
     transports: 2,
   },
+  /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
   wonder: { enabled: true, minVillagers: 20, builders: 8 },
 };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createUnit } from '../../ecs/archetypes/createUnit';
 import { createRng } from '../../map/random';
+import type { CivId } from '../../types';
 import { createHeadlessMatch } from '../testing/headlessMatch';
 import { MediumStrategy } from './MediumStrategy';
 
@@ -12,18 +13,19 @@ const SIM_TIMEOUT_MS = 240_000;
  * monastery in age 2, keeps AI_MEDIUM.monks.count monks, and its monks
  * convert enemy units that come into their reach.
  */
+// The civs whose Medium AI once missed the deadline at seed 3 (German, French, Spanish: the army
+// spent the surplus above the cannon savings first), and the Hungarian it was pinned to in 0.9.1.
+const CIVS: readonly CivId[] = ['hungarian', 'spanish', 'german', 'french'];
+
 describe('Medium AI monks (M11)', () => {
-  it(
-    'builds a monastery, trains its monks, and converts an enemy unit walking up to them',
-    () => {
+  it.each(CIVS)(
+    '%s: builds a monastery, trains its monks, and converts an enemy unit walking up to them',
+    (civ) => {
       const match = createHeadlessMatch({
         seed: 3,
         size: 64,
         aiCount: 1,
-        // A fixed civ (0.9.1): the seeded mixed draw gave a Spanish AI, whose monk timing moved
-        // with the Spanish gold bonus; with gold-hungry armies, two monks come at 28–36 min
-        // for most civs and after 40 min for some (German, French, Spanish at seed 3).
-        civs: { human: 'hungarian', ais: ['hungarian'] },
+        civs: { human: 'hungarian', ais: [civ] },
         strategy: () => new MediumStrategy(createRng(3 * 31 + 2)),
         difficulty: () => 'medium',
       });
