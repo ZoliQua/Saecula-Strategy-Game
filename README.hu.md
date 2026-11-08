@@ -5,7 +5,7 @@
 **Izometrikus, történelmi, valós idejű stratégiai játék a böngésződben.**
 Három kor · nyolc nép · AI ellenfelek — Rómától a felvilágosodásig.
 
-[![Verzió](https://img.shields.io/badge/verzi%C3%B3-0.9.1-f5a857)](CHANGELOG.hu.md)
+[![Verzió](https://img.shields.io/badge/verzi%C3%B3-0.9.2-f5a857)](CHANGELOG.hu.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
 [![Licenc: MIT](https://img.shields.io/badge/licenc-MIT-blue)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -134,7 +134,7 @@ megjelenítik. A teljes architektúra, a scope és a konvenciók a
 
 ## Állapot és ütemterv
 
-A Saecula jelenlegi verziója **0.9.1**. Az egyes verziók tartalmát a
+A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
 [változásnapló](CHANGELOG.hu.md) sorolja fel.
 
 | Mérföldkő | Tartalom | Állapot |

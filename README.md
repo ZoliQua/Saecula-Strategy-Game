@@ -5,7 +5,7 @@
 **An isometric historical real-time strategy game that runs in your browser.**
 Three ages · eight nations · AI rivals — from Rome to the Enlightenment.
 
-[![Version](https://img.shields.io/badge/version-0.9.1-f5a857)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.2-f5a857)](CHANGELOG.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -135,7 +135,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.9.1**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.9.2**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |

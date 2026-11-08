@@ -189,7 +189,10 @@ describe('water templates (M14)', () => {
   it('Szigetvilág: separate islands at every size and player count, playable through the retries', () => {
     for (const size of [64, 96, 128]) {
       for (const players of [2, 3, 4, 5, 6]) {
-        for (const seed of [1, 2, 3, 4, 5, 6]) {
+        // Seed 273 at 64×64 with six starts once ran out of retries (0.9.2): a start lode boxed in on the
+        // shore, outer lodes with no open ground on a wooded island, and dock sites cleared inside the core.
+        const seeds = size === 64 && players === 6 ? [1, 2, 3, 4, 5, 6, 273, 451, 573, 775] : [1, 2, 3, 4, 5, 6];
+        for (const seed of seeds) {
           const label = `${size}/${players} seed ${seed}`;
           // The raw template never joins two starts' land, whatever the seed.
           const raw = gen('archipelago', size, seed, players);
@@ -200,6 +203,13 @@ describe('water templates (M14)', () => {
         }
       }
     }
+  });
+
+  it('Szigetvilág 64×64, six starts: valid on the first try for nearly every seed', () => {
+    // Before 0.9.2 about 38 % of first tries failed validation (so 1 seed in 200 ran out of retries).
+    let failed = 0;
+    for (let seed = 1; seed <= 100; seed++) if (!validateMap(gen('archipelago', 64, seed, 6)).ok) failed++;
+    expect(failed).toBeLessThanOrEqual(3);
   });
 
   it('Beltenger: a lake in the middle, every start walkable from every other round it', () => {

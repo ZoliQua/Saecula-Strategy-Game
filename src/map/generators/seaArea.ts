@@ -76,8 +76,8 @@ export function ensureDockSites(map: MapData, starts: readonly TileCoord[]): voi
     const sites: TileCoord[] = [];
     for (let dy = -DOCK_SITE_RADIUS; dy <= DOCK_SITE_RADIUS; dy++) {
       for (let dx = -DOCK_SITE_RADIUS; dx <= DOCK_SITE_RADIUS; dx++) {
-        // Outside the town centre's core.
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 5) continue;
+        // The whole 3×3 site outside the town centre's core (its far corner too, not only the origin).
+        if (Math.min(Math.abs(dx), Math.abs(dx + 2)) < 5 && Math.min(Math.abs(dy), Math.abs(dy + 2)) < 5) continue;
         // On its own side: never a neighbour's shore (crowded starts, separate islands).
         if (!nearestTo(starts, s, s.tx + dx + 1, s.ty + dy + 1)) continue;
         sites.push({ tx: s.tx + dx, ty: s.ty + dy });

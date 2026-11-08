@@ -179,8 +179,10 @@ export class MediumStrategy extends BaseStrategy {
     this.monks.build(ctx, view);
     this.naval.build(ctx, view);
     this.keepScouting(ctx, view);
+    // Monks ahead of the army (tune.monks.beforeArmy), or after it; either way only from what its savings leave.
+    if (this.tune.monks.beforeArmy) this.monks.train(ctx, view);
     this.trainArmy(ctx, view);
-    this.monks.train(ctx, view);
+    if (!this.tune.monks.beforeArmy) this.monks.train(ctx, view);
     this.naval.train(ctx, view);
     this.researchTechs(ctx, view);
     this.pressure.launch(ctx, view);

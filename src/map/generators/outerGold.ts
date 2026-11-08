@@ -18,13 +18,15 @@ const ATTEMPTS = 96;
  * from every side. `blocked` tiles (preset walls) are kept out and walked
  * around. Run it after the start economies. Returns each start's lode
  * tiles (empty where no site fitted); validation rejects a map where a
- * lode found no room, so generation retries.
+ * lode found no room, so generation retries. With `only`, the lodes of
+ * the other starts are left out (returned empty, no random draws spent).
  */
 export function placeOuterGoldLodes(
   map: MapData,
   rng: () => number,
   starts: readonly TileCoord[],
   blocked: TilePredicate = () => false,
+  only?: (index: number) => boolean,
 ): TileCoord[][] {
   const center = { tx: (map.width - 1) / 2, ty: (map.height - 1) / 2 };
   const g = START_ECONOMY.outerGold;
@@ -35,6 +37,7 @@ export function placeOuterGoldLodes(
     { ring: g.crowdedRing, keepOut: nearAnyStart(starts, START_CORE_RADIUS + 1), forest: false },
   ];
   return starts.map((start, i) => {
+    if (only && !only(i)) return [];
     const others = starts.filter((_, j) => j !== i);
     const reached = floodFrom([villagerSpawnTiles(start)[1]!], map.width, map.height, (tx, ty) =>
       inBounds(map, tx, ty) && isPassable(map.getTile(tx, ty)) && !blocked(tx, ty),

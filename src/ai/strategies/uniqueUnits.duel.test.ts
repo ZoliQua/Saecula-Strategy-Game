@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNavalType, UNIT_BALANCE } from '../../config/balance';
+import { isNavalType, NAVAL, UNIT_BALANCE } from '../../config/balance';
 import { isUniqueUnit } from '../../game/civUnits';
 import { hu } from '../../i18n/hu';
 import { BASE_UNIT_TYPES, type BaseUnitType, type UniqueUnitType, type UnitType } from '../../types';
@@ -62,11 +62,12 @@ describe('unique units in equal-cost duels', () => {
 });
 
 describe('land unit texts carry no stat numbers', () => {
-  // Ships are left out: the transport's role text names its capacity (M14).
-  it('no land unit name or role description contains a digit', () => {
-    for (const t of (Object.keys(UNIT_BALANCE) as UnitType[]).filter((u) => !isNavalType(u))) {
+  // A number in a unit text comes from balance.ts: the transport's role names its capacity (NAVAL).
+  it('no unit name or role description has a typed-in number', () => {
+    for (const t of Object.keys(UNIT_BALANCE) as UnitType[]) {
       expect(hu.units[t], `hu.units.${t}`).not.toMatch(/\d/);
-      expect(hu.unitRoles[t], `hu.unitRoles.${t}`).not.toMatch(/\d/);
+      if (t !== 'transport') expect(hu.unitRoles[t], `hu.unitRoles.${t}`).not.toMatch(/\d/);
     }
+    expect(hu.unitRoles.transport.match(/\d+/g)).toEqual([String(NAVAL.transportCapacity)]);
   });
 });

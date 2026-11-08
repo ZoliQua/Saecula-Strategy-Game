@@ -47,8 +47,14 @@ export function nearAnyStart(starts: readonly TileCoord[], radius: number): (tx:
  * start: its core cleared to grass, a gold lode of several adjacent tiles,
  * a berry patch and a forest clump, each on its own side of the town
  * centre. Nothing lands in any start's core (starts may be close).
+ * `lodeOk` may keep the start lode off more tiles (a template's shore).
  */
-export function placeStartEconomies(map: MapData, rng: () => number, starts: readonly TileCoord[]): void {
+export function placeStartEconomies(
+  map: MapData,
+  rng: () => number,
+  starts: readonly TileCoord[],
+  lodeOk: TilePredicate = () => true,
+): void {
   const inCore = nearAnyStart(starts, START_CORE_RADIUS);
   for (const start of starts) {
     for (let dy = -START_CORE_RADIUS; dy <= START_CORE_RADIUS; dy++) {
@@ -57,12 +63,13 @@ export function placeStartEconomies(map: MapData, rng: () => number, starts: rea
       }
     }
   }
-  for (const start of starts) placeStartEconomy(map, rng, start, inCore);
+  const lodeAllowed: TilePredicate = (tx, ty) => inBounds(map, tx, ty) && !inCore(tx, ty) && lodeOk(tx, ty);
+  for (const start of starts) placeStartEconomy(map, rng, start, inCore, lodeAllowed);
 }
 
-function placeStartEconomy(map: MapData, rng: () => number, start: TileCoord, inCore: TilePredicate): void {
+function placeStartEconomy(map: MapData, rng: () => number, start: TileCoord, inCore: TilePredicate, lodeAllowed: TilePredicate): void {
   const e = START_ECONOMY;
-  const goldAngle = placeGoldLode(map, rng, start, inCore, rng() * Math.PI * 2, randInt(rng, e.goldTiles.min, e.goldTiles.max + 1));
+  const goldAngle = placeGoldLode(map, rng, start, lodeAllowed, rng() * Math.PI * 2, randInt(rng, e.goldTiles.min, e.goldTiles.max + 1));
   const berryAngle = goldAngle + Math.PI * (0.55 + rng() * 0.3);
   const bushes = randInt(rng, e.berryBushes.min, e.berryBushes.max + 1);
   placeClump(map, rng, start, inCore, berryAngle, e.berryRing, TERRAIN.berries, bushes);
@@ -92,22 +99,41 @@ export function lodeTiles(at: TileCoord, wide: boolean, count: number): TileCoor
 }
 
 /**
- * The start lode (lodeTiles) in the START_ECONOMY gold ring.
+ * The start lode (lodeTiles) in the START_ECONOMY gold ring, on tiles
+ * `allowed` lets it take. Random tries fan out from `angle`; when none
+ * fits (a small island whose land lies the other way), a sweep of the
+ * whole ring takes the first site that does, with no random draws, so a
+ * map whose random tries succeed is unchanged.
  * Returns the direction (radians from the start) it ended up in.
  */
-function placeGoldLode(map: MapData, rng: () => number, start: TileCoord, inCore: TilePredicate, angle: number, count: number): number {
+function placeGoldLode(map: MapData, rng: () => number, start: TileCoord, allowed: TilePredicate, angle: number, count: number): number {
   const ring = START_ECONOMY.goldRing;
+  const fits = (lode: readonly TileCoord[]) =>
+    lode.every((t) => allowed(t.tx, t.ty) && (map.getTile(t.tx, t.ty) === TERRAIN.grass || map.getTile(t.tx, t.ty) === TERRAIN.forest));
+  const place = (lode: readonly TileCoord[], a: number) => {
+    for (const t of lode) map.setTile(t.tx, t.ty, TERRAIN.gold_mine);
+    return a;
+  };
   for (let attempt = 0; attempt < 32; attempt++) {
     const a = angle + (attempt === 0 ? 0 : (rng() - 0.5) * Math.PI * 1.5);
     const at = ringPoint(start, a, ring.min + rng() * (ring.max - ring.min));
     const lode = lodeTiles(at, rng() < 0.5, count);
-    if (!lode.every((t) => inBounds(map, t.tx, t.ty) && !inCore(t.tx, t.ty))) continue;
-    if (!lode.every((t) => map.getTile(t.tx, t.ty) === TERRAIN.grass || map.getTile(t.tx, t.ty) === TERRAIN.forest)) continue;
-    for (const t of lode) map.setTile(t.tx, t.ty, TERRAIN.gold_mine);
-    return a;
+    if (fits(lode)) return place(lode, a);
+  }
+  for (let dist = ring.min; dist <= ring.max; dist++) {
+    for (let step = 0; step < SWEEP_STEPS; step++) {
+      const a = angle + (step / SWEEP_STEPS) * Math.PI * 2;
+      for (const wide of [true, false]) {
+        const lode = lodeTiles(ringPoint(start, a, dist), wide, count);
+        if (fits(lode)) return place(lode, a);
+      }
+    }
   }
   return angle;
 }
+
+/** Directions the start-lode sweep tries round the ring. */
+const SWEEP_STEPS = 24;
 
 /** Grass tiles this far from a clump's centre may join it (the nearest ones fill first). */
 const CLUMP_REACH = 4;
