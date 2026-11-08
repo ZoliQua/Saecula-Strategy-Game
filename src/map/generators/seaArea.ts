@@ -1,3 +1,4 @@
+import { NAVAL } from '../../config/balance';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../MapData';
 import { TERRAIN } from '../TerrainTypes';
@@ -61,7 +62,7 @@ const DOCK_SITE_RADIUS = 20;
 
 /**
  * Every start gets a dock site (M14): the nearest 3×3 patch of its land
- * with open water along a side (two tiles at least) is cleared to grass
+ * with open water along a side (NAVAL.dockMinShore tiles at least) is cleared to grass
  * (trees there are felled; gold and berries are never touched).
  */
 export function ensureDockSites(map: MapData, starts: readonly TileCoord[]): void {
@@ -102,7 +103,7 @@ export function ensureDockSites(map: MapData, starts: readonly TileCoord[]): voi
         if (water(o.tx - 1, o.ty + k)) shore++;
         if (water(o.tx + 3, o.ty + k)) shore++;
       }
-      if (shore < 2) continue;
+      if (shore < NAVAL.dockMinShore) continue;
       const cost = trees * 10 + Math.hypot(o.tx - s.tx, o.ty - s.ty);
       if (cost < bestCost) {
         bestCost = cost;

@@ -3,7 +3,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToNearest } from '../../map/pathfinding';
-import { BREACH_SEARCH_RADIUS, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
+import { BREACH_SEARCH_RADIUS, NAVAL, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { findBreachTarget } from '../../game/breach';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
@@ -19,7 +19,7 @@ import type { EcsWorld } from '../world';
 import { canAttackTarget, moveLayerOf, navGridFor } from '../navLayer';
 import type { NavGrid } from '../../map/navGrid';
 import { STRICT_ESCAPE } from '../../map/escape';
-import { reachMask } from '../../map/gridSteps';
+import { seaAt } from '../../map/waterBodies';
 
 type Attacker = With<Entity, 'position' | 'attacker' | 'attackIntent' | 'owner'>;
 type Target = With<Entity, 'position' | 'health' | 'owner'>;
@@ -46,6 +46,11 @@ export class CombatSystem {
   /** Clock and per-unit earliest next repath, so walled-off targets are not re-planned every tick. */
   private nowMs = 0;
   private readonly repathAt = new WeakMap<object, number>();
+  /**
+   * Per ship (M14): the attack order (and target) out of reach from its water, since when (system clock),
+   * and when it looks again. A new order, a new target or a reachable / in-range target starts afresh.
+   */
+  private readonly outOfReach = new WeakMap<object, { readonly order: object; readonly targetId: number; readonly sinceMs: number; retryAt: number }>();
 
   constructor(
     world: EcsWorld,
@@ -104,6 +109,8 @@ export class CombatSystem {
       this.walkIntoRange(a, target);
       return;
     }
+    // In range: no longer out of reach (a ship's wait starts afresh next time).
+    this.outOfReach.delete(a);
     // In range — halt any residual motion and swing if ready.
     if (a.movable) {
       a.movable.path = [];
@@ -180,30 +187,64 @@ export class CombatSystem {
     if (!a.movable) return;
     // Already moving toward something? Keep going; we'll re-check next tick.
     if (a.movable.path.length > 0) return;
+    // A ship (M14) closes in on the water layer and never breaches anything.
+    if (moveLayerOf(a as Entity) === 'water') {
+      this.sailIntoRange(a, target);
+      return;
+    }
     if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
     if (!this.paths.take()) return;
     // Every tile in reach blocked (e.g. ringed by walls): head for the target itself;
     // findPathToNearest stops at the closest reachable tile.
-    // A ship (M14) closes in on the water layer and never breaches anything.
-    const ship = moveLayerOf(a as Entity) === 'water';
     const grid = navGridFor(this.mapData, a as Entity);
-    // A ship shoots only from water it can sail to: none in range of the target (far inland, or only
-    // a lake beyond the land) and it gives the attack up.
-    const goal = findAdjacentToTarget(ship ? ownWater(grid, a.position) : grid, target, a.position, a.attacker.range);
-    if (ship && !goal) {
-      this.endTarget(a);
-      return;
-    }
-    const escape = ship ? STRICT_ESCAPE : escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0);
+    const goal = findAdjacentToTarget(grid, target, a.position, a.attacker.range);
+    const escape = escapeRulesAt(this.world, a.position, this.mapData, a.owner?.playerId ?? 0);
     const path = findPathToNearest(grid, a.position, goal ?? target.position, escape);
     if (!path || path.length < 2) {
       // Walled off and already as close as possible: breach, or retry later (not every tick).
-      if (!ship && this.tryBreach(a, target)) return;
+      if (this.tryBreach(a, target)) return;
       this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
       return;
     }
     a.movable.path = path.slice(1);
     a.movable.progress = 0;
+  }
+
+  /**
+   * A ship shoots only from water it can sail to. None in range of the target (far inland, or only
+   * a lake beyond the land): it looks again every REPATH_RETRY_MS (no path search spent) and gives
+   * the attack up once out of reach for NAVAL.shipUnreachableGiveUpMs (never retried forever,
+   * never dropped for a target only briefly inland).
+   */
+  private sailIntoRange(a: Attacker, target: Target): void {
+    const order = a.attackIntent;
+    let wait = this.outOfReach.get(a);
+    if (wait && (wait.order !== order || wait.targetId !== order.targetId)) wait = undefined;
+    if (wait && wait.retryAt > this.nowMs) return;
+    const sea = ownWater(this.mapData, a.position);
+    if (!anyTileInReach(sea, target, a.attacker.range)) {
+      if (!wait) {
+        this.outOfReach.set(a, { order, targetId: order.targetId, sinceMs: this.nowMs, retryAt: this.nowMs + REPATH_RETRY_MS });
+      } else if (this.nowMs - wait.sinceMs >= NAVAL.shipUnreachableGiveUpMs) {
+        this.outOfReach.delete(a);
+        this.endTarget(a);
+      } else {
+        wait.retryAt = this.nowMs + REPATH_RETRY_MS;
+      }
+      return;
+    }
+    this.outOfReach.delete(a);
+    if ((this.repathAt.get(a) ?? 0) > this.nowMs) return;
+    if (!this.paths.take()) return;
+    // Reachable: the candidate list and its sort only once a path search will run.
+    const goal = findAdjacentToTarget(sea, target, a.position, a.attacker.range)!;
+    const path = findPathToNearest(navGridFor(this.mapData, a as Entity), a.position, goal, STRICT_ESCAPE);
+    if (!path || path.length < 2) {
+      this.repathAt.set(a, this.nowMs + REPATH_RETRY_MS);
+      return;
+    }
+    a.movable!.path = path.slice(1);
+    a.movable!.progress = 0;
   }
 
   private findEntityById(id: number): Entity | undefined {
@@ -232,14 +273,41 @@ function targetDistance(v: TileCoord, target: Target): number {
   return Math.max(Math.abs(v.tx - cx) - (b.footprint.width - 1) / 2, Math.abs(v.ty - cy) - (b.footprint.height - 1) / 2);
 }
 
-/** The part of the water layer `grid` a ship at `from` can sail to (its own sea, M14). */
-function ownWater(grid: NavGrid, from: TileCoord): NavGrid {
-  const sea = reachMask(grid, from);
-  return {
-    width: grid.width,
-    height: grid.height,
-    isPassable: (tx, ty) => grid.isPassable(tx, ty) && sea[ty * grid.width + tx] === 1,
-  };
+/** The part of the water layer a ship at `from` can sail to (its own sea, M14): a label lookup, no flood. */
+function ownWater(map: MapData, from: TileCoord): NavGrid {
+  const sea = seaAt(map, from);
+  return { width: map.width, height: map.height, isPassable: (tx, ty) => sea.has(tx, ty) };
+}
+
+/**
+ * Visits each tile within `range` of `target` (around a building's footprint, or around a unit)
+ * in a fixed order; stops and returns true as soon as `visit` returns true.
+ */
+function someTileInReach(target: Target, range: number, visit: (tx: number, ty: number) => boolean): boolean {
+  const b = (target as Entity).building;
+  const span = Math.max(1, Math.floor(range));
+  const { tx: ox, ty: oy } = target.position;
+  if (b) {
+    // A ring of tiles around the footprint at `span` distance.
+    for (let dy = -span; dy <= b.footprint.height - 1 + span; dy++) {
+      for (let dx = -span; dx <= b.footprint.width - 1 + span; dx++) {
+        const inside = dx >= 0 && dx < b.footprint.width && dy >= 0 && dy < b.footprint.height;
+        if (!inside && visit(ox + dx, oy + dy)) return true;
+      }
+    }
+    return false;
+  }
+  for (let dy = -span; dy <= span; dy++) {
+    for (let dx = -span; dx <= span; dx++) {
+      if ((dx !== 0 || dy !== 0) && visit(ox + dx, oy + dy)) return true;
+    }
+  }
+  return false;
+}
+
+/** Whether some passable tile of `map` lies within `range` of `target` (no allocation). */
+function anyTileInReach(map: NavGrid, target: Target, range: number): boolean {
+  return someTileInReach(target, range, (tx, ty) => map.isPassable(tx, ty));
 }
 
 function findAdjacentToTarget(
@@ -248,28 +316,11 @@ function findAdjacentToTarget(
   from: TileCoord,
   range: number,
 ): TileCoord | null {
-  const b = (target as Entity).building;
-  const candidates: TileCoord[] = [];
-  const span = Math.max(1, Math.floor(range));
-  if (b) {
-    // Generate a ring of tiles around the footprint at `span` distance.
-    for (let dy = -span; dy <= b.footprint.height - 1 + span; dy++) {
-      for (let dx = -span; dx <= b.footprint.width - 1 + span; dx++) {
-        const inside =
-          dx >= 0 && dx < b.footprint.width && dy >= 0 && dy < b.footprint.height;
-        if (inside) continue;
-        candidates.push({ tx: target.position.tx + dx, ty: target.position.ty + dy });
-      }
-    }
-  } else {
-    for (let dy = -span; dy <= span; dy++) {
-      for (let dx = -span; dx <= span; dx++) {
-        if (dx === 0 && dy === 0) continue;
-        candidates.push({ tx: target.position.tx + dx, ty: target.position.ty + dy });
-      }
-    }
-  }
-  const passable = candidates.filter((t) => map.isPassable(t.tx, t.ty));
+  const passable: TileCoord[] = [];
+  someTileInReach(target, range, (tx, ty) => {
+    if (map.isPassable(tx, ty)) passable.push({ tx, ty });
+    return false;
+  });
   if (passable.length === 0) return null;
   passable.sort(
     (a, b2) =>

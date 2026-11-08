@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NAVAL, REPATH_RETRY_MS } from '../../config/balance';
 import { canConvert } from '../../game/convert';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
@@ -107,5 +108,87 @@ describe('naval combat: a target out of reach from the water (M14)', () => {
     world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
     step(30_000);
     expect(galley.attackIntent).toBeUndefined();
+  });
+
+  it('a target only briefly out of reach (it walked inland and back) keeps the order', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    // Inland at first, out of reach from the water.
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(Math.floor(NAVAL.shipUnreachableGiveUpMs / 2));
+    expect(galley.attackIntent?.targetId).toBe(villager.id);
+    // Back on the shore: the ship closes in and shoots.
+    villager.position = { tx: 14, ty: 10 };
+    step(15_000);
+    expect(villager.health!.current).toBeLessThan(villager.health!.max);
+  });
+
+  it('a target that stays out of reach is given up after NAVAL.shipUnreachableGiveUpMs, not before', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(NAVAL.shipUnreachableGiveUpMs - REPATH_RETRY_MS);
+    expect(galley.attackIntent?.targetId).toBe(villager.id);
+    step(2 * REPATH_RETRY_MS);
+    expect(galley.attackIntent).toBeUndefined();
+  });
+
+  it('a new order on a target once out of reach starts a fresh wait (not the wait of the old order)', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(Math.floor(NAVAL.shipUnreachableGiveUpMs / 2));
+    world.removeComponent(galley, 'attackIntent');
+    step(NAVAL.shipUnreachableGiveUpMs);
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(1_000);
+    expect(galley.attackIntent?.targetId).toBe(villager.id);
+  });
+
+  it('a target that came into range resets the wait: walking inland again later does not end the order at once', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 16, ty: 10 }, playerId: 1 });
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    villager.health!.max = villager.health!.current = 10_000;
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    step(2_000);
+    // Into range of the galley where it lies: it shoots without re-pathing.
+    villager.position = { tx: 14, ty: 10 };
+    step(NAVAL.shipUnreachableGiveUpMs);
+    expect(villager.health!.current).toBeLessThan(villager.health!.max);
+    // Inland again: a fresh wait.
+    villager.position = { tx: 2, ty: 10 };
+    step(1_000);
+    expect(galley.attackIntent?.targetId).toBe(villager.id);
+  });
+
+  it('waiting on an unreachable target does not hold up a new reachable order', () => {
+    const { world, step } = setup();
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const inland = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    const shore = createUnit(world, { type: 'villager', tile: { tx: 14, ty: 20 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: inland.id! });
+    step(200);
+    world.removeComponent(galley, 'attackIntent');
+    world.addComponent(galley, 'attackIntent', { targetId: shore.id! });
+    step(100);
+    expect(galley.movable!.path.length).toBeGreaterThan(0);
+  });
+
+  it('a ship waiting on an unreachable target spends no path searches', () => {
+    const map = new MapData(30, 30, TERRAIN.grass);
+    for (let ty = 0; ty < 30; ty++) for (let tx = 15; tx < 30; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    let searches = 0;
+    const combat = new CombatSystem(world, map, null, { take: () => (searches++, true) });
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 22, ty: 10 }, playerId: 1 });
+    const villager = createUnit(world, { type: 'villager', tile: { tx: 2, ty: 10 }, playerId: 2 });
+    world.addComponent(galley, 'attackIntent', { targetId: villager.id! });
+    for (let t = 0; t < NAVAL.shipUnreachableGiveUpMs + 2 * REPATH_RETRY_MS; t += 100) combat.update(100);
+    expect(galley.attackIntent).toBeUndefined();
+    expect(searches).toBe(0);
   });
 });
