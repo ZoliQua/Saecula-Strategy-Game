@@ -1,3 +1,4 @@
+import { START_ECONOMY } from '../../config/balance';
 import { fbm } from '../../iso/art/palette';
 import type { TileCoord } from '../../iso/coordinates';
 import { MapData } from '../MapData';
@@ -52,8 +53,18 @@ export function generateArchipelago(options: TemplateOptions): GeneratedMap {
   // The beach stays open (docks, landings): no scattered forest beside the water.
   const nearStart = nearAnyStart(playerStarts, 7);
   scatterForestClusters(map, rng, (tx, ty) => nearStart(tx, ty) || besideWater(map, tx, ty), forest);
-  placeStartEconomies(map, rng, playerStarts);
+  // The start lode keeps off the beach: a lode against the shore can leave a tile boxed in by water.
+  placeStartEconomies(map, rng, playerStarts, (tx, ty) => !besideWater(map, tx, ty));
   const outerLodes = placeOuterGoldLodes(map, rng, playerStarts);
+  // A small, wooded island (six starts on 64×64) can leave no open ground for the outer lode:
+  // clear the trees of that island's outskirts (the start's own wood stays) and place it again.
+  const bare = new Set(outerLodes.flatMap((lode, i) => (lode.length === 0 ? [i] : [])));
+  if (bare.size > 0) {
+    bare.forEach((i) => clearOutskirts(map, playerStarts, i));
+    placeOuterGoldLodes(map, rng, playerStarts, () => false, (i) => bare.has(i)).forEach((lode, i) => {
+      if (bare.has(i)) outerLodes[i] = lode;
+    });
+  }
   fillPockets(map, playerStarts, TERRAIN.forest);
   ensureDockSites(map, playerStarts);
   placeFish(map, rng, playerStarts, randInt(rng, 4, 8));
@@ -68,6 +79,23 @@ function keepCore(map: MapData, starts: readonly TileCoord[], index: number): vo
       const own = Math.hypot(tx - s.tx, ty - s.ty);
       if (own > CORE) continue;
       if (starts.every((o, j) => j === index || Math.hypot(tx - o.tx, ty - o.ty) - own > STRAIT)) map.setTile(tx, ty, TERRAIN.grass);
+    }
+  }
+}
+
+/**
+ * Forest on start `index`'s island beyond its economy radius (Chebyshev,
+ * apron included, so its validated wood stays) and nearer to it than to
+ * any other start becomes grass.
+ */
+function clearOutskirts(map: MapData, starts: readonly TileCoord[], index: number): void {
+  const s = starts[index]!;
+  const keep = START_ECONOMY.radius + 1;
+  for (let ty = 0; ty < map.height; ty++) {
+    for (let tx = 0; tx < map.width; tx++) {
+      if (map.getTile(tx, ty) !== TERRAIN.forest || Math.max(Math.abs(tx - s.tx), Math.abs(ty - s.ty)) <= keep) continue;
+      const own = Math.hypot(tx - s.tx, ty - s.ty);
+      if (starts.every((o, j) => j === index || Math.hypot(tx - o.tx, ty - o.ty) > own)) map.setTile(tx, ty, TERRAIN.grass);
     }
   }
 }
