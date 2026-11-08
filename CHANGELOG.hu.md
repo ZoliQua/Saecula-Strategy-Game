@@ -12,6 +12,27 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.9.2] — 2026-11-08
+
+Apró javítások.
+
+### Javítva
+
+- A **Szigetvilág** kis térképen, hat játékossal néhány magon (pl. 273)
+  nem tudott elkészülni; most minden kezdőhely aranyerei elférnek a saját
+  szigetén, és a kikötőhely nem kerül a városháza tövébe. A szigetek
+  továbbra sem érnek össze.
+- A **Közepes AI** minden néppel időben kiképzi a két szerzetesét: a sereg
+  előtt képzi őket (továbbra is csak az ágyú-takarékosság fölötti aranyból).
+  A Nehéz és a Mesteri AI változatlan.
+- A szállítóhajó leírása a befogadóképességet a játék beállításából veszi,
+  nem beírt számként.
+
+### Hozzáadva
+
+- Fejlesztőknek: kérésre futó körmérkőzés Nehéz AI-kkal vízi térképen
+  (`BALANCE=water`, 96×96 Beltenger), amely népenkénti győzelmi arányt ír ki.
+
 ## [0.9.1] — 2026-11-08
 
 Az egyedi egységek és a népek egyensúlyának ellenőrzése az M11–M14 után.
@@ -378,7 +399,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.1...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1

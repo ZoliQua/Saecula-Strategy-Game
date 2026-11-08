@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.9.1 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 0.9.2 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -594,7 +594,7 @@ scripts/smoke/                   ← böngészős smoke-szkriptek (fej nélküli
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.9.1**.
+  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.9.2**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1342,6 +1342,31 @@ gálya, fregatt).
 - Nem része: új funkció, a rajzrögzítő tesztek Linux-javítása, a mentési séma
   változása (`schemaVersion` 9 marad).
 - Keret (10.): az M14 keretei változatlanok.
+- **Állapot (2026-11-08):** kész. Szigetvilág: a 64×64-es, 6 játékosos térkép
+  első próbálkozásra 800 magból 304 helyett 4-szer érvénytelen, és egyik mag sem
+  fogy ki az újrapróbálkozásokból (előtte 273, 451, 573, 775). Okok: a kezdő
+  aranyér véletlen próbái egy kis sziget rossz oldalára mutattak (most a teljes
+  gyűrűt végigpásztázza, véletlen húzás nélkül, így a sikeres elhelyezések
+  változatlanok), a parthoz simuló aranyér egyik mezőjét víz zárta körül (a
+  Szigetvilágon a kezdő aranyér nem érinti a vizet), az erdős kis szigeten nem
+  jutott hely a külső aranyérnek (a sziget peremének fái kivágódnak, és újra
+  próbálja), és a kikötőhely-készítő csak a 3×3-as hely sarkát tartotta távol a
+  városházától (most az egészet). A többi sablon 64×64/3 és 96×96/4 térképei
+  bitre azonosak. Szállítóhajó-szöveg a `NAVAL.transportCapacity`-ből. Szerzetes:
+  a gyökérok, hogy a szerzetes csak az ágyú-takarékosság fölötti aranyból és a
+  sereg *után* képezhetett, a muskétások pedig minden többletet elköltöttek;
+  a 64×64-es rét aranya 32 perc körül elfogy. `AI_MEDIUM.monks.beforeArmy`
+  (igaz): a szerzetes a sereg előtt képződik, továbbra is csak a takarékosság
+  fölötti aranyból; a Nehéz és a Mesteri változatlan (`beforeArmy: false`), így
+  a 0.9.1-es körmérkőzés érvényes. A 3, 5 és 11-es magon mind a 8 nép két
+  szerzetese 19–25 perc alatt kész; a `monks.sim.test.ts` a magyar, spanyol,
+  német és francia népet futtatja. A `threeAges.sim.test.ts` emberi helyének
+  Közepes RNG-je 12 → 7 (a söprés a teszt megjegyzésében). Vízi körmérkőzés
+  (Nehéz, 96×96 Beltenger, magok 3 és 7, népenként 28 meccs, kb. 11 perc):
+  magyar 11/28 (39 %), angol 16, német 18 (64 %), francia 16, spanyol 14,
+  **olasz 2/28 (7 %)**, **orosz 19/28 (68 %)**, finn 16; 6 döntetlen. Az olasz
+  messze a sávon kívül esik (mindkét helyről kikap), az orosz kissé fölötte: a
+  tulajdonos dönt, a `balance.ts` nem változott.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1450,4 +1475,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-08. Zoli projekt — Saecula, v0.9.1.*
+*Utolsó frissítés: 2026-11-08. Zoli projekt — Saecula, v0.9.2.*

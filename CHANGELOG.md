@@ -12,6 +12,27 @@ raises the patch version.
 
 Nothing yet.
 
+## [0.9.2] — 2026-11-08
+
+Small fixes.
+
+### Fixed
+
+- **Szigetvilág** (archipelago) on a small map with six players no longer
+  fails to generate on some seeds (e.g. 273): every start's gold lodes now
+  find room on its island, and dock sites keep clear of the town centre.
+  Islands still never join.
+- The **Medium AI** gets its two monks in time with every nation: it trains
+  them ahead of its army (still only from gold its cannon savings leave).
+  Hard and Master AIs are unchanged.
+- The transport ship's description takes its capacity from the game's
+  settings instead of a typed-in number.
+
+### Added
+
+- For developers: an opt-in round-robin of Hard AIs on a water map
+  (`BALANCE=water`, 96×96 Beltenger) that reports each nation's win rate.
+
 ## [0.9.1] — 2026-11-08
 
 Balance check of the unique units and nations after M11–M14.
@@ -369,7 +390,8 @@ The playable MVP (milestones M0–M3) with the visual overhaul.
   lighting with normal maps, a day–night cycle, cast shadows, and a warm
   glass-panel interface.
 
-[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1

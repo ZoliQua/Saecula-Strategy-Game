@@ -1,7 +1,7 @@
 {
   "name": "saecula",
   "private": true,
-  "version": "0.9.1",
+  "version": "0.9.2",
   "type": "module",
   "description": "Saecula — an isometric historical real-time strategy game for the browser",
   "author": "Zoltán Dul (https://github.com/ZoliQua)",
