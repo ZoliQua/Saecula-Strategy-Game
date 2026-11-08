@@ -21,7 +21,9 @@ export type GameCommand =
   /** One wheel notch of zoom around the screen centre (the minimap's ± buttons): 1 in, -1 out. */
   | { type: 'camera-zoom'; dir: 1 | -1 }
   /** Select exactly the human's villagers doing `activity` (a side panel row). */
-  | { type: 'select-villagers'; activity: VillagerActivity };
+  | { type: 'select-villagers'; activity: VillagerActivity }
+  /** Put a transport's cargo ashore where it is (M14). */
+  | { type: 'unload-transport'; unitId: number };
 
 type Listener = (cmd: GameCommand) => void;
 

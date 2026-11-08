@@ -10,6 +10,7 @@ import { createEcsWorld } from '../ecs/world';
 import { createPlayer } from '../game/Player';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
+import { TERRAIN } from '../map/TerrainTypes';
 import { createRng } from '../map/random';
 import type { AIContext } from './AIPlayer';
 import { ArmyControl } from './ArmyControl';
@@ -139,3 +140,25 @@ describe('ArmyControl', () => {
   });
 });
 
+
+describe('ArmyControl and ships (M14)', () => {
+  it('melee defenders and wave units never take an enemy ship as their target; archers do', () => {
+    const map = new MapData(48, 48);
+    for (let ty = 0; ty < 48; ty++) for (let tx = 14; tx < 48; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const world = createEcsWorld();
+    const fog = new FogOfWarData(48, 48);
+    for (let ty = 0; ty < 48; ty++) for (let tx = 0; tx < 48; tx++) fog.markVisible(tx, ty);
+    createBuilding(world, { type: 'town_center', origin: { tx: 5, ty: 5 }, playerId: 2, mapData: map });
+    const swords = [0, 1].map((i) => createUnit(world, { type: 'swordsman', tile: { tx: 10, ty: 6 + i }, playerId: 2 }));
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 11, ty: 9 }, playerId: 2 });
+    const galley = createUnit(world, { type: 'galley', tile: { tx: 14, ty: 7 }, playerId: 1 });
+    const ctx: AIContext = { world, mapData: map, player: createPlayer({ id: 2 }), timeMs: 0, fog, enemyPlayerId: 1 };
+    const control = new ArmyControl(new ThoughtLog(), createRng(3));
+    const perception = new Perception();
+    control.update(ctx, perception.update(ctx));
+    for (const s of swords) expect(s.attackIntent?.targetId).not.toBe(galley.id);
+    expect(archer.attackIntent?.targetId).toBe(galley.id);
+    control.launchWave(ctx, perception.update(ctx), swords);
+    for (const s of swords) expect(s.attackIntent?.targetId).not.toBe(galley.id);
+  });
+});

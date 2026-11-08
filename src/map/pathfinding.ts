@@ -2,10 +2,11 @@ import PF from 'pathfinding';
 import type { TileCoord } from '../iso/coordinates';
 import { escapeRoutes, escapeSteps, STRICT_ESCAPE, type EscapeRules } from './escape';
 import { canStep, NEIGHBOUR_STEPS, unwind } from './gridSteps';
-import type { MapData } from './MapData';
+import type { NavGrid } from './navGrid';
 
 /**
- * A* wrapper over the `pathfinding` library. Converts MapData into a
+ * A* wrapper over the `pathfinding` library. Converts a NavGrid (the land
+ * MapData or the water layer, M14) into a
  * PF.Grid (walkable = isPassable) once per call; for M1 this is
  * acceptable, but in M2+ we'll cache the grid and invalidate on
  * terrain/building changes.
@@ -23,7 +24,7 @@ import type { MapData } from './MapData';
  * returned so the unit still gets out.
  */
 export function findPath(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   goal: TileCoord,
   escape: EscapeRules = STRICT_ESCAPE,
@@ -34,7 +35,7 @@ export function findPath(
 
 /** Runs `plan` from `start`, or from the end of the escape steps (prepended) when `start` needs one. */
 function withEscape(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   toward: TileCoord | undefined,
   rules: EscapeRules,
@@ -47,7 +48,7 @@ function withEscape(
 }
 
 /** A* from a start that can leave (the library's search, start and goal forced walkable). */
-function findPlainPath(map: MapData, start: TileCoord, goal: TileCoord): TileCoord[] | null {
+function findPlainPath(map: NavGrid, start: TileCoord, goal: TileCoord): TileCoord[] | null {
   if (start.tx === goal.tx && start.ty === goal.ty) return [start];
 
   const grid = buildGrid(map);
@@ -62,7 +63,7 @@ function findPlainPath(map: MapData, start: TileCoord, goal: TileCoord): TileCoo
   return raw.map(([tx, ty]) => ({ tx: tx as number, ty: ty as number }));
 }
 
-function buildGrid(map: MapData): PF.Grid {
+function buildGrid(map: NavGrid): PF.Grid {
   const grid = new PF.Grid(map.width, map.height);
   for (let ty = 0; ty < map.height; ty++) {
     for (let tx = 0; tx < map.width; tx++) {
@@ -80,7 +81,7 @@ function buildGrid(map: MapData): PF.Grid {
  * of re-planning forever.
  */
 export function findPathToNearest(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   goal: TileCoord,
   escape: EscapeRules = STRICT_ESCAPE,
@@ -102,7 +103,7 @@ export function findPathToNearest(
  * least squared distance to `goal`, ties broken by fewer steps.
  */
 export function nearestReachableTile(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   goal: TileCoord,
 ): TileCoord | null {
@@ -145,7 +146,7 @@ export function nearestReachableTile(
  * the nearest goal.
  */
 export function findPathToAny(
-  map: MapData,
+  map: NavGrid,
   start: TileCoord,
   isGoal: (tx: number, ty: number) => boolean,
   escape: EscapeRules = STRICT_ESCAPE,

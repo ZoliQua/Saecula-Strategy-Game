@@ -55,7 +55,7 @@ function teamCoverage(type: UnitType, civ: CivId): number {
 
 /** The silhouette cues of a look: headgear, shield and weapon style. */
 function cues(look: UnitLook): readonly unknown[] {
-  return look.kind === 'cannon' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
+  return look.kind === 'cannon' || look.kind === 'ship' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
 }
 
 describe('Italian unit looks', () => {
@@ -81,7 +81,7 @@ describe('Italian unit looks', () => {
   it('carries the brief’s cues: Samnite helm (age 1), barbute and pavise (age 2), plumed wide-brimmed hat (age 3)', () => {
     const human = (type: UnitType) => {
       const look = unitLook(type, 'italian');
-      if (look.kind === 'cannon') throw new Error('not a human');
+      if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
       return look.human;
     };
     expect(human('swordsman').hat).toBe('samniteHelm');
@@ -98,7 +98,7 @@ describe('Italian unit looks', () => {
     for (const civ of OTHER_LOOK_CIVS) {
       for (const type of TYPES) {
         const look = unitLook(type, civ);
-        if (look.kind !== 'cannon') expect(look.human.back, `${civ} ${type}`).not.toBe('pavise');
+        if (look.kind !== 'cannon' && look.kind !== 'ship') expect(look.human.back, `${civ} ${type}`).not.toBe('pavise');
       }
     }
   });

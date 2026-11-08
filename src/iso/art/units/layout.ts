@@ -106,6 +106,9 @@ export function unitAnims(type: UnitType): readonly UnitAnim[] {
   if (type === 'villager') return ['idle', 'walk', 'attack', 'work', 'death'];
   // The monk never attacks: its "work" frames are the heal / conversion channel (M11).
   if (type === 'monk') return ['idle', 'walk', 'work', 'death'];
+  // Ships (M14): the fishing boat hauls its net (work); the transport never fights.
+  if (type === 'fishing_boat') return ['idle', 'walk', 'work', 'death'];
+  if (type === 'transport') return ['idle', 'walk', 'death'];
   return ['idle', 'walk', 'attack', 'death'];
 }
 
@@ -122,6 +125,11 @@ export const WALK_CYCLE_TILES: Readonly<Record<BaseUnitType, number>> = {
   cavalry: 1.9,
   cannon: 0.5,
   monk: 0.8,
+  // Ships glide: the cycle only sets the swell and oar beat.
+  fishing_boat: 2.2,
+  transport: 2.4,
+  galley: 2.2,
+  frigate: 2.6,
 };
 
 /** Walk-cycle ground length of a unit type (unique units use their base unit's). */

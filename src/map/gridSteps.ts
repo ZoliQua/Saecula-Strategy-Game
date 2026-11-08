@@ -1,5 +1,5 @@
 import type { TileCoord } from '../iso/coordinates';
-import type { MapData } from './MapData';
+import type { NavGrid } from './navGrid';
 
 /* Grid-walk primitives shared by the path searches (pathfinding, escape). */
 
@@ -9,13 +9,13 @@ export const NEIGHBOUR_STEPS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 /** One step (dx, dy) from (tx, ty) onto passable ground, never cutting a blocked corner (the A* finder's rule). */
-export function canStep(map: MapData, tx: number, ty: number, dx: number, dy: number): boolean {
+export function canStep(map: NavGrid, tx: number, ty: number, dx: number, dy: number): boolean {
   if (!map.isPassable(tx + dx, ty + dy)) return false;
   return dx === 0 || dy === 0 || (map.isPassable(tx + dx, ty) && map.isPassable(tx, ty + dy));
 }
 
 /** Whether a unit on (tx, ty) has at least one legal step. */
-export function hasExit(map: MapData, tx: number, ty: number): boolean {
+export function hasExit(map: NavGrid, tx: number, ty: number): boolean {
   for (const [dx, dy] of NEIGHBOUR_STEPS) if (canStep(map, tx, ty, dx, dy)) return true;
   return false;
 }
@@ -39,7 +39,7 @@ export function unwind(parent: Int32Array, idx: number, w: number): TileCoord[] 
  * map-sized mask. A blocked goal (a site, a tree) counts as reached from its
  * free neighbours.
  */
-export function reachMask(map: MapData, goal: TileCoord): Uint8Array {
+export function reachMask(map: NavGrid, goal: TileCoord): Uint8Array {
   const w = map.width;
   const mask = new Uint8Array(w * map.height);
   const queue: number[] = [];

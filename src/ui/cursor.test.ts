@@ -66,3 +66,22 @@ describe('cursorFor: conversion (M11)', () => {
     expect(ctx([{ attacks: false, gathers: false, converts: false }], true)).toBe('move');
   });
 });
+
+describe('cursorFor: transports (M14)', () => {
+  it('an own transport is board for land units; land is unload for a loaded transport', () => {
+    expect(cursorFor({ ...base, units: [soldier], target: { kind: 'ownTransport' } })).toBe('board');
+    expect(cursorFor({ ...base, units: [{ attacks: false, gathers: false, boards: false }], target: { kind: 'ownTransport' } })).toBe('move');
+    const loaded = { attacks: false, gathers: false, boards: false, unloads: true };
+    expect(cursorFor({ ...base, units: [loaded], land: true })).toBe('unload');
+    expect(cursorFor({ ...base, units: [loaded], land: false })).toBe('move');
+  });
+
+  it('a loaded transport over land with an enemy or a resource on it shows unload, as the order does', () => {
+    const loaded = { attacks: false, gathers: false, boards: false, unloads: true };
+    // A ship cannot sail onto land: the tile is impassable for it.
+    const onLand = { ...base, units: [loaded], land: true, passable: false };
+    expect(cursorFor({ ...onLand, target: { kind: 'enemy', convertible: false } })).toBe('unload');
+    expect(cursorFor({ ...onLand, target: { kind: 'resource', resource: 'food' } })).toBe('unload');
+    expect(cursorFor({ ...onLand })).toBe('unload');
+  });
+});

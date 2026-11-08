@@ -50,6 +50,7 @@ import { TimeLimitWatch } from '../../game/timeVictory';
 import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
+import { TransportSystem } from '../../ecs/systems/TransportSystem';
 
 export interface SystemRunnerOptions {
   readonly difficulty: Difficulty;
@@ -91,6 +92,7 @@ export class SystemRunner {
   private readonly population: PopulationSystem;
   private readonly combat: CombatSystem;
   private readonly monks: MonkSystem;
+  private readonly transports: TransportSystem;
   private readonly towers: TowerCombatSystem;
   private readonly projectiles: ProjectileSystem;
   private readonly projectileRender: ProjectileRenderSystem;
@@ -146,6 +148,7 @@ export class SystemRunner {
     this.selection.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
     this.movement = new MovementSystem(world, players, mapData);
+    this.transports = new TransportSystem(world, mapData);
     this.gathering = new GatheringSystem(world, mapData, players, this.paths);
     this.farms = new FarmRegenSystem(world);
     this.construction = new ConstructionSystem(world, mapData, this.paths, players);
@@ -266,6 +269,7 @@ export class SystemRunner {
     this.monks.update(delta);
     this.projectiles.update(delta);
     this.movement.update(delta);
+    this.transports.update(delta);
     this.death.update(delta);
     this.wonders.update(delta);
     this.timeLimit?.advance(delta);

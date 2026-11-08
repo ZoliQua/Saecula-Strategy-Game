@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { HUNGARIAN_M } from './hungarianMaterials';
+import { shipFleet } from '../ship';
 
 const H = HUNGARIAN_M;
 
@@ -14,6 +15,8 @@ const H = HUNGARIAN_M;
  * Hungarian light cavalry rides a dark bay, the scout a bay).
  */
 export const HUNGARIAN_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x8a5a32, 0x2f6a3a),
   hussar: {
     kind: 'rider',
     human: {

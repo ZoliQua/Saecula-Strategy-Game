@@ -74,6 +74,15 @@ export interface EasyState {
   readonly firstAttackAtMs: number;
 }
 
+/** A landing in progress (M14, LandingControl). */
+export interface LandingState {
+  readonly members: readonly number[];
+  readonly transports: readonly number[];
+  readonly target: TileCoord | null;
+  readonly phase: 'boarding' | 'sailing' | null;
+  readonly sinceMs: number;
+}
+
 /** MonkPlay's avoided conversion targets: `[monkId, targetId, untilMs]` rows. */
 export type MonkAvoidState = readonly (readonly [number, number, number])[];
 
@@ -87,6 +96,8 @@ export interface MediumFields {
   readonly lastScoutMs: number | null;
   /** Absent when there is none (and in saves from before 0.8.1). */
   readonly monkAvoid?: MonkAvoidState | undefined;
+  /** A landing in progress (M14); absent when there is none. */
+  readonly landing?: LandingState | undefined;
 }
 
 export interface MediumState extends MediumFields {

@@ -13,12 +13,15 @@ import type { HorseLook } from './horse';
 import type { HumanLook } from './humanoid';
 import { M, type Material } from './materials';
 import type { ContactShadow } from './raster';
+import type { ShipLook } from './ship';
 
 export type UnitLook =
   | { readonly kind: 'foot'; readonly human: HumanLook }
   | { readonly kind: 'rider'; readonly human: HumanLook; readonly horse: HorseLook }
   /** `barrel` defaults to bronze. */
-  | { readonly kind: 'cannon'; readonly barrel?: Material };
+  | { readonly kind: 'cannon'; readonly barrel?: Material }
+  /** M14: a ship; the civ's palette colours its hull wood and trim. */
+  | { readonly kind: 'ship'; readonly ship: ShipLook };
 
 /**
  * What every unit wears and carries: the shared base look (the
@@ -179,6 +182,10 @@ export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
     horse: { coat: M.horse.darkBay, mane: M.horse.mane, saddleCloth: true },
   },
   cannon: { kind: 'cannon' },
+  fishing_boat: { kind: 'ship', ship: { ship: 'fishing' } },
+  transport: { kind: 'ship', ship: { ship: 'transport' } },
+  galley: { kind: 'ship', ship: { ship: 'galley' } },
+  frigate: { kind: 'ship', ship: { ship: 'frigate' } },
 };
 
 /** Per unit-look id: the types whose look differs from the base. */

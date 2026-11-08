@@ -6,6 +6,7 @@ import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
 import { nearest } from './decisions/gathering';
+import { landReachableFromAny, landReachMask } from './decisions/naval';
 import { pickHarassTarget, raidOutnumbered, type HarassTarget } from './decisions/harass';
 import { pruneOwnLiving, type WorldView } from './perception';
 import { copyTile, loadedTime, savedTime, type HarassState } from './strategyState';
@@ -25,6 +26,8 @@ export class HarassControl {
   private target: HarassTarget | null = null;
   private raidsSent = 0;
   private endedAtMs = -Infinity;
+  /** Whether the raid can walk to its current target (M14: not across the sea); not saved, re-checked after a load. */
+  private walkable: { readonly target: HarassTarget; readonly ok: boolean } | null = null;
 
   constructor(
     private readonly log: ThoughtLog,
@@ -46,6 +49,7 @@ export class HarassControl {
     this.target = state.target && { position: copyTile(state.target.position), villagers: state.target.villagers };
     this.raidsSent = state.raidsSent;
     this.endedAtMs = loadedTime(state.endedAtMs);
+    this.walkable = null;
   }
 
   get active(): boolean {
@@ -73,7 +77,11 @@ export class HarassControl {
 
   /** The work spot a raid would go for now, or null when no enemy villager is remembered. */
   pickTarget(ctx: AIContext, view: WorldView): HarassTarget | null {
-    return pickHarassTarget(view.enemyVillagers, view.knownEnemyBuildings, {
+    // Only villagers the raiders can ride to: none across the sea (M14), one flood from home.
+    const land = landReachMask(ctx.mapData, home(view));
+    const w = ctx.mapData.width;
+    const villagers = view.enemyVillagers.filter((v) => land[v.position.ty * w + v.position.tx] === 1);
+    return pickHarassTarget(villagers, view.knownEnemyBuildings, {
       enemyId: ctx.enemyPlayerId,
       home: home(view),
       clusterRadius: this.tune.clusterRadius,
@@ -118,6 +126,8 @@ export class HarassControl {
       }
       return;
     }
+    // A spot the raid cannot walk to (across the sea, M14): home.
+    if (this.target && !this.canWalkTo(ctx, members, this.target)) return this.end(ctx, view, members, 'retreat');
     if (this.target && chebyshev(centre, this.target.position) > AI_COMMON.exploreArrivedWithin) {
       for (const u of members) {
         if (u.moveIntent || (u.movable?.path.length ?? 0) > 0) continue;
@@ -137,6 +147,15 @@ export class HarassControl {
     }
   }
 
+  /** Whether any raider can walk to `target` (one flood per target). */
+  private canWalkTo(ctx: AIContext, members: readonly Entity[], target: HarassTarget): boolean {
+    if (this.walkable?.target !== target) {
+      const from = members.map((u) => u.position!);
+      this.walkable = { target, ok: landReachableFromAny(ctx.mapData, from, target.position) };
+    }
+    return this.walkable.ok;
+  }
+
   private end(ctx: AIContext, view: WorldView, members: readonly Entity[], why: 'retreat' | ''): void {
     const at = home(view);
     for (const u of members) {
@@ -145,6 +164,7 @@ export class HarassControl {
     }
     this.raid.clear();
     this.target = null;
+    this.walkable = null;
     this.endedAtMs = ctx.timeMs;
     if (why) this.log.add(ctx.timeMs, why, 'harass');
   }

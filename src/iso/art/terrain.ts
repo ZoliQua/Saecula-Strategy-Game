@@ -146,7 +146,7 @@ function paintGroundDetail(
       const sy = (tx + ty) * HALF_H - y0;
       if (sx < -HALF_W || sy < -HALF_H || sx > w + HALF_W || sy > h + HALF_H) continue;
       const terrain = map.getTile(tx, ty);
-      if (terrain === TERRAIN.water || terrain === TERRAIN.cliff) continue;
+      if (terrain === TERRAIN.water || terrain === TERRAIN.fish || terrain === TERRAIN.cliff) continue;
       if (terrain === TERRAIN.forest) {
         paintUndergrowth(ctx, tx, ty, sx, sy);
         continue;

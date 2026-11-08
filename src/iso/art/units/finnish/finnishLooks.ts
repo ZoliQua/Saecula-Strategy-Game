@@ -2,6 +2,7 @@ import type { UnitType } from '../../../../types';
 import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { FINNISH_M } from './finnishMaterials';
+import { shipFleet } from '../ship';
 
 const F = FINNISH_M;
 
@@ -22,6 +23,8 @@ const F = FINNISH_M;
  * carries a short bow.
  */
 export const FINNISH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
+  // M14: the civ's ships, hull wood and trim in its palette.
+  ...shipFleet(0x7e6a52, 0xe8e4dc),
   villager: {
     kind: 'foot',
     human: {

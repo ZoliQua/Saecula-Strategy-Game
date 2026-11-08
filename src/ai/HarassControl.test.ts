@@ -8,6 +8,7 @@ import { createEcsWorld } from '../ecs/world';
 import { createPlayer } from '../game/Player';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
+import { TERRAIN } from '../map/TerrainTypes';
 import type { AIContext } from './AIPlayer';
 import { HarassControl } from './HarassControl';
 import { Perception } from './perception';
@@ -85,4 +86,20 @@ describe('HarassControl (villager raids)', () => {
     expect(turned.moveIntent?.target).toEqual({ tx: 40, ty: 4 });
     expect(turned.attackIntent).toBeUndefined();
   });
+
+  it('no raid to villagers across the sea (M14); a raid out to such a spot comes home', () => {
+    const { ctx, raiders, perception, control } = setup();
+    // The enemy's villagers work an island: water between it and the raiders.
+    for (let ty = 0; ty < 48; ty++) for (let tx = 30; tx <= 36; tx++) ctx.mapData.setTile(tx, ty, TERRAIN.water);
+    const islanders = [0, 1].map((i) => createVillager(ctx.world, { tile: { tx: 40 + i, ty: 22 }, playerId: 1 }));
+    for (const v of islanders) ctx.fog.markVisible(v.position!.tx, v.position!.ty);
+    // Only the islanders are left to raid.
+    for (const e of ctx.world.entities.filter((e) => e.owner?.playerId === 1 && e.position!.tx < 30)) ctx.world.remove(e);
+    expect(control.pickTarget(ctx, perception.update(ctx))).toBeNull();
+    // A raid already riding there (e.g. from an older save) ends at the next upkeep.
+    control.launch(ctx, raiders, { position: { tx: 40, ty: 22 }, villagers: 2 });
+    control.update(ctx, perception.update(ctx));
+    expect(control.active).toBe(false);
+  });
 });
+

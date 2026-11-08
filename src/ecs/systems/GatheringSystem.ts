@@ -9,6 +9,9 @@ import type { ResourceType } from '../../types';
 import { uiStore } from '../../ui/store';
 import type { Entity } from '../components';
 import { escapeRulesAt } from '../escapeRules';
+import { navGridFor } from '../navLayer';
+import type { NavGrid } from '../../map/navGrid';
+import { STRICT_ESCAPE } from '../../map/escape';
 import { faceToward } from './facing';
 import {
   findAdjacentPassable,
@@ -184,7 +187,12 @@ export class GatheringSystem {
   }
 
   private onFreeGround(v: Villager): boolean {
-    return this.mapData.isPassable(v.position.tx, v.position.ty);
+    return this.gridOf(v).isPassable(v.position.tx, v.position.ty);
+  }
+
+  /** The gatherer's layer: a fishing boat (M14) works and walks on the water. */
+  private gridOf(v: Villager): NavGrid {
+    return navGridFor(this.mapData, v as Entity);
   }
 
   private walkToNode(v: Villager): void {
@@ -196,8 +204,8 @@ export class GatheringSystem {
       v,
       () =>
         (node as Entity).building
-          ? findAdjacentToBuildingNode(this.mapData, node, v.position)
-          : findAdjacentPassable(this.mapData, node.position, v.position),
+          ? findAdjacentToBuildingNode(this.gridOf(v), node, v.position)
+          : findAdjacentPassable(this.gridOf(v), node.position, v.position),
       (tx, ty) => isAdjacentToNode({ tx, ty }, node),
     );
   }
@@ -205,7 +213,7 @@ export class GatheringSystem {
   private walkToFootprint(v: Villager, dropoff: Dropoff): void {
     this.walkTo(
       v,
-      () => findAdjacentToFootprint(this.mapData, dropoff, v.position),
+      () => findAdjacentToFootprint(this.gridOf(v), dropoff, v.position),
       (tx, ty) => isAdjacentToFootprint({ tx, ty }, dropoff),
     );
   }
@@ -219,8 +227,9 @@ export class GatheringSystem {
     if ((this.repathAt.get(v) ?? 0) > this.nowMs) return;
     const to = goal();
     if (to && !this.paths.take()) return;
-    const escape = escapeRulesAt(this.world, v.position, this.mapData, v.owner?.playerId ?? 0);
-    const path = to ? (findPath(this.mapData, v.position, to, escape) ?? findPathToAny(this.mapData, v.position, isWorkTile, escape)) : null;
+    const grid = this.gridOf(v);
+    const escape = grid === this.mapData ? escapeRulesAt(this.world, v.position, this.mapData, v.owner?.playerId ?? 0) : STRICT_ESCAPE;
+    const path = to ? (findPath(grid, v.position, to, escape) ?? findPathToAny(grid, v.position, isWorkTile, escape)) : null;
     if (!path) {
       this.repathAt.set(v, this.nowMs + REPATH_RETRY_MS);
       return;
@@ -250,8 +259,8 @@ export class GatheringSystem {
     // Farms are never used up: they regrow (FarmRegenSystem).
     if ((node as Entity).building) return;
     const { tx, ty } = node.position;
-    // Natural resource tiles revert to grass on depletion.
-    this.mapData.setTile(tx, ty, TERRAIN.grass);
+    // Natural resource tiles revert to grass on depletion; a fish school (M14) to open water.
+    this.mapData.setTile(tx, ty, this.mapData.getTile(tx, ty) === TERRAIN.fish ? TERRAIN.water : TERRAIN.grass);
     this.world.remove(node as Entity);
   }
 

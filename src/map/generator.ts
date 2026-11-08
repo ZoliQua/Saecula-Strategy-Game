@@ -1,4 +1,6 @@
+import { generateArchipelago } from './generators/archipelago';
 import { generateFortress } from './generators/fortress';
+import { generateInlandSea } from './generators/inlandSea';
 import { generateIslands } from './generators/islands';
 import { generateMeadow } from './generators/meadow';
 import { generateRandom } from './generators/random';
@@ -7,7 +9,7 @@ import { generateWilderness } from './generators/wilderness';
 import { validateMap, type MapValidation } from './validation';
 
 /** Spec templates (PROGRAM_TERV.md §11). */
-export const MAP_TEMPLATES = ['meadow', 'wilderness', 'islands', 'fortress', 'random'] as const;
+export const MAP_TEMPLATES = ['meadow', 'wilderness', 'islands', 'fortress', 'random', 'inland_sea', 'archipelago'] as const;
 export type MapTemplate = (typeof MAP_TEMPLATES)[number];
 
 export interface GenerateMapOptions extends TemplateOptions {
@@ -36,6 +38,8 @@ export const TEMPLATE_GENERATORS: Readonly<Record<MapTemplate, (options: Templat
   islands: generateIslands,
   fortress: generateFortress,
   random: generateRandom,
+  inland_sea: generateInlandSea,
+  archipelago: generateArchipelago,
 };
 
 /** The seed of retry `attempt` (0 is the player's seed itself); deterministic, so a seed always yields the same map. */

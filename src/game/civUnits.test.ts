@@ -9,7 +9,8 @@ describe('civ unit roster', () => {
     const roster = civUnitTypes('hungarian');
     expect(roster).toContain('hussar');
     expect(roster).not.toContain('knight');
-    expect(roster).toHaveLength(11);
+    // Eleven land units (M11) and four ships (M14).
+    expect(roster).toHaveLength(15);
     expect(civUnitType('hungarian', 'knight')).toBe('hussar');
     expect(civUnitType('hungarian', 'archer')).toBe('archer');
   });

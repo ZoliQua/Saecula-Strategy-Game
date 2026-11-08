@@ -19,7 +19,7 @@ export function infoKey(info: SelectedEntityInfo | null): string {
   if (!info) return 'null';
   if (info.kind === 'unit') {
     const c = info.carrying ? `${info.carrying.type}:${info.carrying.amount}` : '-';
-    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}`;
+    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}`;
   }
   if (info.kind === 'building') {
     const q = (info.queue ?? [])
@@ -66,6 +66,7 @@ export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: numb
             },
           }
         : {}),
+      ...(entity.unit.unitType === 'transport' ? { cargo: entity.cargo?.units.length ?? 0 } : {}),
     };
   }
   if (entity.building) {

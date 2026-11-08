@@ -4,6 +4,7 @@ import type { Entity } from '../components';
 import { bonusVsCavalryFor } from '../../game/damage';
 import { assignEntityId, type EcsWorld } from '../world';
 import { UNIT_SPECS } from './unit';
+import { NAVAL } from '../../config/balance';
 
 export interface CreateUnitOptions {
   readonly type: UnitType;
@@ -31,6 +32,17 @@ export function createUnit(
     owner: { playerId: options.playerId },
     populationCost: { amount: spec.populationCost },
   });
+  if (options.type === 'fishing_boat') {
+    // M14: fishes like a villager gathers (GatheringSystem), on the water, to its docks.
+    entity.gatherer = {
+      carryingType: null,
+      carrying: 0,
+      capacity: NAVAL.fishCapacity,
+      gatherRate: NAVAL.fishRate,
+      targetNodeId: undefined,
+      dropoffId: undefined,
+    };
+  }
   if (options.type === 'villager') {
     entity.gatherer = {
       carryingType: null,

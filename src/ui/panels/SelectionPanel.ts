@@ -9,6 +9,7 @@ import { icons, type IconName } from '../icons';
 import { type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
 import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
 import { DeleteButton } from './DeleteButton';
+import { cargoLine, UnloadButton } from './UnloadButton';
 import { formatStat, playerColor, playerColorCss } from '../format';
 import { keysHint } from '../keymap';
 import { settingsStore } from '../settings';
@@ -27,19 +28,21 @@ export class SelectionPanel {
   private readonly portrait: HTMLElement;
   private readonly body: HTMLElement;
   private readonly deleteButton = new DeleteButton();
+  private readonly unloadButton = new UnloadButton();
   private identity = '';
   private bodyKey = '';
 
   constructor(private readonly textures: Phaser.Textures.TextureManager) {
     this.portrait = el('div', { class: 'portrait empty' });
     this.body = el('div', { class: 'sel-body' });
-    const main = el('div', { class: 'sel-main' }, this.body, this.deleteButton.row);
+    const main = el('div', { class: 'sel-main' }, this.body, this.deleteButton.row, this.unloadButton.row);
     this.root = el('div', { class: 'glass selection anim-in' }, this.portrait, main);
   }
 
   render(state: UiStore): void {
     const sel = state.selectedEntity;
     this.deleteButton.render(sel, state.deleteArmedId, state.deleteArmedPct);
+    this.unloadButton.render(sel);
     // The building portrait follows its age style, so a re-skin refreshes it.
     const identity = sel ? `${sel.kind}:${sel.id}:${sel.kind === 'building' ? (sel.textureKey ?? '') : ''}` : 'none';
     if (identity !== this.identity) {
@@ -106,6 +109,7 @@ export class SelectionPanel {
         `${withBonus(base.meleeDef, meleeDefBonus)} / ${withBonus(base.pierceDef, pierceDefBonus)}`,
       ]);
       if (sel.carrying) rows.push([sel.carrying.type, hu.hud.carrying, `${sel.carrying.amount}`]);
+      if (sel.cargo !== undefined) rows.push(['pop', hu.hud.cargo, cargoLine(sel.cargo)]);
       return [
         head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, enemy), more),
         bar(sel.hp.current, sel.hp.max, hu.hud.hp),

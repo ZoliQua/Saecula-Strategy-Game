@@ -12,6 +12,46 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 Még nincs.
 
+## [0.9.0] — 2026-11-01
+
+Hajók és vízi térképek (M14 mérföldkő).
+
+### Hozzáadva
+
+- Négy hajó, amelyet az új **kikötő** képez (a parton áll, egyik oldala nyílt
+  vízzel határos): a **halászhajó** halrajokból gyűjt ételt, és a kikötőbe
+  viszi; a **szállítóhajó** legfeljebb öt szárazföldi egységet visz; a
+  **gálya** hajókra és a partra lő; a **fregatt** (felvilágosodás) hajókat és
+  épületeket rombol. Minden nép a saját színeivel festi a hajótestet, a
+  vitorla a tulajdonos színét mutatja.
+- **Szállítás**: szárazföldi egységekkel kijelölve jobb klikk egy saját
+  szállítóhajóra: beszállnak (a hajó eléjük megy); megrakott hajóval jobb
+  klikk a szárazföldre: ott partra teszi őket, vagy **Kirakodás** gomb. Az
+  elsüllyedt szállítóhajó rakománya is elvész.
+- A hajók csak vízen járnak. Közelharci egység hajót nem támadhat, szerzetes
+  nem téríthet; az íjászok, a tornyok és a többi hajó igen.
+- **Halrajok** a vízen, és két új térképtípus: **Beltenger** (középen tó,
+  körbe járható part) és **Szigetvilág** (mindenki saját szigeten, a sereg
+  csak hajóval kel át). Minden kezdőhelynek van kikötőhelye és hala.
+- Az AI kikötőt épít, ha van vize, halászik, gályákból (és fregattokból) álló
+  flottát tart, a szigeteken pedig szállítóhajóval partra teszi a seregét.
+- Beszállás- és kirakodás-kurzor, hajóhangok.
+- A mentések sémaváltozata 9 (a régebbi mentések ugyanúgy betöltődnek).
+
+### Javítva
+
+- **Szigetvilág**: kis térképen öt-hat játékossal a szomszédos szigetek már
+  nem nőnek össze egy szárazfölddé; nagy térképen két-három játékossal a
+  szigetek már nem csupa erdők, és a térkép ismét elkészül.
+- A szűk szorosban kirakodó szállítóhajó csak arra a partra teszi ki az
+  egységeit, amely felé hajózott, sosem a túlpartra.
+- A kirakodás-kurzor minden olyan szárazföldi mező fölött látszik, ahol a
+  megrakott szállítóhajó kirakodna, akkor is, ha egység vagy nyersanyag áll
+  ott.
+- Az AI hajói már nem üldöznek olyan célt, amelynek vizéhez nem jutnak el
+  (szárazföld mögötti tó), és a hajó feladja az elérhetetlen cél támadását.
+- A Nehéz és a Mesteri AI portyája már nem indul a tengeren túli falusiakra.
+
 ## [0.8.1] — 2026-11-01
 
 Javítások a 0.4.0–0.8.0 code review-ja alapján.
@@ -296,7 +336,8 @@ A játszható alapverzió (M0–M3 mérföldkő) a grafikai átdolgozással.
   2D fények normal map-ekkel, napszakváltás, vetett árnyékok és meleg tónusú
   üvegpaneles felület.
 
-[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...HEAD
+[Kiadatlan]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ZoliQua/Saecula-Strategy-Game/compare/v0.6.0...v0.7.0

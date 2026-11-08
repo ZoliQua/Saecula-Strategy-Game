@@ -159,3 +159,42 @@ export * from './aiMedium';
 export * from './aiHard';
 export * from './aiMaster';
 export * from './aiPersonality';
+
+/**
+ * The AI's navy (M14). With a dock site within AI_NAVAL.dockSearchRadius of its base
+ * and `minVillagers` villagers, it builds a dock and keeps `fishingBoats`
+ * (while fish is known), `galleys` and `frigates` (per age: index = age)
+ * and, when the enemy cannot be walked to, up to `transports` for a landing.
+ */
+export interface NavalTuning {
+  readonly minVillagers: number;
+  readonly fishingBoats: number;
+  readonly galleys: readonly number[];
+  readonly frigates: readonly number[];
+  readonly transports: number;
+}
+
+/** The Easy AI's navy (M14): it only fishes. */
+export const AI_EASY_NAVY: NavalTuning = {
+  minVillagers: 8,
+  fishingBoats: 2,
+  galleys: [0, 0, 0, 0],
+  frigates: [0, 0, 0, 0],
+  transports: 0,
+};
+
+/** Naval play common to every AI (M14). */
+export const AI_NAVAL = {
+  /** The base-to-enemy walkability check is redone at most this often while what is known of the enemy stays the same (ms). */
+  walkableRecheckMs: 60_000,
+  /** How far (tiles) round its starting points the land-walk check looks for a free tile to start from (a town centre's own tiles). */
+  reachSlack: 3,
+  /** How far from its base anchor the AI looks for a dock site (tiles). */
+  dockSearchRadius: 24,
+  /** A warship engages visible enemies this close (tiles), if it can shoot them from the water. */
+  engageRadius: 10,
+  /** An idle warship this far from its dock sails back toward it. */
+  homeRadius: 10,
+  /** A landing waits at most this long for its units to board (ms), then sails with whoever is aboard. */
+  boardTimeoutMs: 90_000,
+} as const;

@@ -1,4 +1,4 @@
-import { TERRAIN, type TerrainId } from './TerrainTypes';
+import { isSea, type TerrainId } from './TerrainTypes';
 import { bilinearShare, tileShare } from './tileShare';
 
 export interface WaterSource {
@@ -35,7 +35,7 @@ function nearWater(map: WaterSource): Uint8Array {
   const near = new Uint8Array(map.width * map.height);
   for (let ty = 0; ty < map.height; ty++) {
     for (let tx = 0; tx < map.width; tx++) {
-      if (map.getTile(tx, ty) !== TERRAIN.water) continue;
+      if (!isSea(map.getTile(tx, ty))) continue;
       for (let y = Math.max(0, ty - 2); y <= Math.min(map.height - 1, ty + 2); y++) {
         for (let x = Math.max(0, tx - 2); x <= Math.min(map.width - 1, tx + 2); x++) near[y * map.width + x] = 1;
       }
@@ -57,7 +57,7 @@ export function waterCoverage(map: WaterSource, u: number, v: number): number {
   // Fast path: no water tile within the kernel reach.
   const near = nearWater(map);
   if (near[Math.min(map.height - 1, Math.max(0, fy)) * map.width + Math.min(map.width - 1, Math.max(0, fx))] !== 1) return 0;
-  const isWater = (x: number, y: number) => map.getTile(x, y) === TERRAIN.water;
+  const isWater = (x: number, y: number) => isSea(map.getTile(x, y));
   // The flowing outline may round off corners but never floods a land tile's centre (trees, units stand there).
   const share = Math.min(tileShare(isWater, map.width, map.height, u, v), bilinearShare(isWater, map.width, map.height, u, v) + 0.35);
   return smooth(Math.max(0, Math.min(1, (share - 0.3) / 0.4)));
@@ -66,7 +66,7 @@ export function waterCoverage(map: WaterSource, u: number, v: number): number {
 /** True when the map has at least one water tile. */
 export function hasWater(map: WaterSource): boolean {
   for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) if (map.getTile(x, y) === TERRAIN.water) return true;
+    for (let x = 0; x < map.width; x++) if (isSea(map.getTile(x, y))) return true;
   }
   return false;
 }

@@ -15,6 +15,7 @@ import { MasterStrategy } from './strategies/MasterStrategy';
 import { MediumStrategy } from './strategies/MediumStrategy';
 import { NullStrategy } from './strategies/NullStrategy';
 import { ThoughtLog } from './thoughts';
+import { LandingControl } from './LandingControl';
 import { MonkPlay, type MonkActions } from './MonkPlay';
 import { WonderPlay, type WonderActions } from './WonderPlay';
 
@@ -46,6 +47,9 @@ const MEDIUM: Inventory = {
   army: 'saved',
   wonder: 'saved',
   monks: 'saved',
+  naval: 'excluded: NavalPlay reads the world (no state of its own)',
+  landing: 'saved',
+  walkable: 'excluded: a cache of the walkability check, recomputed on demand',
   pressure: 'saved',
   firstAttackAtMs: 'saved',
   lastScoutMs: 'saved',
@@ -71,12 +75,13 @@ function cases(): [string, object, Inventory][] {
   return [
     ['Perception', new Perception(), { memory: 'saved', sightings: 'saved', villagerMemory: 'saved', lastMs: 'saved' }],
     ['ArmyControl', army, { wave: 'saved', waveTarget: 'saved', exploreGoal: 'saved', log: LOG, rng: RNG, isReserved: CONFIG }],
-    ['HarassControl', new HarassControl(log, AI_HARD.harass), { raid: 'saved', target: 'saved', raidsSent: 'saved', endedAtMs: 'saved', log: LOG, tune: CONFIG }],
+    ['HarassControl', new HarassControl(log, AI_HARD.harass), { raid: 'saved', target: 'saved', raidsSent: 'saved', endedAtMs: 'saved', walkable: 'excluded: a cache of the walkability check, recomputed after a load', log: LOG, tune: CONFIG }],
     ['FlankControl', new FlankControl(log, AI_MASTER.flank), { flank: 'saved', reorders: 'saved', goal: 'saved', launched: 'saved', log: LOG, tune: CONFIG }],
     ['PressureControl', new PressureControl(AI_MEDIUM, army, noPressure), { sentFlag: 'saved', raidOutSinceMs: 'saved', tune: CONFIG, army: CONFIG, act: CONFIG }],
     ['WonderSiteCheck', new WonderSiteCheck(1), { nextSearchMs: 'saved', found: 'saved', retryMs: CONFIG }],
     ['WonderPlay', new WonderPlay(AI_MEDIUM.wonder, noWonder), { site: 'saved', tune: CONFIG, act: CONFIG }],
     ['MonkPlay', new MonkPlay(AI_MEDIUM.monks, {} as MonkActions), { avoid: 'saved', tune: CONFIG, act: CONFIG }],
+    ['LandingControl', new LandingControl(log, () => undefined), { members: 'saved', transports: 'saved', target: 'saved', phase: 'saved', sinceMs: 'saved', log: LOG, launchWave: CONFIG }],
     [
       'AIPlayer',
       new AIPlayer(createPlayer({ id: 2 }), new NullStrategy(), { rng }),
@@ -92,7 +97,7 @@ function cases(): [string, object, Inventory][] {
       },
     ],
     ['NullStrategy', new NullStrategy(), { name: 'excluded: constant' }],
-    ['EasyStrategy', new EasyStrategy(rng.next), { ...BASE, army: 'saved', ageUpFromMs: 'saved', firstAttackAtMs: 'saved' }],
+    ['EasyStrategy', new EasyStrategy(rng.next), { ...BASE, army: 'saved', ageUpFromMs: 'saved', firstAttackAtMs: 'saved', naval: 'excluded: NavalPlay reads the world (no state of its own)' }],
     ['MediumStrategy', new MediumStrategy(rng.next), MEDIUM],
     ['HardStrategy', new HardStrategy(rng.next), HARD],
     ['MasterStrategy', new MasterStrategy(rng.next), { ...HARD, master: CONFIG, flank: 'saved' }],

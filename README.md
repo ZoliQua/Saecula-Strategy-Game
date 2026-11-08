@@ -5,7 +5,7 @@
 **An isometric historical real-time strategy game that runs in your browser.**
 Three ages · eight nations · AI rivals — from Rome to the Enlightenment.
 
-[![Version](https://img.shields.io/badge/version-0.2.0-f5a857)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.0-f5a857)](CHANGELOG.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -42,15 +42,19 @@ in English and Hungarian.
   Russian and Finnish. Each nation has its own architecture in each age, its
   own walls, unit gear and its own Wonder (Speyer, Versailles, the Alhambra,
   Florence, St Basil's, Petäjävesi…).
-- ⚔️ **Ten unit types** — villagers, scouts, swordsmen, archers, knights,
-  pikemen, crossbowmen, musketeers, cannons and cavalry.
+- ⚔️ **Fifteen unit types** — villagers, scouts, swordsmen, archers, knights,
+  pikemen, crossbowmen, musketeers, cannons, cavalry and monks, and four
+  ships: fishing boats, transports, galleys and frigates.
 - 🎖️ **Unique units and bonuses** — every nation replaces one base unit with
   its own (hussar, longbowman, landsknecht, mousquetaire, conquistador,
   legionary, cossack, sissi) and has a permanent bonus.
 - 🤖 **AI rivals** — four difficulty levels (Easy to Master) and three
   personalities (rusher, economist, defender), with no cheating.
-- 🗺️ **Five map types** — Meadow, Wilderness, Islands, Fortress and Random, in
-  three sizes (64², 96², 128²) for 2–6 players.
+- 🗺️ **Seven map types** — Meadow, Wilderness, Islands, Fortress, Random and
+  two water maps, Inland Sea and Archipelago, in three sizes (64², 96², 128²)
+  for 2–6 players.
+- ⛵ **Navies** — build a dock on the shore, fish, fight at sea, and ferry an
+  army across the water by transport (the AI does it too).
 - 🏆 **Three victory conditions** — Conquest, holding a Wonder for ten minutes,
   or the best score when the 60-minute time limit runs out.
 - 🌗 **Living world** — dynamic 2D lighting with normal maps, a day–night cycle,
@@ -131,7 +135,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.8.1**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **0.9.0**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
@@ -146,9 +150,10 @@ each version contains.
 | M11 | Monks and monasteries: healing and conversion | ✅ 0.6.0 |
 | M12 | Ten new technologies | ✅ 0.7.0 |
 | M13 | A three-mission campaign | ✅ 0.8.0 |
+| M14 | Ships, docks, fishing and two water maps | ✅ 0.9.0 |
 | Next | Shaped by playtesting | 🔜 |
 
-Out of scope by design: multiplayer, mobile touch controls, campaigns.
+Out of scope by design: multiplayer, mobile touch controls, a long story campaign.
 
 ## Documentation
 

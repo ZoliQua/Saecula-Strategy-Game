@@ -13,17 +13,16 @@ describe('v7 → v8 migration', () => {
   it('returns the data unchanged (optional monkAvoid added to AI states)', () => {
     const data = { schemaVersion: 7, setup: { victory: 'conquest' } };
     expect(v7ToV8(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: 8 } });
-    expect(SCHEMA_VERSION).toBe(8);
+    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: SCHEMA_VERSION } });
   });
 
   it('the v7 fixture migrates, parses and plays on', () => {
     expect(v7Save.schemaVersion).toBe(7);
     const parsed = parseSave(JSON.stringify(v7Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save.schemaVersion).toBe(8);
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
     const match = resumeHeadlessMatch(parsed.save);
     match.run(2_000, STEP_MS);
-    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(8);
+    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(SCHEMA_VERSION);
   });
 });

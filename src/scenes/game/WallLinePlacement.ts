@@ -14,6 +14,7 @@ import { wallNeighbourMaskBy } from '../../game/wallNeighbours';
 import { wallPiece } from '../../iso/art/walls/wallPiece';
 import { wallTexture } from '../../iso/buildingTextures';
 import type { AgeId, CivId } from '../../types';
+import { isBuilder } from '../../ecs/workers';
 
 /**
  * Click-drag wall laying: press on the first tile, drag, release to place a
@@ -115,7 +116,7 @@ export class WallLinePlacement {
   private assignBuilders(siteIds: readonly number[]): void {
     const builders = this.selection
       .getAllSelected()
-      .filter((e) => e.gatherer && e.owner?.playerId === this.playerId);
+      .filter((e) => isBuilder(e) && e.owner?.playerId === this.playerId);
     builders.forEach((b, i) => {
       const targetId = siteIds[Math.floor((i * siteIds.length) / builders.length)];
       if (targetId === undefined) return;

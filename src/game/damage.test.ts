@@ -56,8 +56,8 @@ describe('balance table sanity', () => {
       expect(u.hp, t).toBeGreaterThan(0);
       expect(u.trainTime, t).toBeGreaterThan(0);
       expect(u.trainers.length, t).toBeGreaterThan(0);
-      // The monk never fights (M11): it heals and converts instead.
-      if (t === 'monk') expect(u.meleeAtk + u.pierceAtk, t).toBe(0);
+      // The monk never fights (M11): it heals and converts instead; nor do the fishing boat and the transport (M14).
+      if (t === 'monk' || t === 'fishing_boat' || t === 'transport') expect(u.meleeAtk + u.pierceAtk, t).toBe(0);
       else expect(u.meleeAtk + u.pierceAtk, t).toBeGreaterThan(0);
       for (const v of Object.values(u.cost)) expect(v).toBeGreaterThanOrEqual(0);
     }

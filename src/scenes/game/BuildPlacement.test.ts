@@ -6,6 +6,7 @@ import { createVillager } from '../../ecs/archetypes/villager';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { createEcsWorld } from '../../ecs/world';
 import { MapData } from '../../map/MapData';
+import { TERRAIN } from '../../map/TerrainTypes';
 import { resetUiStore, uiStore } from '../../ui/store';
 import { BuildPlacement } from './BuildPlacement';
 
@@ -36,6 +37,22 @@ describe('BuildPlacement', () => {
     createBuilding(world, { type: 'wonder', origin: { tx: 30, ty: 30 }, playerId: 2, mapData: map });
     placement.tryPlaceBuilding({ tx: 4, ty: 4 }, 'wonder');
     expect(wonders()).toHaveLength(1);
+  });
+});
+
+describe('BuildPlacement docks (M14)', () => {
+  it('places a dock only on the shore (a side along open water)', () => {
+    const { map, world, placement } = setup();
+    for (let ty = 0; ty < 40; ty++) for (let tx = 25; tx < 40; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const docks = () => world.entities.filter((e) => e.building?.type === 'dock');
+    expect(placement.canPlaceBuilding({ tx: 10, ty: 10 }, 3, 3, 'dock')).toBe(false);
+    placement.tryPlaceBuilding({ tx: 10, ty: 10 }, 'dock');
+    expect(docks()).toHaveLength(0);
+    expect(placement.canPlaceBuilding({ tx: 22, ty: 10 }, 3, 3, 'dock')).toBe(true);
+    placement.tryPlaceBuilding({ tx: 22, ty: 10 }, 'dock');
+    expect(docks()).toHaveLength(1);
+    // Other buildings need no water.
+    expect(placement.canPlaceBuilding({ tx: 10, ty: 10 }, 3, 3, 'barracks')).toBe(true);
   });
 });
 
