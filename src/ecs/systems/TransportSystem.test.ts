@@ -6,6 +6,7 @@ import { computePopulation } from '../../game/population';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { createUnit } from '../archetypes/createUnit';
+import { clearUnitOrders } from '../orders';
 import { createEcsWorld } from '../world';
 import { MovementSystem } from './MovementSystem';
 import { PathfindingSystem } from './PathfindingSystem';
@@ -193,5 +194,22 @@ describe('TransportSystem: calling the transport over (M14)', () => {
       transports.update(16);
     }
     expect(calls).toBeLessThan(5);
+  });
+});
+
+describe('TransportSystem: a boarding order given again (M14)', () => {
+  it('a unit re-ordered onto the same transport walks to it again', () => {
+    const { map, world } = setup();
+    const transports = new TransportSystem(world, map);
+    const ship = createUnit(world, { type: 'transport', tile: { tx: 12, ty: 10 }, playerId: 1 });
+    const u = createUnit(world, { type: 'swordsman', tile: { tx: 4, ty: 10 }, playerId: 1 });
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    transports.update(16);
+    expect(u.moveIntent).toBeDefined();
+    // Another order in between (a plain stop), then the same boarding order again; the transport has not moved.
+    clearUnitOrders(world, u);
+    world.addComponent(u, 'boardIntent', { transportId: ship.id! });
+    transports.update(16);
+    expect(u.moveIntent?.target).toEqual({ tx: 11, ty: 10 });
   });
 });

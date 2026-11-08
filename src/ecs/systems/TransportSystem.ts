@@ -29,8 +29,8 @@ interface BoardWait {
  * Sinking (the cargo is lost with the ship) is game/kill's applyDamage.
  */
 export class TransportSystem {
-  /** Where each boarding unit last headed (re-planned when its transport moved away). */
-  private readonly headed = new WeakMap<Entity, TileCoord>();
+  /** Where each boarding unit last headed for its order (re-planned when its transport moved away; a new order starts afresh). */
+  private readonly headed = new WeakMap<Entity, { readonly order: object; readonly shipAt: TileCoord }>();
   /** The unload order each transport has set sail for (a new order starts afresh). */
   private readonly sailing = new WeakMap<Entity, object>();
   /**
@@ -84,7 +84,8 @@ export class TransportSystem {
     }
     const beside = this.landBeside(t.position, u.position);
     const walking = !!u.moveIntent || (u.movable?.path.length ?? 0) > 0;
-    const last = this.headed.get(u);
+    const headed = this.headed.get(u);
+    const last = headed?.order === u.boardIntent ? headed.shipAt : undefined;
     const shipMoved = !last || chebyshev(last, t.position) >= NAVAL.boardRetargetTiles;
     if (last && !shipMoved) {
       // Walking toward it, or done walking and not beside it: no new search until the transport moves;
@@ -96,7 +97,7 @@ export class TransportSystem {
     if (!beside && !shipBusy) this.callOver(t, u, wait);
     // A land tile beside the transport, nearest the unit; else toward the transport (the shore nearest it).
     const shore = beside ?? t.position;
-    this.headed.set(u, { tx: t.position.tx, ty: t.position.ty });
+    this.headed.set(u, { order: u.boardIntent, shipAt: { tx: t.position.tx, ty: t.position.ty } });
     if (u.moveIntent) u.moveIntent.target = shore;
     else this.world.addComponent(u, 'moveIntent', { target: shore });
   }
