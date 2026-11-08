@@ -1303,19 +1303,22 @@ gálya, fregatt).
 - Keret (10.): az M14 keretei változatlanok.
 - **Állapot (2026-11-08):** kész — párviadal-teszt, körmérkőzés-szimuláció,
   bemenet-smoke (`npm run smoke:input` 5/5 PASS a mai felületen), mentési teszt a
-  mai maximum fölötti életerővel mentett egységre. Kiinduló mérés (0.9.0): a
-  landsknecht +761-gyel veri a lándzsást (a keret fele 750), a kozák veri a
-  kardforgatót (+260, a felderítő −528); Nehéz szinten orosz 42/56 (75 %), spanyol
+  mai maximum fölötti életerővel mentett egységre. A párviadal népbónusz nélkül
+  fut, és mindkét oldalról számol (`fairDuel`: a két sorrend átlaga, mert az aréna
+  kezdőállása nem szimmetrikus). Kiinduló mérés (0.9.0): a kozák veri a
+  kardforgatót (+90, a felderítő −528), a landsknecht–lándzsás +698 (a keret fele
+  750, belefér); Nehéz szinten orosz 42/56 (75 %), spanyol
   20/56 (36 %), magyar 33/56, a többi 25–28/56; Mesteri szinten 10–15,5/28 (mind
-  sávon belül). Hangolás: kozák életerő 60 → 50, támadás 6 → 5; landsknecht
-  életerő 70 → 68; spanyol aranygyűjtés +15 % → **+25 %** (csak a kozákkal a
+  sávon belül). Hangolás: kozák életerő 60 → 50, támadás 6 → 5; spanyol aranygyűjtés +15 % → **+25 %** (csak a kozákkal a
   spanyol 21/56 marad, sávon kívül). A régi ág légiós-vágása (45 → 40) nem kell:
-  a Nehéz eredményt nem mozdítja, a légiós a párviadal-szabályokon belül van.
+  a Nehéz eredményt nem mozdítja, a légiós a párviadal-szabályokon belül van. A régi
+  ág landsknecht-vágása (70 → 68) sem kell: egyetlen meccset sem változtat, és a
+  70 életerős landsknecht a kétoldali párviadalban belefér.
   Végeredmény — Nehéz: magyar 34/56 (61 %, egy meccs tűrésen belül), angol 24,5,
   német 25,5, francia 25,5, spanyol 26, olasz 30, orosz 32, finn 26,5; Mesteri:
   magyar 10,5/28, angol 14,5, német 15,5, francia 15,5, spanyol 15, olasz 10,5,
-  orosz 15, finn 15,5. Párviadal: landsknecht–lándzsás +738, kozák–kardforgató
-  −550. A körmérkőzés kb. 8–9 (Nehéz) és 6 (Mesteri) perc. A szerzetes-szimuláció
+  orosz 15, finn 15,5. Párviadal: kozák–kardforgató −575, kozák–felderítő +152,
+  landsknecht–lándzsás +698. A körmérkőzés kb. 8–9 (Nehéz) és 6 (Mesteri) perc. A szerzetes-szimuláció
   (`monks.sim.test.ts`) népe rögzített (magyar): a 3-as mag kevert sorsolása spanyol
   AI-t adott, amelynek két szerzetese a +25 % arannyal 40 perc fölé csúszott.
 

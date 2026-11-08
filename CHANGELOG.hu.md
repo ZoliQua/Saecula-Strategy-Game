@@ -22,8 +22,6 @@ Az egyedi egységek és a népek egyensúlyának ellenőrzése az M11–M14 utá
   azonos költségen már nem győzi le a kardforgatót, a felderítő
   ellenegységét, és az orosz AI már nem nyer négyből három meccset.
   Gyors portyázó marad.
-- A **landsknecht** (német) életereje 70 helyett 68, így közel marad a
-  lándzsáshoz, amelyet levált.
 - A **spanyol** aranygyűjtési bónusz +15 % helyett +25 %; az AI-k
   egymás elleni meccseiben a spanyol volt a leggyengébb nép.
 - A 0.9.0-s mentések ugyanúgy betöltődnek: a 60 életerővel mentett kozák

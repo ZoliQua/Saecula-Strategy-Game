@@ -22,8 +22,6 @@ Balance check of the unique units and nations after M11–M14.
   of 6: at equal cost it no longer beats the swordsman, the scout's
   counter, and Russian AIs no longer win three games in four. It stays a
   fast raider.
-- The **Landsknecht** (German) has 68 HP instead of 70, so it stays close
-  to the pikeman it replaces.
 - The **Spanish** gold-gathering bonus is +25 % instead of +15 %; Spain
   was the weakest nation in AI-against-AI games.
 - Saves from 0.9.0 load as before: a Cossack saved at 60 HP keeps its

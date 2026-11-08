@@ -156,7 +156,7 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     trainers: ['archery_range'], popCost: 1, cooldownMs: RANGED_COOLDOWN_MS, replaces: 'crossbowman',
   },
   landsknecht: {
-    age: 2, hp: 68, meleeAtk: 7, pierceAtk: 0, meleeDef: 1, pierceDef: 0,
+    age: 2, hp: 70, meleeAtk: 7, pierceAtk: 0, meleeDef: 1, pierceDef: 0,
     range: 1, speed: 1.0, los: 4, cost: c(50, 20, 25), trainTime: 24,
     trainers: ['barracks'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS, replaces: 'pikeman',
   },

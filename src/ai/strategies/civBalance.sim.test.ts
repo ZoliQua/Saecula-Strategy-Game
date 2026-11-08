@@ -32,13 +32,15 @@ const CAP_MIN = 40;
  * 0.9.1 baseline (0.9.0 stats), wins/games — Hard: HU 33/56 (59 %), EN 25, DE 25, FR 25,
  * ES 20 (36 %, fails), IT 28, RU 42 (75 %, fails), FI 26. Master: HU 10/28 (36 %), EN 14.5,
  * DE 15.5, FR 15.5, ES 15.5, IT 10 (36 %), RU 15.5, FI 15.5.
- * Final (cossack HP 50 / attack 5, landsknecht HP 68, Spanish gold +25 %) — Hard: HU 34/56
+ * Final (cossack HP 50 / attack 5, Spanish gold +25 %) — Hard: HU 34/56
  * (61 %, inside the one-game tolerance), EN 24.5, DE 25.5, FR 25.5, ES 26, IT 30, RU 32,
  * FI 26.5. Master: HU 10.5/28, EN 14.5, DE 15.5, FR 15.5, ES 15, IT 10.5, RU 15, FI 15.5.
  * Games are nearly deterministic per seed and slot, so a stat change moves whole games: an early
  * scout fight decides many of them. With the final cossack but the old Spanish gold +15 %, Spanish
  * Hard is 21/56 (fails); the M9 branch's legionary HP 40 leaves Hard unchanged and Master within
- * half a game, so the legionary keeps HP 45.
+ * half a game, so the legionary keeps HP 45. The M9 branch's landsknecht HP 68 changes no game
+ * (every result identical), and with both-sided duels the HP 70 landsknecht passes rule (a)
+ * (+698 of the 750 limit), so it keeps HP 70.
  */
 
 interface Tally {
