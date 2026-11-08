@@ -113,3 +113,37 @@ describe('AI navy (M14)', () => {
     expect(ship.unloadIntent).toBeDefined();
   });
 });
+
+describe('AI navy: only targets on its own water (M14)', () => {
+  const navy = () =>
+    new NavalPlay(AI_MEDIUM.navy, {
+      ownCount: () => 0,
+      startBuilding: () => null,
+      train: () => false,
+      transportsWanted: () => 0,
+    });
+
+  it('a fishing boat on the sea never goes for a nearer school in a lake it cannot sail to', () => {
+    const s = islands();
+    // A lake inside the west island, its school nearer the boat than the one out at sea.
+    for (let ty = 2; ty <= 5; ty++) for (let tx = 2; tx <= 5; tx++) s.map.setTile(tx, ty, TERRAIN.water);
+    s.map.setTile(4, 3, TERRAIN.fish);
+    const lake = createResourceNode(s.world, { tile: { tx: 4, ty: 3 }, type: 'food', amount: 200, sea: true });
+    s.map.setTile(25, 25, TERRAIN.fish);
+    const sea = createResourceNode(s.world, { tile: { tx: 25, ty: 25 }, type: 'food', amount: 200, sea: true });
+    const boat = createUnit(s.world, { type: 'fishing_boat', tile: { tx: 15, ty: 3 }, playerId: 2 });
+    navy().control(s.ctx(), s.perception.update(s.ctx()));
+    expect(boat.gatherIntent?.nodeId).not.toBe(lake.id);
+    expect(boat.gatherIntent?.nodeId).toBe(sea.id);
+  });
+
+  it('a warship does not engage a target it could only shoot from a lake', () => {
+    const s = islands();
+    // A lake inside the enemy's island; the enemy stands on its shore, far from the sea.
+    for (let ty = 5; ty <= 7; ty++) for (let tx = 36; tx <= 38; tx++) s.map.setTile(tx, ty, TERRAIN.water);
+    const foe = createUnit(s.world, { type: 'swordsman', tile: { tx: 39, ty: 6 }, playerId: 1 });
+    const galley = createUnit(s.world, { type: 'galley', tile: { tx: 29, ty: 6 }, playerId: 2 });
+    navy().control(s.ctx(), s.perception.update(s.ctx()));
+    expect(galley.attackIntent?.targetId).not.toBe(foe.id);
+  });
+});

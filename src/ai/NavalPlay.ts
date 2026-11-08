@@ -10,7 +10,7 @@ import { findDockSite } from './decisions/naval';
 import { baseAnchor } from './economyBuildings';
 import type { WorldView } from './perception';
 import { FOG_UNEXPLORED } from '../map/FogOfWarData';
-import { TERRAIN } from '../map/TerrainTypes';
+import { NEIGHBOUR_STEPS, reachMask } from '../map/gridSteps';
 import type { MapData } from '../map/MapData';
 import { waterGrid } from '../map/navGrid';
 
@@ -73,9 +73,15 @@ export class NavalPlay {
     }
   }
 
+  /** The water the ship can sail to (its own sea, not a lake beyond the land), as a map mask. */
+  private seaOf(ctx: AIContext, ship: Entity): Uint8Array {
+    return reachMask(waterGrid(ctx.mapData), ship.position!);
+  }
+
   private fish(ctx: AIContext, view: WorldView, boat: Entity): void {
     if (boat.gatherIntent || boat.gatherer?.targetNodeId !== undefined) return;
-    const school = nearest(view.fish, boat.position!);
+    const sea = this.seaOf(ctx, boat);
+    const school = nearest(view.fish.filter((f) => !!f.position && besideMask(ctx.mapData, sea, f.position)), boat.position!);
     if (school?.id !== undefined) ctx.world.addComponent(boat, 'gatherIntent', { nodeId: school.id });
   }
 
@@ -84,8 +90,10 @@ export class NavalPlay {
     const busy = ship.attackIntent !== undefined || ship.moveIntent !== undefined || (ship.movable?.path.length ?? 0) > 0;
     // Ships first, then anything else it can reach; only what is close by.
     const range = ship.attacker?.range ?? 0;
+    let sea: Uint8Array | null = null;
     const near = (e: Entity) =>
-      !!e.position && chebyshev(e.position, at) <= AI_NAVAL.engageRadius && canAttackTarget(ship, e) && shootableFromWater(ctx.mapData, e, range);
+      !!e.position && chebyshev(e.position, at) <= AI_NAVAL.engageRadius && canAttackTarget(ship, e) &&
+      shootableFromWater(ctx.mapData, (sea ??= this.seaOf(ctx, ship)), e, range);
     const foe =
       view.visibleEnemyUnits.find((e) => e.unit && isNavalType(e.unit.unitType) && near(e)) ??
       view.visibleEnemyUnits.find(near) ??
@@ -99,7 +107,7 @@ export class NavalPlay {
       return;
     }
     if (busy) return;
-    const unexplored = this.unexploredWater(ctx, at);
+    const unexplored = this.unexploredWater(ctx, at, (sea ??= this.seaOf(ctx, ship)));
     if (unexplored) {
       ctx.world.addComponent(ship, 'moveIntent', { target: unexplored });
       return;
@@ -109,8 +117,8 @@ export class NavalPlay {
     }
   }
 
-  /** The nearest unexplored open-water tile (ring search, every 3rd tile), or null when the sea in reach is known. */
-  private unexploredWater(ctx: AIContext, from: TileCoord): TileCoord | null {
+  /** The nearest unexplored tile of `sea` (ring search, every 3rd tile), or null when the sea in reach is known. */
+  private unexploredWater(ctx: AIContext, from: TileCoord, sea: Uint8Array): TileCoord | null {
     const map = ctx.mapData;
     const max = Math.max(map.width, map.height);
     for (let r = 4; r < max; r += 3) {
@@ -120,7 +128,7 @@ export class NavalPlay {
           const tx = from.tx + dx;
           const ty = from.ty + dy;
           if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) continue;
-          if (ctx.fog.get(tx, ty) === FOG_UNEXPLORED && map.getTile(tx, ty) === TERRAIN.water) return { tx, ty };
+          if (ctx.fog.get(tx, ty) === FOG_UNEXPLORED && sea[ty * map.width + tx] === 1) return { tx, ty };
         }
       }
     }
@@ -128,14 +136,23 @@ export class NavalPlay {
   }
 }
 
-/** Whether some open-water tile lies within `range` of `target` (a ship can shoot it from there, M14). */
-function shootableFromWater(map: MapData, target: Entity, range: number): boolean {
+/** Whether some tile of `sea` (the ship's own water) lies within `range` of `target` (a ship can shoot it from there, M14). */
+function shootableFromWater(map: MapData, sea: Uint8Array, target: Entity, range: number): boolean {
   const p = target.position!;
   const w = target.building?.footprint.width ?? 1;
   const h = target.building?.footprint.height ?? 1;
-  const water = waterGrid(map);
-  for (let ty = p.ty - range; ty < p.ty + h + range; ty++) {
-    for (let tx = p.tx - range; tx < p.tx + w + range; tx++) if (water.isPassable(tx, ty)) return true;
+  for (let ty = Math.max(0, p.ty - range); ty < Math.min(map.height, p.ty + h + range); ty++) {
+    for (let tx = Math.max(0, p.tx - range); tx < Math.min(map.width, p.tx + w + range); tx++) if (sea[ty * map.width + tx] === 1) return true;
+  }
+  return false;
+}
+
+/** Whether a tile next to `at` is in `mask` (a fish school's tile is not water; boats fish it from beside it). */
+function besideMask(map: MapData, mask: Uint8Array, at: TileCoord): boolean {
+  for (const [dx, dy] of NEIGHBOUR_STEPS) {
+    const tx = at.tx + dx;
+    const ty = at.ty + dy;
+    if (tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && mask[ty * map.width + tx] === 1) return true;
   }
   return false;
 }
