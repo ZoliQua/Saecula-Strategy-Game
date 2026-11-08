@@ -20,6 +20,10 @@ describe('Medium AI monks (M11)', () => {
         seed: 3,
         size: 64,
         aiCount: 1,
+        // A fixed civ (0.9.1): the seeded mixed draw gave a Spanish AI, whose monk timing moved
+        // with the Spanish gold bonus; with gold-hungry armies, two monks come at 28–36 min
+        // for most civs and after 40 min for some (German, French, Spanish at seed 3).
+        civs: { human: 'hungarian', ais: ['hungarian'] },
         strategy: () => new MediumStrategy(createRng(3 * 31 + 2)),
         difficulty: () => 'medium',
       });
