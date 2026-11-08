@@ -10,7 +10,21 @@ raises the patch version.
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- A unit ordered again onto the same transport walks to it anew instead of
+  standing still.
+- A transport unloading beside both banks of a strait, or near its target
+  but beside only the far bank, puts its units on the land the target is
+  on (it sails on to that bank first).
+- A ship no longer drops an attack the moment its target steps briefly out
+  of reach from the water (a villager walking inland and back); it gives up
+  only after the target has stayed out of reach for a while.
+- Ships find the water they can sail to without re-scanning the whole sea
+  each time, which removes frame spikes on large water maps with many idle
+  ships.
+- The map generator's dock sites follow the same shore minimum as dock
+  placement.
 
 ## [0.9.0] — 2026-11-01
 
