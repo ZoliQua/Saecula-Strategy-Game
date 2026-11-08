@@ -14,7 +14,8 @@ const MIN = 60_000;
  * M8: civ bonuses and unique units shift the Medium-vs-Medium economy, and
  * the French AI on wilderness seed 1 reached age 2 at 14.04 min). The
  * loser of the early raids may be crippled before it raids (random seed 1: player 2 loses 8 of 11
- * villagers at 6-7 min), so raiding is not required of both.
+ * villagers at 6-7 min), so raiding is not required of both; its base may also be razed by the end,
+ * so a building counts once finished at any time during the match.
  */
 describe.each(MAP_TEMPLATES)('Medium vs Medium on %s (64×64, seed 1)', (template) => {
   it('both build a base; a raid leaves by 9 min and an AI reaches age 2 by 15 min', () => {
@@ -29,7 +30,13 @@ describe.each(MAP_TEMPLATES)('Medium vs Medium on %s (64×64, seed 1)', (templat
     });
     const raidAt = new Map<number, number>();
     let age2At = Infinity;
+    const built = new Map<number, Set<string>>(match.ais.map((ai) => [ai.player.id, new Set<string>()]));
     match.run(15 * MIN, 100, (t) => {
+      if (t % 1000 === 0) {
+        for (const e of match.world.entities) {
+          if (e.building && !e.underConstruction && e.owner) built.get(e.owner.playerId)?.add(e.building.type);
+        }
+      }
       for (const ai of match.ais) {
         if (!raidAt.has(ai.player.id) && ai.strategy.thoughts!().recent.some((r) => r.kind === 'attack')) raidAt.set(ai.player.id, t);
         if (age2At === Infinity && ai.player.age >= 2) age2At = t;
@@ -37,10 +44,7 @@ describe.each(MAP_TEMPLATES)('Medium vs Medium on %s (64×64, seed 1)', (templat
     });
     for (const ai of match.ais) {
       const id = ai.player.id;
-      const built = new Set(
-        match.world.entities.filter((e) => e.owner?.playerId === id && e.building && !e.underConstruction).map((e) => e.building!.type),
-      );
-      for (const type of ['town_center', 'house', 'farm', 'barracks'] as const) expect(built.has(type), `player ${id} ${type}`).toBe(true);
+      for (const type of ['town_center', 'house', 'farm', 'barracks'] as const) expect(built.get(id)!.has(type), `player ${id} ${type}`).toBe(true);
     }
     expect(Math.min(...raidAt.values())).toBeLessThanOrEqual(9 * MIN);
     expect(age2At).toBeLessThanOrEqual(15 * MIN);
