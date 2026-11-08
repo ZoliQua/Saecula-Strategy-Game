@@ -43,6 +43,13 @@ npm run build
 A folyamatos integráció (CI) minden push és pull request után ugyanezeket
 futtatja.
 
+A CI-n kívül:
+
+- böngészős bemenet-smoke (futó fejlesztői szerverrel): `npm run smoke:input`,
+  lásd [`scripts/smoke/README.hu.md`](scripts/smoke/README.hu.md);
+- a népek körmérkőzése (kb. 15 perc):
+  `BALANCE=1 npx vitest run src/ai/strategies/civBalance.sim.test.ts`.
+
 ## Konvenciók
 
 - **Nyelv.** A kód, az azonosítók, a kommentek és a commit üzenetek angolok.

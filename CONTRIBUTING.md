@@ -42,6 +42,13 @@ npm run build
 
 Continuous integration runs the same checks on every push and pull request.
 
+Outside CI:
+
+- browser input smoke (needs a running dev server): `npm run smoke:input`,
+  see [`scripts/smoke/README.md`](scripts/smoke/README.md);
+- civ balance round-robin (about 15 minutes):
+  `BALANCE=1 npx vitest run src/ai/strategies/civBalance.sim.test.ts`.
+
 ## Conventions
 
 - **Language.** Code, identifiers, comments and commit messages are in
