@@ -39,6 +39,19 @@ Ships and water maps (M14 milestone).
 - Cursors for boarding and unloading, and ship sounds.
 - Saves are schema version 9 (older saves load as before).
 
+### Fixed
+
+- **Szigetvilág**: on a small map with five or six players, neighbouring
+  islands no longer join into one land; a large map with two or three
+  players is no longer all forest and generates again.
+- A transport unloading in a narrow strait puts its units only on the shore
+  it sailed for, never on the far bank.
+- The unload cursor shows over any land a loaded transport would unload on,
+  also where a unit or a resource stands.
+- AI ships no longer chase targets on water they cannot reach (a lake behind
+  the land), and a ship gives up an attack on a target out of its reach.
+- Hard and Master AI raids no longer set out for villagers across the sea.
+
 ## [0.8.1] — 2026-11-01
 
 Fixes from the code review of 0.4.0–0.8.0.

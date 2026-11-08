@@ -38,6 +38,20 @@ Hajók és vízi térképek (M14 mérföldkő).
 - Beszállás- és kirakodás-kurzor, hajóhangok.
 - A mentések sémaváltozata 9 (a régebbi mentések ugyanúgy betöltődnek).
 
+### Javítva
+
+- **Szigetvilág**: kis térképen öt-hat játékossal a szomszédos szigetek már
+  nem nőnek össze egy szárazfölddé; nagy térképen két-három játékossal a
+  szigetek már nem csupa erdők, és a térkép ismét elkészül.
+- A szűk szorosban kirakodó szállítóhajó csak arra a partra teszi ki az
+  egységeit, amely felé hajózott, sosem a túlpartra.
+- A kirakodás-kurzor minden olyan szárazföldi mező fölött látszik, ahol a
+  megrakott szállítóhajó kirakodna, akkor is, ha egység vagy nyersanyag áll
+  ott.
+- Az AI hajói már nem üldöznek olyan célt, amelynek vizéhez nem jutnak el
+  (szárazföld mögötti tó), és a hajó feladja az elérhetetlen cél támadását.
+- A Nehéz és a Mesteri AI portyája már nem indul a tengeren túli falusiakra.
+
 ## [0.8.1] — 2026-11-01
 
 Javítások a 0.4.0–0.8.0 code review-ja alapján.
