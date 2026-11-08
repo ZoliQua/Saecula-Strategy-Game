@@ -10,6 +10,7 @@ import { baseAnchor } from './economyBuildings';
 import type { WorldView } from './perception';
 import { FOG_UNEXPLORED } from '../map/FogOfWarData';
 import { NEIGHBOUR_STEPS } from '../map/gridSteps';
+import type { MapData } from '../map/MapData';
 import { seaAt, type Sea } from '../map/waterBodies';
 
 /** The strategy helpers naval play acts through (BaseStrategy's building and training). */
@@ -91,7 +92,7 @@ export class NavalPlay {
     let sea: Sea | null = null;
     const near = (e: Entity) =>
       !!e.position && chebyshev(e.position, at) <= AI_NAVAL.engageRadius && canAttackTarget(ship, e) &&
-      shootableFromWater(ctx, (sea ??= this.seaOf(ctx, ship)), e, range);
+      shootableFromWater(ctx.mapData, (sea ??= this.seaOf(ctx, ship)), e, range);
     const foe =
       view.visibleEnemyUnits.find((e) => e.unit && isNavalType(e.unit.unitType) && near(e)) ??
       view.visibleEnemyUnits.find(near) ??
@@ -135,8 +136,7 @@ export class NavalPlay {
 }
 
 /** Whether some tile of `sea` (the ship's own water) lies within `range` of `target` (a ship can shoot it from there, M14). */
-function shootableFromWater(ctx: AIContext, sea: Sea, target: Entity, range: number): boolean {
-  const map = ctx.mapData;
+function shootableFromWater(map: MapData, sea: Sea, target: Entity, range: number): boolean {
   const p = target.position!;
   const w = target.building?.footprint.width ?? 1;
   const h = target.building?.footprint.height ?? 1;
