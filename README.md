@@ -5,7 +5,7 @@
 **An isometric historical real-time strategy game that runs in your browser.**
 Three ages · eight nations · AI rivals — from Rome to the Enlightenment.
 
-[![Version](https://img.shields.io/badge/version-0.9.2-f5a857)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-f5a857)](CHANGELOG.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -143,7 +143,7 @@ render it. The full architecture, scope and conventions live in
 
 ## Project status and roadmap
 
-Saecula is at version **0.9.2**. See the [changelog](CHANGELOG.md) for what
+Saecula is at version **1.0.0**. See the [changelog](CHANGELOG.md) for what
 each version contains.
 
 | Milestone | Content | Status |
@@ -159,7 +159,10 @@ each version contains.
 | M12 | Ten new technologies | ✅ 0.7.0 |
 | M13 | A three-mission campaign | ✅ 0.8.0 |
 | M14 | Ships, docks, fishing and two water maps | ✅ 0.9.0 |
-| Next | Shaped by playtesting | 🔜 |
+| 1.0 | Water-map texture budget, lost-graphics safeguard, water opening fix | ✅ 1.0.0 |
+| M16 | Allied AIs (teams), treaty, starting resources, game speed | ✅ 1.0.0 |
+| M17 | Market, trade carts and ships, one landmark per nation | ✅ 1.0.0 |
+| Next | Shaped by playtesting (1.0.x fixes) | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, a long story campaign.
 
