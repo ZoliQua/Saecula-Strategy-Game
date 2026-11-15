@@ -395,6 +395,16 @@ export class GameScene extends Phaser.Scene {
     return this.matchSave?.saveTo(slot, options) ?? Promise.resolve({ ok: false, reason: 'failed' });
   }
 
+  /**
+   * The WebGL context was lost (contextGuard): stops the match and saves it
+   * to the autosave slot. Null without an undecided match (nothing to save).
+   */
+  emergencySave(): ReturnType<MatchSave['saveTo']> | null {
+    if (!this.matchSave || this.gameOverTriggered) return null;
+    this.scene.pause();
+    return this.matchSave.saveTo('auto', { quiet: true });
+  }
+
   /** Replaces the running match with the save in `slot` (startFromSlot). */
   loadSlot(slot: SlotId): Promise<boolean> {
     return startFromSlot(this, this.storage, slot);

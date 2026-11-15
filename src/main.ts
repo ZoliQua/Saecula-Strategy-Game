@@ -3,8 +3,28 @@ import { audio } from './audio/AudioManager';
 import { gameConfig } from './config/game';
 import { gameEvents } from './game/events';
 import { unitArtStats, unitArtTiming } from './iso/art/units/UnitArt';
+import { requestResume } from './save/resumeRequest';
+import { installContextGuard } from './scenes/game/contextGuard';
+import type { GameScene } from './scenes/GameScene';
+import { ContextLost } from './ui/screens/ContextLost';
 
 const game = new Phaser.Game(gameConfig);
+
+// 1.0 safeguard: a lost WebGL context stops and saves the match, and offers to reload into it.
+let contextCard: ContextLost | null = null;
+installContextGuard(game.canvas, {
+  match: () => {
+    const scene = game.scene.getScene('GameScene') as GameScene | null;
+    return scene && (scene.scene.isActive() || scene.scene.isPaused()) ? scene : null;
+  },
+  show: (state) => {
+    contextCard ??= new ContextLost((resume) => {
+      if (resume) requestResume();
+      window.location.reload();
+    });
+    contextCard.set(state);
+  },
+});
 
 if (import.meta.env.DEV) {
   // Dev-only: expose the game instance for preview / console debugging.

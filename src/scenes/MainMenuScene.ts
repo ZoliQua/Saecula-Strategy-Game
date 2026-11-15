@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/AudioManager';
+import { hu } from '../i18n/hu';
 import { menuDioramaCivs } from '../config/civs';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { MENU_PHASE } from '../config/visual';
@@ -29,6 +30,7 @@ import { MatchLog } from '../stats/matchLog';
 import { slotRows } from '../ui/screens/slotRows';
 import { browserMatchStore, browserSaveStore } from '../save/browserStore';
 import { SaveStorage } from '../save/storage';
+import { takeResumeRequest } from '../save/resumeRequest';
 import { startFromFile, startFromSlot } from './game/MatchStart';
 import { exportSlot } from './game/SaveExport';
 import type { SetupReturn } from './GameSetupScene';
@@ -234,6 +236,9 @@ export class MainMenuScene extends Phaser.Scene {
       this.scene.launch('GameSetupScene', { config: data.config, notice: data.notice });
     } else if (data?.notice) {
       this.menu.notice(data.notice);
+    } else if (takeResumeRequest()) {
+      // A reload after a lost WebGL context (1.0 safeguard) continues from the autosave.
+      void startFromSlot(this, this.storage, 'auto', () => this.menu?.notice(hu.contextLost.resumeFailed));
     }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.menu?.destroy();

@@ -411,6 +411,21 @@ export const hu = {
       newer: 'Újabb játékverzióval készült mentés',
     },
   },
+  /** The lost-WebGL-context card (1.0 safeguard): the match is saved, the page reloads into it. */
+  contextLost: {
+    kicker: 'Grafikus hiba',
+    title: 'A grafikus megjelenítés leállt',
+    /** Why it can happen, under the title. */
+    cause: 'A böngésző visszavette a játék grafikus memóriáját (kevés videomemória vagy illesztőprogram-hiba).',
+    saving: 'A meccs mentése folyamatban…',
+    saved: 'A meccs állását elmentettük. Újratöltés után onnan folytathatod.',
+    notSaved: 'A meccs mentése nem sikerült. Újratöltés után az utolsó automatikus mentésből folytathatod, ha van.',
+    noMatch: 'Töltsd újra az oldalt a folytatáshoz.',
+    resume: 'Újratöltés és folytatás',
+    reload: 'Oldal újratöltése',
+    /** On the main menu after the reload, when the autosave cannot be loaded. */
+    resumeFailed: 'Az automatikus mentés nem tölthető be',
+  },
   /** The statistics screen (main menu): the local match log. */
   stats: {
     kicker: 'Eddigi meccseid',
