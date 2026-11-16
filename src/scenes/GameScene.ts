@@ -414,6 +414,8 @@ export class GameScene extends Phaser.Scene {
     // A saved match still loading (terrain bake): its save goes to the autosave slot as it is.
     if (this.loadingSave) {
       this.contextLost = true;
+      // The bake would end in startGame on the dead context: no further slices.
+      this.scene.pause();
       return this.storage.write('auto', this.loadingSave);
     }
     if (!this.matchSave) return null;
