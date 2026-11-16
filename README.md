@@ -159,6 +159,7 @@ each version contains.
 | M12 | Ten new technologies | ✅ 0.7.0 |
 | M13 | A three-mission campaign | ✅ 0.8.0 |
 | M14 | Ships, docks, fishing and two water maps | ✅ 0.9.0 |
+| M18 | Tutorial, building repair, colour-blind team colours | 🔧 unreleased |
 | Next | Shaped by playtesting | 🔜 |
 
 Out of scope by design: multiplayer, mobile touch controls, a long story campaign.

@@ -6,14 +6,15 @@ import { bindModalKeys, GLYPHS } from './modalKeys';
 import { arrowStep } from './radioNav';
 import { SettingsAudioTab } from './SettingsAudioTab';
 import { SettingsControlsTab } from './SettingsControlsTab';
+import { SettingsDisplayTab } from './SettingsDisplayTab';
 import type { SettingsNotice } from './settingsView';
 import '../hud.css';
 import '../screens.css';
 import '../pause.css';
 import '../settings.css';
 
-type TabId = 'audio' | 'controls';
-const TAB_IDS: readonly TabId[] = ['audio', 'controls'];
+type TabId = 'audio' | 'controls' | 'display';
+const TAB_IDS: readonly TabId[] = ['audio', 'controls', 'display'];
 
 const RESET_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>`;
 
@@ -26,9 +27,9 @@ interface Tab {
 }
 
 /**
- * The settings card (from the main menu and the pause), in two tabs:
- * "Hang" (volumes, mute) and "Irányítás" (command gesture, scroll mode,
- * key bindings). Every change goes straight to `settingsStore` (which
+ * The settings card (from the main menu and the pause), in three tabs:
+ * "Hang" (volumes, mute), "Irányítás" (command gesture, scroll mode,
+ * key bindings) and "Megjelenítés" (team colours). Every change goes straight to `settingsStore` (which
  * persists it); the defaults button resets both tabs. While a key is
  * being captured Esc only cancels the capture; otherwise it goes back.
  */
@@ -39,6 +40,7 @@ export class SettingsScreen {
   private readonly escLabel: HTMLElement;
   private readonly audioTab: SettingsAudioTab;
   private readonly controlsTab: SettingsControlsTab;
+  private readonly displayTab: SettingsDisplayTab;
   private readonly tabs = new Map<TabId, Tab>();
   private readonly unbindKeys: () => void;
   private readonly unsubscribe: () => void;
@@ -48,6 +50,7 @@ export class SettingsScreen {
     audio().playSFX('ui_panel_open');
     const after = (change: () => void): void => this.after(change);
     this.audioTab = new SettingsAudioTab(after);
+    this.displayTab = new SettingsDisplayTab(after);
     this.controlsTab = new SettingsControlsTab({
       after,
       notice: (n) => this.notice(n),
@@ -58,7 +61,7 @@ export class SettingsScreen {
     const tablist = el('div', { class: 'set-tabs', role: 'tablist', 'aria-label': hu.settings.title });
     const panels = el('div', { class: 'set-body set-panels' });
     for (const id of TAB_IDS) {
-      const panel = el('div', { class: 'set-tabpanel', role: 'tabpanel', id: `set-panel-${id}`, 'aria-labelledby': `set-tab-${id}` }, id === 'audio' ? this.audioTab.root : this.controlsTab.root);
+      const panel = el('div', { class: 'set-tabpanel', role: 'tabpanel', id: `set-panel-${id}`, 'aria-labelledby': `set-tab-${id}` }, this.tabRoot(id));
       const button = el('button', { class: 'set-tab', type: 'button', role: 'tab', id: `set-tab-${id}`, 'aria-controls': `set-panel-${id}` }, hu.settings.tabs[id]);
       button.addEventListener('click', () => this.show(id));
       button.addEventListener('keydown', (e) => this.onTabKey(e, id));
@@ -100,7 +103,7 @@ export class SettingsScreen {
     this.sync(settingsStore.getState());
     this.show(this.active, false);
     if (this.active === 'audio') this.audioTab.focusFirst();
-    else this.tabs.get('controls')?.button.focus({ preventScroll: true });
+    else this.tabs.get(this.active)?.button.focus({ preventScroll: true });
   }
 
   /** Plays the exit animation (the owner removes the card shortly after). */
@@ -151,6 +154,12 @@ export class SettingsScreen {
   private sync(s: SettingsStore): void {
     this.audioTab.sync(s);
     this.controlsTab.sync(s);
+    this.displayTab.sync(s);
+  }
+
+  private tabRoot(id: TabId): HTMLElement {
+    if (id === 'audio') return this.audioTab.root;
+    return id === 'controls' ? this.controlsTab.root : this.displayTab.root;
   }
 
   /** Runs a store change; a change storage refused is still applied, and the card says it holds for this session only. */

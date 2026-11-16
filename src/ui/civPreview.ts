@@ -1,6 +1,6 @@
 import { AVAILABLE_CIVS } from '../config/civs';
 import { MENU_PHASE } from '../config/visual';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import { artAgeFor } from '../iso/art/architecture/ageStyle';
 import { paintBuilding } from '../iso/art/buildings';
 import type { LitArt } from '../iso/art/lighting/normalLayer';
@@ -31,6 +31,12 @@ const previews = new Map<CivId, CivPreview>();
 /** A civ whose town centre is painted, waiting for its picture (the next call). */
 let pending: { readonly civ: CivId; readonly art: LitArt } | null = null;
 
+/** Forgets the painted previews (the team palette changed); they repaint one step per call. */
+export function resetCivPreviews(): void {
+  previews.clear();
+  pending = null;
+}
+
 /** The painted preview of a civ, if it is ready. */
 export function civPreview(civ: CivId): CivPreview | undefined {
   return previews.get(civ);
@@ -56,7 +62,7 @@ export function paintNextCivPreview(): CivId | null {
   if (!civ) return null;
   try {
     // A half-written civ painter throws here; the card then shows its placeholder.
-    pending = { civ, art: paintBuilding('town_center', PLAYER_COLORS[0] ?? 0xffffff, artAgeFor('town_center', 1), civ) };
+    pending = { civ, art: paintBuilding('town_center', playerColor(1), artAgeFor('town_center', 1), civ) };
   } catch (err) {
     console.warn(`civ preview failed (${civ})`, err);
     // A failed paint still counts as done, so it is not retried every frame.

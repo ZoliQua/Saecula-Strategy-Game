@@ -120,6 +120,7 @@
 .objective.done .objective-text { text-decoration: line-through; text-decoration-color: rgba(245, 168, 87, 0.5); }
 .objective.done .objective-mark { background: var(--amber); box-shadow: none; animation: objective-tick 0.4s var(--ease); }
 .objective-count { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.objective-hint { grid-column: 2 / -1; font-size: 11.5px; line-height: 1.4; color: var(--amber-2); opacity: 0.9; }
 @keyframes objective-tick { 0% { transform: scale(0.4); } 70% { transform: scale(1.15); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .objective.done .objective-mark { animation: none; } }
 

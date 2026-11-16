@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import type { AgeId, BuildingType, CivId } from '../types';
 import { AGE_STYLED_BUILDINGS, artAgeFor } from './art/architecture/ageStyle';
 import {
@@ -93,8 +93,35 @@ export function rebaseCivArt(host: TextureHost, owners: ReadonlyMap<CivId, numbe
 
 type TextureHost = Pick<Phaser.Scene, 'textures'>;
 
-function teamColor(playerId: number): number {
-  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+let teamArtStale = false;
+
+/** The team palette changed: building textures painted in the old colours go at the next dropStaleTeamArt. */
+export function markTeamArtStale(): void {
+  teamArtStale = true;
+}
+
+/**
+ * After a palette change, removes every building texture (bases, team
+ * variants, their normal-map sources) so they repaint in the new colours;
+ * does nothing, and costs nothing, when the palette did not change. Unit
+ * sheets are keyed by type and civ with a tinted team mask, so they need no
+ * repaint; walls carry no team colour.
+ */
+export function dropStaleTeamArt(host: TextureHost): number {
+  if (!teamArtStale) return 0;
+  teamArtStale = false;
+  const keys = host.textures.getTextureKeys().filter((key) => parseBuildingArtKey(key) !== undefined);
+  // Variants first (detached from the shared normal source), the bases last.
+  const isBase = (key: string): boolean => parseBuildingArtKey(key)?.ageKey === key;
+  keys.sort((a, b) => Number(isBase(a)) - Number(isBase(b)));
+  for (const key of keys) {
+    if (!isBase(key)) host.textures.get(key).dataSource = [];
+    host.textures.remove(key);
+    BUILDING_LIGHT.delete(key);
+    TRIMS.delete(key);
+  }
+  BASE_OWNER.clear();
+  return keys.length;
 }
 
 /**
@@ -112,13 +139,13 @@ export function buildingTexture(host: TextureHost, type: BuildingType, age: AgeI
   const artAge = artAgeFor(type, age);
   if (!host.textures.exists(ageKey)) {
     const owner = baseOwners.get(civ) ?? 1;
-    registerLitArt(host, ageKey, paintBuilding(type, teamColor(owner), artAge, civ));
+    registerLitArt(host, ageKey, paintBuilding(type, playerColor(owner), artAge, civ));
     BASE_OWNER.set(ageKey, owner);
   }
   const key = teamArtKey(ageKey, playerId, BASE_OWNER.get(ageKey) ?? 1);
   if (key === ageKey || host.textures.exists(key)) return key;
   // Same crop as the base, so the variant lines up with the normal map it shares.
-  const variant = paintBuilding(type, teamColor(playerId), artAge, civ, false).canvas;
+  const variant = paintBuilding(type, playerColor(playerId), artAge, civ, false).canvas;
   const rect = TRIMS.get(ageKey);
   registerCanvas(host, key, rect ? cropCanvas(variant, rect) : variant);
   shareNormalMap(host, ageKey, key);

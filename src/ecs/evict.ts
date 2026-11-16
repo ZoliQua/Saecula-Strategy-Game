@@ -40,10 +40,10 @@ export function evictUnitsFrom(world: EcsWorld, map: MapData, origin: TileCoord,
   }
 }
 
-/** Where the unit's current order points: a move target, or its build site, gather node or attack target. */
+/** Where the unit's current order points: a move target, or its build site, repair target (M18), gather node or attack target. */
 function orderTarget(world: EcsWorld, e: Entity): TileCoord | undefined {
   if (e.moveIntent) return e.moveIntent.target;
-  const id = e.buildCommand?.targetId ?? e.gatherer?.targetNodeId ?? e.attackIntent?.targetId;
+  const id = e.buildCommand?.targetId ?? e.repairIntent?.targetId ?? e.gatherer?.targetNodeId ?? e.attackIntent?.targetId;
   if (id === undefined) return undefined;
   for (const t of world.entities) if (t.id === id) return t.position;
   return undefined;

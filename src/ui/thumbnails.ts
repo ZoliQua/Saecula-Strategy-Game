@@ -1,10 +1,15 @@
 import type Phaser from 'phaser';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import { paintPortrait } from '../iso/art/units/sheet';
 import { buildingTexture } from '../iso/buildingTextures';
 import type { AgeId, BuildingType, CivId, UnitType } from '../types';
 
 const cache = new Map<string, string>();
+
+/** Forgets every picture (the team palette changed: building pictures carry the team colour). */
+export function resetThumbnailCache(): void {
+  cache.clear();
+}
 
 /**
  * Renders a texture (or one frame of it) to a PNG data URL cropped to
@@ -34,7 +39,7 @@ export function buildingThumbnail(textures: Phaser.Textures.TextureManager, type
 }
 
 /** HUD portrait of a unit type in a civ's look (front idle pose), in a player's colour (default: the human's). */
-export function unitThumbnail(type: UnitType, civ: CivId, teamColor: number = PLAYER_COLORS[0] ?? 0xffffff): string {
+export function unitThumbnail(type: UnitType, civ: CivId, teamColor: number = playerColor(1)): string {
   const id = `unit:${type}~${civ}~${teamColor.toString(16)}`;
   const hit = cache.get(id);
   if (hit) return hit;

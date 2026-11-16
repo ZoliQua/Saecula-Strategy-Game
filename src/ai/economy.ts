@@ -13,7 +13,8 @@ export type VillagerTask = ResourceType | 'build' | 'idle';
 
 /** What a villager is busy with, read from its components. */
 export function villagerTask(v: Entity, byId: ReadonlyMap<number, Entity>): VillagerTask {
-  if (v.buildCommand) return 'build';
+  // A repair (M18) is building work too.
+  if (v.buildCommand || v.repairIntent) return 'build';
   const g = v.gatherer;
   if (!g) return 'idle';
   const nodeId = v.gatherIntent?.nodeId ?? g.targetNodeId;

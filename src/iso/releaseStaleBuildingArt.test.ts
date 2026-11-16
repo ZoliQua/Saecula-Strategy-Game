@@ -4,6 +4,8 @@ import type { AgeId, CivId } from '../types';
 import {
   BASE_OWNER,
   BUILDING_LIGHT,
+  dropStaleTeamArt,
+  markTeamArtStale,
   rebaseCivArt,
   releaseAbsentCivArt,
   releaseStaleBuildingArt,
@@ -296,5 +298,28 @@ describe('rebaseCivArt', () => {
     BASE_OWNER.set('building_house~chungarian', 1);
     expect(rebaseCivArt(host, new Map([['english', 3]]), new Set(['building_house~cenglish@p2']))).toBe(0);
     expect(map.size).toBe(3);
+  });
+});
+
+describe('dropStaleTeamArt (palette change)', () => {
+  it('does nothing unless the palette was marked changed', () => {
+    const { host, map } = fakeHost(['building_house~chungarian', 'building_house~chungarian@p2']);
+    expect(dropStaleTeamArt(host)).toBe(0);
+    expect(map.size).toBe(2);
+  });
+
+  it('after a palette change removes every building base and variant once, keeping the normal map intact until its base goes', () => {
+    const { host, map, normals, destroyed } = fakeHost(['building_house~chungarian', 'building_house~chungarian@p2', 'wall_0~chungarian']);
+    BASE_OWNER.set('building_house~chungarian', 1);
+    markTeamArtStale();
+    expect(dropStaleTeamArt(host)).toBe(2);
+    expect(map.has('wall_0~chungarian')).toBe(true);
+    expect(map.has('building_house~chungarian')).toBe(false);
+    expect(map.has('building_house~chungarian@p2')).toBe(false);
+    expect(destroyed.filter((d) => d === normals.get('building_house~chungarian'))).toHaveLength(1);
+    expect(BASE_OWNER.has('building_house~chungarian')).toBe(false);
+    // The mark is spent: a repainted texture survives the next call.
+    const again = fakeHost(['building_house~chungarian']);
+    expect(dropStaleTeamArt(again.host)).toBe(0);
   });
 });

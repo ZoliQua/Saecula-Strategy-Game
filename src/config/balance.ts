@@ -381,6 +381,22 @@ export const TRADE = {
   maxFailedPlans: 5,
 } as const;
 
+/**
+ * Building repair (M18, RepairSystem). One villager restores
+ * `maxHp / buildTime × speed` HP per second (times the owner's build-speed
+ * multiplier); restoring the full HP costs `costFraction` of the building's
+ * base cost, per resource, charged as the HP comes back. No repair under
+ * fire: a building gains no repair HP (and its repairers pay nothing, but
+ * stay on the job) until `underFireDelayMs` of game time after it last took
+ * damage. At speed 0.5 one villager restores a wall 25 HP/s, a town centre
+ * 8 HP/s (a cannon deals about 7 HP/s to a building).
+ */
+export const REPAIR = {
+  speed: 0.5,
+  costFraction: 0.5,
+  underFireDelayMs: 5000,
+} as const;
+
 /** Buildings a player may own only one of (finished or under construction). */
 export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder', 'landmark']);
 

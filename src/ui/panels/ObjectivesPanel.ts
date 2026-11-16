@@ -10,7 +10,9 @@ export function objectiveCount(row: ObjectiveRowInfo): string | null {
 
 /**
  * A campaign mission's objectives (M13) at the top of the HUD's right
- * column: the mission title and one row per objective, ticked when done.
+ * column: the mission title and one row per objective, ticked when done
+ * (a sequential mission, M18: the done ones and the current one, whose
+ * hint line sits under it).
  * Hidden outside the campaign. Re-rendered only when the store's
  * objectives object changes (CampaignRunner publishes once a second).
  */
@@ -48,6 +50,7 @@ export class ObjectivesPanel {
           el('span', { class: 'objective-mark', html: row.done ? GLYPHS.check : '' }),
           el('span', { class: 'objective-text' }, row.text),
           count ? el('span', { class: 'objective-count' }, count) : null,
+          row.hint ? el('span', { class: 'objective-hint' }, row.hint) : null,
         );
       }),
     );

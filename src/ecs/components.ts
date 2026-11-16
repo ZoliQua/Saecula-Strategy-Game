@@ -7,6 +7,7 @@ import type {
   TechId,
   Direction,
   ProjectileKind,
+  Resources,
   ResourceType,
   UnitType,
 } from '../types';
@@ -76,6 +77,8 @@ export interface Entity {
     footprint: { width: number; height: number };
     /** Art shows at least this age's style, whatever the owner's age (fortress preset stone walls). */
     minStyleAge?: AgeId;
+    /** Game time (ms) the building last took damage (M18: no repair under fire); unset = never damaged by an attack. */
+    damagedAtMs?: number;
   };
   underConstruction?: {
     /** Seconds of builder-effort required in total. */
@@ -84,6 +87,13 @@ export interface Entity {
     elapsed: number;
   };
   buildCommand?: { targetId: number };
+  /**
+   * A villager's repair order on a finished, damaged own or allied building
+   * (M18, RepairSystem): `costCarry` the prepaid credit (resources paid for
+   * HP not yet restored; lost when the repair stops), `hpCarry` the fractional HP restored but not yet applied
+   * (building HP stays whole, as for healing).
+   */
+  repairIntent?: { targetId: number; costCarry: Resources; hpCarry: number };
   trainingQueue?: {
     entries: Array<{ unitType: UnitType; elapsed: number; totalTime: number }>;
     maxQueue: number;

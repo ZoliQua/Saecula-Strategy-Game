@@ -62,6 +62,8 @@ export interface MediumTuning {
   readonly navy: NavalTuning;
   /** Markets, the landmark and trade (M17): see TradeTuning. */
   readonly trade: TradeTuning;
+  /** Building repair (M18): see RepairTuning. */
+  readonly repair: RepairTuning;
   /** Wonder play (only when the match can be won by a Wonder). */
   readonly wonder: {
     readonly enabled: boolean;
@@ -92,6 +94,23 @@ export interface TradeTuning {
   readonly sellWhenGoldBelow: number;
   readonly sellEveryMs: number;
   readonly carts: number;
+}
+
+/**
+ * Building repair (M18, ai/RepairPlay.ts). Every `everyMs` (on the upkeep
+ * pass) the AI looks for an own finished building below `belowHpFraction`
+ * of its HP with no seen enemy unit within `safeRadius` tiles of it (the
+ * town centre first, then the lowest HP share) and sends villagers (idle
+ * ones first, then the nearest gatherers) until `maxVillagers` repair at
+ * once, only while it can pay at least one unit of each resource the
+ * building costs. A repair near which an enemy is seen is called off on
+ * the next upkeep.
+ */
+export interface RepairTuning {
+  readonly belowHpFraction: number;
+  readonly safeRadius: number;
+  readonly maxVillagers: number;
+  readonly everyMs: number;
 }
 
 /** Medium AI (§10.2). */
@@ -206,6 +225,8 @@ export const AI_MEDIUM: MediumTuning = {
    * three carts toward an ally's market (Hard and Master inherit).
    */
   trade: { market: true, landmark: true, minVillagers: 20, sellAbove: 1000, sellWhenGoldBelow: 200, sellEveryMs: 20_000, carts: 3 },
+  /** M18: repair below 60 % HP with no enemy seen within 12 tiles, two villagers at most, checked every 5 s (Hard and Master inherit). */
+  repair: { belowHpFraction: 0.6, safeRadius: 12, maxVillagers: 2, everyMs: 5_000 },
   /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
   wonder: { enabled: true, minVillagers: 20, builders: 8 },
 };

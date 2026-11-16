@@ -34,7 +34,7 @@ export function infoKey(info: SelectedEntityInfo | null): string {
   if (info.kind === 'unit') {
     const c = info.carrying ? `${info.carrying.type}:${info.carrying.amount}` : '-';
     const rt = info.route ? `${info.route.home}>${info.route.target}:${info.route.gold}${info.route.ally ? 'a' : ''}` : '-';
-    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}:${rt}${info.ally ? ':A' : ''}`;
+    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}:${rt}${info.ally ? ':A' : ''}${info.repairing ? ':R' : ''}`;
   }
   if (info.kind === 'building') {
     const q = (info.queue ?? [])
@@ -92,6 +92,7 @@ export function toSelectedInfo(
         : {}),
       ...(entity.unit.unitType === 'transport' ? { cargo: entity.cargo?.units.length ?? 0 } : {}),
       ...traderInfo(entity, routeOf),
+      ...((entity as Entity).repairIntent ? { repairing: true as const } : {}),
       ...ally,
     };
   }

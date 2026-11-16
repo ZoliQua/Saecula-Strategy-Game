@@ -1703,6 +1703,90 @@ módosul.
   utakért járó teljes fizetés, elérhetetlen célpiac felé végtelen próbálkozás,
   az Akadémia és a korváltás) javítva.
 
+### M18 — Kezelhetőség: oktató mód, épületjavítás, színtévesztő-barát színek
+Ág: `feat/M18-tutorial-repair` (a `main`-ből, az 1.0.0 kiadási ág mellett).
+Változat: 1.1.0 (az 1.0.0 után). A tulajdonos 2026-11-16-án kérte: „még nincs
+kiadás, fejlesszünk tovább”; a scope Claude döntése a korábbi ötletlista 5. és 3.
+pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” és az M7
+„Nem része: épületjavítás” pontja ennyiben módosul.
+- **Oktató mód** (Claude döntése): a kampány-motorra épülő, lépésenkénti
+  küldetés (`tutorial`). A kampánylista első sora, mindig elérhető, nem zár és
+  nem old fel semmit; a teljesítése pipát kap. Beállítás: magyar, kicsi Mezőség,
+  1 Könnyű AI, 20 perc fegyverszünet, rögzített mag. A célok **sorban** jönnek
+  (`MissionDef.sequential`): a célpanel a már teljesítetteket és az aktuálisat
+  mutatja, alatta egy rövid magyar tippel (mit és hol kell kattintani, a
+  billentyűvel együtt, a beállított gesztusból). Lépések: 1. gyűjts 100 fát;
+  2. építs házat; 3. gyűjts 100 ételt; 4. legyen 6 falusid; 5. építs laktanyát;
+  6. képezz 3 kardforgatót; 7. javítsd meg a sérült házat (a küldetés egy
+  félig sérült házzal indul); 8. lépj a középkorba. Új célfajták: `gathered`
+  (erőforrás, mennyiség; a `MatchStats` gyűjtött összegéből) és `repaired`
+  (befejezett javítások száma). Az utolsó cél után a küldetés győzelemmel zárul.
+- **Épületjavítás** (Claude döntése): a kijelölt falusi jobb klikkje (vagy
+  parancs-gesztusa) egy saját vagy szövetséges, kész, sérült épületre javítást
+  indít (kalapács-kurzor). Sebesség: falusinként `maxHp / buildTime × REPAIR.speed`
+  életerő másodpercenként, az építési sebesség módosítóival (olasz bónusz,
+  taposókerekes daru). Ár: a teljes életerő visszaállítása az épület árának
+  `REPAIR.costFraction` (0,5) része, erőforrásonként, folyamatosan levonva; ha
+  elfogy, a javítás megáll magyar értesítéssel. Tűz alatt nincs javítás: az
+  épület `REPAIR.underFireDelayMs` (5 s) ideig nem javul, miután sebzést kapott
+  (Claude döntése a záró átnézés után: a fal és a városháza különben ostrom
+  alatt is sérthetetlen lett volna); `REPAIR.speed` 0,5. Félkész épület (az építés),
+  Gaia, ellenséges épület és hajó nem javítható. A javítás pontszámot nem ad.
+  Mentés: új `repairIntent` komponens.
+- **AI javít** (Közepestől; Claude döntése): ha egy kész épülete
+  `AI_MEDIUM.repair.belowHpFraction` alá sérül, és `repair.safeRadius` mezőn belül
+  nincs látott ellenség, legfeljebb `repair.maxVillagers` falusit küld javítani
+  (a városháza az első). A Könnyű AI nem javít. A szárazföldi körmérkőzés
+  sávjai (0.9.1) érvényesek maradnak; ha egy szimuláció magja elmozdul, söprés a
+  ház szokása szerint.
+- **Színtévesztő-barát csapatszínek** (Claude döntése): a beállítások új
+  „Megjelenítés” lapján „Csapatszínek: alapértelmezett / színtévesztő-barát”
+  (Okabe–Ito paletta: narancs, égszínkék, kékeszöld, sárga, kék, cinóber). A
+  szín egyetlen forrása egy `playerColor(id)` függvény az aktív palettából; a
+  meccs indulásakor és mentés betöltésekor érvényesül (a mentett szín csak
+  megjelenés), a futó meccsen a következő indításig nem változik.
+- **Mentés:** `schemaVersion` 12, migrációval (`repairIntent`, az épület utolsó
+  sérülésének ideje, a `tutorial` küldetés-azonosító, a `MatchStats` új mezői:
+  `repairsDone`, `gatheredBy`, `builtBy`), valódi v11 mentéssel.
+- **Tesztek:** a javítás (sebesség, ár, elfogyó nyersanyag, tiltott célok,
+  szövetséges épület, több falusi), a parancs és a kurzor, az új célfajták és a
+  sorrendi célpanel, az oktató küldetés beállítása (érvényes, játszható) és egy
+  fej nélküli szimuláció, hogy a lépései egy Közepes AI-val elérhetők (a javítási
+  lépést a teszt végzi el), a paletta (6 különböző szín, a beállítás mentése), az
+  AI javítás (egységteszt és szimuláció), mentés oda-vissza, v11 → v12 migráció.
+- Nem része: hajójavítás, falusi-automatikus javítás, angol felület, hangalámondás,
+  az oktató mód harci lépése (a fegyverszünet miatt), játék közbeni palettaváltás.
+- Keret (10.): az 1.0.0 keretei változatlanok (új textúra nincs, a kalapács-kurzor
+  SVG).
+- **Állapot (2026-11-28):** kész. Paletta: `playerColor(id)` és
+  `setTeamPalette` (`src/game/Player.ts`); palettaváltáskor a csapatszínű
+  épület-textúrák és a bélyegkép-gyorsítótárak a következő meccs előtt
+  újrafestődnek. Javítás: `src/game/repair.ts`, `RepairSystem`; a falusi
+  egész egységeket fizet előre, a maradék hitel leálláskor elvész (legfeljebb 1
+  egység/nyersanyag túlfizetés — Claude döntése, így nem lehet ingyen javítani);
+  a farmra a jobb klikk aratás marad. AI: `src/ai/RepairPlay.ts` (5 mp-enként,
+  állapot nélkül, a `repairIntent`-ből). Oktató mód: `tutorial` a
+  `SCENARIO_IDS`-ben (a kampánylánc változatlan), új célfajták `gathered`,
+  `built` (újonnan felépített épületek, `MatchStats.builtBy`) és `repaired`;
+  ha a javítási lépésnél nincs sérült saját épület, a lépés teljesül (Claude
+  döntése, hogy ne ragadjon be). `schemaVersion` 12 valódi v11-mentéssel.
+  Körmérkőzés (`BALANCE=1`): Nehéz magyar 34, angol 25, német 25,5, francia
+  25,5, spanyol 26, olasz 30, orosz 31,5, finn 26,5 (/56; a 0.9.1-hez képest
+  angol +0,5, orosz −0,5); Mesteri azonos a 0.9.1-gyel; egyik szimuláció magja
+  sem mozdult; a záró átnézés utáni lassítás (`REPAIR.speed` 0,5, 5 s tűz alatti
+  szünet) után újramérve meccsre ugyanez. Az oktató küldetés szimulációja: egy Közepes AI az emberi helyen
+  kb. 14 perc alatt végigmegy a 8 lépésen (a kardforgatókat és a javítást a
+  teszt rendeli el). Mérve: textúra `distinct6` 173,2 MB (≤ 256), JS-bundle
+  0,78 MB gzip, a teljes tesztcsomag 3433 teszt. Böngésző-smoke (5196, valódi
+  Chrome): kampánylista az oktató sorral, eligazítás, célpanel tippel, három
+  falusi megjavítja a sérült házat (250 → 500 életerő, 9 fa), színtévesztő
+  palettával indított meccs (narancs, égszínkék, kékeszöld), konzolhiba nélkül.
+  Minden feladatot független átnézés követett; javítva: palettaváltáskor régi
+  színű épület-textúrák, ingyenes javítás az egységmaradékkal, a farm jobb
+  klikkje javításra váltott, az oktató módban hiányzó aranytipp és a törölt
+  sérült házzal beragadó lépés; a záró átnézés után a túl gyors javítás (egy
+  falusi gyorsabban javította a falat, mint ahogy egy ágyú rombolta).
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét

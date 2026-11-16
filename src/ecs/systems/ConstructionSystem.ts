@@ -2,13 +2,12 @@ import type { With } from 'miniplex';
 import type { TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
-import { findPath, findPathToAny } from '../../map/pathfinding';
 import { FARM_BALANCE, REPATH_RETRY_MS, TRAINER_BUILDINGS } from '../../config/balance';
 import { BUILDING_SPECS, towerAttacker } from '../archetypes/building';
 import type { Entity } from '../components';
-import { escapeRulesAt } from '../escapeRules';
 import { onFootprintRing } from '../footprint';
 import { faceToward } from './facing';
+import { planToFootprintRing } from './walkToRing';
 import type { EcsWorld } from '../world';
 import { gameEvents } from '../../game/events';
 import { buildSpeedMultiplier } from '../../game/modifiers';
@@ -155,20 +154,8 @@ export class ConstructionSystem {
 
   private walkToSite(b: Builder, site: Site): void {
     if ((this.repathAt.get(b) ?? 0) > this.nowMs) return;
-    const goal = findAdjacent(this.mapData, site, b.position);
-    if (goal && !this.paths.take()) return;
-    // A picked tile that is cut off (a hole in a forest) falls back to the nearest reachable ring tile.
-    const escape = escapeRulesAt(this.world, b.position, this.mapData, b.owner?.playerId ?? 0);
-    const path = goal
-      ? (findPath(this.mapData, b.position, goal, escape) ??
-        findPathToAny(this.mapData, b.position, (tx, ty) => isAdjacentToFootprint({ tx, ty }, site), escape))
-      : null;
-    if (!path) {
-      this.repathAt.set(b, this.nowMs + REPATH_RETRY_MS);
-      return;
-    }
-    b.movable.path = path.slice(1);
-    b.movable.progress = 0;
+    const plan = planToFootprintRing(this.world, this.mapData, this.paths, b, site.position, site.building.footprint);
+    if (plan === 'failed') this.repathAt.set(b, this.nowMs + REPATH_RETRY_MS);
   }
 }
 
@@ -177,27 +164,3 @@ function isAdjacentToFootprint(v: TileCoord, site: Site): boolean {
   return onFootprintRing(v, site.position, site.building.footprint);
 }
 
-function findAdjacent(
-  map: MapData,
-  site: Site,
-  preferNear: TileCoord,
-): TileCoord | null {
-  const { width, height } = site.building.footprint;
-  const candidates: TileCoord[] = [];
-  for (let dx = -1; dx <= width; dx++) {
-    candidates.push({ tx: site.position.tx + dx, ty: site.position.ty - 1 });
-    candidates.push({ tx: site.position.tx + dx, ty: site.position.ty + height });
-  }
-  for (let dy = 0; dy < height; dy++) {
-    candidates.push({ tx: site.position.tx - 1, ty: site.position.ty + dy });
-    candidates.push({ tx: site.position.tx + width, ty: site.position.ty + dy });
-  }
-  const passable = candidates.filter((t) => map.isPassable(t.tx, t.ty));
-  if (passable.length === 0) return null;
-  passable.sort(
-    (a, b) =>
-      Math.abs(a.tx - preferNear.tx) + Math.abs(a.ty - preferNear.ty) -
-      (Math.abs(b.tx - preferNear.tx) + Math.abs(b.ty - preferNear.ty)),
-  );
-  return passable[0]!;
-}

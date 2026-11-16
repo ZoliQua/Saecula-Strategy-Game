@@ -72,12 +72,12 @@ describe('MatchStats', () => {
   it('counts only its own world, and nothing once detached', () => {
     const { world, stats, detach } = setup();
     const other = createEcsWorld();
-    gameEvents.emit('resourcesDelivered', { world: other, playerId: 1, amount: 50 });
-    gameEvents.emit('resourcesDelivered', { world, playerId: 1, amount: 10 });
+    gameEvents.emit('resourcesDelivered', { world: other, playerId: 1, resource: 'wood', amount: 50 });
+    gameEvents.emit('resourcesDelivered', { world, playerId: 1, resource: 'wood', amount: 10 });
     gameEvents.emit('unitTrained', { world, playerId: 2, unitType: 'archer' });
     gameEvents.emit('buildingCompleted', { world, playerId: 3, entityId: 9, buildingType: 'house' });
     detach();
-    gameEvents.emit('resourcesDelivered', { world, playerId: 1, amount: 10 });
+    gameEvents.emit('resourcesDelivered', { world, playerId: 1, resource: 'wood', amount: 10 });
     expect(stats.of(1).gathered).toBe(10);
     expect(stats.of(2).unitsTrained).toBe(1);
     expect(stats.of(3).buildingsBuilt).toBe(1);
@@ -86,7 +86,7 @@ describe('MatchStats', () => {
   it('takes one timeline sample per 60 game seconds and dates age-ups', () => {
     const { world, players, stats, detach } = setup();
     createUnit(world, { type: 'villager', tile: { tx: 1, ty: 1 }, playerId: 1 });
-    gameEvents.emit('resourcesDelivered', { world, playerId: 1, amount: 100 });
+    gameEvents.emit('resourcesDelivered', { world, playerId: 1, resource: 'wood', amount: 100 });
     for (let t = 0; t < 185_000; t += 100) {
       if (t === 70_000) players.get(2)!.age = 2;
       stats.update(100);

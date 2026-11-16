@@ -36,6 +36,8 @@ export interface SelectedUnitInfo {
   route?: { home: BuildingType; target: BuildingType; ally: boolean; gold: number };
   /** Owned by the human's ally (M16). */
   ally?: true;
+  /** A villager repairing a building (M18): its role line says so. */
+  repairing?: true;
 }
 
 export interface SelectedBuildingInfo {
@@ -83,6 +85,8 @@ export interface ObjectiveRowInfo {
   readonly need: number;
   /** Show "have / need" (counted objectives: buildings, units, minutes). */
   readonly counted: boolean;
+  /** The current step's hint (M18 tutorial), under the objective. */
+  readonly hint?: string;
 }
 
 /** The time-victory clock on the HUD (HudSync, once a second). */

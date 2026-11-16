@@ -1,5 +1,5 @@
 import type { EcsWorld } from '../ecs/world';
-import type { AgeId, BuildingType, TechId, UnitType } from '../types';
+import type { AgeId, BuildingType, ResourceType, TechId, UnitType } from '../types';
 
 /**
  * Small typed bus for game-side facts that render / UI code reacts to
@@ -35,13 +35,15 @@ export interface GameEvents {
     progress?: number;
   };
   /** A villager dropped `amount` resources at a dropoff. */
-  resourcesDelivered: { world: EcsWorld; playerId: number; amount: number };
+  resourcesDelivered: { world: EcsWorld; playerId: number; resource: ResourceType; amount: number };
   /** A monk converted an enemy unit (M11): it now belongs to `toPlayerId`. */
   unitConverted: { world: EcsWorld; entityId: number; fromPlayerId: number; toPlayerId: number; unitType: UnitType };
   /** A trainer finished a unit. */
   unitTrained: { world: EcsWorld; playerId: number; unitType: UnitType };
   /** A construction site was finished. */
   buildingCompleted: { world: EcsWorld; playerId: number; entityId: number; buildingType: BuildingType };
+  /** A repair brought a building back to full HP (M18); `playerId` owns the villager that restored the last HP. */
+  buildingRepaired: { world: EcsWorld; playerId: number; entityId: number; buildingType: BuildingType };
   /** The pause menu opened or closed (PauseScene). The music ducks on it (Task 9); nothing in play listens. */
   pauseChanged: { paused: boolean };
 }
@@ -60,6 +62,7 @@ const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   unitTrained: new Set(),
   unitConverted: new Set(),
   buildingCompleted: new Set(),
+  buildingRepaired: new Set(),
   pauseChanged: new Set(),
 };
 

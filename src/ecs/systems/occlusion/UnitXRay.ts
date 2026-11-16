@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { XRAY } from '../../../config/visual';
-import { PLAYER_COLORS } from '../../../game/Player';
+import { playerColor } from '../../../game/Player';
 import { hiddenRects, type Box, type CoverSource, type HiddenRect, type PlacedCover } from '../../../iso/coverage';
 import { frameCover } from '../../../iso/frameCover';
 import { xrayCrop } from './xrayCrop';
@@ -115,7 +115,7 @@ export class UnitXRay {
       .setPosition(body.x, body.y)
       .setDepth(SILHOUETTE_DEPTH)
       .setAlpha(XRAY.alpha)
-      .setTintFill(PLAYER_COLORS[((e.owner?.playerId ?? 1) - 1) % PLAYER_COLORS.length] ?? 0xffffff)
+      .setTintFill(playerColor(e.owner?.playerId ?? 1))
       .setVisible(true);
     // Crop rect in the frame's unflipped logical box px (trimmed frames included, see Frame.setCropUVs).
     img.setCrop(crop.x, (hidden.top - box.top) / k, crop.width, (hidden.bottom - hidden.top) / k);

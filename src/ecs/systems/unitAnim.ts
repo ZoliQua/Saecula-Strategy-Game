@@ -32,7 +32,7 @@ export interface UnitAnimState {
  *    so feet don't skate;
  *  - attacking → wind-up before the cooldown ends, strike + follow
  *    through right after a blow lands, ready stance in between;
- *  - working (gathering, building) → tool swing; with `siteOf`, a builder
+ *  - working (gathering, building, repairing) → tool swing; with `siteOf`, a builder
  *    swings only on the ring around its site (not while it waits for a
  *    path, nor inside the footprint it is stepping out of);
  *  - else a slow breathing idle, desynchronised per entity.
@@ -64,15 +64,30 @@ export function unitAnimState(entity: Entity, now: number, siteOf?: SiteLookup):
 /** Construction sites by id (the builders' targets). */
 export type SiteLookup = (id: number) => Entity | undefined;
 
-/** A per-frame lookup of the world's construction sites (there are few), for `unitAnimState`. */
+/**
+ * A per-frame lookup for `unitAnimState`: the world's construction sites,
+ * and the damaged buildings some villager's `repairIntent` targets (M18).
+ * Buildings are walked only while a repair is ordered, and only until
+ * every target is found, so walls do not cost a scan every frame.
+ */
 export function siteLookup(world: EcsWorld): SiteLookup {
   const sites = new Map<number, Entity>();
-  for (const s of world.with('building', 'underConstruction', 'position')) if (s.id !== undefined) sites.set(s.id, s);
+  for (const s of world.with('underConstruction', 'building', 'position')) if (s.id !== undefined) sites.set(s.id, s);
+  const wanted = new Set<number>();
+  for (const r of world.with('repairIntent')) if (!sites.has(r.repairIntent.targetId)) wanted.add(r.repairIntent.targetId);
+  if (wanted.size > 0) {
+    for (const b of world.with('building', 'position', 'health')) {
+      if (b.id === undefined || !wanted.has(b.id)) continue;
+      if (b.health.current < b.health.max) sites.set(b.id, b);
+      wanted.delete(b.id);
+      if (wanted.size === 0) break;
+    }
+  }
   return (id) => sites.get(id);
 }
 
 function isBuilding(entity: Entity, siteOf: SiteLookup | undefined): boolean {
-  const cmd = entity.buildCommand;
+  const cmd = entity.buildCommand ?? entity.repairIntent;
   if (!cmd) return false;
   if (!siteOf) return true;
   const site = siteOf(cmd.targetId);

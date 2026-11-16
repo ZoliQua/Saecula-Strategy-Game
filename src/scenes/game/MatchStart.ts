@@ -4,6 +4,11 @@ import { applyMissionStart } from '../../campaign/missionStart';
 import { newMatchId } from '../../game/matchId';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
+import { setTeamPalette } from '../../game/Player';
+import { markTeamArtStale } from '../../iso/buildingTextures';
+import { resetCivPreviews } from '../../ui/civPreview';
+import { resetThumbnailCache } from '../../ui/thumbnails';
+import { settingsStore } from '../../ui/settings';
 import type { RestoredMatch } from '../../save/deserializer';
 import type { SaveStorage, SlotId } from '../../save/storage';
 import type { SaveData } from '../../save/schema';
@@ -40,6 +45,13 @@ export type MenuReturn = SetupReturn | { readonly notice: string };
  * map and world from the save). On failure, where the menu goes instead.
  */
 export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | undefined): { ok: true; match: PreparedMatch } | { ok: false; back: MenuReturn } {
+  // The palette is fixed before any player or texture exists, so one match never mixes palettes.
+  if (setTeamPalette(settingsStore.getState().teamPalette)) {
+    // Art painted in the other palette (building textures, HUD pictures, civ previews) repaints.
+    markTeamArtStale();
+    resetThumbnailCache();
+    resetCivPreviews();
+  }
   if (data && 'load' in data) {
     const restored = tryRestoreMatch(data.load);
     if (!restored) return { ok: false, back: { notice: hu.save.errors.loadFailed } };

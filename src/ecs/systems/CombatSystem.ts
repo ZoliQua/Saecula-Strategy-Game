@@ -8,7 +8,7 @@ import { findBreachTarget } from '../../game/breach';
 import { isFriendly, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
 import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
 import { computeDamage } from '../../game/damage';
-import { applyDamage } from '../../game/kill';
+import { applyDamage, type GameNow } from '../../game/kill';
 import { isShootingBuilding, shotOrigin } from '../../game/landmarks';
 import { boostArmor, boostAttack, bonusesFor } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -62,6 +62,8 @@ export class CombatSystem {
     private readonly paths: PathAllowance = UNLIMITED_PATHS,
     /** The treaty (M16): while it holds, an attack on another team's player is dropped (asked every tick). */
     private readonly treaty: TreatyGate = NO_TREATY,
+    /** The match's game time (M18): a hit building records it (no repair under fire). None: no record. */
+    private readonly gameNow?: GameNow,
   ) {
     this.world = world;
     this.mapData = mapData;
@@ -165,6 +167,7 @@ export class CombatSystem {
         (target as Entity).unit?.unitType,
       ),
       a.owner.playerId,
+      this.gameNow?.(),
     );
     if (killed) this.endTarget(a);
   }

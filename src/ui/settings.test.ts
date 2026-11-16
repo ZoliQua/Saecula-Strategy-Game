@@ -154,6 +154,22 @@ describe('settings', () => {
 });
 
 
+describe('settings: team palette', () => {
+  it('an old blob without teamPalette loads the default; a junk value too', () => {
+    expect(loadSettings(memory(JSON.stringify({ muted: true }))).teamPalette).toBe('default');
+    expect(loadSettings(memory(JSON.stringify({ teamPalette: 'neon' }))).teamPalette).toBe('default');
+  });
+
+  it('colorblind round-trips through storage and a reset restores the default', () => {
+    const m = memory();
+    const store = createSettingsStore(m);
+    store.getState().setTeamPalette('colorblind');
+    expect(loadSettings(m).teamPalette).toBe('colorblind');
+    store.getState().resetDefaults();
+    expect(store.getState().teamPalette).toBe('default');
+  });
+});
+
 describe('settings: stored key maps (fix round 1)', () => {
   const roundTrip = (steps: [Parameters<typeof rebind>[1], string][]) => {
     const storage = memory();

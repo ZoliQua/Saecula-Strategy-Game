@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { unitArt } from '../../iso/art/units/UnitArt';
-import { buildingTexture, rebaseCivArt, setBuildingBaseOwners, wallTexture, wonderStageTexture } from '../../iso/buildingTextures';
+import { buildingTexture, dropStaleTeamArt, rebaseCivArt, setBuildingBaseOwners, wallTexture, wonderStageTexture } from '../../iso/buildingTextures';
 import type { AgeId, CivId } from '../../types';
 import { ageUpArtJobs, BackgroundArt, civBaseOwners, planArtLoad, type AgeSpan, type ArtPainters } from './artLoadPlan';
 import type { RestoredBuildingArt } from './restoredArt';
@@ -34,6 +34,7 @@ export class MatchArt {
     this.owners = civBaseOwners(players);
     setBuildingBaseOwners(this.owners);
     // Menu / previous-match bases painted for another player go now (nothing of this match shows yet).
+    dropStaleTeamArt(scene);
     rebaseCivArt(scene, this.owners, new Set());
   }
 

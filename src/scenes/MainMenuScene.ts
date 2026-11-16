@@ -9,7 +9,7 @@ import { LightManager, lit } from '../iso/art/lighting/LightManager';
 import { frameIndex, headingSlot, unitSheetLayout, walkCycleTiles } from '../iso/art/units/layout';
 import { pumpUnitArt } from '../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../iso/art/units/unitSprite';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import { tileToScreen, type TileCoord } from '../iso/coordinates';
 import { tileDepth } from '../iso/depth';
 import { BUILDING_LIGHT, buildingTexture } from '../iso/buildingTextures';
@@ -372,7 +372,7 @@ export class MainMenuScene extends Phaser.Scene {
   private walk(type: UnitType, q: Quarter, a: TileCoord, b: TileCoord, delay: number): void {
     const pa = tileToScreen(a);
     const pb = tileToScreen(b);
-    const sprites = createUnitSprites(this, type, q.civ, PLAYER_COLORS[q.playerId - 1] ?? 0xffffff, true);
+    const sprites = createUnitSprites(this, type, q.civ, playerColor(q.playerId), true);
     const sprite = sprites.body.setPosition(pa.sx, pa.sy).setDepth(tileDepth(a) + 0.3);
     this.lighting?.attachCaster(sprite, sprites.key);
     const tiles = Math.hypot(b.tx - a.tx, b.ty - a.ty);

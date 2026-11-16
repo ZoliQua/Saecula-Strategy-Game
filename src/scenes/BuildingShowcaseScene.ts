@@ -6,7 +6,7 @@ import { ART_SCALE, BUILDING_BOTTOM_PAD } from '../iso/art/canvas';
 import { LightManager, lit } from '../iso/art/lighting/LightManager';
 import { BUILDING_LIGHT, buildingTexture, wallTexture, wonderStageTexture } from '../iso/buildingTextures';
 import { FX_KEYS } from '../iso/textures';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import { wallNeighbourMaskBy } from '../game/wallNeighbours';
 import { tileToScreen } from '../iso/coordinates';
 import { wallBannerAnchor } from '../iso/art/walls/paintWall';
@@ -153,7 +153,7 @@ export class BuildingShowcaseScene extends Phaser.Scene {
       [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [2, 7], [2, 9], [2, 10], [4, 9], [4, 10],
     ] as Array<[number, number]>;
     for (const [u, v] of layout) tiles.add(`${u},${v}`);
-    const color = PLAYER_COLORS[((this.opts.playerId ?? 1) - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+    const color = playerColor(this.opts.playerId ?? 1);
     const ground = this.add.graphics().setDepth(-1);
     const rows = ages.flatMap((age) => (this.opts.civs ?? [this.civ]).map((civ) => ({ age, civ })));
     rows.forEach(({ age, civ }, row) => {

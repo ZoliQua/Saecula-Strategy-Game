@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
 import type { EcsWorld } from '../ecs/world';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import { css } from '../iso/art/palette';
 import { FOG_EXPLORED, FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
 import type { MapData } from '../map/MapData';
@@ -157,7 +157,7 @@ export class Minimap {
       const fog = this.fog;
       const { tx: ex, ty: ey } = e.position;
       if (!minimapShows(e.owner.playerId, this.friendly, () => !fog || fog.isVisible(ex, ey))) continue;
-      const color = PLAYER_COLORS[(e.owner.playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+      const color = playerColor(e.owner.playerId);
       const b = e.building;
       const tx = e.position.tx + (b ? (b.footprint.width - 1) / 2 : 0);
       const ty = e.position.ty + (b ? (b.footprint.height - 1) / 2 : 0);

@@ -43,3 +43,12 @@ describe('villagerActivity', () => {
     });
   });
 });
+
+describe('villagerActivity: repair (M18)', () => {
+  it('a repairing villager counts as building', () => {
+    const world = createEcsWorld();
+    const v = createVillager(world, { tile: { tx: 4, ty: 10 } });
+    world.addComponent(v, 'repairIntent', { targetId: 99, costCarry: { food: 0, wood: 0, gold: 0 }, hpCarry: 0 });
+    expect(villagerActivity(world, 1).build).toEqual([v.id]);
+  });
+});

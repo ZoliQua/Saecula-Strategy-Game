@@ -1,6 +1,6 @@
 import { PROJECTILE_HIT_RADIUS } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
-import { applyDamage } from '../../game/kill';
+import { applyDamage, type GameNow } from '../../game/kill';
 import { areEnemies, NO_TEAMS } from '../../game/diplomacy';
 import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
 import { boostArmor, bonusesFor } from '../../game/modifiers';
@@ -32,6 +32,8 @@ export class ProjectileSystem {
     private readonly players: PlayerManager | null = null,
     /** The treaty (M16): while it holds, a shot hurts no other team's player (splash included). */
     private readonly treaty: TreatyGate = NO_TREATY,
+    /** The match's game time (M18): a hit building records it (no repair under fire). None: no record. */
+    private readonly gameNow?: GameNow,
   ) {}
 
   update(deltaMs: number): void {
@@ -60,12 +62,14 @@ export class ProjectileSystem {
         victims.push(v);
       }
     }
+    const nowMs = this.gameNow?.();
     for (const v of victims) {
       applyDamage(
         this.world,
         v,
         computeDamage(shot.payload, boostArmor(v.armor ?? NO_ARMOR, bonusesFor(this.players, v)), v.unit?.unitType),
         shot.ownerId,
+        nowMs,
       );
     }
   }

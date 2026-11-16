@@ -1,4 +1,4 @@
-import { objectiveNeed, objectiveProgress, progressMeets, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
+import { hasRepairableDamage, objectiveNeed, objectiveProgress, progressMeets, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
 
 /** One objective's state for the HUD. */
 export interface ObjectiveState {
@@ -13,6 +13,12 @@ export interface ObjectiveState {
  * every newly met objective done for good; `done` (objective indices) is
  * what a save keeps. The mission is complete when every objective is done
  * and none is a winMatch (a winMatch mission ends on the regular victory).
+ *
+ * A sequential tracker (M18 tutorial) judges objective i only once 0..i−1
+ * are done: a later objective met early waits for its turn and is then
+ * marked done in the same tick its predecessor completes. A current
+ * `repaired` step with nothing of the human's left to repair counts as met
+ * (the damaged house was deleted or lost: the step cannot get stuck).
  */
 export class ObjectiveTracker {
   private readonly doneSet: Set<number>;
@@ -20,6 +26,7 @@ export class ObjectiveTracker {
   constructor(
     readonly objectives: readonly Objective[],
     done: Iterable<number> = [],
+    readonly sequential = false,
   ) {
     this.doneSet = new Set([...done].filter((i) => Number.isInteger(i) && i >= 0 && i < objectives.length));
   }
@@ -36,12 +43,17 @@ export class ObjectiveTracker {
    */
   tick(ctx: ObjectiveContext): { fresh: number[]; states: ObjectiveState[] } {
     const fresh: number[] = [];
+    let blocked = false;
     const states = this.objectives.map((objective, index) => {
       if (this.doneSet.has(index)) return this.doneState(objective, index);
+      if (blocked) return this.waitingState(objective, index);
+      if (this.sequential) blocked = true;
       const progress = objectiveProgress(objective, ctx);
-      if (!progressMeets(objective, progress)) return { index, objective, done: false, progress };
+      const nothingToRepair = this.sequential && objective.kind === 'repaired' && !hasRepairableDamage(ctx);
+      if (!progressMeets(objective, progress) && !nothingToRepair) return { index, objective, done: false, progress };
       this.doneSet.add(index);
       fresh.push(index);
+      blocked = false;
       return this.doneState(objective, index);
     });
     return { fresh, states };
@@ -49,9 +61,24 @@ export class ObjectiveTracker {
 
   /** Every objective with its state, without marking anything (done ones show as complete). */
   states(ctx: ObjectiveContext): ObjectiveState[] {
-    return this.objectives.map((objective, index) =>
-      this.doneSet.has(index) ? this.doneState(objective, index) : { index, objective, done: false, progress: objectiveProgress(objective, ctx) },
-    );
+    const current = this.current();
+    return this.objectives.map((objective, index) => {
+      if (this.doneSet.has(index)) return this.doneState(objective, index);
+      if (current !== null && index > current) return this.waitingState(objective, index);
+      return { index, objective, done: false, progress: objectiveProgress(objective, ctx) };
+    });
+  }
+
+  /** A sequential tracker's current objective (the first not done), or null (all done, or not sequential). */
+  current(): number | null {
+    if (!this.sequential) return null;
+    const i = this.objectives.findIndex((_, index) => !this.doneSet.has(index));
+    return i < 0 ? null : i;
+  }
+
+  /** A sequential objective whose turn has not come: not judged, shown at zero. */
+  private waitingState(objective: Objective, index: number): ObjectiveState {
+    return { index, objective, done: false, progress: { have: 0, need: objectiveNeed(objective) } };
   }
 
   private doneState(objective: Objective, index: number): ObjectiveState {
