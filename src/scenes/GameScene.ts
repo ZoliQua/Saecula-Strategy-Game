@@ -35,7 +35,8 @@ import { SystemRunner } from './game/SystemRunner';
 import { HudSync } from './game/HudSync';
 import { wireHudControls } from './game/HudControls';
 import { CampaignRunner } from './game/CampaignRunner';
-import { liveMatchState, MatchSave } from './game/MatchSave';
+import type { SaveData } from '../save/schema';
+import { liveMatchState, MatchSave, type SaveOutcome } from './game/MatchSave';
 import { MatchRecorder } from './game/MatchRecorder';
 import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
 import { prepareMatch, runnerFor, startFromSlot, type MatchStart, type MenuReturn } from './game/MatchStart';
@@ -71,6 +72,10 @@ export class GameScene extends Phaser.Scene {
   /** Dev builds only (window.__timeScale): game time runs this much faster than real time. */
   private timeScale = 1;
   private gameOverTriggered = false;
+  /** The WebGL context was lost (emergencySave): the match never runs again in this page. */
+  private contextLost = false;
+  /** The save this scene is loading (a LoadRequest), kept until the match runs: a lost context during the bake stores it again. */
+  private loadingSave: SaveData | null = null;
   private difficulty: Difficulty = 'easy';
   private commandUnsubscribe: (() => void) | null = null;
   /** This match's civ art: base owners, loading-card art and the background queue (age-2 walls, age-up art). */
@@ -91,6 +96,8 @@ export class GameScene extends Phaser.Scene {
   create(data?: Partial<GameSetupConfig> | LoadRequest): void {
     this.cameras.main.setBackgroundColor('#090c12');
     resetUiStore();
+    this.contextLost = false;
+    this.loadingSave = data && 'load' in data ? data.load : null;
     const prepared = prepareMatch(data);
     if (!prepared.ok) return this.backToMenu(prepared.back);
     const { start, art } = prepared.match;
@@ -148,6 +155,7 @@ export class GameScene extends Phaser.Scene {
         this.events.off(Phaser.Scenes.Events.UPDATE, this.onBakeUpdate, this);
         this.bake = null;
         b.loading.destroy();
+        this.loadingSave = null;
         this.startGame(b.terrain, this.setup, b.start);
         return;
       }
@@ -354,6 +362,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onUpdate(time: number, realDelta: number): void {
+    // After a lost context nothing may advance the saved match (a resumed pause menu included).
+    if (this.contextLost) return;
     const frameStart = performance.now();
     const delta = realDelta * this.timeScale;
     this.runner.update(time, delta);
@@ -399,8 +409,15 @@ export class GameScene extends Phaser.Scene {
    * The WebGL context was lost (contextGuard): stops the match and saves it
    * to the autosave slot. Null without an undecided match (nothing to save).
    */
-  emergencySave(): ReturnType<MatchSave['saveTo']> | null {
-    if (!this.matchSave || this.gameOverTriggered) return null;
+  emergencySave(): Promise<SaveOutcome> | null {
+    if (this.contextLost || this.gameOverTriggered) return null;
+    // A saved match still loading (terrain bake): its save goes to the autosave slot as it is.
+    if (this.loadingSave) {
+      this.contextLost = true;
+      return this.storage.write('auto', this.loadingSave);
+    }
+    if (!this.matchSave) return null;
+    this.contextLost = true;
     this.scene.pause();
     return this.matchSave.saveTo('auto', { quiet: true });
   }

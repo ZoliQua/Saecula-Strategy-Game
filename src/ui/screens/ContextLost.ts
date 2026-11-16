@@ -23,7 +23,7 @@ export class ContextLost {
     });
     this.root = el(
       'div',
-      { class: 'screen loading context-lost', role: 'alertdialog', 'aria-live': 'assertive' },
+      { class: 'screen loading context-lost', role: 'alertdialog', 'aria-modal': 'true', 'aria-live': 'assertive' },
       el(
         'div',
         { class: 'glass loading-card' },
@@ -35,6 +35,15 @@ export class ContextLost {
       ),
     );
     uiRoot().append(this.root);
+    // The card is the only thing left to use: no key may reach the game, the HUD or a pause card behind it
+    // (Esc would resume a paused match). Window capture runs before every other key listener.
+    const swallow = (e: KeyboardEvent): void => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (e.type === 'keydown' && (e.key === 'Enter' || e.key === ' ')) this.button.click();
+    };
+    window.addEventListener('keydown', swallow, true);
+    window.addEventListener('keyup', swallow, true);
   }
 
   set(state: ContextLostState): void {
@@ -43,5 +52,6 @@ export class ContextLost {
     this.body.textContent = t[state];
     this.button.textContent = state === 'noMatch' ? t.reload : t.resume;
     this.button.disabled = state === 'saving';
+    if (!this.button.disabled) this.button.focus();
   }
 }
