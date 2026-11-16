@@ -1429,6 +1429,20 @@ kiadásról a tulajdonos dönt). A 0.9.2 utáni terv 1.0-s pontja: teljesítmén
 - Nem része: új funkció, a mentési séma változása (`schemaVersion` 9 marad),
   az entitás-keret javítása (döntésre vár), a kiadási feltételek (külön
   javaslat a tulajdonosnak).
+- **Állapot (2026-11-16):** kész. Mérve (1280×720, swiftshader):
+  `naval6 --ships` csúcs 351,5 MB a 0,65-ös nagyításon — a vízi kereten
+  (400 MB) belül; `distinct6` (Szigetek, szárazföldi) 179,4 MB — a 256 MB-on
+  belül. Képkocka-CPU (`medium4`, fej nélküli Chrome GPU-val): p95 6,6 ms,
+  átlag 2,5 ms, de csak 46 képkocka 1 játékperc után — a fej nélküli böngésző
+  kb. 5 képkockát rajzol másodpercenként, így a 10 perces bemelegítés órákig
+  tartana; a 60 FPS-es mérés valódi böngészőablakban az 1.0 kiadási feltételei
+  között van. JS-bundle 0,75 MB gzip. A teljes tesztcsomag zöld (3065 teszt).
+  Böngészős ellenőrzés (`contextlost.mjs`, 9/9 PASS): nyitott szünet menü
+  mellett elvesztett kontextus, a kártya alatt az Esc nem indítja újra a
+  meccset, a betöltés közbeni második elvesztés után is ugyanaz a meccs
+  folytatódik. A független kódáttekintés két hibát talált (a szünet menü
+  billentyűi a kártya alatt; a betöltés közbeni elvesztés elejtette a
+  folytatást), és egy apróságot a javítás után; mind javítva.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
