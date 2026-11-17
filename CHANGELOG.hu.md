@@ -10,7 +10,33 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ## [Kiadatlan]
 
-Még nincs.
+### Új
+
+- **Biztosíték grafikus hibára:** ha a böngésző visszaveszi a játék grafikus
+  memóriáját (elvesztett WebGL-kontextus), a futó meccs megáll és az
+  automatikus mentés helyére mentődik, egy kártya elmondja, mi történt, és az
+  „Újratöltés és folytatás” onnan folytatja, ahol abbamaradt.
+
+### Változott
+
+- **Textúra-keret:** szárazföldi térképen továbbra is 256 MB, tengeres
+  térképen 400 MB, ahol minden nép hajója a képernyőn lehet (a tulajdonos
+  döntése).
+
+### Javítva
+
+- **A Közepes, Nehéz és Mesteri AI vízi térképen** 10 helyett 8 falusinál
+  építi meg a kikötőjét. A nyitó portya előtti visszatartás kb. 9 falusinál
+  megállította a falusi-képzést, így a kikötő csak a portyák után készült el,
+  és a vízi meccset az döntötte el, kinek volt véletlenül kikötője.
+
+### Fejlesztőknek
+
+- Egy teszt minden mentési verzió (1–9) valódi mentését betölti, tovább
+  futtatja és újra elmenti.
+- Mérőszkriptek: a `naval6` forgatókönyv (128×128 Szigetvilág, hat játékos),
+  a `--ships`, a térkép szerinti textúra-keret ellenőrzése és a
+  `contextlost.mjs`.
 
 ## [0.9.2] — 2026-11-08
 

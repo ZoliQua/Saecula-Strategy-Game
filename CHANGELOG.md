@@ -10,7 +10,31 @@ raises the patch version.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Lost graphics safeguard:** if the browser takes back the game's graphics
+  memory (a lost WebGL context), the running match stops and is saved to
+  the autosave slot, a card explains what happened, and "Reload and
+  continue" picks the match up where it stopped.
+
+### Changed
+
+- **Texture budget:** 256 MB on land maps as before, 400 MB on maps with sea,
+  where every nation's ships may be on screen (owner's decision).
+
+### Fixed
+
+- **Medium, Hard and Master AIs on water maps** found their dock at 8
+  villagers instead of 10. The opening raid's hold stopped villager training
+  at about 9, so the dock came only after the raids, and water games were
+  decided by who happened to have one.
+
+### For developers
+
+- A test loads, plays on and re-saves a real save of every save version
+  (1–9).
+- Perf scripts: the `naval6` scenario (128×128 Szigetvilág, six players),
+  `--ships`, the per-map texture budget check and `contextlost.mjs`.
 
 ## [0.9.2] — 2026-11-08
 
