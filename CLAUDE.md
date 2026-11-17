@@ -1455,6 +1455,60 @@ kiadásról a tulajdonos dönt). A 0.9.2 utáni terv 1.0-s pontja: teljesítmén
   billentyűi a kártya alatt; a betöltés közbeni elvesztés elejtette a
   folytatást), és egy apróságot a javítás után; mind javítva.
 
+### M15 — Playtest-javítások és az 1.0 kiadási feltételei
+Ág: `feat/M15-playtest` (a `chore/1.0-prep` ágra épül, a PR #14 olasz-
+feljegyzésével). Változat: a kiadáskor **1.0.0**, ha a kiadási feltételek
+teljesülnek (a kiadásról a tulajdonos dönt). A tulajdonos 2026-11-13-án
+kérte, hogy az M15, M16 és M17 egymás után, Claude saját döntéseivel
+készüljön; a döntések itt „Claude döntése” jelöléssel szerepelnek.
+- **Nehéz vízi nyitás (hiba):** a Közepes AI kikötője 10 falusit várt
+  (`navy.minVillagers`), a Közepes és a Nehéz portya előtti visszatartása
+  (`holdsVillagers`) viszont kb. 9-nél megállította a falusi-képzést, így a
+  kikötő csak a portyák után épült (a Nehéz és a Mesteri örökli). Javítás:
+  `AI_MEDIUM.navy.minVillagers` 10 → 8. Csak ott hat, ahol a bázis közelében
+  kikötőhely van, ezért a 0.9.1-es szárazföldi körmérkőzés érvényes marad. Teszt:
+  `src/ai/strategies/waterOpening.sim.test.ts` (96×96 Beltenger, Nehéz–Nehéz,
+  3., 7. és 19. mag: mindkét játékos kikötője legkésőbb 6 percnél).
+- **Entitás-keret (Claude döntése):** a 6 játékos Szigetvilágon a csúcs 566
+  (az 1.0 előkészítés mérése), egy 30 perces 6 játékosos Szigetvilág-szimulációban
+  607. A szimuláció CPU-ideje 16 ms-os lépésenként (Node, rajzolás nélkül) 300
+  entitásnál 1,3–1,5 ms, 500 fölött 2,3–4,1 ms, 600 körül 3,0–3,4 ms: a képkocka
+  negyede. A rajzolást a nézet szerinti szűrés (viewport culling) a látható
+  részre korlátozza. A népesség-korlát marad 200 játékosonként (a játékmenet
+  nem változik); az entitás-keret 96×96-ig 500 marad, a 128×128-as, 5–6
+  játékosos térképen **650** (10.). A 60 FPS-es követelményt továbbra is a
+  96×96-os, 4 játékosos eset méri.
+- **Playtest-lista:** a tulajdonos listája az M15 írásakor még nem érkezett meg.
+  Claude döntése: az M15 csak az ismert hibákat javítja; a lista tételei az
+  1.0.x javító kiadásokba kerülnek.
+- **Az 1.0.0 kiadási feltételei** (Claude döntése, a tulajdonos felülírhatja):
+  1. Minden keret (10.) teljesül, a `scripts/perf/` szkriptjeivel mérve:
+     textúra-memória (szárazföldön ≤ 256 MB, tengeres térképen ≤ 400 MB),
+     entitás-keret, JS-bundle < 2 MB gzip.
+  2. 60 FPS: a képkocka-CPU p95-e ≤ 16,7 ms valódi Chrome-ablakban (96×96,
+     4 játékos, legalább 10 játékperc után), a tulajdonos gépén mérve.
+  3. A teljes tesztcsomag zöld a CI-n; `npm run smoke:input` 5/5 és
+     `scripts/perf/contextlost.mjs` hibátlan.
+  4. Minden régi mentés (1. sémától) betölthető (`allVersions.test.ts`).
+  5. Egyensúly: a 0.9.1-es szárazföldi körmérkőzés sávjai érvényesek (Nehéz
+     40–60 %, Mesteri 35–65 %, egy meccs tűréssel); a vízi körmérkőzésen
+     (`BALANCE=water`) egy nép sem esik 25 % alá vagy 75 % fölé (a kevés mag
+     zaja miatt tágabb sáv).
+  6. Legalább egy 30 perces emberi játék Chrome-ban és egy rövid Safariban,
+     blokkoló hiba nélkül (a tulajdonos).
+  7. Dokumentáció: README, CHANGELOG (angolul és magyarul) és a CLAUDE.md
+     állapota naprakész; ismert, nyitott összeomlás vagy blokkoló hiba nincs.
+- Nem része: új funkció, a mentési séma változása (`schemaVersion` 9 marad).
+- Keret (10.): az 1.0 előkészítés keretei, az entitás-keret a fenti szerint.
+- **Állapot (2026-11-17):** kész. Vízi körmérkőzés a javítás után
+  (`BALANCE=water`, Nehéz, 96×96 Beltenger, magok 3 és 7, népenként 28 meccs):
+  magyar 16, angol 18,5 (66 %), német 13,5, francia 13, spanyol 13, olasz 9,5
+  (34 %), orosz 15, finn 13,5 — mind a 25–75 %-os sávon belül (a 0.9.2-ben
+  olasz 2, orosz 19). A kikötők ideje (francia–német, 12 perc): a javítás előtt a
+  3. magon egyik játékosnak sem volt kikötője, a 7. és a 19. magon csak egynek;
+  utána mindegyik 5,1 percen belül kész (a 11. magon a második játékos egyik
+  változatban sem talál kikötőhelyet).
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
@@ -1471,7 +1525,8 @@ kiadásról a tulajdonos dönt). A 0.9.2 utáni terv 1.0-s pontja: teljesítmén
 Browser RTS nehéz. Tartsuk be:
 
 - **Max entitás szám** egyszerre: 500 (tesztelve: ~200 már kényelmes,
-  300 felett érdemes profilozni)
+  300 felett érdemes profilozni); a 128×128-as, 5–6 játékosos térképen 650
+  (M15: 600 körül a szimuláció 16 ms-os lépésenként 3–3,4 ms)
 - **Textúra-memória** (csak textúrák, WebGL framebufferek nélkül, 1280×720-as
   nézet, `scripts/perf/texmem.mjs`): szárazföldi térképen ≤ 256 MB, tengeres
   térképen (ahol hajó építhető) ≤ 400 MB (tulajdonosi döntés, 2026-11-13).
