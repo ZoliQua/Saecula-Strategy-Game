@@ -98,6 +98,16 @@ export const hu = {
     summary: (players: number, tiles: number) => `${players} játékos · ${tiles}×${tiles} mező`,
     victory: 'Győzelem',
     victories: { conquest: 'Hódítás', conquest_wonder: 'Hódítás vagy Csoda', conquest_time: 'Hódítás vagy idő', all: 'Mind' },
+    allies: 'Szövetségesek',
+    /** Under the allies row: who is on whose side (M16). */
+    alliesHint: (allies: number, enemies: number) =>
+      allies === 0 ? 'Minden gépi ellenfél ellened játszik' : `Csapatod: te és ${allies} gépi szövetséges · ellenfél: ${enemies}`,
+    treaty: 'Fegyverszünet',
+    treatyLabel: (minutes: number) => (minutes === 0 ? 'Nincs' : `${minutes} perc`),
+    startResources: 'Kezdő nyersanyag',
+    startResourceNames: { normal: 'Normál', high: 'Magas', deathmatch: 'Halálmeccs' },
+    speed: 'Sebesség',
+    speedLabel: (speed: number) => `${String(speed).replace('.', ',')}×`,
     mapFailed: 'Ezzel a térkép-maggal nem sikerült játszható térképet készíteni. Válassz másik magot vagy térképtípust.',
   },
   game: {
