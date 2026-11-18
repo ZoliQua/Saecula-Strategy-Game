@@ -3,7 +3,7 @@ import { buildingHpMultiplier } from '../game/modifiers';
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
 import { CAMERA_BOUNDS_PADDING } from '../config/constants';
-import { hasWonderVictory, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
+import { hasWonderVictory, startResourcesFor, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
 import { timeRuleFor } from '../game/timeVictory';
 import { decidedWinner, gameOverRows } from '../game/gameOverStats';
 import type { PlayerManager } from '../game/PlayerManager';
@@ -103,6 +103,8 @@ export class GameScene extends Phaser.Scene {
     const { start, art } = prepared.match;
     ({ setup: this.setup, matchId: this.matchId } = prepared.match);
     this.players = prepared.match.players;
+    // The human's stock lives in the UI store during play: a new match starts it from the setup's preset (a save restores it).
+    if (start.kind === 'new') uiStore.getState().setResources(startResourcesFor(this.setup));
     uiStore.getState().setCiv(this.players.human()?.civ ?? DEFAULT_CIV);
     // Only once the match will run (the menu keeps player 1's colour): each civ's bases in its base owner's colour.
     const matchArt = new MatchArt(this, this.players.all(), () => this.runner.evictUnusedArt());

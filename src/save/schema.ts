@@ -7,6 +7,10 @@ import {
   MAP_SIZE_IDS,
   MAX_AI,
   MIN_AI,
+  MODE_DEFAULTS,
+  SPEED_CHOICES,
+  START_RESOURCE_IDS,
+  TREATY_MINUTES,
   VICTORY_MODES,
   type GameSetupConfig,
 } from '../game/GameSetupConfig';
@@ -22,6 +26,7 @@ import {
   footprint,
   int,
   num,
+  numberOf,
   projectileKind,
   resourceType,
   techId,
@@ -43,9 +48,10 @@ import {
  * v7 (M13): a campaign mission (setup.mission) and its objective state (campaign).
  * v8 (0.8.1): a Medium-family AI's given-up monk targets (strategy.monkAvoid).
  * v9 (M14): ships and the dock, fish-school terrain, transport cargo and orders.
+ * v10 (M16): the setup's mode fields (allies, treatyMin, startResources, speed).
  */
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -146,8 +152,24 @@ export const GameSetupConfigSchema = z
     seed: int,
     victory: enumOf(VICTORY_MODES),
     mission: enumOf(MISSION_IDS).optional(),
+    allies: int.min(0).max(MAX_AI - 1),
+    treatyMin: numberOf(TREATY_MINUTES),
+    startResources: enumOf(START_RESOURCE_IDS),
+    speed: numberOf(SPEED_CHOICES),
   })
   .strict();
+
+/**
+ * A setup stored before M16 (a match-log record): the mode fields may be
+ * missing and read as today's defaults. Saves never use this: they get the
+ * fields from the v9 → v10 migration.
+ */
+export const StoredSetupSchema = GameSetupConfigSchema.extend({
+  allies: GameSetupConfigSchema.shape.allies.default(MODE_DEFAULTS.allies),
+  treatyMin: GameSetupConfigSchema.shape.treatyMin.default(MODE_DEFAULTS.treatyMin),
+  startResources: GameSetupConfigSchema.shape.startResources.default(MODE_DEFAULTS.startResources),
+  speed: GameSetupConfigSchema.shape.speed.default(MODE_DEFAULTS.speed),
+});
 
 export type GameSetupConfigSchemaCheck = Assert<Exact<z.infer<typeof GameSetupConfigSchema>, GameSetupConfig>>;
 

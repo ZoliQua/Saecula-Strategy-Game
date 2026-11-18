@@ -1,4 +1,5 @@
-import type { CivId } from '../types';
+import type { CivId, Resources } from '../types';
+import { START_RESOURCES } from '../config/balance';
 import { DEFAULT_CIV } from '../config/civs';
 import type { Player } from './Player';
 import { createPlayer } from './Player';
@@ -42,11 +43,13 @@ export class PlayerManager {
 
 /**
  * Human (id 1) plus one AI per entry of `aiCivs` (ids 2..), each with its
- * own colour and the civ given for it (GameSetupConfig matchCivs).
+ * own colour and the civ given for it (GameSetupConfig matchCivs). Every
+ * player starts with its own copy of `resources` (the setup's preset,
+ * startResourcesFor; default the normal one).
  */
-export function createPlayers(humanCiv: CivId, aiCivs: readonly CivId[]): PlayerManager {
-  const players = [createPlayer({ id: 1, isHuman: true, civ: humanCiv })];
-  aiCivs.forEach((civ, i) => players.push(createPlayer({ id: i + 2, isHuman: false, civ })));
+export function createPlayers(humanCiv: CivId, aiCivs: readonly CivId[], resources: Readonly<Resources> = START_RESOURCES.normal): PlayerManager {
+  const players = [createPlayer({ id: 1, isHuman: true, civ: humanCiv, resources: { ...resources } })];
+  aiCivs.forEach((civ, i) => players.push(createPlayer({ id: i + 2, isHuman: false, civ, resources: { ...resources } })));
   return new PlayerManager(players);
 }
 

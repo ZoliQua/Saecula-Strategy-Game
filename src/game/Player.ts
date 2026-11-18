@@ -1,6 +1,7 @@
 import type { AgeId, CivId, Resources, TechId } from '../types';
 import { DEFAULT_CIV } from '../config/civs';
 import type { PersonalityId } from '../config/aiPersonality';
+import { START_RESOURCES } from '../config/balance';
 
 export interface Player {
   id: number;
@@ -35,7 +36,7 @@ export function createPlayer(partial: Partial<Player> & { id: number }): Player 
     isHuman: false,
     civ: DEFAULT_CIV,
     color: PLAYER_COLORS[(partial.id - 1) % PLAYER_COLORS.length] ?? 0xffffff,
-    resources: { food: 200, wood: 200, gold: 100 },
+    resources: { ...START_RESOURCES.normal },
     age: 1,
     researched: new Set<TechId>(),
     defeated: false,

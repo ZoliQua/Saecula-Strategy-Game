@@ -99,6 +99,17 @@ describe('MatchLog', () => {
     expect(records).toEqual([{ ...old, matchId: old.createdAt }]);
   });
 
+  it('a record written before M16 (setup without the mode fields) reads with the default modes', async () => {
+    const store = memoryStore();
+    const old = record(5);
+    const { allies: _a, treatyMin: _t, startResources: _s, speed: _sp, ...oldSetup } = old.setup;
+    store.data.set(matchKey(old.matchId), JSON.stringify({ ...old, setup: oldSetup }));
+    const { records, corrupt } = await new MatchLog(store).readAll();
+    expect(corrupt).toBe(0);
+    expect(records).toEqual([old]);
+    expect(records[0]?.setup).toMatchObject({ allies: 0, treatyMin: 0, startResources: 'normal', speed: 1 });
+  });
+
   it('keeps at most the cap and drops the oldest by createdAt (not by key), oldest first on read', async () => {
     const store = memoryStore();
     const log = new MatchLog(store, 3);

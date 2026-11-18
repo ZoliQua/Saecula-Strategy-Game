@@ -35,7 +35,7 @@ describe('v3 → v4 migration', () => {
 
   it('every victory mode round-trips through a v4 save', () => {
     for (const victory of VICTORY_MODES) {
-      const s = { ...v3Save, schemaVersion: SCHEMA_VERSION, setup: { ...v3Save.setup, victory } };
+      const s = { ...v3Save, schemaVersion: 4, setup: { ...v3Save.setup, victory } };
       const parsed = parseSave(JSON.stringify(s));
       expect(parsed.ok && parsed.save.setup.victory).toBe(victory);
     }

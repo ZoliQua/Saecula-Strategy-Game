@@ -26,14 +26,19 @@ import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../
 import { resetUiStore } from '../../ui/store';
 import type { PersonalityId } from '../../config/aiPersonality';
 import {
+  clampAllies,
   defaultSetupConfig,
   hasTimeVictory,
   hasWonderVictory,
   MAP_SIZE_IDS,
   MAP_SIZES,
   matchCivs,
+  startResourcesFor,
   type Difficulty,
   type GameSetupConfig,
+  type GameSpeed,
+  type StartResourcesId,
+  type TreatyMinutes,
 } from '../../game/GameSetupConfig';
 import { restoreMatch } from '../../save/deserializer';
 import type { SaveData } from '../../save/schema';
@@ -74,6 +79,14 @@ export interface HeadlessMatchOptions {
   readonly timeVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
+  /** AIs on the human's team (M16 setup `allies`, clamped to 0..aiCount - 1; default 0). Stored in the setup only. */
+  readonly allies?: number;
+  /** Treaty length in game minutes (M16; default 0). Stored in the setup only. */
+  readonly treatyMin?: TreatyMinutes;
+  /** Starting-resource preset for every player (M16; default 'normal'). */
+  readonly startResources?: StartResourcesId;
+  /** Game-speed multiplier (M16; default 1). Stored in the setup only: `run` steps are game time. */
+  readonly speed?: GameSpeed;
   /** The match id its saves carry (default `headless-<seed>`, so equal runs save equal). */
   readonly matchId?: string;
 }
@@ -112,6 +125,10 @@ function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
     mapSize,
     difficulty: options.difficulty?.(2) ?? 'medium',
     victory: victoryOf(options.wonderVictory === true, options.timeVictory === true),
+    allies: clampAllies(options.allies ?? 0, options.aiCount),
+    treatyMin: options.treatyMin ?? 0,
+    startResources: options.startResources ?? 'normal',
+    speed: options.speed ?? 1,
   };
 }
 
@@ -127,8 +144,8 @@ function victoryOf(wonder: boolean, time: boolean): GameSetupConfig['victory'] {
  * against each other. Used by AI simulation tests.
  */
 export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatch {
-  resetUiStore();
   const setup = setupOf(options);
+  resetUiStore(undefined, startResourcesFor(setup));
   const generated = generateMap({
     template: setup.template,
     width: options.size,
@@ -139,7 +156,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const map = generated.map;
   const world = createEcsWorld();
   const civs = options.civs ?? matchCivs(options.mission ? setup : { ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
-  const players = createPlayers(civs.human, civs.ais);
+  const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup));
   if (options.mission) applyMissionStart(players, options.mission);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);

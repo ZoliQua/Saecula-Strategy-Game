@@ -17,18 +17,17 @@ describe('v8 → v9 migration', () => {
   it('returns the data unchanged (ships, dock, fish and cargo are new optional data)', () => {
     const data = { schemaVersion: 8, setup: { victory: 'conquest' } };
     expect(v8ToV9(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: 9 } });
-    expect(SCHEMA_VERSION).toBe(9);
+    expect(migrate(data, 9)).toEqual({ ok: true, data: { ...data, schemaVersion: 9 } });
   });
 
   it('the v8 fixture migrates, parses and plays on', () => {
     expect(v8Save.schemaVersion).toBe(8);
     const parsed = parseSave(JSON.stringify(v8Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save.schemaVersion).toBe(9);
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
     const match = resumeHeadlessMatch(parsed.save);
     match.run(2_000, STEP_MS);
-    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(9);
+    expect(match.snapshot(FIXED_DATE).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('a loaded transport, its order and a fish school survive JSON and a restore', () => {

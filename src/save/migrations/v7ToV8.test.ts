@@ -13,7 +13,7 @@ describe('v7 → v8 migration', () => {
   it('returns the data unchanged (optional monkAvoid added to AI states)', () => {
     const data = { schemaVersion: 7, setup: { victory: 'conquest' } };
     expect(v7ToV8(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: SCHEMA_VERSION } });
+    expect(migrate(data, 8)).toEqual({ ok: true, data: { ...data, schemaVersion: 8 } });
   });
 
   it('the v7 fixture migrates, parses and plays on', () => {

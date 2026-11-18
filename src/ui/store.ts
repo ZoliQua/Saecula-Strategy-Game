@@ -1,4 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import { START_RESOURCES } from '../config/balance';
 import { DEFAULT_CIV } from '../config/civs';
 import type { WonderClockInfo } from '../game/wonderClocks';
 import type { VillagerActivity } from '../stats/villagerActivity';
@@ -167,7 +168,7 @@ export interface UiActions {
 export type UiStore = UiState & UiActions;
 
 const INITIAL: UiState = {
-  resources: { food: 200, wood: 200, gold: 100 },
+  resources: { ...START_RESOURCES.normal },
   population: { current: 3, cap: 10 },
   currentAge: 1,
   civ: DEFAULT_CIV,
@@ -220,9 +221,13 @@ export function createUiStore(): StoreApi<UiStore> {
   }));
 }
 
-export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
+/**
+ * Back to a fresh match's UI state; `resources` is the human's starting
+ * stock (a new skirmish passes its setup's preset, startResourcesFor).
+ */
+export function resetUiStore(store: StoreApi<UiStore> = uiStore, resources: Readonly<Resources> = INITIAL.resources): void {
   store.setState({
-    resources: { ...INITIAL.resources },
+    resources: { ...resources },
     population: { ...INITIAL.population },
     currentAge: INITIAL.currentAge,
     civ: INITIAL.civ,

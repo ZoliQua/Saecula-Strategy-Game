@@ -337,6 +337,20 @@ export const TIME_VICTORY = {
   holdLeadMs: 300_000,
 } as const;
 
+/** Starting-resource presets (M16 setup "Kezdő nyersanyag"); every player starts with the chosen one. */
+export type StartResourcesId = 'normal' | 'high' | 'deathmatch';
+export const START_RESOURCES: Readonly<Record<StartResourcesId, Readonly<Resources>>> = {
+  normal: { food: 200, wood: 200, gold: 100 },
+  high: { food: 2000, wood: 2000, gold: 1500 },
+  deathmatch: { food: 20000, wood: 20000, gold: 20000 },
+};
+
+/** Treaty lengths (M16 setup "Fegyverszünet"), in game minutes; 0 = no treaty. */
+export const TREATY = { minutes: [0, 10, 20] as const };
+
+/** Game-speed choices (M16 setup "Sebesség"): game time runs this many times faster than real time. */
+export const GAME_SPEEDS = [1, 1.5, 2] as const;
+
 /** Tiles per second used by the game. */
 export function gameSpeed(tableSpeed: number): number {
   return tableSpeed * SPEED_SCALE;

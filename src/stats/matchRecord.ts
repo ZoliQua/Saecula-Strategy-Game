@@ -8,7 +8,7 @@ import { DIFFICULTIES, MAP_SIZE_IDS, mapTiles, type Difficulty, type GameSetupCo
 import type { Player } from '../game/Player';
 import { VICTORY_CAUSES, type VictoryCause } from '../game/VictoryChecker';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
-import { GameSetupConfigSchema, PlayerMatchStatsSchema, TimelineSampleSchema } from '../save/schema';
+import { PlayerMatchStatsSchema, StoredSetupSchema, TimelineSampleSchema } from '../save/schema';
 import { ageId, civId, enumOf, int, num, type Assert, type Exact, type Loose } from '../save/schemaKit';
 import type { AgeId, CivId } from '../types';
 import type { PlayerMatchStats, TimelineSample } from './MatchStats';
@@ -60,7 +60,7 @@ export const MatchRecordSchema = z
     v: z.literal(1),
     matchId: z.string().min(1).max(64),
     createdAt: z.string().datetime(),
-    setup: GameSetupConfigSchema,
+    setup: StoredSetupSchema,
     outcome: enumOf<MatchOutcome>(['victory', 'defeat', 'abandoned']),
     cause: z.union([enumOf<VictoryCause>(VICTORY_CAUSES), z.null()]),
     durationMs: num.nonnegative(),
