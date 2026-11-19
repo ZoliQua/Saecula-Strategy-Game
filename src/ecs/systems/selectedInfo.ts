@@ -11,6 +11,19 @@ import type { EcsWorld } from '../world';
 
 export type SelectableWithPos = With<Entity, 'position' | 'selectable'>;
 
+const SELECT_OWN = 0xffd27a;
+const SELECT_ENEMY = 0xff6b5b;
+/** An ally's unit or building (M16): a cool blue, apart from own gold and enemy red. */
+const SELECT_ALLY = 0x7ac4ff;
+const SELECT_NEUTRAL = 0xf2efe9;
+
+/** The selection ring's colour: own gold, ally blue (M16), anyone else's (Gaia included) red, ownerless neutral. */
+export function selectionRingColor(ownerId: number | undefined, isAlly: (playerId: number) => boolean): number {
+  if (ownerId === undefined) return SELECT_NEUTRAL;
+  if (ownerId === 1) return SELECT_OWN;
+  return isAlly(ownerId) ? SELECT_ALLY : SELECT_ENEMY;
+}
+
 /**
  * Cheap stable key covering every field the HUD actually renders, so
  * we can detect when a push to the store is worth firing.
@@ -19,7 +32,7 @@ export function infoKey(info: SelectedEntityInfo | null): string {
   if (!info) return 'null';
   if (info.kind === 'unit') {
     const c = info.carrying ? `${info.carrying.type}:${info.carrying.amount}` : '-';
-    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}`;
+    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}${info.ally ? ':A' : ''}`;
   }
   if (info.kind === 'building') {
     const q = (info.queue ?? [])
@@ -29,13 +42,17 @@ export function infoKey(info: SelectedEntityInfo | null): string {
     const cp = info.constructionProgress === undefined ? '-' : Math.round(info.constructionProgress * 100);
     const rs = info.research ? `${info.research.techId}@${Math.round(info.research.progress * 100)}` : '-';
     const last = info.lastTownCenter ? 'L' : '-';
-    return `b:${info.id}:${info.ownerId}:${info.civ}:${info.textureKey ?? '-'}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}:${last}`;
+    return `b:${info.id}:${info.ownerId}:${info.civ}:${info.textureKey ?? '-'}:${info.hp.current}/${info.hp.max}:${cp}:${tr}:${q}:${rs}:${last}${info.ally ? ':A' : ''}`;
   }
   return `r:${info.id}:${info.amount}/${info.maxAmount}`;
 }
 
-/** The store's view of a selected entity; units and buildings carry their owner's civ. */
-export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: number) => CivId): SelectedEntityInfo | null {
+/** The store's view of a selected entity; units and buildings carry their owner's civ, and `ally` when the human's ally owns them (M16). */
+export function toSelectedInfo(
+  entity: SelectableWithPos,
+  civOf: (playerId: number) => CivId,
+  isAlly: (playerId: number) => boolean = () => false,
+): SelectedEntityInfo | null {
   if (entity.id === undefined) return null;
   const r = (entity as Entity).resourceNode;
   if (r && !entity.unit && !entity.building) {
@@ -49,6 +66,7 @@ export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: numb
     };
   }
   if (!entity.health) return null;
+  const ally = isAlly(entity.owner?.playerId ?? 0) ? { ally: true as const } : {};
   if (entity.unit) {
     return {
       kind: 'unit',
@@ -67,6 +85,7 @@ export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: numb
           }
         : {}),
       ...(entity.unit.unitType === 'transport' ? { cargo: entity.cargo?.units.length ?? 0 } : {}),
+      ...ally,
     };
   }
   if (entity.building) {
@@ -78,6 +97,7 @@ export function toSelectedInfo(entity: SelectableWithPos, civOf: (playerId: numb
       civ: civOf(entity.owner?.playerId ?? 0),
       hp: { current: entity.health.current, max: entity.health.max },
       tile: { tx: entity.position.tx, ty: entity.position.ty },
+      ...ally,
     };
     const textureKey = (entity as Entity).sprite?.texture.key;
     if (textureKey) info.textureKey = textureKey;

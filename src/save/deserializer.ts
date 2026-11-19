@@ -79,6 +79,8 @@ export function restoreMatch(save: SaveData): RestoredMatch {
   const aiStates = new Map<number, AIPlayerState>();
   for (const [id, state] of Object.entries(save.ai)) aiStates.set(Number(id), structuredClone(state));
   const players = new PlayerManager(save.players.map(restoredPlayer));
+  // Teams are not saved: they follow the setup (M16).
+  players.assignTeams(save.setup.allies);
   const stats = new MatchStats(world, players, save.gameTimeMs);
   stats.restore(save.stats);
   return {

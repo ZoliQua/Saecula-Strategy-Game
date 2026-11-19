@@ -6,7 +6,7 @@ import { TERRAIN } from '../../map/TerrainTypes';
 import { createBuilding } from '../archetypes/building';
 import { createUnit } from '../archetypes/createUnit';
 import { createEcsWorld } from '../world';
-import { infoKey, isLastTownCenter, toSelectedInfo } from './selectedInfo';
+import { infoKey, isLastTownCenter, selectionRingColor, toSelectedInfo } from './selectedInfo';
 
 const civOf = (playerId: number): CivId => (playerId === 2 ? 'english' : 'hungarian');
 
@@ -131,5 +131,34 @@ describe('toSelectedInfo: transports (M14)', () => {
     expect(infoKey(one)).not.toBe(infoKey(empty));
     const archer = toSelectedInfo(createUnit(world, { type: 'archer', tile: { tx: 5, ty: 5 }, playerId: 1 }) as Parameters<typeof toSelectedInfo>[0], civ);
     expect(archer?.kind === 'unit' && archer.cargo).toBeUndefined();
+  });
+});
+
+describe('allies in the selection (M16)', () => {
+  const isAlly = (id: number) => id === 2;
+
+  it("marks an ally's unit and building, and nobody else's", () => {
+    const world = createEcsWorld();
+    const map = new MapData(16, 16, TERRAIN.grass);
+    const allyUnit = createUnit(world, { type: 'archer', tile: { tx: 1, ty: 1 }, playerId: 2 });
+    const enemyUnit = createUnit(world, { type: 'archer', tile: { tx: 2, ty: 1 }, playerId: 3 });
+    const allyHouse = createBuilding(world, { type: 'house', origin: { tx: 5, ty: 5 }, playerId: 2, mapData: map });
+    const info = (e: Entity) => toSelectedInfo(e as Parameters<typeof toSelectedInfo>[0], civOf, isAlly);
+    expect(info(allyUnit)).toMatchObject({ kind: 'unit', ally: true });
+    expect(info(allyHouse)).toMatchObject({ kind: 'building', ally: true });
+    expect(info(enemyUnit)).not.toHaveProperty('ally');
+    // No ally source: unchanged (no flag).
+    expect(toSelectedInfo(allyUnit as Parameters<typeof toSelectedInfo>[0], civOf)).not.toHaveProperty('ally');
+    expect(infoKey(info(allyUnit))).not.toBe(infoKey(toSelectedInfo(allyUnit as Parameters<typeof toSelectedInfo>[0], civOf)));
+  });
+
+  it('the ring is gold for own, blue for an ally, red for an enemy or Gaia, neutral without owner', () => {
+    const own = selectionRingColor(1, isAlly);
+    const ally = selectionRingColor(2, isAlly);
+    const enemy = selectionRingColor(3, isAlly);
+    expect(new Set([own, ally, enemy]).size).toBe(3);
+    expect(selectionRingColor(0, isAlly)).toBe(enemy);
+    expect(selectionRingColor(2, () => false)).toBe(enemy);
+    expect(selectionRingColor(undefined, isAlly)).not.toBe(enemy);
   });
 });

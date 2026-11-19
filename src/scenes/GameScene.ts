@@ -14,6 +14,7 @@ import { VictoryChecker } from '../game/VictoryChecker';
 import { cancelQueuedUnit, queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
+import { isFriendly } from '../game/diplomacy';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
 import { WONDER_HOLD_MS } from '../config/balance';
 import { DAY_START_PHASE } from '../config/visual';
@@ -260,6 +261,7 @@ export class GameScene extends Phaser.Scene {
       selection: this.runner.selection,
       fog: this.runner.fogData,
       humanId: human?.id ?? 1,
+      teams: this.players,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
       buildingHp: () => {
@@ -359,6 +361,7 @@ export class GameScene extends Phaser.Scene {
           const { sx, sy } = tileToScreen({ tx, ty });
           this.cameras.main.centerOn(sx, sy);
         },
+        (ownerId) => isFriendly(this.players, ownerId, 1),
       );
     });
   }

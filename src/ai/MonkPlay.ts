@@ -128,7 +128,7 @@ export class MonkPlay {
     let best: Entity | null = null;
     let bestDist = MONK.convertRange + AI_COMMON.monkConvertReach + 1;
     for (const e of view.visibleEnemyUnits) {
-      if (!canConvert(e, ctx.player.id) || this.avoided(ctx, monk, e)) continue;
+      if (!canConvert(e, ctx.player.id, ctx.teams) || this.avoided(ctx, monk, e)) continue;
       const d = chebyshev(e.position, monk.position!);
       if (d < bestDist) {
         best = e;

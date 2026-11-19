@@ -1,5 +1,6 @@
 import { AI_COMMON } from '../config/aiBalance';
 import { FogOfWarSystem } from '../ecs/systems/FogOfWarSystem';
+import { isFriendly, NO_TEAMS, type TeamLookup } from '../game/diplomacy';
 import type { EcsWorld } from '../ecs/world';
 import type { Player } from '../game/Player';
 import type { TimeLimitView } from '../game/timeVictory';
@@ -31,8 +32,10 @@ export interface AIContext {
   readonly isDefeated?: (playerId: number) => boolean;
   /** Absolute game time in ms. */
   readonly timeMs: number;
-  /** This AI's own fog of war: the only window its perception looks through (§10.4). */
+  /** This AI's own fog of war (lit by its allies too, M16): the only window its perception looks through (§10.4). */
   readonly fog: FogOfWarData;
+  /** Teams (M16): allies share sight and are never enemies; absent = every player its own team. */
+  readonly teams?: TeamLookup;
 }
 
 export interface AIStrategy {
@@ -120,7 +123,10 @@ export class AIPlayer {
     this.elapsedMs += deltaMs;
     const fog = (this.fogData ??= new FogOfWarData(ctx.mapData.width, ctx.mapData.height));
     if (!this.fogSystem) {
-      this.fogSystem = new FogOfWarSystem(ctx.world, fog, this.player.id, AI_COMMON.fogScanMs);
+      const me = this.player.id;
+      const teams = ctx.teams ?? NO_TEAMS;
+      // Shared vision (M16): allies' sight lights this AI's fog too.
+      this.fogSystem = new FogOfWarSystem(ctx.world, fog, me, AI_COMMON.fogScanMs, (owner) => isFriendly(teams, owner, me));
       if (this.pendingSinceScanMs !== null) this.fogSystem.sinceScanMs = this.pendingSinceScanMs;
       this.pendingSinceScanMs = null;
     }

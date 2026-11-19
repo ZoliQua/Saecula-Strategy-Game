@@ -156,7 +156,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const map = generated.map;
   const world = createEcsWorld();
   const civs = options.civs ?? matchCivs(options.mission ? setup : { ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
-  const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup));
+  const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup), setup.allies);
   if (options.mission) applyMissionStart(players, options.mission);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
@@ -251,9 +251,9 @@ function assemble(parts: MatchParts): HeadlessMatch {
     construction: new ConstructionSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
-    towers: new TowerCombatSystem(world, fogFor),
+    towers: new TowerCombatSystem(world, fogFor, players),
     combat: new CombatSystem(world, map, players, paths),
-    monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths),
+    monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths, players),
     projectiles: new ProjectileSystem(world, players),
     movement: new MovementSystem(world, players, map),
     transports: new TransportSystem(world, map),
@@ -282,7 +282,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.wonders.update(dt);
     timeLimit?.advance(dt);
     const timeVictory = timeLimit?.view();
-    const base = { world, mapData: map, wonderVictory, isDefeated, ...(timeVictory && { timeVictory }) };
+    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, ...(timeVictory && { timeVictory }) };
     for (const ai of ais) ai.update({ ...base, enemyPlayerId: enemyOf(ai.player.id) }, dt);
     humanAi?.update({ ...base, enemyPlayerId: humanEnemy() }, dt);
     systems.population.update();

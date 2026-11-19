@@ -35,6 +35,7 @@ import { TrainingSystem } from '../../ecs/systems/TrainingSystem';
 import { WonderSystem } from '../../ecs/systems/WonderSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { AGE_UP_FX } from '../../config/visual';
+import { areAllies, isFriendly } from '../../game/diplomacy';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -146,6 +147,7 @@ export class SystemRunner {
     this.keepWalls = keepWallKeys(civAges(players));
     this.selection = new SelectionSystem(scene, world);
     this.selection.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
+    this.selection.setAllySource((id) => areAllies(players, id, 1));
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
     this.movement = new MovementSystem(world, players, mapData);
     this.transports = new TransportSystem(world, mapData);
@@ -156,7 +158,7 @@ export class SystemRunner {
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
     this.combat = new CombatSystem(world, mapData, players, this.paths);
-    this.monks = new MonkSystem(world, mapData, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), this.paths);
+    this.monks = new MonkSystem(world, mapData, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), this.paths, players);
     this.projectiles = new ProjectileSystem(world, players);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
@@ -188,8 +190,9 @@ export class SystemRunner {
       },
       states: restore?.ais,
     });
-    this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null);
-    this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1);
+    this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null, players);
+    // Shared vision (M16): the human's allies light its fog too.
+    this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1, undefined, (owner) => isFriendly(players, owner, 1));
     this.render.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);
     this.ambientFx.setFogContext(this.fogData, 1);
@@ -274,7 +277,7 @@ export class SystemRunner {
     this.wonders.update(delta);
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
-    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, ...(timeVictory && { timeVictory }) };
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, ...(timeVictory && { timeVictory }) };
     for (const ai of this.aiPlayers) {
       ai.update(this.humanId === undefined ? base : { ...base, enemyPlayerId: this.humanId }, delta);
     }

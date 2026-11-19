@@ -4,6 +4,7 @@ import type { EcsWorld } from '../ecs/world';
 import type { CivId } from '../types';
 import { isNavalType } from '../config/balance';
 import { gameEvents } from './events';
+import { areEnemies, NO_TEAMS, type TeamLookup } from './diplomacy';
 
 /** A monk that may start a conversion now (not recharging): the order and the cursor share this rule. */
 export function readyToConvert(monk: Entity): boolean {
@@ -29,8 +30,11 @@ export function takeConvertGivenUp(monk: Entity): number | undefined {
   return id;
 }
 
-/** Whether a monk of `playerId` may convert `target` (M11): a living enemy unit that is not a monk or a ship (M14). */
-export function canConvert(target: Entity | undefined, playerId: number): target is Entity & Required<Pick<Entity, 'unit' | 'owner' | 'position'>> {
+/**
+ * Whether a monk of `playerId` may convert `target` (M11): a living enemy unit (M16: another
+ * team's, never an ally's or Gaia's) that is not a monk or a ship (M14).
+ */
+export function canConvert(target: Entity | undefined, playerId: number, teams: TeamLookup = NO_TEAMS): target is Entity & Required<Pick<Entity, 'unit' | 'owner' | 'position'>> {
   return (
     !!target &&
     !!target.unit &&
@@ -41,8 +45,7 @@ export function canConvert(target: Entity | undefined, playerId: number): target
     target.unit.unitType !== 'monk' &&
     // Ships (M14) cannot be converted.
     !isNavalType(target.unit.unitType) &&
-    target.owner.playerId !== playerId &&
-    target.owner.playerId !== 0
+    areEnemies(teams, target.owner.playerId, playerId)
   );
 }
 

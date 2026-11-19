@@ -8,6 +8,7 @@ import type { AIContext } from './AIPlayer';
 import { copyKnown, copyTile, type PerceptionState } from './strategyState';
 import { isNavalType } from '../config/balance';
 import { isFishNode } from '../ecs/workers';
+import { areEnemies, NO_TEAMS } from '../game/diplomacy';
 
 /** An enemy building the AI has seen; kept until it sees the spot again without it. */
 export interface KnownBuilding {
@@ -41,7 +42,7 @@ export interface WorldView {
   /** Own ships (M14): kept out of the land army and the villager economy. */
   readonly ships: readonly Entity[];
   readonly scouts: readonly Entity[];
-  /** Hostile (other non-Gaia players') units the AI can see right now. */
+  /** Hostile (enemy-team, non-Gaia players') units the AI can see right now. */
   readonly visibleEnemyUnits: readonly Entity[];
   /** Hostile buildings the AI can see right now. */
   readonly visibleEnemyBuildings: readonly Entity[];
@@ -109,8 +110,6 @@ export function isKnownInSight(fog: FogOfWarData, known: KnownBuilding): boolean
   return false;
 }
 
-const isHostile = (ownerId: number, me: number) => ownerId !== me && ownerId !== 0;
-
 /**
  * Fog-limited perception (§10.4): the AI only learns about foreign
  * entities through its own fog of war — no cheating at any difficulty.
@@ -143,6 +142,7 @@ export class Perception {
   update(ctx: AIContext): WorldView {
     const me = ctx.player.id;
     const fog = ctx.fog;
+    const teams = ctx.teams ?? NO_TEAMS;
     const byId = new Map<number, Entity>();
     const buildings: Entity[] = [];
     const villagers: Entity[] = [];
@@ -178,7 +178,8 @@ export class Perception {
         else if (e.unit && e.attacker) military.push(e);
         continue;
       }
-      if (!isHostile(e.owner.playerId, me) || !isEntityVisible(fog, placed)) continue;
+      // Enemies only (M16): an ally's units and buildings are neither targets nor threats.
+      if (!areEnemies(teams, e.owner.playerId, me) || !isEntityVisible(fog, placed)) continue;
       if (e.unit) {
         visibleEnemyUnits.push(e);
         if (baseUnitType(e.unit.unitType) === 'villager' && e.id !== undefined) {

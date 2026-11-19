@@ -8,6 +8,7 @@ import { createPlayer } from '../game/Player';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
 import { Perception } from './perception';
+import { createPlayers } from '../game/PlayerManager';
 
 function setup() {
   const map = new MapData(40, 40);
@@ -84,5 +85,22 @@ describe('Perception', () => {
     for (const e of [...world.entities]) if (e.unit) world.remove(e);
     const later = perception.update({ ...ctx, timeMs: 60_000 });
     expect(later.enemySightings.knight).toBeCloseTo(1.2, 5);
+  });
+});
+
+describe('Perception with teams (M16)', () => {
+  it('does not list allied units or buildings as enemies or threats', () => {
+    const { world, map, fog, ctx, perception } = setup();
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    createBuilding(world, { type: 'town_center', origin: { tx: 10, ty: 10 }, playerId: 2, mapData: map });
+    createUnit(world, { type: 'knight', tile: { tx: 13, ty: 13 }, playerId: 1 });
+    createBuilding(world, { type: 'house', origin: { tx: 15, ty: 10 }, playerId: 1, mapData: map });
+    const enemy = createUnit(world, { type: 'knight', tile: { tx: 14, ty: 13 }, playerId: 3 });
+    reveal(fog, 0, 0, 39, 39);
+    const view = perception.update({ ...ctx, player: players.get(2)!, teams: players });
+    expect(view.visibleEnemyUnits).toEqual([enemy]);
+    expect(view.threats).toEqual([enemy]);
+    expect(view.visibleEnemyBuildings).toEqual([]);
+    expect(view.knownEnemyBuildings).toEqual([]);
   });
 });

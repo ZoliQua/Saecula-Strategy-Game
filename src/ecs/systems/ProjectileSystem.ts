@@ -1,6 +1,7 @@
 import { PROJECTILE_HIT_RADIUS } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
+import { areEnemies, NO_TEAMS } from '../../game/diplomacy';
 import { boostArmor, bonusesFor } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { distanceToEntity } from '../../game/targetGeometry';
@@ -19,7 +20,7 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 /**
  * Advances projectiles along their flight and resolves the payload on
  * arrival. Single-target shots hit only if the target is still alive,
- * hostile and within PROJECTILE_HIT_RADIUS of the impact point (moving
+ * hostile (an enemy: not own, allied or Gaia) and within PROJECTILE_HIT_RADIUS of the impact point (moving
  * targets can be missed). Splash shots hit every hostile unit and
  * building within their radius. The projectile entity is removed on
  * impact either way.
@@ -67,7 +68,8 @@ export class ProjectileSystem {
   }
 
   private isHostile(v: Victim, shot: Shot): boolean {
-    return !v.dying && v.owner.playerId !== shot.ownerId && v.owner.playerId !== 0;
+    // Enemies only (M16): never the shooter's own, an ally's (splash included) or Gaia's.
+    return !v.dying && areEnemies(this.players ?? NO_TEAMS, v.owner.playerId, shot.ownerId);
   }
 
   private findVictim(id: number): Victim | undefined {

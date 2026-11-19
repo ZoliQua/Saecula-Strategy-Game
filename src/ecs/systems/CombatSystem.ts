@@ -5,6 +5,7 @@ import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPathToNearest } from '../../map/pathfinding';
 import { BREACH_SEARCH_RADIUS, NAVAL, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { findBreachTarget } from '../../game/breach';
+import { isFriendly, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
 import { boostArmor, boostAttack, bonusesFor } from '../../game/modifiers';
@@ -28,7 +29,7 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 
 /**
  * Resolves attackIntent each tick:
- *   - Target missing / same owner / dying → drop intent.
+ *   - Target missing / own or allied (M16) / dying → drop intent.
  *   - Out of range → walk toward it (updates movable.path).
  *   - In range → if cooldown ready, deal damage (melee) or fire a
  *     projectile (ranged); if not, idle.
@@ -60,6 +61,11 @@ export class CombatSystem {
   ) {
     this.world = world;
     this.mapData = mapData;
+  }
+
+  /** Teams (M16): the player manager, or none (everyone hostile) without one. */
+  private get teams(): TeamLookup {
+    return this.players ?? NO_TEAMS;
   }
 
   update(deltaMs: number): void {
@@ -97,8 +103,8 @@ export class CombatSystem {
       this.endTarget(a);
       return;
     }
-    // An own unit, or one this attacker cannot reach (a ship, for a melee unit, M14): no fight.
-    if (target.owner.playerId === a.owner.playerId || !canAttackTarget(a as Entity, target as Entity)) {
+    // An own or allied unit (M16; Gaia stays a target), or one this attacker cannot reach (a ship, for a melee unit, M14): no fight.
+    if (isFriendly(this.teams, target.owner.playerId, a.owner.playerId) || !canAttackTarget(a as Entity, target as Entity)) {
       this.world.removeComponent(a as Entity, 'attackIntent');
       return;
     }
@@ -176,6 +182,7 @@ export class CombatSystem {
       target,
       a.owner.playerId,
       Math.max(BREACH_SEARCH_RADIUS, Math.floor(a.attacker.range)),
+      this.teams,
     );
     if (decision?.kind !== 'attack' || decision.target.id === undefined) return false;
     a.attackIntent.resumeTargetId ??= a.attackIntent.targetId;

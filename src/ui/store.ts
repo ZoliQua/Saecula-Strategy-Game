@@ -30,6 +30,8 @@ export interface SelectedUnitInfo {
   carrying?: { type: 'food' | 'wood' | 'gold'; amount: number };
   /** A transport's cargo (M14): how many units are aboard. */
   cargo?: number;
+  /** Owned by the human's ally (M16). */
+  ally?: true;
 }
 
 export interface SelectedBuildingInfo {
@@ -51,6 +53,8 @@ export interface SelectedBuildingInfo {
   /** Technologies this building type researches. */
   researchable?: readonly TechId[];
   research?: { techId: TechId; progress: number };
+  /** Owned by the human's ally (M16). */
+  ally?: true;
 }
 
 export interface SelectedResourceInfo {

@@ -12,6 +12,7 @@ import type { TileCoord } from '../../iso/coordinates';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
 import { canAttackTarget, moveLayerOf } from '../../ecs/navLayer';
+import { isFriendly, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
@@ -34,12 +35,19 @@ export function orderActor(selected: readonly Entity[], humanId: number): Entity
 
 /**
  * The targeting rule of a command on `tile` (shared with the cursor): an
- * enemy unit or building the player can see (`canSee`, default all)
+ * enemy unit or building the player can see (`canSee`, default all; any
+ * other player's with health but `actor`'s allies (M16), so Gaia's too)
  * first, then one of `actor`'s own buildings under construction (not
  * dying), then a resource node; otherwise nothing.
  */
-export function resolveOrderTarget(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: CanSee = () => true): OrderTarget {
-  const enemy = findEnemyAt(world, tile, actor, canSee);
+export function resolveOrderTarget(
+  world: EcsWorld,
+  tile: TileCoord,
+  actor: Entity,
+  canSee: CanSee = () => true,
+  teams: TeamLookup = NO_TEAMS,
+): OrderTarget {
+  const enemy = findEnemyAt(world, tile, actor, canSee, teams);
   if (enemy) return { kind: 'enemy', entity: enemy };
   const site = findOwnSiteAt(world, tile, actor);
   if (site) return { kind: 'ownSite', entity: site };
@@ -56,6 +64,8 @@ export interface OrderIssuerOptions {
   readonly canSee?: CanSee;
   /** The map (M14): a loaded transport sent onto land unloads there. Absent: transports just sail. */
   readonly map?: MapData;
+  /** Teams (M16): an ally is no target (its units are just walked to). Absent: no teams. */
+  readonly teams?: TeamLookup;
 }
 
 /** Translates a command (right-click or the gesture) on a tile into move / attack / gather / help-build orders. */
@@ -63,6 +73,7 @@ export class OrderIssuer {
   private readonly humanId: number;
   private readonly canSee: CanSee;
   private readonly map: MapData | undefined;
+  private readonly teams: TeamLookup;
 
   constructor(
     private readonly world: EcsWorld,
@@ -73,6 +84,7 @@ export class OrderIssuer {
     this.humanId = options.humanId ?? HUMAN_PLAYER_ID;
     this.canSee = options.canSee ?? (() => true);
     this.map = options.map;
+    this.teams = options.teams ?? NO_TEAMS;
   }
 
   issueOrders(tile: TileCoord): void {
@@ -80,7 +92,7 @@ export class OrderIssuer {
     const actor = orderActor(selectedAll, this.humanId);
     // Only the human's units take orders (a selected building or enemy does not).
     if (!actor) return;
-    const target = resolveOrderTarget(this.world, tile, actor, this.canSee);
+    const target = resolveOrderTarget(this.world, tile, actor, this.canSee, this.teams);
     let ordered: 'unit_move' | 'unit_attack' | 'unit_convert' | null = null;
     const boarders: Entity[] = [];
     for (const entity of selectedAll) {
@@ -91,7 +103,7 @@ export class OrderIssuer {
       clearUnitOrders(this.world, entity);
       const targetId = target.entity?.id ?? 0;
       // A ready monk converts an enemy unit (M11); a recharging one, or one facing what it cannot convert, walks there.
-      if (target.kind === 'enemy' && readyToConvert(entity) && canConvert(target.entity ?? undefined, this.humanId)) {
+      if (target.kind === 'enemy' && readyToConvert(entity) && canConvert(target.entity ?? undefined, this.humanId, this.teams)) {
         this.world.addComponent(entity, 'convertIntent', { targetId, elapsedMs: 0 });
         ordered ??= 'unit_convert';
         continue;
@@ -148,11 +160,12 @@ function covers(e: Entity, tile: TileCoord): boolean {
   return e.position.tx === tile.tx && e.position.ty === tile.ty;
 }
 
-function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: CanSee): Entity | null {
+/** Anything with health of a player not friendly to `actor` (Gaia included; M16: never an ally) on the tile, if seen. */
+function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: CanSee, teams: TeamLookup): Entity | null {
   const actorPlayer = actor.owner?.playerId;
   if (actorPlayer === undefined) return null;
   for (const c of world.with('position', 'owner', 'health')) {
-    if (c.owner.playerId !== actorPlayer && covers(c, tile) && canSee(c)) return c;
+    if (!isFriendly(teams, c.owner.playerId, actorPlayer) && covers(c, tile) && canSee(c)) return c;
   }
   return null;
 }

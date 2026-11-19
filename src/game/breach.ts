@@ -1,5 +1,6 @@
 import type { Entity } from '../ecs/components';
 import type { TileCoord } from '../iso/coordinates';
+import { areEnemies, NO_TEAMS, type TeamLookup } from './diplomacy';
 
 /** Chebyshev distance from a tile to the nearest tile of an entity (footprint-aware). */
 export function tileDistanceToEntity(from: TileCoord, e: Entity & { position: TileCoord }): number {
@@ -18,7 +19,7 @@ export type BreachDecision =
 /**
  * When a unit cannot get within reach of its target (walled off), the
  * hostile building to knock down instead: a standing building (walls
- * included) of another player — never its own, never Gaia — within
+ * included) of an enemy player (M16: never its own, an ally's or Gaia's) within
  * `searchRadius` tiles of where the unit is stuck, preferring the one
  * closest to the real target (itself excluded). If such a building is
  * already collapsing, the unit should wait for the opening instead. Null
@@ -30,12 +31,13 @@ export function findBreachTarget(
   target: Entity & { position: TileCoord },
   attackerOwner: number,
   searchRadius: number,
+  teams: TeamLookup = NO_TEAMS,
 ): BreachDecision | null {
   let best: Entity | null = null;
   let bestScore = Infinity;
   for (const b of buildings) {
     if (b === target || !b.building || !b.position || !b.owner || !b.health) continue;
-    if (b.owner.playerId === attackerOwner || b.owner.playerId === 0) continue;
+    if (!areEnemies(teams, b.owner.playerId, attackerOwner)) continue;
     const near = tileDistanceToEntity(stuckAt, b as Entity & { position: TileCoord });
     if (near > searchRadius) continue;
     if (b.dying) return { kind: 'wait' };

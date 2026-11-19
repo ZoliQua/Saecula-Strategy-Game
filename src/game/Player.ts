@@ -18,6 +18,11 @@ export interface Player {
    * 20% faster); 1 for the human and the other difficulties.
    */
   gatherHandicap: number;
+  /**
+   * Team (M16): derived from the setup's `allies` (teamFor), never saved.
+   * Players on one team are allies; with no allies each player is its own team.
+   */
+  team: number;
   /** Seeded AI personality (Medium, Hard and Mesteri AIs only; absent for the human and Easy). */
   personality?: PersonalityId;
 }
@@ -41,6 +46,7 @@ export function createPlayer(partial: Partial<Player> & { id: number }): Player 
     researched: new Set<TechId>(),
     defeated: false,
     gatherHandicap: 1,
+    team: partial.id,
     ...partial,
   };
 }

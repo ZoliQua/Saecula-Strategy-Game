@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Entity } from '../ecs/components';
 import { findBreachTarget, tileDistanceToEntity } from './breach';
+import { createPlayers } from './PlayerManager';
 
 const wall = (tx: number, ty: number, playerId: number, extra: Partial<Entity> = {}): Entity => ({
   position: { tx, ty },
@@ -43,5 +44,15 @@ describe('findBreachTarget', () => {
   it('waits while a blocking building is collapsing', () => {
     const result = findBreachTarget([wall(6, 5, 2, { dying: { ttlMs: 500 } }), wall(6, 6, 2)], { tx: 5, ty: 5 }, target, 1, 2);
     expect(result).toEqual({ kind: 'wait' });
+  });
+});
+
+describe('findBreachTarget with teams (M16)', () => {
+  it("never knocks down an ally's building, only an enemy's", () => {
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    const allyWall = wall(7, 5, 2);
+    const enemyWall = wall(6, 5, 3);
+    expect(findBreachTarget([allyWall, enemyWall, target], { tx: 5, ty: 5 }, target, 1, 2, players)).toEqual({ kind: 'attack', target: enemyWall });
+    expect(findBreachTarget([allyWall, target], { tx: 5, ty: 5 }, target, 1, 2, players)).toBeNull();
   });
 });

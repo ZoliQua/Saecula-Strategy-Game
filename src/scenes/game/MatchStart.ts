@@ -57,7 +57,7 @@ export function prepareMatch(data: Partial<GameSetupConfig> | LoadRequest | unde
   const generated = tryGenerateGameMap(setup);
   // No valid map for this seed: back to the setup card, with the choices kept and a message.
   if (!generated) return { ok: false, back: { config: setup, notice: hu.setup.mapFailed } };
-  const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup));
+  const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup), setup.allies);
   if (setup.mission) applyMissionStart(players, setup.mission);
   const art = missionStartArt(players);
   return { ok: true, match: { matchId: newMatchId(), setup, players, start: { kind: 'new', generated }, ...(art ? { art } : {}) } };

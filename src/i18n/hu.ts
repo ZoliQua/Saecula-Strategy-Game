@@ -250,6 +250,8 @@ export const hu = {
     populationTip: 'Népesség · kattints: mit csinálnak a falusiak',
     underConstruction: 'Építés alatt',
     enemy: 'Ellenség',
+    /** An allied player's unit or building (M16). */
+    ally: 'Szövetséges',
     selectedMore: 'további kijelölve',
     population: 'Népesség',
     wallLineHint: (segments: number, wood: number) => `${segments} szakasz · ${wood} fa`,

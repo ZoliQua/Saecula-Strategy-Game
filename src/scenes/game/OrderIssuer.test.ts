@@ -12,6 +12,8 @@ import { cursorFor } from '../../ui/cursor';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { cursorContext } from './CursorWiring';
 import { fogCanSee, OrderIssuer, orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
+import { canConvert } from '../../game/convert';
+import { createPlayers } from '../../game/PlayerManager';
 
 const selectionOf = (selected: Entity[]) => ({ getAllSelected: () => selected }) as unknown as SelectionSystem;
 
@@ -246,5 +248,40 @@ describe('OrderIssuer: melee units and ships (M14)', () => {
     expect(sword.moveIntent).toBeDefined();
     expect(archer.attackIntent).toEqual({ targetId: ship.id });
     expect(played).toEqual(['unit_attack']);
+  });
+});
+
+describe('OrderIssuer: allies (M16)', () => {
+  it('an ally is no enemy target: the units walk there; an enemy and Gaia stay targets', () => {
+    const sim = createMiniSim(32);
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    const ally = createUnit(sim.world, { type: 'swordsman', tile: { tx: 12, ty: 10 }, playerId: 2 });
+    const enemy = createUnit(sim.world, { type: 'swordsman', tile: { tx: 14, ty: 10 }, playerId: 3 });
+    const deer = createUnit(sim.world, { type: 'scout', tile: { tx: 16, ty: 10 }, playerId: 0 });
+    const sword = createUnit(sim.world, { type: 'swordsman', tile: { tx: 10, ty: 12 }, playerId: 1 });
+    expect(resolveOrderTarget(sim.world, { tx: 12, ty: 10 }, sword, undefined, players).kind).toBe('none');
+    expect(resolveOrderTarget(sim.world, { tx: 14, ty: 10 }, sword, undefined, players)).toEqual({ kind: 'enemy', entity: enemy });
+    expect(resolveOrderTarget(sim.world, { tx: 16, ty: 10 }, sword, undefined, players)).toEqual({ kind: 'enemy', entity: deer });
+    // Without teams (the default) the same unit is an enemy, as before M16.
+    expect(resolveOrderTarget(sim.world, { tx: 12, ty: 10 }, sword).entity).toBe(ally);
+
+    const played: string[] = [];
+    const orders = new OrderIssuer(sim.world, selectionOf([sword]), { playSFX: (k) => void played.push(k) }, { map: sim.map, teams: players });
+    orders.issueOrders({ tx: 12, ty: 10 });
+    expect(sword.attackIntent).toBeUndefined();
+    expect(sword.moveIntent).toBeDefined();
+    expect(played).toEqual(['unit_move']);
+  });
+
+  it('canConvert refuses an ally, accepts an enemy and still refuses Gaia', () => {
+    const sim = createMiniSim(32);
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    const ally = createUnit(sim.world, { type: 'archer', tile: { tx: 12, ty: 10 }, playerId: 2 });
+    const enemy = createUnit(sim.world, { type: 'archer', tile: { tx: 14, ty: 10 }, playerId: 3 });
+    const deer = createUnit(sim.world, { type: 'scout', tile: { tx: 16, ty: 10 }, playerId: 0 });
+    expect(canConvert(ally, 1, players)).toBe(false);
+    expect(canConvert(enemy, 1, players)).toBe(true);
+    expect(canConvert(deer, 1, players)).toBe(false);
+    expect(canConvert(ally, 1)).toBe(true);
   });
 });

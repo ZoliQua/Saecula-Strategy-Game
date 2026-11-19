@@ -115,3 +115,20 @@ describe('MatchStats', () => {
     expect(snap.timeline.length).toBe(1);
   });
 });
+
+describe('MatchStats with teams (M16)', () => {
+  it('killing an ally adds no kill value (the loss still counts)', () => {
+    const world = createEcsWorld();
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    const stats = new MatchStats(world, players);
+    const detach = stats.attach();
+    const ally = createUnit(world, { type: 'swordsman', tile: { tx: 1, ty: 1 }, playerId: 2 }) as Damageable;
+    applyDamage(world, ally, 9999, 1);
+    const enemy = createUnit(world, { type: 'swordsman', tile: { tx: 2, ty: 2 }, playerId: 3 }) as Damageable;
+    applyDamage(world, enemy, 9999, 1);
+    detach();
+    // Swordsman 60 food + 20 gold = 80, credited for the enemy only.
+    expect(stats.of(1).killValue).toBe(80);
+    expect(stats.of(2).unitsLost).toBe(1);
+  });
+});
