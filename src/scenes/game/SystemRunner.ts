@@ -147,7 +147,8 @@ export class SystemRunner {
     this.keepWalls = keepWallKeys(civAges(players));
     this.selection = new SelectionSystem(scene, world);
     this.selection.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
-    this.selection.setAllySource((id) => areAllies(players, id, 1));
+    const viewer = this.humanId ?? 1;
+    this.selection.setAllySource((id) => areAllies(players, id, viewer));
     this.pathfinding = new PathfindingSystem(world, mapData, this.paths);
     this.movement = new MovementSystem(world, players, mapData);
     this.transports = new TransportSystem(world, mapData);
@@ -192,7 +193,7 @@ export class SystemRunner {
     });
     this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null, players);
     // Shared vision (M16): the human's allies light its fog too.
-    this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1, undefined, (owner) => isFriendly(players, owner, 1));
+    this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1, undefined, (owner) => isFriendly(players, owner, viewer));
     this.render.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);
     this.ambientFx.setFogContext(this.fogData, 1);

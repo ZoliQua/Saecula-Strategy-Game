@@ -4,6 +4,7 @@ import type { Entity } from '../../ecs/components';
 import { insideFootprint } from '../../ecs/footprint';
 import { clearUnitOrders } from '../../ecs/orders';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
+import { isWorkableBy } from '../../ecs/systems/gathering/gatherQueries';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import type { EcsWorld } from '../../ecs/world';
 import { HUMAN_PLAYER_ID } from '../../config/constants';
@@ -53,7 +54,7 @@ export function resolveOrderTarget(
   if (site) return { kind: 'ownSite', entity: site };
   const transport = findOwnTransportAt(world, tile, actor);
   if (transport) return { kind: 'ownTransport', entity: transport };
-  const node = findResourceNodeAt(world, tile);
+  const node = findResourceNodeAt(world, tile, actor);
   if (node) return { kind: 'resource', entity: node };
   return { kind: 'none', entity: null };
 }
@@ -188,8 +189,13 @@ function findOwnSiteAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity 
   return null;
 }
 
-function findResourceNodeAt(world: EcsWorld, tile: TileCoord): Entity | null {
+/** A resource node on the tile that `actor` may work: ownerless / Gaia, or its own (M16: never an ally's farm). */
+function findResourceNodeAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity | null {
+  const actorPlayer = actor.owner?.playerId;
   // Multi-tile building nodes (e.g. farms) match any footprint tile.
-  for (const n of world.with('position', 'resourceNode')) if (covers(n, tile)) return n;
+  for (const n of world.with('position', 'resourceNode')) {
+    if (!isWorkableBy(n, actorPlayer)) continue;
+    if (covers(n, tile)) return n;
+  }
   return null;
 }

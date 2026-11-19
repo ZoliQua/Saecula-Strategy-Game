@@ -285,3 +285,31 @@ describe('OrderIssuer: allies (M16)', () => {
     expect(canConvert(ally, 1)).toBe(true);
   });
 });
+
+describe("OrderIssuer: an ally's farm (M16)", () => {
+  it('a villager right-clicked on an allied farm moves there, gathers nothing; the cursor shows no basket', () => {
+    const sim = createMiniSim(32);
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    const farm = createBuilding(sim.world, { type: 'farm', origin: { tx: 12, ty: 10 }, playerId: 2, mapData: sim.map });
+    sim.world.addComponent(farm, 'resourceNode', { type: 'food', amount: 175, maxAmount: 175 });
+    const v = createVillager(sim.world, { tile: { tx: 6, ty: 6 } });
+    expect(resolveOrderTarget(sim.world, { tx: 12, ty: 10 }, v, undefined, players).kind).toBe('none');
+    const orders = new OrderIssuer(sim.world, selectionOf([v]), { playSFX: () => {} }, { map: sim.map, teams: players });
+    orders.issueOrders({ tx: 12, ty: 10 });
+    expect(v.gatherIntent).toBeUndefined();
+    expect(v.moveIntent).toBeDefined();
+    const ctx = cursorContext(sim.world, sim.map, selectionOf([v]), { tx: 12, ty: 10 }, 1, undefined, players);
+    expect(ctx.target.kind).toBe('none');
+    sim.run(15_000);
+    expect(farm.resourceNode!.amount).toBe(farm.resourceNode!.maxAmount);
+    expect(v.gatherer!.carrying).toBe(0);
+  });
+
+  it('an ownerless resource node stays a gather target', () => {
+    const sim = createMiniSim(32);
+    const players = createPlayers('hungarian', ['english'], undefined, 1);
+    const tree = createResourceNode(sim.world, { tile: { tx: 12, ty: 10 }, type: 'wood' });
+    const v = createVillager(sim.world, { tile: { tx: 6, ty: 6 } });
+    expect(resolveOrderTarget(sim.world, { tx: 12, ty: 10 }, v, undefined, players)).toEqual({ kind: 'resource', entity: tree });
+  });
+});

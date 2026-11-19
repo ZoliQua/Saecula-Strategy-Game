@@ -193,3 +193,26 @@ describe('GatheringSystem', () => {
     expect(villager.movable!.path.length).toBeGreaterThan(0);
   });
 });
+
+describe('a direct gather intent on a foreign farm (M16)', () => {
+  it("is dropped: the villager does not harvest another player's (an ally's) farm", () => {
+    const map = new MapData(24, 24, TERRAIN.grass);
+    const world = createEcsWorld();
+    const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
+    const gathering = new GatheringSystem(world, map, players);
+    const movement = new MovementSystem(world, players, map);
+    createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 1, mapData: map });
+    const farm = createBuilding(world, { type: 'farm', origin: { tx: 9, ty: 5 }, playerId: 2, mapData: map });
+    world.addComponent(farm, 'resourceNode', { type: 'food', amount: 175, maxAmount: 175 });
+    const v = createVillager(world, { tile: { tx: 8, ty: 5 } });
+    world.addComponent(v, 'gatherIntent', { nodeId: farm.id! });
+    for (let i = 0; i < 200; i++) {
+      gathering.update(50);
+      movement.update(50);
+    }
+    expect(v.gatherIntent).toBeUndefined();
+    expect(v.gatherer!.targetNodeId).toBeUndefined();
+    expect(v.gatherer!.carrying).toBe(0);
+    expect(farm.resourceNode!.amount).toBe(farm.resourceNode!.maxAmount);
+  });
+});

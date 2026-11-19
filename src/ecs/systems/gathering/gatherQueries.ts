@@ -64,3 +64,9 @@ function isFreeFarmFor(world: EcsWorld, farm: Entity, v: Villager): boolean {
   }
   return true;
 }
+
+/** Whether a node may be worked by `playerId`'s units: one without owner (or Gaia's), or the player's own. */
+export function isWorkableBy(node: Entity, playerId: number | undefined): boolean {
+  const owner = node.owner?.playerId;
+  return owner === undefined || owner === 0 || owner === playerId;
+}

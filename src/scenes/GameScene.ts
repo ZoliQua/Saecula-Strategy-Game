@@ -361,7 +361,7 @@ export class GameScene extends Phaser.Scene {
           const { sx, sy } = tileToScreen({ tx, ty });
           this.cameras.main.centerOn(sx, sy);
         },
-        (ownerId) => isFriendly(this.players, ownerId, 1),
+        (ownerId) => isFriendly(this.players, ownerId, this.players.human()?.id ?? 1),
       );
     });
   }
