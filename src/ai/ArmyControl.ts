@@ -1,5 +1,6 @@
 import { AI_COMMON } from '../config/aiBalance';
 import { holdsTimeLead } from '../game/timeVictory';
+import { areEnemies, NO_TEAMS } from '../game/diplomacy';
 import type { Entity } from '../ecs/components';
 import { canAttackTarget } from '../ecs/navLayer';
 import { clearUnitOrders } from '../ecs/orders';
@@ -132,7 +133,7 @@ export class ArmyControl {
   private steerWave(ctx: AIContext, view: WorldView, members: readonly Entity[]): void {
     if (this.waveTarget && !view.knownEnemyBuildings.some((b) => b.id === this.waveTarget!.id)) this.waveTarget = null;
     this.waveTarget ??= pickAttackTarget(view.knownEnemyBuildings, home(view), ctx.enemyPlayerId, wonderTargeting(ctx));
-    const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemy(e, ctx));
+    const enemyUnits = view.visibleEnemyUnits.filter((e) => targetsEnemyUnit(e, ctx));
     const enemyBuildings = view.visibleEnemyBuildings.filter((e) => targetsEnemy(e, ctx));
     const idle: Entity[] = [];
     for (const u of members) {
@@ -226,15 +227,36 @@ export class ArmyControl {
   }
 }
 
-/** Waves only go after the AI's chosen enemy (the human); FFA between AIs is not modelled. */
+/**
+ * Waves go after the AI's chosen enemy (`enemyPlayerId`: the human, or in a
+ * team match the player chooseEnemyPlayer picked); FFA between AIs is not
+ * modelled. Undefined = any hostile the AI sees.
+ */
 function targetsEnemy(e: Entity, ctx: AIContext): boolean {
   return ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId;
 }
 
-/** Wonders come first in a match a Wonder can win, except those of defeated owners (they can no longer win). */
+/**
+ * Enemy units a wave fights: the chosen enemy's, and in a team match (M16)
+ * any enemy-team unit it meets on the way (perception lists enemies only,
+ * never allies), so a wave does not march past another enemy's army.
+ */
+function targetsEnemyUnit(e: Entity, ctx: AIContext): boolean {
+  return targetsEnemy(e, ctx) || ctx.teams?.hasTeams?.() === true;
+}
+
+/**
+ * Wonders come first in a match a Wonder can win, except those of defeated
+ * owners (they can no longer win) and of allies (M16: an ally's Wonder is the
+ * team's).
+ */
 function wonderTargeting(ctx: AIContext): WonderTargeting | undefined {
   if (ctx.wonderVictory !== true) return undefined;
-  return { canWin: (ownerId) => !(ctx.isDefeated?.(ownerId) ?? false) };
+  const teams = ctx.teams ?? NO_TEAMS;
+  return {
+    canWin: (ownerId) => !(ctx.isDefeated?.(ownerId) ?? false),
+    isEnemy: (ownerId) => areEnemies(teams, ctx.player.id, ownerId),
+  };
 }
 
 function home(view: WorldView): TileCoord {

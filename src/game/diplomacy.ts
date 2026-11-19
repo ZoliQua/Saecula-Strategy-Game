@@ -13,6 +13,8 @@
 /** A player's team by id (the PlayerManager); an unknown id is its own team. */
 export interface TeamLookup {
   teamOf(playerId: number): number;
+  /** True when the match has teams (setup allies > 0); absent = no teams. */
+  hasTeams?(): boolean;
 }
 
 /** No teams: every player is its own team (today's free-for-all; tests and headless defaults). */

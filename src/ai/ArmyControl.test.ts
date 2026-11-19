@@ -8,6 +8,7 @@ import { MovementSystem } from '../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../ecs/systems/PathfindingSystem';
 import { createEcsWorld } from '../ecs/world';
 import { createPlayer } from '../game/Player';
+import { createPlayers } from '../game/PlayerManager';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
 import { TERRAIN } from '../map/TerrainTypes';
@@ -160,5 +161,29 @@ describe('ArmyControl and ships (M14)', () => {
     expect(archer.attackIntent?.targetId).toBe(galley.id);
     control.launchWave(ctx, perception.update(ctx), swords);
     for (const s of swords) expect(s.attackIntent?.targetId).not.toBe(galley.id);
+  });
+
+  it("in a team match a wave fights any enemy-team unit it meets, but marches on the chosen enemy's buildings (M16)", () => {
+    const run = (allies: number) => {
+      const map = new MapData(48, 48);
+      const world = createEcsWorld();
+      const fog = new FogOfWarData(48, 48);
+      for (let x = 0; x < 48; x++) for (let y = 0; y < 48; y++) fog.markVisible(x, y);
+      const players = createPlayers('hungarian', ['english', 'german', 'french'], undefined, allies);
+      createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 2, mapData: map });
+      const enemyTc = createBuilding(world, { type: 'town_center', origin: { tx: 40, ty: 40 }, playerId: 4, mapData: map });
+      const army = Array.from({ length: 4 }, (_, i) => createUnit(world, { type: 'swordsman', tile: { tx: 10 + i, ty: 10 }, playerId: 2 }));
+      const other = createUnit(world, { type: 'swordsman', tile: { tx: 12, ty: 12 }, playerId: 3 });
+      const ctx: AIContext = { world, mapData: map, player: players.get(2)!, timeMs: 0, fog, enemyPlayerId: 4, teams: players };
+      const control = new ArmyControl(new ThoughtLog(), createRng(3));
+      control.launchWave(ctx, new Perception().update(ctx), army);
+      return { army, other, enemyTc };
+    };
+    // allies 1: team 1 = {1, 2}, player 3 is an enemy-team AI next to the wave.
+    const teams = run(1);
+    expect(teams.army.some((u) => u.attackIntent?.targetId === teams.other.id)).toBe(true);
+    // No teams (allies 0): only the chosen enemy counts, the wave goes for its town centre.
+    const ffa = run(0);
+    expect(ffa.army.every((u) => u.attackIntent?.targetId === ffa.enemyTc.id)).toBe(true);
   });
 });

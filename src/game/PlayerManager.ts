@@ -46,6 +46,12 @@ export class PlayerManager implements TeamLookup {
     for (const p of this.playersById.values()) p.team = teamFor(p.id, allies);
   }
 
+  /** True when the match has teams (setup allies > 0): some player is on a team other than its own id (TeamLookup). */
+  hasTeams(): boolean {
+    for (const p of this.playersById.values()) if (p.team !== p.id) return true;
+    return false;
+  }
+
   markDefeated(playerId: number): void {
     const p = this.playersById.get(playerId);
     if (p) p.defeated = true;

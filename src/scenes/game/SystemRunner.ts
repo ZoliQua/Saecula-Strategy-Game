@@ -52,6 +52,7 @@ import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
+import { chooseEnemyPlayer } from '../../ai/targetPlayer';
 
 export interface SystemRunnerOptions {
   readonly difficulty: Difficulty;
@@ -280,7 +281,9 @@ export class SystemRunner {
     const timeVictory = this.timeLimit?.view();
     const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, ...(timeVictory && { timeVictory }) };
     for (const ai of this.aiPlayers) {
-      ai.update(this.humanId === undefined ? base : { ...base, enemyPlayerId: this.humanId }, delta);
+      // Whom this AI attacks, re-chosen every decision (M16 teams; without allies: the human).
+      const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world);
+      ai.update(enemy === undefined ? base : { ...base, enemyPlayerId: enemy }, delta);
     }
     this.population.update();
     this.stats.update(delta);
