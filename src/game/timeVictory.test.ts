@@ -70,3 +70,36 @@ describe('TimeLimitWatch', () => {
     expect(w.view().remainingMs).toBe(0);
   });
 });
+
+describe('time victory in teams (M16)', () => {
+  const players = [
+    { id: 1, defeated: false, team: 1 },
+    { id: 2, defeated: false, team: 1 },
+    { id: 3, defeated: false, team: 2 },
+    { id: 4, defeated: false, team: 2 },
+  ];
+  const scores: Record<number, number> = { 1: 300, 2: 300, 3: 500, 4: 50 };
+  const standing = (id: number) => ({ score: scores[id] ?? 0, killValue: 0 });
+
+  it('the summed team score leads; the leading team is named by its lowest standing id', async () => {
+    const { timeLeading } = await import('./timeVictory');
+    expect(timeLeading(players, standing)).toEqual({ id: 1, team: 1 });
+    expect(timeLeader(players.map((p) => ({ ...p, defeated: p.id === 1 })), standing)).toBe(3);
+  });
+
+  it('holdsTimeLead: every member of the leading team holds; with no team in the view only the leader', () => {
+    const view = { remainingMs: 1000, leaderId: 1, leaderTeam: 1 };
+    expect(holdsTimeLead(2, view, 1)).toBe(true);
+    expect(holdsTimeLead(3, view, 2)).toBe(false);
+    expect(holdsTimeLead(2, { remainingMs: 1000, leaderId: 1 }, 1)).toBe(false);
+  });
+
+  it('TimeLimitWatch names the leading team only when the match has teams', async () => {
+    const { TimeLimitWatch } = await import('./timeVictory');
+    const stats = { scoreOf: (id: number) => scores[id] ?? 0, of: () => ({ killValue: 0 }) };
+    const teamed = new TimeLimitWatch({ all: () => players, hasTeams: () => true }, stats);
+    expect(teamed.view()).toEqual({ remainingMs: TIME_VICTORY.limitMs, leaderId: 1, leaderTeam: 1 });
+    const ffa = new TimeLimitWatch({ all: () => players.map((p) => ({ id: p.id, defeated: false })), hasTeams: () => false }, stats);
+    expect(ffa.view()).toStrictEqual({ remainingMs: TIME_VICTORY.limitMs, leaderId: 3 });
+  });
+});

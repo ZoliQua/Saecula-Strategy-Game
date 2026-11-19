@@ -18,3 +18,10 @@ describe('gameOverRowView', () => {
     expect(gameOverRowView(row({ difficulty: 'easy', personality: null, outcome: 'standing', age: 1 }))).toMatchObject({ who: 'Könnyű', outcome: 'Talpon', age: '1. kor' });
   });
 });
+
+describe('gameOverRowView in teams (M16)', () => {
+  it('an allied row carries the "Szövetséges" chip; others none', () => {
+    expect(gameOverRowView(row({ ally: true })).ally).toBe('Szövetséges');
+    expect('ally' in gameOverRowView(row({}))).toBe(false);
+  });
+});

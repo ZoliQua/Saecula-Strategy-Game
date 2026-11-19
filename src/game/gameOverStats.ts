@@ -19,25 +19,36 @@ export interface GameOverPlayerRow {
   personality: PersonalityId | null;
   age: AgeId;
   outcome: GameOverOutcome;
+  /** On the human's team (M16); absent outside team matches and for the human and enemies. Display only, never stored. */
+  ally?: true;
 }
 
 /**
  * Who the table names the winner, or null when nothing is decided among
  * the survivors: a human victory or a Wonder names its winner; a conquest
- * defeat of the human only when exactly one other player still stands
- * (VictoryChecker's winnerId is then just the first AI standing).
+ * defeat of the human only when every player still standing is on one
+ * team (VictoryChecker's winnerId is then just the first enemy standing):
+ * that team's lowest-id standing player. With no allies that is "exactly
+ * one other player still stands".
  */
 export function decidedWinner(
   state: { readonly kind: 'victory' | 'defeat'; readonly winnerId: number; readonly cause: VictoryCause },
-  players: readonly Player[],
+  players: readonly Pick<Player, 'id' | 'defeated' | 'team'>[],
 ): number | null {
   if (state.kind === 'victory' || state.cause !== 'conquest') return state.winnerId;
-  const standing = players.filter((p) => !p.defeated);
-  return standing.length === 1 ? standing[0]!.id : null;
+  const standing = players.filter((p) => !p.defeated).sort((a, b) => a.id - b.id);
+  const first = standing[0];
+  return first !== undefined && standing.every((p) => p.team === first.team) ? first.id : null;
 }
 
-/** The game-over player table, in player id order: `winnerId` won (null: nobody yet), the defeated lost, the rest still stand. */
+/**
+ * The game-over player table, in player id order: `winnerId` won (null:
+ * nobody yet), the defeated lost, the rest still stand. The human's allies
+ * (M16) carry `ally`.
+ */
 export function gameOverRows(players: readonly Player[], winnerId: number | null, difficulty: Difficulty): GameOverPlayerRow[] {
+  const human = players.find((p) => p.isHuman);
+  const allied = (p: Player): boolean => human !== undefined && p.id !== human.id && p.team === human.team;
   return [...players]
     .sort((a, b) => a.id - b.id)
     .map((p) => ({
@@ -49,5 +60,6 @@ export function gameOverRows(players: readonly Player[], winnerId: number | null
       personality: p.isHuman ? null : (p.personality ?? null),
       age: p.age,
       outcome: p.id === winnerId ? 'winner' : p.defeated ? 'defeated' : 'standing',
+      ...(allied(p) ? { ally: true as const } : {}),
     }));
 }

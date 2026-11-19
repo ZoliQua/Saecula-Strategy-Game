@@ -1,6 +1,7 @@
 import type { EcsWorld } from '../ecs/world';
+import { areAllies, areEnemies } from './diplomacy';
 import type { PlayerManager } from './PlayerManager';
-import { timeLeader, type TimeVictoryRule } from './timeVictory';
+import { timeLeading, type TimeVictoryRule } from './timeVictory';
 
 /** How a match was decided. */
 export type VictoryCause = 'conquest' | 'wonder' | 'time' | 'mission';
@@ -26,7 +27,15 @@ export type VictoryState =
  * human wins once every objective of the mission is done.
  *
  * Time victory (when `time` is set, checked last): once the clock reaches
- * the limit the standing player with the best score wins (timeLeader).
+ * the limit the standing player with the best score wins (timeLeading).
+ *
+ * Teams (M16): the human's team wins once every enemy-team player is
+ * defeated (an ally may have fallen); the human loses when their own town
+ * centres are gone, whatever their allies still hold. A Wonder held by
+ * the human or an ally is a victory, by an enemy a defeat; time compares
+ * the teams' summed scores. A team result names the winning team's
+ * lowest-id standing player as `winnerId`. With no allies every player is
+ * its own team and every result is the free-for-all one.
  */
 export class VictoryChecker {
   constructor(
@@ -48,24 +57,39 @@ export class VictoryChecker {
     }
     const human = this.players.human();
     if (!human) return { kind: 'playing' };
+    const ais = this.players.ais();
+    const enemies = ais.filter((p) => areEnemies(this.players, human.id, p.id));
     if (human.defeated) {
-      const winner = this.players.ais().find((p) => !p.defeated);
+      const winner = enemies.find((p) => !p.defeated) ?? ais.find((p) => !p.defeated);
       return { kind: 'defeat', winnerId: winner?.id ?? 0, cause: 'conquest' };
     }
-    const ais = this.players.ais();
-    if (ais.length > 0 && ais.every((p) => p.defeated)) {
+    if (enemies.length > 0 && enemies.every((p) => p.defeated)) {
       return { kind: 'victory', winnerId: human.id, cause: 'conquest' };
     }
     if (this.mission?.complete()) return { kind: 'victory', winnerId: human.id, cause: 'mission' };
     const wonderWinner = this.wonderWinner();
     if (wonderWinner !== null) {
-      return { kind: wonderWinner === human.id ? 'victory' : 'defeat', winnerId: wonderWinner, cause: 'wonder' };
+      const ours = this.onHumanTeam(human.id, wonderWinner);
+      return { kind: ours ? 'victory' : 'defeat', winnerId: this.teamWinnerId(wonderWinner), cause: 'wonder' };
     }
     if (this.time && this.time.nowMs() >= this.time.limitMs) {
-      const leader = timeLeader(this.players.all(), this.time.standing);
-      if (leader !== null) return { kind: leader === human.id ? 'victory' : 'defeat', winnerId: leader, cause: 'time' };
+      const leader = timeLeading(this.players.all(), this.time.standing);
+      if (leader !== null) {
+        const ours = this.onHumanTeam(human.id, leader.id);
+        return { kind: ours ? 'victory' : 'defeat', winnerId: leader.id, cause: 'time' };
+      }
     }
     return { kind: 'playing' };
+  }
+
+  private onHumanTeam(humanId: number, playerId: number): boolean {
+    return playerId === humanId || areAllies(this.players, humanId, playerId);
+  }
+
+  /** The winner named for `playerId`'s team: its lowest-id standing player (just `playerId` with no allies). */
+  private teamWinnerId(playerId: number): number {
+    const team = this.players.teamOf(playerId);
+    return this.players.all().find((p) => !p.defeated && this.players.teamOf(p.id) === team)?.id ?? playerId;
   }
 
   /** Owner of the longest-held standing Wonder past the hold, or null. */

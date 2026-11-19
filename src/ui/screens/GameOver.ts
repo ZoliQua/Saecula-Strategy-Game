@@ -67,15 +67,20 @@ export class GameOver {
   }
 }
 
-/** One row per player: swatch, civ, who (you / difficulty · personality), age, outcome. */
+/** One row per player: swatch, civ (an ally chip on the human's allies, M16), who (you / difficulty · personality), age, outcome. */
 function playerTable(players: readonly GameOverPlayerRow[]): HTMLElement {
   const rows = players.map((p, i) => {
     const v = gameOverRowView(p);
     const row = el(
       'div',
-      { class: `gameover-row${v.isHuman ? ' human' : ''}`, role: 'row' },
+      { class: `gameover-row${v.isHuman ? ' human' : ''}${v.ally ? ' ally' : ''}`, role: 'row' },
       el('span', { class: 'gameover-swatch', 'aria-hidden': 'true' }),
-      el('span', { class: 'gameover-civ', role: 'cell' }, v.civ),
+      el(
+        'span',
+        { class: 'gameover-civ', role: 'cell' },
+        el('span', { class: 'gameover-civ-name' }, v.civ),
+        v.ally ? el('em', { class: 'gameover-ally' }, v.ally) : null,
+      ),
       el('span', { class: 'gameover-who', role: 'cell' }, v.who),
       el('span', { class: 'gameover-age', role: 'cell' }, v.age),
       el('span', { class: `gameover-outcome ${v.outcomeId}`, role: 'cell' }, v.outcome),

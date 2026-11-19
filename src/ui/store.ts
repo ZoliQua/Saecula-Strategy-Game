@@ -100,6 +100,8 @@ export interface ScoreRowInfo {
   isHuman: boolean;
   score: number;
   defeated: boolean;
+  /** On the human's team (M16): the row carries a "Szövetséges" chip. */
+  ally: boolean;
 }
 
 export type SidePanelView = 'score' | 'villagers';

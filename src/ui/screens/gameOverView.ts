@@ -12,6 +12,8 @@ export interface GameOverRowView {
   readonly outcome: string;
   readonly outcomeId: GameOverPlayerRow['outcome'];
   readonly isHuman: boolean;
+  /** The ally chip's text (M16) on the human's allies; absent otherwise. */
+  readonly ally?: string;
 }
 
 /** The texts the game-over card shows for `row` (pure, for the DOM table). */
@@ -29,5 +31,6 @@ export function gameOverRowView(row: GameOverPlayerRow): GameOverRowView {
     outcome: hu.gameOver.outcomes[row.outcome],
     outcomeId: row.outcome,
     isHuman: row.isHuman,
+    ...(row.ally ? { ally: hu.gameOver.ally } : {}),
   };
 }

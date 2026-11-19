@@ -83,8 +83,8 @@ export class ArmyControl {
    * wave while the AI holds the lead in the time limit's final window.
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
-    // Leading on score in the time limit's final minutes: keep the army home, a lost fight only costs the lead.
-    if (holdsTimeLead(ctx.player.id, ctx.timeVictory)) {
+    // Leading on score (alone or as a team, M16) in the time limit's final minutes: keep the army home, a lost fight only costs the lead.
+    if (holdsTimeLead(ctx.player.id, ctx.timeVictory, ctx.player.team)) {
       this.log.add(ctx.timeMs, 'stance', 'holdLead');
       this.prune(view);
       return this.wave.size;

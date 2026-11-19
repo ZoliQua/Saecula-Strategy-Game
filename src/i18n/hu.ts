@@ -206,6 +206,8 @@ export const hu = {
     score: 'Pontszám',
     villagers: 'Falusiak',
     you: 'Te',
+    /** Chip on an allied player's score row (M16). */
+    ally: 'Szövetséges',
     defeated: 'Legyőzve',
     /** `key`: the score panel key as bound. */
     collapse: (key: string) => `Panel összecsukása (${key})`,
@@ -385,6 +387,8 @@ export const hu = {
     /** The player table. */
     players: 'Játékosok',
     human: 'Te',
+    /** Chip on an allied player's row (M16). */
+    ally: 'Szövetséges',
     outcomes: { winner: 'Győztes', defeated: 'Legyőzve', standing: 'Talpon' },
     ageLabel: (a: number) => `${a}. kor`,
   },

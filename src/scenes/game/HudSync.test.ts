@@ -55,6 +55,15 @@ describe('HudSync', () => {
     expect(s.villagerCounts).toEqual({ food: 0, wood: 0, gold: 0, build: 0, idle: 1, other: 0 });
   });
 
+  it("marks the human's allies on the score rows (M16); the human and enemies carry no mark", () => {
+    const world = createEcsWorld();
+    const players = new PlayerManager([1, 2, 3].map((id) => createPlayer({ id, isHuman: id === 1 })));
+    players.assignTeams(1);
+    new HudSync(world, players, null, new MatchStats(world, players)).secondTick();
+    const rows = [...uiStore.getState().scores].sort((a, b) => a.playerId - b.playerId);
+    expect(rows.map((r) => [r.playerId, r.ally])).toEqual([[1, false], [2, true], [3, false]]);
+  });
+
   it('with a time limit, publishes the time left, the leader and the final-window flag', () => {
     const { world, players } = setup();
     let now = 0;

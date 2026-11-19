@@ -5,6 +5,7 @@ import type { PlayerManager } from '../../game/PlayerManager';
 import { wonderClocks, type WonderClockInfo } from '../../game/wonderClocks';
 import type { MatchStats } from '../../stats/MatchStats';
 import { VILLAGER_ACTIVITIES, villagerActivity, type VillagerActivity } from '../../stats/villagerActivity';
+import { areAllies } from '../../game/diplomacy';
 import { timeLeader, type TimeVictoryRule } from '../../game/timeVictory';
 import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
 
@@ -13,7 +14,7 @@ import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
  * systems: which limited buildings (wonder) the human already has, for
  * the build menu, and the running Wonder countdowns (none when the
  * match cannot be won by a Wonder), and the side panel's every-player
- * scores (highest first) and the human's villager activity counts, and
+ * scores (highest first; the human's allies marked, M16) and the human's villager activity counts, and
  * the time-victory clock (time left and the leader) when the match has one.
  */
 export class HudSync {
@@ -53,9 +54,18 @@ export class HudSync {
   private syncScores(): void {
     const stats = this.stats;
     if (!stats) return;
+    const human = this.players.human();
     const rows: ScoreRowInfo[] = this.players
       .all()
-      .map((p) => ({ playerId: p.id, civ: p.civ, color: p.color, isHuman: p.isHuman, score: stats.scoreOf(p.id), defeated: p.defeated }))
+      .map((p) => ({
+        playerId: p.id,
+        civ: p.civ,
+        color: p.color,
+        isHuman: p.isHuman,
+        score: stats.scoreOf(p.id),
+        defeated: p.defeated,
+        ally: human !== undefined && areAllies(this.players, human.id, p.id),
+      }))
       .sort((a, b) => b.score - a.score || a.playerId - b.playerId);
     const prev = uiStore.getState().scores;
     const same =
