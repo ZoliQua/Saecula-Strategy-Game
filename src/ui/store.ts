@@ -90,6 +90,8 @@ export interface TimeLimitInfo {
   readonly leaderColor: number | null;
   /** Inside the final TIME_VICTORY.holdLeadMs. */
   readonly final: boolean;
+  /** A team match (M16): the leader line names the team ("Csapatod vezet"); absent = no teams. */
+  readonly teams?: true;
 }
 
 /** One row of the side panel's score view (HudSync, once a second). */

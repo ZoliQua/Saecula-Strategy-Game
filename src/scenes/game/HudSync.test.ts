@@ -64,6 +64,17 @@ describe('HudSync', () => {
     expect(rows.map((r) => [r.playerId, r.ally])).toEqual([[1, false], [2, true], [3, false]]);
   });
 
+  it('a team match marks the time clock as teamed (M16); a free-for-all clock carries no mark', () => {
+    const world = createEcsWorld();
+    const players = new PlayerManager([1, 2, 3].map((id) => createPlayer({ id, isHuman: id === 1 })));
+    const time = { limitMs: TIME_VICTORY.limitMs, nowMs: () => 0, standing: () => ({ score: 0, killValue: 0 }) };
+    new HudSync(world, players, null, null, time).secondTick();
+    expect(uiStore.getState().timeLimit && 'teams' in uiStore.getState().timeLimit!).toBe(false);
+    players.assignTeams(1);
+    new HudSync(world, players, null, null, time).secondTick();
+    expect(uiStore.getState().timeLimit?.teams).toBe(true);
+  });
+
   it('with a time limit, publishes the time left, the leader and the final-window flag', () => {
     const { world, players } = setup();
     let now = 0;

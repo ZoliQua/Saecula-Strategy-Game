@@ -252,6 +252,15 @@ describe('VictoryChecker in teams (M16)', () => {
     expect(t.vc.check()).toEqual({ kind: 'defeat', winnerId: 3, cause: 'conquest' });
   });
 
+  it('the human and the last enemy fall in the same tick: a defeat that never names an ally', () => {
+    const t = teams();
+    t.kill(3);
+    expect(t.vc.check().kind).toBe('playing');
+    t.kill(1);
+    t.kill(4);
+    expect(t.vc.check()).toEqual({ kind: 'defeat', winnerId: 0, cause: 'conquest' });
+  });
+
   it('the last enemy falls with the human alive: victory even though the ally fell', () => {
     const t = teams();
     t.kill(2);

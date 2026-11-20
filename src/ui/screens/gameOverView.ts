@@ -1,4 +1,5 @@
 import type { GameOverPlayerRow } from '../../game/gameOverStats';
+import type { VictoryCause } from '../../game/VictoryChecker';
 import { hu } from '../../i18n/hu';
 import { hex } from '../format';
 
@@ -33,4 +34,16 @@ export function gameOverRowView(row: GameOverPlayerRow): GameOverRowView {
     isHuman: row.isHuman,
     ...(row.ally ? { ally: hu.gameOver.ally } : {}),
   };
+}
+
+/**
+ * The card's body line: a mission's closing text, else the cause's line for
+ * the outcome, in its team wording (M16) when the match has teams. A mission
+ * never has teams, so it keeps its free-for-all line.
+ */
+export function gameOverBody(info: { victory: boolean; cause: VictoryCause; teams?: boolean | undefined; missionText?: string | undefined }): string {
+  if (info.missionText !== undefined) return info.missionText;
+  const outcome = info.victory ? 'victory' : 'defeat';
+  if (info.teams === true && info.cause !== 'mission') return hu.gameOver.teamBodies[info.cause][outcome];
+  return hu.gameOver.bodies[info.cause][outcome];
 }

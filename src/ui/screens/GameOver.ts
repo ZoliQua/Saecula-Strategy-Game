@@ -3,7 +3,7 @@ import type { VictoryCause } from '../../game/VictoryChecker';
 import { hu } from '../../i18n/hu';
 import { el, formatClock, uiRoot } from '../dom';
 import { icons } from '../icons';
-import { gameOverRowView } from './gameOverView';
+import { gameOverBody, gameOverRowView } from './gameOverView';
 import '../hud.css';
 import '../screens.css';
 
@@ -15,13 +15,15 @@ export interface GameOverInfo {
   readonly players: readonly GameOverPlayerRow[];
   /** A campaign mission's closing text (M13), shown instead of the cause's body line. */
   readonly missionText?: string | undefined;
+  /** The match had teams (M16): the body line uses the team wording. */
+  readonly teams?: boolean | undefined;
 }
 
 /** Victory / defeat card shown over the paused game, with the player table. */
 export class GameOver {
   private readonly root: HTMLElement;
 
-  constructor({ victory, durationMs, cause, players, missionText }: GameOverInfo, onBack: () => void) {
+  constructor({ victory, durationMs, cause, players, missionText, teams }: GameOverInfo, onBack: () => void) {
     const back = el('button', { class: 'btn btn-primary', type: 'button' }, hu.gameOver.backToMenu);
     back.addEventListener('click', onBack);
     this.root = el(
@@ -49,7 +51,7 @@ export class GameOver {
           el('span', { class: 'sep' }, '·'),
           el('b', {}, hu.gameOver.causes[cause]),
         ),
-        el('p', { class: 'gameover-body' }, missionText ?? hu.gameOver.bodies[cause][victory ? 'victory' : 'defeat']),
+        el('p', { class: 'gameover-body' }, gameOverBody({ victory, cause, teams, missionText })),
         el(
           'div',
           { class: 'gameover-stats' },

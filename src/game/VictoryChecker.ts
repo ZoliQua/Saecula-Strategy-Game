@@ -60,7 +60,8 @@ export class VictoryChecker {
     const ais = this.players.ais();
     const enemies = ais.filter((p) => areEnemies(this.players, human.id, p.id));
     if (human.defeated) {
-      const winner = enemies.find((p) => !p.defeated) ?? ais.find((p) => !p.defeated);
+      // Never an ally: with every enemy fallen in the same tick nobody is named (0).
+      const winner = enemies.find((p) => !p.defeated);
       return { kind: 'defeat', winnerId: winner?.id ?? 0, cause: 'conquest' };
     }
     if (enemies.length > 0 && enemies.every((p) => p.defeated)) {

@@ -286,6 +286,9 @@ export const hu = {
     timeLimitClock: (t: string) => `Időkorlát: ${t}`,
     timeLimitLeader: 'Éllovas',
     timeLimitLeaderYou: 'Te vezetsz',
+    /** Team match (M16): the human's team leads / the enemy team leads. */
+    timeLimitLeaderTeam: 'Csapatod vezet',
+    timeLimitLeaderEnemyTeam: 'Az ellenséges csapat vezet',
     timeLimitFinal: 'Az utolsó 5 perc! A legtöbb pont nyer.',
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
@@ -377,6 +380,21 @@ export const hu = {
       mission: {
         victory: 'Minden célt teljesítettél. A küldetés sikerült.',
         defeat: 'A küldetés nem sikerült. Próbáld újra!',
+      },
+    },
+    /** Body lines in a team match (M16): the team wins or loses together, the human loses alone when their town centres fall. */
+    teamBodies: {
+      conquest: {
+        victory: 'Az ellenséges csapat minden városházája elpusztult. A föld a csapatodé.',
+        defeat: 'Elestek a városházáid, számodra véget ért a meccs. Még egy menet?',
+      },
+      wonder: {
+        victory: 'Csapatod Csodája 10 percig dacolt az ellenséggel. A győzelem a tiétek.',
+        defeat: 'Az ellenséges csapat Csodája 10 percig állt. Még egy menet?',
+      },
+      time: {
+        victory: 'Lejárt a 60 perc, és csapatod összpontszáma a legmagasabb. A győzelem a tiétek.',
+        defeat: 'Lejárt a 60 perc, és az ellenséges csapat több pontot gyűjtött. Még egy menet?',
       },
     },
     backToMenu: 'Vissza a főmenübe',

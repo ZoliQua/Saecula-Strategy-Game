@@ -45,9 +45,10 @@ export class HudSync {
       leaderId,
       leaderColor: leaderId === null ? null : (this.players.get(leaderId)?.color ?? null),
       final: remainingMs <= TIME_VICTORY.holdLeadMs,
+      ...(this.players.hasTeams() ? { teams: true as const } : {}),
     };
     const prev = uiStore.getState().timeLimit;
-    const same = prev && prev.remainingMs === next.remainingMs && prev.leaderId === next.leaderId && prev.final === next.final;
+    const same = prev && prev.remainingMs === next.remainingMs && prev.leaderId === next.leaderId && prev.final === next.final && prev.teams === next.teams;
     if (!same) uiStore.getState().setTimeLimit(next);
   }
 

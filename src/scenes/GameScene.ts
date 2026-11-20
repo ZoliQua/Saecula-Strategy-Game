@@ -446,6 +446,7 @@ export class GameScene extends Phaser.Scene {
       durationMs: this.gameElapsedMs,
       cause: state.cause,
       players: gameOverRows(this.players.all(), winnerId, this.difficulty),
+      teams: this.players.hasTeams(),
       ...(this.campaign ? { missionText: this.campaign.finish(state.kind === 'victory') } : {}),
     };
     this.scene.launch('GameOverScene', data);

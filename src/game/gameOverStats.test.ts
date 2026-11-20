@@ -74,6 +74,10 @@ describe('game over in teams (M16)', () => {
     expect(decidedWinner({ kind: 'defeat', winnerId: 3, cause: 'conquest' }, teamPlayers([1]))).toBeNull();
     expect(decidedWinner({ kind: 'defeat', winnerId: 3, cause: 'conquest' }, teamPlayers([1, 2]))).toBe(3);
     expect(decidedWinner({ kind: 'defeat', winnerId: 4, cause: 'conquest' }, teamPlayers([1, 2, 3]))).toBe(4);
+    // The human and the last enemy fell in the same tick: only the ally stands, and a defeat never crowns it.
+    const together = teamPlayers([1, 3, 4]);
+    expect(decidedWinner({ kind: 'defeat', winnerId: 0, cause: 'conquest' }, together)).toBeNull();
+    expect(gameOverRows(together, null, 'hard').map((r) => r.outcome)).toEqual(['defeated', 'standing', 'defeated', 'defeated']);
   });
 
   it("rows mark the human's allies only; without teams no row carries the mark", () => {
