@@ -14,11 +14,16 @@ import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
 import { canAttackTarget, moveLayerOf } from '../../ecs/navLayer';
 import { isFriendly, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
+import { hu } from '../../i18n/hu';
+import { showHudNotice } from '../../ui/HUD';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
   readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'none';
   readonly entity: Entity | null;
+  /** True when another team's player is on the tile but the treaty holds (M16): no target, the units just move. */
+  readonly truce?: true;
 }
 
 /** Whether the commanding player can see an enemy (never-seen enemies are no target). */
@@ -39,7 +44,8 @@ export function orderActor(selected: readonly Entity[], humanId: number): Entity
  * enemy unit or building the player can see (`canSee`, default all; any
  * other player's with health but `actor`'s allies (M16), so Gaia's too)
  * first, then one of `actor`'s own buildings under construction (not
- * dying), then a resource node; otherwise nothing.
+ * dying), then a resource node; otherwise nothing. While the treaty holds
+ * (M16), another team's player is no target (`truce` marks it; Gaia still is).
  */
 export function resolveOrderTarget(
   world: EcsWorld,
@@ -47,16 +53,18 @@ export function resolveOrderTarget(
   actor: Entity,
   canSee: CanSee = () => true,
   teams: TeamLookup = NO_TEAMS,
+  treaty: TreatyGate = NO_TREATY,
 ): OrderTarget {
-  const enemy = findEnemyAt(world, tile, actor, canSee, teams);
-  if (enemy) return { kind: 'enemy', entity: enemy };
+  const found = findEnemyAt(world, tile, actor, canSee, teams, treaty);
+  if (found.enemy) return { kind: 'enemy', entity: found.enemy };
+  const truce = found.truce ? ({ truce: true } as const) : {};
   const site = findOwnSiteAt(world, tile, actor);
-  if (site) return { kind: 'ownSite', entity: site };
+  if (site) return { kind: 'ownSite', entity: site, ...truce };
   const transport = findOwnTransportAt(world, tile, actor);
-  if (transport) return { kind: 'ownTransport', entity: transport };
+  if (transport) return { kind: 'ownTransport', entity: transport, ...truce };
   const node = findResourceNodeAt(world, tile, actor);
-  if (node) return { kind: 'resource', entity: node };
-  return { kind: 'none', entity: null };
+  if (node) return { kind: 'resource', entity: node, ...truce };
+  return { kind: 'none', entity: null, ...truce };
 }
 
 export interface OrderIssuerOptions {
@@ -67,6 +75,10 @@ export interface OrderIssuerOptions {
   readonly map?: MapData;
   /** Teams (M16): an ally is no target (its units are just walked to). Absent: no teams. */
   readonly teams?: TeamLookup;
+  /** The treaty (M16): while it holds an attack on another team becomes a move, with a notice. Absent: none. */
+  readonly treaty?: TreatyGate;
+  /** Shows a HUD notice (default: the in-game toast). */
+  readonly notice?: (message: string) => void;
 }
 
 /** Translates a command (right-click or the gesture) on a tile into move / attack / gather / help-build orders. */
@@ -75,6 +87,8 @@ export class OrderIssuer {
   private readonly canSee: CanSee;
   private readonly map: MapData | undefined;
   private readonly teams: TeamLookup;
+  private readonly treaty: TreatyGate;
+  private readonly notice: (message: string) => void;
 
   constructor(
     private readonly world: EcsWorld,
@@ -86,6 +100,8 @@ export class OrderIssuer {
     this.canSee = options.canSee ?? (() => true);
     this.map = options.map;
     this.teams = options.teams ?? NO_TEAMS;
+    this.treaty = options.treaty ?? NO_TREATY;
+    this.notice = options.notice ?? ((m) => showHudNotice(m));
   }
 
   issueOrders(tile: TileCoord): void {
@@ -93,7 +109,9 @@ export class OrderIssuer {
     const actor = orderActor(selectedAll, this.humanId);
     // Only the human's units take orders (a selected building or enemy does not).
     if (!actor) return;
-    const target = resolveOrderTarget(this.world, tile, actor, this.canSee, this.teams);
+    const target = resolveOrderTarget(this.world, tile, actor, this.canSee, this.teams, this.treaty);
+    // The treaty (M16): the units walk there instead of attacking; say why.
+    if (target.truce) this.notice(hu.treaty.blocked);
     let ordered: 'unit_move' | 'unit_attack' | 'unit_convert' | null = null;
     const boarders: Entity[] = [];
     for (const entity of selectedAll) {
@@ -104,7 +122,7 @@ export class OrderIssuer {
       clearUnitOrders(this.world, entity);
       const targetId = target.entity?.id ?? 0;
       // A ready monk converts an enemy unit (M11); a recharging one, or one facing what it cannot convert, walks there.
-      if (target.kind === 'enemy' && readyToConvert(entity) && canConvert(target.entity ?? undefined, this.humanId, this.teams)) {
+      if (target.kind === 'enemy' && readyToConvert(entity) && canConvert(target.entity ?? undefined, this.humanId, this.teams, this.treaty)) {
         this.world.addComponent(entity, 'convertIntent', { targetId, elapsedMs: 0 });
         ordered ??= 'unit_convert';
         continue;
@@ -161,14 +179,30 @@ function covers(e: Entity, tile: TileCoord): boolean {
   return e.position.tx === tile.tx && e.position.ty === tile.ty;
 }
 
-/** Anything with health of a player not friendly to `actor` (Gaia included; M16: never an ally) on the tile, if seen. */
-function findEnemyAt(world: EcsWorld, tile: TileCoord, actor: Entity, canSee: CanSee, teams: TeamLookup): Entity | null {
+/**
+ * Anything with health of a player not friendly to `actor` (Gaia included; M16: never an ally) on the tile, if seen.
+ * While the treaty holds (M16) another team's player is skipped, and `truce` says one was there.
+ */
+function findEnemyAt(
+  world: EcsWorld,
+  tile: TileCoord,
+  actor: Entity,
+  canSee: CanSee,
+  teams: TeamLookup,
+  treaty: TreatyGate,
+): { enemy: Entity | null; truce: boolean } {
   const actorPlayer = actor.owner?.playerId;
-  if (actorPlayer === undefined) return null;
+  let truce = false;
+  if (actorPlayer === undefined) return { enemy: null, truce };
   for (const c of world.with('position', 'owner', 'health')) {
-    if (!isFriendly(teams, c.owner.playerId, actorPlayer) && covers(c, tile) && canSee(c)) return c;
+    if (isFriendly(teams, c.owner.playerId, actorPlayer) || !covers(c, tile) || !canSee(c)) continue;
+    if (truceBetween(treaty, teams, c.owner.playerId, actorPlayer)) {
+      truce = true;
+      continue;
+    }
+    return { enemy: c, truce };
   }
-  return null;
+  return { enemy: null, truce };
 }
 
 /** An own, living transport on the tile (M14): a boarding target. */

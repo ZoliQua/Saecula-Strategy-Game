@@ -6,6 +6,7 @@ import { findPathToNearest } from '../../map/pathfinding';
 import { BREACH_SEARCH_RADIUS, NAVAL, REPATH_RETRY_MS, TOWER_PROJECTILE, UNIT_PROJECTILE } from '../../config/balance';
 import { findBreachTarget } from '../../game/breach';
 import { isFriendly, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
 import { boostArmor, boostAttack, bonusesFor } from '../../game/modifiers';
@@ -29,7 +30,7 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 
 /**
  * Resolves attackIntent each tick:
- *   - Target missing / own or allied (M16) / dying → drop intent.
+ *   - Target missing / own or allied (M16) / dying / under the treaty (M16) → drop intent.
  *   - Out of range → walk toward it (updates movable.path).
  *   - In range → if cooldown ready, deal damage (melee) or fire a
  *     projectile (ranged); if not, idle.
@@ -58,6 +59,8 @@ export class CombatSystem {
     mapData: MapData,
     private readonly players: PlayerManager | null = null,
     private readonly paths: PathAllowance = UNLIMITED_PATHS,
+    /** The treaty (M16): while it holds, an attack on another team's player is dropped (asked every tick). */
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {
     this.world = world;
     this.mapData = mapData;
@@ -104,7 +107,12 @@ export class CombatSystem {
       return;
     }
     // An own or allied unit (M16; Gaia stays a target), or one this attacker cannot reach (a ship, for a melee unit, M14): no fight.
-    if (isFriendly(this.teams, target.owner.playerId, a.owner.playerId) || !canAttackTarget(a as Entity, target as Entity)) {
+    // The treaty (M16): no fight between teams while it holds; the intent goes, nothing sticks (Gaia stays a target).
+    if (
+      isFriendly(this.teams, target.owner.playerId, a.owner.playerId) ||
+      truceBetween(this.treaty, this.teams, target.owner.playerId, a.owner.playerId) ||
+      !canAttackTarget(a as Entity, target as Entity)
+    ) {
       this.world.removeComponent(a as Entity, 'attackIntent');
       return;
     }

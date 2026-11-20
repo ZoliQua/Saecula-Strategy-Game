@@ -243,7 +243,8 @@ export class GameScene extends Phaser.Scene {
     this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, restored?.campaign?.done) : null;
     if (this.campaign && !restored) CampaignRunner.publishStart(this.players);
     this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time, this.campaign);
-    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time);
+    const treatyLeft = config.treatyMin > 0 ? () => this.runner.treatyLeftMs() : null;
+    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time, treatyLeft);
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
     this.matchSave = new MatchSave(() => this.captureMatch(), this.storage, this.gameElapsedMs);
@@ -262,6 +263,7 @@ export class GameScene extends Phaser.Scene {
       fog: this.runner.fogData,
       humanId: human?.id ?? 1,
       teams: this.players,
+      treaty: this.runner.treaty,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
       buildingHp: () => {

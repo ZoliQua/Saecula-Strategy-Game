@@ -145,6 +145,7 @@ export function runnerFor(start: MatchStart, setup: GameSetupConfig, make: (opti
     wonderVictory: hasWonderVictory(setup.victory),
     timeVictory: hasTimeVictory(setup.victory),
     seed: setup.seed,
+    treatyMin: setup.treatyMin,
   };
   if (start.kind === 'new') return make(options);
   try {

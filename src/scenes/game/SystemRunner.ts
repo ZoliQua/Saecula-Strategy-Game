@@ -53,6 +53,7 @@ import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
 import { chooseEnemyPlayer } from '../../ai/targetPlayer';
+import { TreatyClock, type TreatyGate } from '../../game/treaty';
 
 export interface SystemRunnerOptions {
   readonly difficulty: Difficulty;
@@ -64,6 +65,8 @@ export interface SystemRunnerOptions {
   readonly startMs?: number;
   /** The match seed (config.seed). */
   readonly seed: number;
+  /** Treaty length in game minutes (M16, setup.treatyMin); default 0 = none. Counted from game time 0. */
+  readonly treatyMin?: number;
   /**
    * A loaded save: every player's saved fog by id and each AI's saved state.
    * The players' difficulty handicap and personality come from the save too,
@@ -101,6 +104,10 @@ export class SystemRunner {
   private readonly death: DeathSystem;
   private readonly wonders: WonderSystem;
   private readonly wonderVictory: boolean;
+  /** The treaty clock (M16): game time against setup.treatyMin. */
+  private readonly treatyClock: TreatyClock;
+  /** The treaty gate the combat systems, the AIs and the human's orders share (M16). */
+  readonly treaty: TreatyGate;
   /** The time limit as the AIs see it (null: no time victory). */
   private readonly timeLimit: TimeLimitWatch | null;
   private readonly isDefeated: (playerId: number) => boolean;
@@ -142,6 +149,8 @@ export class SystemRunner {
     this.isDefeated = (id) => players.get(id)?.defeated ?? false;
     this.humanId = players.human()?.id;
     this.humanAge = () => players.human()?.age ?? 1;
+    this.treatyClock = new TreatyClock({ treatyMin: options.treatyMin ?? 0 }, options.startMs ?? 0);
+    this.treaty = this.treatyClock.gate;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
     this.render.setCivSource((id) => players.get(id)?.civ ?? DEFAULT_CIV);
@@ -159,9 +168,9 @@ export class SystemRunner {
     this.training = new TrainingSystem(world, mapData, players);
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
-    this.combat = new CombatSystem(world, mapData, players, this.paths);
-    this.monks = new MonkSystem(world, mapData, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), this.paths, players);
-    this.projectiles = new ProjectileSystem(world, players);
+    this.combat = new CombatSystem(world, mapData, players, this.paths, this.treaty);
+    this.monks = new MonkSystem(world, mapData, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), this.paths, players, this.treaty);
+    this.projectiles = new ProjectileSystem(world, players, this.treaty);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
     this.wonders = new WonderSystem(world, options.wonderVictory);
@@ -192,7 +201,7 @@ export class SystemRunner {
       },
       states: restore?.ais,
     });
-    this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null, players);
+    this.towers = new TowerCombatSystem(world, (id) => fogs.get(id) ?? null, players, this.treaty);
     // Shared vision (M16): the human's allies light its fog too.
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1, undefined, (owner) => isFriendly(players, owner, viewer));
     this.render.setFogContext(this.fogData, 1);
@@ -259,7 +268,14 @@ export class SystemRunner {
     }));
   }
 
+  /** Treaty time left (M16; 0: over or none), for the HUD countdown. */
+  treatyLeftMs(): number {
+    return this.treatyClock.leftMs();
+  }
+
   update(time: number, delta: number): void {
+    // The treaty clock reads this frame's game time (the scene's clock adds the same delta after the runner).
+    this.treatyClock.advance(delta);
     this.cameraController.update(delta);
     this.tileMap.update(time, delta);
     this.paths.reset(delta);
@@ -279,7 +295,7 @@ export class SystemRunner {
     this.wonders.update(delta);
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
-    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, ...(timeVictory && { timeVictory }) };
+    const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }) };
     for (const ai of this.aiPlayers) {
       // Whom this AI attacks, re-chosen every decision (M16 teams; without allies: the human).
       const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world);

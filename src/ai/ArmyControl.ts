@@ -84,6 +84,11 @@ export class ArmyControl {
    */
   launchWave(ctx: AIContext, view: WorldView, units: readonly Entity[] = view.military): number {
     // Leading on score (alone or as a team, M16) in the time limit's final minutes: keep the army home, a lost fight only costs the lead.
+    // The treaty (M16): no wave leaves while it holds (the launch points check first; this is the choke point).
+    if (ctx.treatyActive === true) {
+      this.prune(view);
+      return this.wave.size;
+    }
     if (holdsTimeLead(ctx.player.id, ctx.timeVictory, ctx.player.team)) {
       this.log.add(ctx.timeMs, 'stance', 'holdLead');
       this.prune(view);

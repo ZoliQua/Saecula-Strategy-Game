@@ -15,7 +15,8 @@ import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
  * the build menu, and the running Wonder countdowns (none when the
  * match cannot be won by a Wonder), and the side panel's every-player
  * scores (highest first; the human's allies marked, M16) and the human's villager activity counts, and
- * the time-victory clock (time left and the leader) when the match has one.
+ * the time-victory clock (time left and the leader) when the match has one,
+ * and the treaty countdown (M16) when the match has a treaty.
  */
 export class HudSync {
   constructor(
@@ -27,6 +28,8 @@ export class HudSync {
     private readonly stats: MatchStats | null = null,
     /** The time-victory rule (null: no time limit, no clock). */
     private readonly time: TimeVictoryRule | null = null,
+    /** Treaty time left (M16; 0 once over); null: the match has no treaty. */
+    private readonly treatyLeftMs: (() => number) | null = null,
   ) {}
 
   secondTick(): void {
@@ -35,6 +38,11 @@ export class HudSync {
     this.syncScores();
     this.syncVillagers();
     if (this.time) this.syncTimeLimit(this.time);
+    if (this.treatyLeftMs) this.syncTreaty(this.treatyLeftMs());
+  }
+
+  private syncTreaty(leftMs: number): void {
+    if (uiStore.getState().treatyLeftMs !== leftMs) uiStore.getState().setTreatyLeft(leftMs);
   }
 
   private syncTimeLimit(time: TimeVictoryRule): void {

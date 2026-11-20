@@ -187,7 +187,8 @@ export class MediumStrategy extends BaseStrategy {
     this.researchTechs(ctx, view);
     this.pressure.launch(ctx, view);
     this.pressure.recall(ctx, view);
-    if (this.pressure.sent && !this.army.attacking && attackReady({
+    // The treaty (M16): no main wave and no landing while it holds.
+    if (ctx.treatyActive !== true && this.pressure.sent && !this.army.attacking && attackReady({
       armySize: view.military.filter((u) => !this.isReserved(u)).length,
       wave: this.waveThreshold(ctx, view),
       timeMs: ctx.timeMs,

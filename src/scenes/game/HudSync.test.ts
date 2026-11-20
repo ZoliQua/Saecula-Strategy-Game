@@ -89,6 +89,20 @@ describe('HudSync', () => {
     expect(uiStore.getState().timeLimit).toMatchObject({ remainingMs: TIME_VICTORY.holdLeadMs, leaderId: 1, final: true });
   });
 
+  it('with a treaty, publishes the treaty time left (M16), 0 once over; without one it stays null', () => {
+    const { world, players } = setup();
+    let left = 600_000;
+    const sync = new HudSync(world, players, null, null, null, () => left);
+    sync.secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBe(600_000);
+    left = 0;
+    sync.secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBe(0);
+    resetUiStore();
+    new HudSync(world, players, null).secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBeNull();
+  });
+
   it('without a time limit the clock stays null', () => {
     const { world, players } = setup();
     new HudSync(world, players, null).secondTick();

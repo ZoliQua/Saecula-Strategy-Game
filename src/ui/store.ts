@@ -136,6 +136,8 @@ export interface UiState {
   wonders: readonly WonderClockInfo[];
   /** The time-victory clock (null: the match has no time limit). */
   timeLimit: TimeLimitInfo | null;
+  /** Treaty time left (M16; HudSync once a second): null with no treaty, 0 once it is over. */
+  treatyLeftMs: number | null;
   /** A campaign mission's objectives (null outside the campaign). */
   objectives: { readonly title: string; readonly rows: readonly ObjectiveRowInfo[] } | null;
   /** Building whose delete button is armed (the next press deletes it), or null. */
@@ -162,6 +164,7 @@ export interface UiActions {
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
   setTimeLimit: (info: TimeLimitInfo | null) => void;
+  setTreatyLeft: (ms: number | null) => void;
   setObjectives: (objectives: UiStore['objectives']) => void;
   /** Arms the delete of building `id` with the refund `refundPct` locked (null disarms). */
   setDeleteArmed: (id: number | null, refundPct?: number) => void;
@@ -189,6 +192,7 @@ const INITIAL: UiState = {
   gameTimeMs: 0,
   wonders: [],
   timeLimit: null,
+  treatyLeftMs: null,
   objectives: null,
   deleteArmedId: null,
   deleteArmedPct: 0,
@@ -220,6 +224,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
     setTimeLimit: (timeLimit) => set({ timeLimit }),
+    setTreatyLeft: (treatyLeftMs) => set({ treatyLeftMs }),
     setObjectives: (objectives) => set({ objectives }),
     setDeleteArmed: (id, refundPct = 0) => set({ deleteArmedId: id, deleteArmedPct: id === null ? 0 : refundPct }),
     showSidePanel: (view) => set({ sidePanel: { open: true, view } }),
@@ -248,6 +253,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore, resources: Read
     gameTimeMs: 0,
     wonders: [],
     timeLimit: null,
+    treatyLeftMs: null,
     objectives: null,
     deleteArmedId: null,
     deleteArmedPct: 0,

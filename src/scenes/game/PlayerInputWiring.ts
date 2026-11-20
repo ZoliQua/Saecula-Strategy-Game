@@ -5,6 +5,7 @@ import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
 import type { TileMap } from '../../map/TileMap';
 import type { AgeId, CivId } from '../../types';
+import type { TreatyGate } from '../../game/treaty';
 import type { TeamLookup } from '../../game/diplomacy';
 import { BuildPlacement } from './BuildPlacement';
 import { wireBuildingDeletion } from './BuildingDeletion';
@@ -22,6 +23,8 @@ export interface PlayerInputDeps {
   readonly humanId: number;
   /** Teams (M16): an ally is no command target (nor cursor). */
   readonly teams: TeamLookup;
+  /** The treaty (M16): an attack on another team becomes a move with a notice (and no sword cursor). Absent: none. */
+  readonly treaty?: TreatyGate;
   readonly civ: CivId;
   readonly age: () => AgeId;
   /** Max-HP multiplier for the human's new buildings (civ bonus). */
@@ -39,7 +42,7 @@ export interface PlayerInputDeps {
  */
 export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildPlacement {
   const canSee = fogCanSee(d.fog, d.humanId);
-  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee, map: d.mapData, teams: d.teams });
+  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee, map: d.mapData, teams: d.teams, ...(d.treaty && { treaty: d.treaty }) });
   // The placement ghost and the cursor read the hover tile from the pointer handler.
   let pointer: PointerInput | null = null;
   const hoverTile = () => pointer?.getHoverTile() ?? null;
@@ -48,7 +51,7 @@ export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildP
   pointer.register();
   const registered = pointer;
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => registered.unregister());
-  wireCursor(scene, d.world, d.mapData, d.selection, hoverTile, d.humanId, canSee, d.teams);
+  wireCursor(scene, d.world, d.mapData, d.selection, hoverTile, d.humanId, canSee, d.teams, d.treaty);
   wireBuildingDeletion(scene, d.world, d.humanId);
   return placement;
 }

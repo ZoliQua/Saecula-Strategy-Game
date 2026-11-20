@@ -618,6 +618,12 @@ export const hu = {
     /** Keycap labels for keys whose `key` prints nothing useful (by KeyboardEvent.code). */
     keyNames: { Space: 'Szóköz', Tab: 'Tab', Delete: 'Delete', Backspace: 'Backspace' } as Record<string, string>,
   },
+  /** The treaty (M16): the HUD countdown and its notices. */
+  treaty: {
+    clock: (t: string) => `Fegyverszünet: ${t}`,
+    blocked: 'Fegyverszünet van: most nem támadhatsz, az egységek csak odamennek.',
+    ended: 'Véget ért a fegyverszünet! Kezdődhet a harc.',
+  },
   common: {
     yes: 'Igen',
     cancel: 'Mégse',

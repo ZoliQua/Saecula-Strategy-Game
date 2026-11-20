@@ -11,6 +11,7 @@ import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
 import { canAttackTarget, moveLayerOf, navGridFor } from '../../ecs/navLayer';
 import { NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { NO_TREATY, type TreatyGate } from '../../game/treaty';
 
 /** Re-checks the cursor this often while the pointer rests (targets walk under it, the selection changes). */
 const CURSOR_REFRESH_MS = 150;
@@ -28,12 +29,14 @@ export function cursorContext(
   humanId: number,
   canSee?: CanSee,
   teams: TeamLookup = NO_TEAMS,
+  /** The treaty (M16): while it holds, another team is no target, so no sword over it. */
+  treaty: TreatyGate = NO_TREATY,
 ): CursorContext {
   const selected = selection.getAllSelected();
   const units = selected.filter((e) => e.unit !== undefined && e.owner?.playerId === humanId && !e.dying);
   const placing = uiStore.getState().placementBuilding !== null;
   const actor = orderActor(selected, humanId);
-  const target = tile && actor ? resolveOrderTarget(world, tile, actor, canSee, teams) : null;
+  const target = tile && actor ? resolveOrderTarget(world, tile, actor, canSee, teams, treaty) : null;
   const resource = target?.entity?.resourceNode?.type;
   return {
     placing,
@@ -48,7 +51,7 @@ export function cursorContext(
     land: tile ? map.isPassable(tile.tx, tile.ty) : false,
     target: resource
       ? { kind: target?.kind ?? 'none', resource }
-      : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId, teams) },
+      : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId, teams, treaty) },
     // A move is allowed where any selected unit can go: a ship on water, a land unit on land (M14).
     passable: tile ? units.some((e) => navGridFor(map, e).isPassable(tile.tx, tile.ty)) || (units.length === 0 && map.isPassable(tile.tx, tile.ty)) : null,
   };
@@ -69,11 +72,12 @@ export function wireCursor(
   humanId: number,
   canSee?: CanSee,
   teams: TeamLookup = NO_TEAMS,
+  treaty: TreatyGate = NO_TREATY,
 ): void {
   const canvas = scene.game.canvas;
   let shown: CursorKind = 'default';
   const refresh = (): void => {
-    const kind = cursorFor(cursorContext(world, map, selection, hoverTile(), humanId, canSee, teams));
+    const kind = cursorFor(cursorContext(world, map, selection, hoverTile(), humanId, canSee, teams, treaty));
     if (kind === shown) return;
     shown = kind;
     canvas.style.cursor = cursorCss(kind);

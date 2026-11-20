@@ -36,6 +36,12 @@ export interface AIContext {
   readonly fog: FogOfWarData;
   /** Teams (M16): allies share sight and are never enemies; absent = every player its own team. */
   readonly teams?: TeamLookup;
+  /**
+   * The treaty holds (M16; absent = false): no offensive launch (waves, raids,
+   * flanks, landings, naval engagement). Economy and building go on; defence
+   * may still order attacks, which CombatSystem drops.
+   */
+  readonly treatyActive?: boolean;
 }
 
 export interface AIStrategy {

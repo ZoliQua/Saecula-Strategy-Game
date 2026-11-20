@@ -241,7 +241,8 @@ export class HardStrategy extends MediumStrategy {
     if (!target) return;
     const squad = this.raiders(view);
     if (squad.length >= this.hard.harass.minSize) {
-      this.harass.launch(ctx, squad, target);
+      // The treaty (M16): the squad waits at home and rides out once it ends.
+      if (ctx.treatyActive !== true) this.harass.launch(ctx, squad, target);
       return;
     }
     const unit = this.raiderToTrain(ctx, view);

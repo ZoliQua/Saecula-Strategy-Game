@@ -50,6 +50,7 @@ import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
 import { buildMatchAIs } from '../matchAIs';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
+import { treatyActive, type TreatyGate } from '../../game/treaty';
 import { chooseEnemyPlayer } from '../targetPlayer';
 
 export interface HeadlessMatchOptions {
@@ -258,6 +259,9 @@ function assemble(parts: MatchParts): HeadlessMatch {
   const paths = new PathBudget();
   const wonderVictory = hasWonderVictory(setup.victory);
   const isDefeated = (id: number) => players.get(id)?.defeated ?? false;
+  let now = parts.startMs;
+  // The treaty (M16): from the setup and this match's clock, like the live runner.
+  const treaty: TreatyGate = () => treatyActive(setup, now);
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
@@ -265,17 +269,16 @@ function assemble(parts: MatchParts): HeadlessMatch {
     construction: new ConstructionSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
-    towers: new TowerCombatSystem(world, fogFor, players),
-    combat: new CombatSystem(world, map, players, paths),
-    monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths, players),
-    projectiles: new ProjectileSystem(world, players),
+    towers: new TowerCombatSystem(world, fogFor, players, treaty),
+    combat: new CombatSystem(world, map, players, paths, treaty),
+    monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths, players, treaty),
+    projectiles: new ProjectileSystem(world, players, treaty),
     movement: new MovementSystem(world, players, map),
     transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),
     wonders: new WonderSystem(world, wonderVictory),
     population: new PopulationSystem(world, 1, players),
   };
-  let now = parts.startMs;
   const timeLimit = hasTimeVictory(setup.victory) ? new TimeLimitWatch(players, stats, now) : null;
   const step = (dt: number) => {
     now += dt;
@@ -296,7 +299,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.wonders.update(dt);
     timeLimit?.advance(dt);
     const timeVictory = timeLimit?.view();
-    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, ...(timeVictory && { timeVictory }) };
+    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }) };
     for (const ai of ais) ai.update(withEnemy(base, enemyOf(ai.player.id)), dt);
     humanAi?.update(withEnemy(base, humanEnemy()), dt);
     systems.population.update();

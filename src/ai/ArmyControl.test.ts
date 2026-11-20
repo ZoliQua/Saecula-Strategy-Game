@@ -79,6 +79,24 @@ describe('ArmyControl', () => {
     expect(send(undefined)).toBe(5);
   });
 
+  it('no wave leaves while the treaty holds (M16); the same army goes once it ends', () => {
+    const map = new MapData(32, 32);
+    const world = createEcsWorld();
+    const fog = new FogOfWarData(32, 32);
+    createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'town_center', origin: { tx: 24, ty: 24 }, playerId: 1, mapData: map });
+    const army = Array.from({ length: 5 }, (_, i) => createUnit(world, { type: 'swordsman', tile: { tx: 6 + i, ty: 6 }, playerId: 2 }));
+    fog.markVisible(25, 25);
+    const base: AIContext = { world, mapData: map, player: createPlayer({ id: 2 }), timeMs: 0, fog, enemyPlayerId: 1 };
+    const control = new ArmyControl(new ThoughtLog(), createRng(3));
+    const during = { ...base, treatyActive: true };
+    expect(control.launchWave(during, new Perception().update(during))).toBe(0);
+    expect(control.attacking).toBe(false);
+    expect(army.every((u) => !u.moveIntent && !u.attackIntent)).toBe(true);
+    const after = { ...base, treatyActive: false };
+    expect(control.launchWave(after, new Perception().update(after))).toBe(5);
+  });
+
   it('a wave member converted away (M11) leaves the wave and keeps its new owner\'s orders', () => {
     const map = new MapData(48, 48);
     const world = createEcsWorld();

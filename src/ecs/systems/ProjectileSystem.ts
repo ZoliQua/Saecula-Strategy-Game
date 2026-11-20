@@ -2,6 +2,7 @@ import { PROJECTILE_HIT_RADIUS } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
 import { areEnemies, NO_TEAMS } from '../../game/diplomacy';
+import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
 import { boostArmor, bonusesFor } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { distanceToEntity } from '../../game/targetGeometry';
@@ -29,6 +30,8 @@ export class ProjectileSystem {
   constructor(
     private readonly world: EcsWorld,
     private readonly players: PlayerManager | null = null,
+    /** The treaty (M16): while it holds, a shot hurts no other team's player (splash included). */
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {}
 
   update(deltaMs: number): void {
@@ -69,7 +72,8 @@ export class ProjectileSystem {
 
   private isHostile(v: Victim, shot: Shot): boolean {
     // Enemies only (M16): never the shooter's own, an ally's (splash included) or Gaia's.
-    return !v.dying && areEnemies(this.players ?? NO_TEAMS, v.owner.playerId, shot.ownerId);
+    const teams = this.players ?? NO_TEAMS;
+    return !v.dying && areEnemies(teams, v.owner.playerId, shot.ownerId) && !truceBetween(this.treaty, teams, v.owner.playerId, shot.ownerId);
   }
 
   private findVictim(id: number): Victim | undefined {

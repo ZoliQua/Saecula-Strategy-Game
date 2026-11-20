@@ -1,4 +1,5 @@
 import { areEnemies, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { NO_TREATY, type TreatyGate } from '../../game/treaty';
 import type { Entity } from '../components';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { EcsWorld } from '../world';
@@ -22,6 +23,8 @@ export class TowerCombatSystem {
     private readonly fogFor: (playerId: number) => FogOfWarData | null = () => null,
     /** Teams (M16): allies are never a target; default none (everyone hostile). */
     private readonly teams: TeamLookup = NO_TEAMS,
+    /** The treaty (M16): while it holds, towers shoot no player at all. */
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {}
 
   update(deltaMs: number): void {
@@ -63,6 +66,8 @@ export class TowerCombatSystem {
     if (target.dying || target.health.current <= 0) return false;
     // Enemies only: never own, an ally's (M16) or Gaia's (neutral wildlife/resources).
     if (!areEnemies(this.teams, target.owner.playerId, tower.owner.playerId)) return false;
+    // The treaty (M16): every target left is another team's player, so none while it holds.
+    if (this.treaty()) return false;
     // Same Chebyshev metric as CombatSystem, so an accepted target always fires.
     const dist = Math.max(
       Math.abs(target.position.tx - tower.position.tx),
