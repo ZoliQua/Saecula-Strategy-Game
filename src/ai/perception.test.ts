@@ -89,6 +89,18 @@ describe('Perception', () => {
 });
 
 describe('Perception with teams (M16)', () => {
+  it('lists no threats while the treaty holds (M16); the same unit is a threat again once it ends', () => {
+    const { world, map, fog, ctx, perception } = setup();
+    createBuilding(world, { type: 'house', origin: { tx: 20, ty: 20 }, playerId: 2, mapData: map });
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 23, ty: 20 }, playerId: 1 });
+    reveal(fog, 0, 0, 39, 39);
+    const during = perception.update({ ...ctx, treatyActive: true });
+    expect(during.threats).toEqual([]);
+    // Still seen: only the threat list is calm.
+    expect(during.visibleEnemyUnits).toContain(archer);
+    expect(perception.update({ ...ctx, timeMs: 1000, treatyActive: false }).threats).toEqual([archer]);
+  });
+
   it('does not list allied units or buildings as enemies or threats', () => {
     const { world, map, fog, ctx, perception } = setup();
     const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);

@@ -110,10 +110,9 @@ export class OrderIssuer {
     // Only the human's units take orders (a selected building or enemy does not).
     if (!actor) return;
     const target = resolveOrderTarget(this.world, tile, actor, this.canSee, this.teams, this.treaty);
-    // The treaty (M16): the units walk there instead of attacking; say why.
-    if (target.truce) this.notice(hu.treaty.blocked);
     let ordered: 'unit_move' | 'unit_attack' | 'unit_convert' | null = null;
     const boarders: Entity[] = [];
+    let truceMove = false;
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== this.humanId || entity.unit === undefined) continue;
       // Any new right-click order overrides whatever the unit was
@@ -158,7 +157,10 @@ export class OrderIssuer {
       }
       this.world.addComponent(entity, 'moveIntent', { target: tile });
       ordered ??= 'unit_move';
+      // The treaty (M16): this unit walks there instead of attacking.
+      if (target.truce) truceMove = true;
     }
+    if (truceMove) this.notice(hu.treaty.blocked);
     // The transport comes to meet the units it takes aboard (unless it was given its own order).
     const ship = target.kind === 'ownTransport' ? target.entity : null;
     const centre = boarders[0]?.position;

@@ -93,8 +93,11 @@ describe('HudSync', () => {
     const { world, players } = setup();
     let left = 600_000;
     const sync = new HudSync(world, players, null, null, null, () => left);
-    sync.secondTick();
+    // Shown at once, before the first second ticks.
     expect(uiStore.getState().treatyLeftMs).toBe(600_000);
+    left = 599_000;
+    sync.secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBe(599_000);
     left = 0;
     sync.secondTick();
     expect(uiStore.getState().treatyLeftMs).toBe(0);

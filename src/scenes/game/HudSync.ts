@@ -30,7 +30,10 @@ export class HudSync {
     private readonly time: TimeVictoryRule | null = null,
     /** Treaty time left (M16; 0 once over); null: the match has no treaty. */
     private readonly treatyLeftMs: (() => number) | null = null,
-  ) {}
+  ) {
+    // The treaty countdown shows from the first frame, not after the first second.
+    if (treatyLeftMs) this.syncTreaty(treatyLeftMs());
+  }
 
   secondTick(): void {
     this.syncUniqueBuildings();

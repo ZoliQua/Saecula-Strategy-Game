@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createUnit } from '../../ecs/archetypes/createUnit';
+import { createResourceNode } from '../../ecs/archetypes/resource';
+import { createVillager } from '../../ecs/archetypes/villager';
 import type { Entity } from '../../ecs/components';
 import type { SelectionSystem } from '../../ecs/systems/SelectionSystem';
 import { createMiniSim } from '../../ecs/testing/miniSim';
@@ -59,6 +61,17 @@ describe('player orders under the treaty (M16)', () => {
     orders.issueOrders({ tx: 12, ty: 10 });
     expect(sword.attackIntent?.targetId).toBe(foe.id);
     expect(notices).toHaveLength(1);
+  });
+
+  it('no notice when the order did not become a move (a villager gathers the tree an enemy stands on)', () => {
+    const { sim, players, treaty, notices } = setup();
+    const tree = createResourceNode(sim.world, { tile: { tx: 20, ty: 20 }, type: 'wood' });
+    createUnit(sim.world, { type: 'swordsman', tile: { tx: 20, ty: 20 }, playerId: 2 });
+    const v = createVillager(sim.world, { tile: { tx: 15, ty: 15 } });
+    const orders = new OrderIssuer(sim.world, selectionOf([v]), { playSFX: () => {} }, { map: sim.map, teams: players, treaty, notice: (m) => void notices.push(m) });
+    orders.issueOrders({ tx: 20, ty: 20 });
+    expect(v.gatherIntent?.nodeId).toBe(tree.id);
+    expect(notices).toEqual([]);
   });
 
   it('Gaia stays an order target during the treaty', () => {

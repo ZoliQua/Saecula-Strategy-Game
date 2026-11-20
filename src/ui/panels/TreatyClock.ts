@@ -7,9 +7,9 @@ export function treatyEnded(prev: number | null, next: number | null): boolean {
   return prev !== null && prev > 0 && next === 0;
 }
 
-/** The countdown text, or null when nothing is shown (no treaty, or over). */
+/** The countdown text, seconds rounded up (never 0:00 before the end), or null when nothing is shown (no treaty, or over). */
 export function treatyLabel(leftMs: number | null): string | null {
-  return leftMs !== null && leftMs > 0 ? hu.treaty.clock(formatClock(leftMs)) : null;
+  return leftMs !== null && leftMs > 0 ? hu.treaty.clock(formatClock(Math.ceil(leftMs / 1000) * 1000)) : null;
 }
 
 /**

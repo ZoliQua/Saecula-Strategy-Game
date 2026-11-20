@@ -215,7 +215,8 @@ export class Perception {
       knownEnemyBuildings: [...this.memory.values()],
       resources,
       fish,
-      threats: visibleEnemyUnits.filter((u) => isArmed(u) && nearAny(u.position!, home, AI_COMMON.defendRadius)),
+      // The treaty (M16): every enemy here is another team's player (Gaia is never listed), and none can fight, so no threats.
+      threats: ctx.treatyActive === true ? [] : visibleEnemyUnits.filter((u) => isArmed(u) && nearAny(u.position!, home, AI_COMMON.defendRadius)),
       enemySightings: { ...this.sightings },
       enemyVillagers: [...this.villagerMemory.values()],
     };
