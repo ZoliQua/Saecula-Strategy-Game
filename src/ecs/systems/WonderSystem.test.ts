@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { gameEvents, type GameEvents } from '../../game/events';
+import { TreatyClock, type TreatyGate } from '../../game/treaty';
 import { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { createBuilding } from '../archetypes/building';
@@ -11,7 +12,7 @@ afterEach(() => {
   for (const u of unsubs.splice(0)) u();
 });
 
-function setup(options: { site?: boolean; enabled?: boolean } = {}) {
+function setup(options: { site?: boolean; enabled?: boolean; treaty?: TreatyGate } = {}) {
   const map = new MapData(20, 20, TERRAIN.grass);
   const world = createEcsWorld();
   const wonder = createBuilding(world, {
@@ -25,7 +26,7 @@ function setup(options: { site?: boolean; enabled?: boolean } = {}) {
   const lost: GameEvents['wonderLost'][] = [];
   unsubs.push(gameEvents.on('wonderCompleted', (e) => completed.push(e)));
   unsubs.push(gameEvents.on('wonderLost', (e) => lost.push(e)));
-  const system = new WonderSystem(world, options.enabled ?? true);
+  const system = new WonderSystem(world, options.enabled ?? true, options.treaty);
   return { world, wonder, system, completed, lost };
 }
 
@@ -48,6 +49,25 @@ describe('WonderSystem', () => {
     system.update(1000);
     expect(wonder.wonder).toEqual({ heldMs: 0 });
     expect(completed).toHaveLength(1);
+  });
+
+  it('the hold clock waits for the treaty to end (M16)', () => {
+    // A 1-minute treaty on the match clock: the Wonder finishes during it.
+    const clock = new TreatyClock({ treatyMin: 1 });
+    const { wonder, system, completed } = setup({ treaty: clock.gate });
+    const step = (ms: number) => {
+      clock.advance(ms);
+      system.update(ms);
+    };
+    step(10_000);
+    expect(completed).toHaveLength(1);
+    step(30_000);
+    step(19_999);
+    expect(wonder.wonder?.heldMs).toBe(0);
+    // The treaty ends at 60 s: from here every delta counts.
+    step(1);
+    step(5_000);
+    expect(wonder.wonder?.heldMs).toBe(5_001);
   });
 
   it('heldMs adds each delta', () => {

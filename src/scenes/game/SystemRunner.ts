@@ -173,7 +173,7 @@ export class SystemRunner {
     this.projectiles = new ProjectileSystem(world, players, this.treaty);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
-    this.wonders = new WonderSystem(world, options.wonderVictory);
+    this.wonders = new WonderSystem(world, options.wonderVictory, this.treaty);
     this.healthBars = new HealthBarSystem(scene, world);
     const { restore } = options;
     this.stats = restore?.stats ?? new MatchStats(world, players, 0);

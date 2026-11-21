@@ -1550,6 +1550,7 @@ tárgyalással) érvényesek.
   nem lőnek, a lövedék nem sebez, nincs térítés), az AI nem indít hullámot,
   portyát és partraszállást, a játékos támadó parancsa mozgásra vált egy magyar
   értesítéssel. A HUD az óra alatt visszaszámlálót mutat; a végén értesítés.
+  A Csoda 10 perces visszaszámlálója csak a fegyverszünet után indul.
 - **Kezdő nyersanyag:** a beállítás új „Kezdő nyersanyag” sora: normál
   (200 étel / 200 fa / 100 arany, a mai) / magas / halálmeccs (`START_RESOURCES`
   a `balance.ts`-ben; a ma kétszer beírt érték innen jön). Minden játékos

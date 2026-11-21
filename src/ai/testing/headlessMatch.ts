@@ -276,7 +276,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     movement: new MovementSystem(world, players, map),
     transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),
-    wonders: new WonderSystem(world, wonderVictory),
+    wonders: new WonderSystem(world, wonderVictory, treaty),
     population: new PopulationSystem(world, 1, players),
   };
   const timeLimit = hasTimeVictory(setup.victory) ? new TimeLimitWatch(players, stats, now) : null;
