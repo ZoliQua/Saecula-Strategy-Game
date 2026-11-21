@@ -291,6 +291,7 @@ export const hu = {
     timeLimitLeaderEnemyTeam: 'Az ellenséges csapat vezet',
     timeLimitFinal: 'Az utolsó 5 perc! A legtöbb pont nyer.',
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
+    wonderAlly: 'Szövetségesed Csodája elkészült — 10 perc múlva győztök!',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
     wonderLost: 'Egy Csoda elpusztult.',
     /** Conversions (M11). */

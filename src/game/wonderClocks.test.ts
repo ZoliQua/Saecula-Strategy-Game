@@ -32,8 +32,8 @@ describe('wonderClocks', () => {
     add(4, 20, null, { site: true });
     add(4, 26, 590_000, { dying: true });
     expect(wonderClocks(world, players, 600_000)).toEqual([
-      { entityId: ai.id, playerId: 2, color: players.get(2)!.color, remainingMs: 200_000 },
-      { entityId: human.id, playerId: 1, color: players.get(1)!.color, remainingMs: 599_000 },
+      { entityId: ai.id, playerId: 2, color: players.get(2)!.color, friendly: false, remainingMs: 200_000 },
+      { entityId: human.id, playerId: 1, color: players.get(1)!.color, friendly: true, remainingMs: 599_000 },
     ]);
   });
 
@@ -44,5 +44,22 @@ describe('wonderClocks', () => {
     const e = createBuilding(world, { type: 'wonder', origin: { tx: 2, ty: 2 }, playerId: 1, mapData: map });
     world.addComponent(e, 'wonder', { heldMs: 700_000 });
     expect(wonderClocks(world, players, 600_000)[0]?.remainingMs).toBe(0);
+  });
+
+  it('marks an ally Wonder friendly, an enemy one not (M16)', () => {
+    const map = new MapData(40, 40, TERRAIN.grass);
+    const world = createEcsWorld();
+    const players = new PlayerManager([
+      createPlayer({ id: 1, isHuman: true }),
+      createPlayer({ id: 2 }),
+      createPlayer({ id: 3 }),
+    ]);
+    players.assignTeams(1);
+    for (const [playerId, tx] of [[2, 2], [3, 10]] as const) {
+      const e = createBuilding(world, { type: 'wonder', origin: { tx, ty: 4 }, playerId, mapData: map });
+      world.addComponent(e, 'wonder', { heldMs: 0 });
+    }
+    const byOwner = new Map(wonderClocks(world, players, 600_000).map((c) => [c.playerId, c.friendly]));
+    expect(byOwner).toEqual(new Map([[2, true], [3, false]]));
   });
 });

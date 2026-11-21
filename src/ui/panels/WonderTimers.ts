@@ -4,6 +4,15 @@ import { el, formatClock } from '../dom';
 import { hex } from '../format';
 import type { UiStore } from '../store';
 
+/**
+ * The toast for a finished Wonder: the human's (player 1) own, an ally's
+ * (M16: a win for the human's team) or an enemy's.
+ */
+export function wonderCompletedText(playerId: number, friendly: (ownerId: number) => boolean): string {
+  if (playerId === 1) return hu.hud.wonderOwn;
+  return friendly(playerId) ? hu.hud.wonderAlly : hu.hud.wonderEnemy(playerId);
+}
+
 interface Row {
   readonly node: HTMLElement;
   readonly text: HTMLElement;
@@ -36,7 +45,7 @@ export class WonderTimers {
     state.wonders.forEach((w, i) => {
       const row = this.rows.get(w.entityId) ?? this.addRow(w);
       row.text.textContent = hu.hud.wonderClock(formatClock(w.remainingMs));
-      row.node.classList.toggle('own', w.playerId === 1);
+      row.node.classList.toggle('own', w.friendly);
       // Soonest first; a row is only moved when out of place (moving it would replay its entrance).
       if (this.root.children[i] !== row.node) this.root.insertBefore(row.node, this.root.children[i] ?? null);
     });

@@ -34,7 +34,7 @@ describe('HudSync', () => {
     const { world, players, wonder } = setup();
     new HudSync(world, players, WONDER_HOLD_MS).secondTick();
     expect(uiStore.getState().wonders).toEqual([
-      { entityId: wonder.id, playerId: 1, color: players.get(1)!.color, remainingMs: WONDER_HOLD_MS - 60_000 },
+      { entityId: wonder.id, playerId: 1, color: players.get(1)!.color, friendly: true, remainingMs: WONDER_HOLD_MS - 60_000 },
     ]);
   });
 
