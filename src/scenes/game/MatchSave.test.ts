@@ -4,6 +4,7 @@ import { hu } from '../../i18n/hu';
 import { STEP_MS, savableMatch } from '../../save/savedMatch.testkit';
 import type { MatchState } from '../../save/serializer';
 import { SaveStorage, type KeyValueStore } from '../../save/storage';
+import { gameDelta } from './gameClock';
 import { MatchSave } from './MatchSave';
 
 const notices: string[] = [];
@@ -104,6 +105,16 @@ describe('MatchSave', () => {
     saves.update(1_000);
     await vi.waitFor(() => expect(notices).toEqual([hu.save.autosaved]));
     expect(store.data.has('save:auto')).toBe(true);
+  });
+  it('autosave runs on game time: 5 game minutes at 2x are 2.5 real minutes of frames', async () => {
+    notices.length = 0;
+    const store = memoryStore();
+    const saves = new MatchSave(() => state, new SaveStorage(store), 0);
+    const frame = 1_000; // real ms per frame
+    for (let t = 0; t < 149_000; t += frame) saves.update(gameDelta(frame, 2, 1));
+    expect(store.data.has('save:auto')).toBe(false);
+    saves.update(gameDelta(frame, 2, 1));
+    await vi.waitFor(() => expect(store.data.has('save:auto')).toBe(true));
   });
   it('a decided match is never autosaved, even on a 5-minute mark (final review Minor 2)', async () => {
     notices.length = 0;

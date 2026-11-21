@@ -39,6 +39,7 @@ import { CampaignRunner } from './game/CampaignRunner';
 import type { SaveData } from '../save/schema';
 import { liveMatchState, MatchSave, type SaveOutcome } from './game/MatchSave';
 import { MatchRecorder } from './game/MatchRecorder';
+import { gameDelta } from './game/gameClock';
 import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
 import { prepareMatch, runnerFor, startFromSlot, type MatchStart, type MenuReturn } from './game/MatchStart';
 import type { GameOverData } from './GameOverScene';
@@ -372,8 +373,8 @@ export class GameScene extends Phaser.Scene {
     // After a lost context nothing may advance the saved match (a resumed pause menu included).
     if (this.contextLost) return;
     const frameStart = performance.now();
-    const delta = realDelta * this.timeScale;
-    this.runner.update(time, delta);
+    const delta = gameDelta(realDelta, this.setup.speed, this.timeScale);
+    this.runner.update(time, delta, realDelta);
     this.lighting.update(delta);
     this.placement.updateGhost();
 

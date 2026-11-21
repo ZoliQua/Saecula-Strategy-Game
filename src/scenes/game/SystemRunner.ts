@@ -273,10 +273,11 @@ export class SystemRunner {
     return this.treatyClock.leftMs();
   }
 
-  update(time: number, delta: number): void {
+  /** `delta` is game time (speed-scaled); `realDelta` drives the camera. */
+  update(time: number, delta: number, realDelta: number = delta): void {
     // The treaty clock reads this frame's game time (the scene's clock adds the same delta after the runner).
     this.treatyClock.advance(delta);
-    this.cameraController.update(delta);
+    this.cameraController.update(realDelta);
     this.tileMap.update(time, delta);
     this.paths.reset(delta);
     this.pathfinding.update();
