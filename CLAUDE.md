@@ -1573,6 +1573,35 @@ tárgyalással) érvényesek.
   kampány, királygyilkos és „domb ura” mód (új grafika kellene), sebesség
   váltása meccs közben.
 - Keret (10.): az M15 keretei (új textúra nincs).
+- **Állapot (2026-11-20):** kész. `src/game/diplomacy.ts` (`areAllies`,
+  `areEnemies`, `isFriendly`; a csapat a beállításból: 1…1+szövetségesek = 1.
+  csapat, a többi 2.; 0 szövetségesnél mindenki a saját csapata, így a mai játék
+  változatlan), közös látás (emberé és minden AI-é), szövetséges-jelölés
+  (kijelölő gyűrű, „Szövetséges” címke, minimap, pontszám-panel, játék vége),
+  `src/ai/targetPlayer.ts` (a szövetséges AI a legközelebbi talpon lévő
+  ellenséget támadja; csapatmeccsen a hullám bármely útjába eső ellenséges
+  egységgel megküzd, épületet csak a választott ellenségét bontja),
+  csapatgyőzelem (a vereségben szövetséges sosem „győztes”; csapat-szövegek a
+  játék vége kártyán és az időkorlát-órán; az M9-es „vezető visszafogja magát”
+  szabály a csapatot nézi), `src/game/treaty.ts` (a játékidőből számolt
+  fegyverszünet, nincs mentett állapota; alatta az AI nem lát fenyegetést, így nem
+  dermed meg egy bázisán álló ellenséges egységtől), kezdő nyersanyag
+  (`START_RESOURCES`), játéksebesség (`src/scenes/game/gameClock.ts`; a kamera
+  valós időben), `schemaVersion` 10 (valódi v9-mentéssel; a régi játéknapló-
+  rekordok alapértékekkel olvasódnak). A szövetséges épületéből nem lehet gyűjteni
+  (az átnézés találta: a szövetséges farmját az ember falusija learatta volna).
+  Szimulációk: 2v2 Közepes (96×96 rét, 3. mag) — szövetségesek között egyetlen
+  találat sincs, a szövetséges AI ellenséges épületeket rombol, az 1. csapat
+  27,4 percnél nyer (3., 7., 11., 19. mag átmegy; 5. és 23.: az ellenséges csapat
+  hamarabb nyer, mint hogy a szövetséges hulláma épületet érne); fegyverszünet
+  (64×64 rét, Nehéz–Nehéz, 10 perc): 10:00 előtt nincs sebzés és támadás, az első
+  hullám 10:00–10:02, az első találat 10:01–10:09 (hat mag). Mérve: textúra
+  (`distinct6`) 171,3 MB (új textúra nincs), JS-bundle 0,75 MB gzip, a teljes
+  tesztcsomag 3166 teszt. Böngésző-smoke (5196): a négy új beállítás-sor, egy 2v2
+  meccs 10 perces fegyverszünettel, magas nyersanyaggal és 2× sebességgel —
+  visszaszámláló, „Szövetséges” jelölés, a szövetséges városa a minimapen,
+  oldalhiba nélkül; 2× sebességnél a játékidő 1,9-szer gyorsabb, a kamera
+  változatlan sebességű.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
