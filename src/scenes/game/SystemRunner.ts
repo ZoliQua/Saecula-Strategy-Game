@@ -53,7 +53,7 @@ import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
 import { chooseEnemyPlayer } from '../../ai/targetPlayer';
-import { TreatyClock, type TreatyGate } from '../../game/treaty';
+import { treatyClockFor, type TreatyClock, type TreatyGate } from '../../game/treaty';
 
 export interface SystemRunnerOptions {
   readonly difficulty: Difficulty;
@@ -149,7 +149,7 @@ export class SystemRunner {
     this.isDefeated = (id) => players.get(id)?.defeated ?? false;
     this.humanId = players.human()?.id;
     this.humanAge = () => players.human()?.age ?? 1;
-    this.treatyClock = new TreatyClock({ treatyMin: options.treatyMin ?? 0 }, options.startMs ?? 0);
+    this.treatyClock = treatyClockFor(options);
     this.treaty = this.treatyClock.gate;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);

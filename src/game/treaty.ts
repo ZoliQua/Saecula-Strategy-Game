@@ -64,3 +64,8 @@ export class TreatyClock {
     return treatyLeftMs(this.setup, this.nowMs);
   }
 }
+
+/** The runner's treaty clock from its options: a save resumes at its game time (`startMs`). */
+export function treatyClockFor(options: { readonly treatyMin?: number; readonly startMs?: number }): TreatyClock {
+  return new TreatyClock({ treatyMin: options.treatyMin ?? 0 }, options.startMs ?? 0);
+}
