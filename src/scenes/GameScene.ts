@@ -97,16 +97,16 @@ export class GameScene extends Phaser.Scene {
 
   create(data?: Partial<GameSetupConfig> | LoadRequest): void {
     this.cameras.main.setBackgroundColor('#090c12');
-    resetUiStore();
     this.contextLost = false;
     this.loadingSave = data && 'load' in data ? data.load : null;
     const prepared = prepareMatch(data);
+    // The human's stock lives in the UI store during play: a new match starts it from the setup's preset (a save restores it later).
+    const newStart = prepared.ok && prepared.match.start.kind === 'new';
+    resetUiStore(uiStore, newStart ? startResourcesFor(prepared.match.setup) : undefined);
     if (!prepared.ok) return this.backToMenu(prepared.back);
     const { start, art } = prepared.match;
     ({ setup: this.setup, matchId: this.matchId } = prepared.match);
     this.players = prepared.match.players;
-    // The human's stock lives in the UI store during play: a new match starts it from the setup's preset (a save restores it).
-    if (start.kind === 'new') uiStore.getState().setResources(startResourcesFor(this.setup));
     uiStore.getState().setCiv(this.players.human()?.civ ?? DEFAULT_CIV);
     // Only once the match will run (the menu keeps player 1's colour): each civ's bases in its base owner's colour.
     const matchArt = new MatchArt(this, this.players.all(), () => this.runner.evictUnusedArt());
