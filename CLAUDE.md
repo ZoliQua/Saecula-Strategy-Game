@@ -1574,7 +1574,7 @@ tárgyalással) érvényesek.
   kampány, királygyilkos és „domb ura” mód (új grafika kellene), sebesség
   váltása meccs közben.
 - Keret (10.): az M15 keretei (új textúra nincs).
-- **Állapot (2026-11-20):** kész. `src/game/diplomacy.ts` (`areAllies`,
+- **Állapot (2026-11-22):** kész. `src/game/diplomacy.ts` (`areAllies`,
   `areEnemies`, `isFriendly`; a csapat a beállításból: 1…1+szövetségesek = 1.
   csapat, a többi 2.; 0 szövetségesnél mindenki a saját csapata, így a mai játék
   változatlan), közös látás (emberé és minden AI-é), szövetséges-jelölés
@@ -1602,7 +1602,10 @@ tárgyalással) érvényesek.
   meccs 10 perces fegyverszünettel, magas nyersanyaggal és 2× sebességgel —
   visszaszámláló, „Szövetséges” jelölés, a szövetséges városa a minimapen,
   oldalhiba nélkül; 2× sebességnél a játékidő 1,9-szer gyorsabb, a kamera
-  változatlan sebességű.
+  változatlan sebességű. A záró, teljes ágat néző átnézés egy hibát talált: a
+  Csoda 10 perces visszaszámlálója a fegyverszünet alatt is futott (magas vagy
+  halálmeccs nyersanyaggal egy Csoda megnyerhette volna a meccset, mielőtt bárki
+  megtámadhatta); javítva, és a szövetséges Csodáját a HUD barátként jelzi.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
