@@ -16,8 +16,7 @@ describe('v9 → v10 migration', () => {
     const data = { schemaVersion: 9, setup: { victory: 'conquest', seed: 4 }, gameTimeMs: 5 };
     expect(v9ToV10(data)).toEqual({ ...data, setup: { victory: 'conquest', seed: 4, ...MODES } });
     expect(data.setup).toEqual({ victory: 'conquest', seed: 4 });
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, setup: { ...data.setup, ...MODES }, schemaVersion: 10 } });
-    expect(SCHEMA_VERSION).toBe(10);
+    expect(migrate(data, 10)).toEqual({ ok: true, data: { ...data, setup: { ...data.setup, ...MODES }, schemaVersion: 10 } });
   });
 
   it('leaves a non-object setup for the schema to reject', () => {
@@ -31,13 +30,13 @@ describe('v9 → v10 migration', () => {
     expect(v9Save.setup).not.toHaveProperty('allies');
     const parsed = parseSave(JSON.stringify(v9Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save.schemaVersion).toBe(10);
+    expect(parsed.save.schemaVersion).toBe(SCHEMA_VERSION);
     expect(parsed.save.setup).toEqual({ ...v9Save.setup, ...MODES });
     const match = resumeHeadlessMatch(parsed.save);
     expect(match.setup).toMatchObject(MODES);
     match.run(MIN, STEP_MS);
     const again = match.snapshot(FIXED_DATE);
-    expect(again.schemaVersion).toBe(10);
+    expect(again.schemaVersion).toBe(SCHEMA_VERSION);
     expect(again.setup).toMatchObject(MODES);
     expect(parseSave(JSON.stringify(again)).ok).toBe(true);
   });

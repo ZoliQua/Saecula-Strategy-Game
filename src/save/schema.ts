@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PERSONALITIES } from '../config/aiPersonality';
+import { MARKET } from '../config/balance';
 import type { Entity } from '../ecs/components';
 import type { MatchStatsSnapshot } from '../stats/MatchStats';
 import {
@@ -49,9 +50,10 @@ import {
  * v8 (0.8.1): a Medium-family AI's given-up monk targets (strategy.monkAvoid).
  * v9 (M14): ships and the dock, fish-school terrain, transport cargo and orders.
  * v10 (M16): the setup's mode fields (allies, treatyMin, startResources, speed).
+ * v11 (M17): the market building and each player's market prices (marketPrices).
  */
 
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -177,6 +179,8 @@ const playerId = int.positive();
 /** Record keys are player ids in decimal. */
 const playerKey = z.string().regex(/^[1-9]\d*$/);
 
+const marketPrice = num.min(MARKET.minPrice).max(MARKET.maxPrice);
+
 const PlayerSchema = z
   .object({
     id: playerId,
@@ -190,6 +194,8 @@ const PlayerSchema = z
     defeated: z.boolean(),
     researched: z.array(techId),
     gatherHandicap: num.positive(),
+    /** Gold per MARKET.lot of food and wood (M17); always within the MARKET bounds. */
+    marketPrices: z.object({ food: marketPrice, wood: marketPrice }).strict(),
     personality: enumOf(PERSONALITIES).optional(),
   })
   .strict();

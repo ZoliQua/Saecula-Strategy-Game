@@ -41,6 +41,7 @@ const TEXTURE_KEYS: Record<BuildingType, string> = {
   wonder: 'building_wonder',
   monastery: 'building_monastery',
   dock: 'building_dock',
+  market: 'building_market',
 };
 
 function toSpec(type: BuildingType): BuildingSpec {

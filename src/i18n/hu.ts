@@ -200,6 +200,7 @@ export const hu = {
     wonder: 'Csoda',
     monastery: 'Kolostor',
     dock: 'Kikötő',
+    market: 'Piac',
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -237,6 +238,14 @@ export const hu = {
     cargo: 'Rakomány',
     unload: 'Kirakodás',
     unloadTip: 'A rakomány partra száll a legközelebbi szárazföldön (jobb klikk a partra: ott száll ki).',
+    /** The market's exchange buttons (M17). */
+    market: {
+      title: 'Csere',
+      lot: { food: 'étel', wood: 'fa' },
+      buy: (lot: number, res: string, gold: number) => `Vétel ${lot} ${res} — ${gold} arany`,
+      sell: (lot: number, res: string, gold: number) => `Eladás ${lot} ${res} — ${gold} arany`,
+      tip: 'Minden vétel drágítja, minden eladás olcsóbbítja az adott nyersanyagot; az eladásnál díj vonódik le.',
+    },
     amount: 'Készlet',
     queue: 'Kiképzési sor',
     build: 'Építés',
@@ -355,6 +364,7 @@ export const hu = {
     wonder: 'Győzelmi emlékmű',
     monastery: 'Szerzeteseket képez',
     dock: 'Hajókat képez · a halászhajók ide hozzák a halat',
+    market: 'Étel és fa vétele, eladása aranyért',
   },
   mapLoading: {
     kicker: 'Térkép előkészítése',

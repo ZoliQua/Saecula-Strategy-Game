@@ -1,4 +1,5 @@
 import type { VillagerActivity } from '../stats/villagerActivity';
+import type { MarketResource } from '../game/market';
 import type { TechId, UnitType } from '../types';
 
 /**
@@ -23,7 +24,9 @@ export type GameCommand =
   /** Select exactly the human's villagers doing `activity` (a side panel row). */
   | { type: 'select-villagers'; activity: VillagerActivity }
   /** Put a transport's cargo ashore where it is (M14). */
-  | { type: 'unload-transport'; unitId: number };
+  | { type: 'unload-transport'; unitId: number }
+  /** Buy or sell one lot of food or wood at the human's market (M17). */
+  | { type: 'market-buy' | 'market-sell'; marketId: number; resource: MarketResource };
 
 type Listener = (cmd: GameCommand) => void;
 

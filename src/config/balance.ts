@@ -290,6 +290,8 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
     age: 1, hp: 1800, width: 3, height: 3, cost: c(0, 150, 0), buildTime: 35,
     los: 6, popBonus: 0, dropoff: ['food'],
   },
+  // M17: exchanges food and wood for gold (MARKET); trade carts follow in Task 2.
+  market: { age: 2, hp: 1500, width: 3, height: 3, cost: c(0, 175, 0), buildTime: 50, los: 6, popBonus: 0 },
   tower: { age: 2, hp: 850, width: 1, height: 1, cost: c(0, 50, 125), buildTime: 80, los: 9, popBonus: 0 },
   wall: { age: 1, hp: 300, width: 1, height: 1, cost: c(0, 5, 0), buildTime: 6, los: 4, popBonus: 0 },
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },
@@ -321,6 +323,21 @@ export const SCORE_BALANCE = {
   buildingDivisor: 10,
   ageScore: { 1: 0, 2: 300, 3: 800 },
   sampleMs: 60_000,
+} as const;
+
+/**
+ * Market exchange (M17, src/game/market.ts). Prices are per player and in
+ * gold per `lot`: a buy pays the price, a sale receives price × (1 −
+ * sellFee). Each buy raises that resource's price by `step` × price, each
+ * sale lowers it by the same share; prices stay within [minPrice, maxPrice].
+ */
+export const MARKET = {
+  lot: 100,
+  startPrice: { food: 100, wood: 100 },
+  step: 0.03,
+  minPrice: 20,
+  maxPrice: 300,
+  sellFee: 0.3,
 } as const;
 
 /** Buildings a player may own only one of (finished or under construction). */

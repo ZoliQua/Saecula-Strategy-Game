@@ -1,5 +1,6 @@
 import type { ArchStyleId } from '../../../config/civs';
 import { dockArt } from './dock';
+import { marketArt } from './market';
 import { monasteryArt } from './monastery';
 import { baroqueArt } from './baroque';
 import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
@@ -102,7 +103,7 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   nordic: nordicArt,
 };
 
-/** Every style's painted set, by style id; the shared monastery (M11) and dock (M14) unless the family paints its own. */
+/** Every style's painted set, by style id; the shared monastery (M11), dock (M14) and market (M17) unless the family paints its own. */
 export const ARCH_ART = Object.fromEntries(
-  Object.entries(ARCH_STYLES).map(([id, s]) => [id, { monastery: monasteryArt(s), dock: dockArt(s), ...ARCH_FAMILIES[s.family](s) }]),
+  Object.entries(ARCH_STYLES).map(([id, s]) => [id, { monastery: monasteryArt(s), dock: dockArt(s), market: marketArt(s), ...ARCH_FAMILIES[s.family](s) }]),
 ) as Readonly<Record<ArchStyleId, AgeArtSet>>;

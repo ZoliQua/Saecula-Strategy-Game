@@ -53,6 +53,7 @@ function restoredPlayer(p: SavedPlayer): Player {
     researched: new Set(p.researched),
     defeated: p.defeated,
     gatherHandicap: p.gatherHandicap,
+    marketPrices: { ...p.marketPrices },
     ...(p.personality !== undefined ? { personality: p.personality } : {}),
   });
 }

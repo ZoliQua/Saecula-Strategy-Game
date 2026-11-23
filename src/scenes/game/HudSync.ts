@@ -6,6 +6,7 @@ import { wonderClocks, type WonderClockInfo } from '../../game/wonderClocks';
 import type { MatchStats } from '../../stats/MatchStats';
 import { VILLAGER_ACTIVITIES, villagerActivity, type VillagerActivity } from '../../stats/villagerActivity';
 import { areAllies } from '../../game/diplomacy';
+import { marketQuotes, type MarketQuotes } from '../../game/market';
 import { timeLeader, type TimeVictoryRule } from '../../game/timeVictory';
 import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
 
@@ -16,7 +17,8 @@ import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
  * match cannot be won by a Wonder), and the side panel's every-player
  * scores (highest first; the human's allies marked, M16) and the human's villager activity counts, and
  * the time-victory clock (time left and the leader) when the match has one,
- * and the treaty countdown (M16) when the match has a treaty.
+ * and the treaty countdown (M16) when the match has a treaty, and the
+ * human's market prices (M17; a trade also publishes them at once).
  */
 export class HudSync {
   constructor(
@@ -33,6 +35,7 @@ export class HudSync {
   ) {
     // The treaty countdown shows from the first frame, not after the first second.
     if (treatyLeftMs) this.syncTreaty(treatyLeftMs());
+    this.syncMarket();
   }
 
   secondTick(): void {
@@ -42,6 +45,15 @@ export class HudSync {
     this.syncVillagers();
     if (this.time) this.syncTimeLimit(this.time);
     if (this.treatyLeftMs) this.syncTreaty(this.treatyLeftMs());
+    this.syncMarket();
+  }
+
+  /** The human's current market prices into the store (unchanged prices keep the store as it is). */
+  syncMarket(): void {
+    const human = this.players.human();
+    if (!human) return;
+    const next = marketQuotes(human);
+    if (!sameQuotes(next, uiStore.getState().marketQuotes)) uiStore.getState().setMarketQuotes(next);
   }
 
   private syncTreaty(leftMs: number): void {
@@ -120,4 +132,8 @@ function sameClocks(a: readonly WonderClockInfo[], b: readonly WonderClockInfo[]
     const d = b[i];
     return d !== undefined && c.entityId === d.entityId && c.playerId === d.playerId && c.remainingMs === d.remainingMs;
   });
+}
+
+function sameQuotes(a: MarketQuotes, b: MarketQuotes | null): boolean {
+  return b !== null && (['food', 'wood'] as const).every((r) => a[r].buy === b[r].buy && a[r].sell === b[r].sell);
 }

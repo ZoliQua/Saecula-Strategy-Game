@@ -111,5 +111,13 @@ describe('HudSync', () => {
     new HudSync(world, players, null).secondTick();
     expect(uiStore.getState().timeLimit).toBeNull();
   });
-});
 
+  it("publishes the human's market prices (M17) from the start and after a trade", () => {
+    const { world, players } = setup();
+    const sync = new HudSync(world, players, null);
+    expect(uiStore.getState().marketQuotes).toEqual({ food: { buy: 100, sell: 70 }, wood: { buy: 100, sell: 70 } });
+    players.get(1)!.marketPrices = { food: 112, wood: 90 };
+    sync.syncMarket();
+    expect(uiStore.getState().marketQuotes).toEqual({ food: { buy: 112, sell: 78 }, wood: { buy: 90, sell: 63 } });
+  });
+});
