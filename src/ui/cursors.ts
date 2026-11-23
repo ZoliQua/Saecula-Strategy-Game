@@ -96,6 +96,15 @@ const ART: Readonly<Record<Exclude<CursorKind, 'default'>, CursorArt>> = {
     hotspot: [23, 28],
     fallback: 'pointer',
   },
+  // A stack of coins with one standing on its edge: set a trade route (M17).
+  trade: {
+    shape:
+      '<ellipse cx="12" cy="25" rx="8" ry="3"/><path d="M4 25v-3.4h16V25"/><ellipse cx="12" cy="21.6" rx="8" ry="3"/>' +
+      '<path d="M4 21.6v-3.4h16v3.4"/><ellipse cx="12" cy="18.2" rx="8" ry="3"/><circle cx="23" cy="10.5" r="6.5"/>',
+    detail: `<path d="M20.6 8.2h4.2M20.6 12.8h4.2M22.7 6.6v8" fill="none" stroke="${LIGHT}" stroke-width="1.1"/><path d="M7.5 17.6h9" fill="none" stroke="${LIGHT}" stroke-width="1"/>`,
+    hotspot: [12, 18],
+    fallback: 'pointer',
+  },
   // A struck-through circle: nothing to do there.
   forbidden: {
     shape: '<circle cx="16" cy="16" r="11"/>',

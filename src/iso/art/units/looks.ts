@@ -14,6 +14,7 @@ import type { HumanLook } from './humanoid';
 import { M, type Material } from './materials';
 import type { ContactShadow } from './raster';
 import type { ShipLook } from './ship';
+import { tradeCartLook, type WagonLook } from './wagon';
 
 export type UnitLook =
   | { readonly kind: 'foot'; readonly human: HumanLook }
@@ -21,7 +22,11 @@ export type UnitLook =
   /** `barrel` defaults to bronze. */
   | { readonly kind: 'cannon'; readonly barrel?: Material }
   /** M14: a ship; the civ's palette colours its hull wood and trim. */
-  | { readonly kind: 'ship'; readonly ship: ShipLook };
+  | { readonly kind: 'ship'; readonly ship: ShipLook }
+  /** M17: the horse-drawn trade cart; the civ's palette colours its wood and trim, the cover is team colour. */
+  | { readonly kind: 'wagon'; readonly wagon: WagonLook };
+
+const BASE_TRANSPORT: UnitLook = { kind: 'ship', ship: { ship: 'transport' } };
 
 /**
  * What every unit wears and carries: the shared base look (the
@@ -183,9 +188,12 @@ export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
   },
   cannon: { kind: 'cannon' },
   fishing_boat: { kind: 'ship', ship: { ship: 'fishing' } },
-  transport: { kind: 'ship', ship: { ship: 'transport' } },
+  transport: BASE_TRANSPORT,
   galley: { kind: 'ship', ship: { ship: 'galley' } },
   frigate: { kind: 'ship', ship: { ship: 'frigate' } },
+  trade_cart: tradeCartLook(0x8a5a32, 0x2f6a3a),
+  // M17: the trade ship is the transport, drawn from its sheet (same look object, same texture key).
+  trade_ship: BASE_TRANSPORT,
 };
 
 /** Per unit-look id: the types whose look differs from the base. */
@@ -206,5 +214,8 @@ export function unitLook(type: UnitType, civ: CivId): UnitLook {
 }
 
 export function contactShadow(look: UnitLook): ContactShadow {
-  return look.kind === 'foot' ? { rx: 12.5, ry: 5.8, alpha: 0.4 } : { rx: 23, ry: 10, alpha: 0.38 };
+  if (look.kind === 'foot') return { rx: 12.5, ry: 5.8, alpha: 0.4 };
+  // The trade cart is long (horse and wagon): a wider shadow under the whole team.
+  if (look.kind === 'wagon') return { rx: 30, ry: 12, alpha: 0.38 };
+  return { rx: 23, ry: 10, alpha: 0.38 };
 }

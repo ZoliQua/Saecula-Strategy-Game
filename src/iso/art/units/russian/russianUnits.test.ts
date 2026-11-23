@@ -55,7 +55,7 @@ function teamCoverage(type: UnitType, civ: CivId): number {
 
 /** The silhouette cues of a look: headgear, shield and weapon style. */
 function cues(look: UnitLook): readonly unknown[] {
-  return look.kind === 'cannon' || look.kind === 'ship' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
+  return look.kind === 'cannon' || look.kind === 'ship' || look.kind === 'wagon' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
 }
 
 describe('Russian unit looks', () => {
@@ -81,7 +81,7 @@ describe('Russian unit looks', () => {
   it('carries the brief’s cues: shelom (age 1), shishak and teardrop shield (age 2), kolpak and berdysh (age 3)', () => {
     const human = (type: UnitType) => {
       const look = unitLook(type, 'russian');
-      if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
+      if (look.kind === 'cannon' || look.kind === 'ship' || look.kind === 'wagon') throw new Error('not a human');
       return look.human;
     };
     expect(human('swordsman').hat).toBe('shelom');
@@ -97,7 +97,7 @@ describe('Russian unit looks', () => {
   it('gives the Streltsy musketeer a long kaftan skirt', () => {
     const look = unitLook('musketeer', 'russian');
     const base = BASE_UNIT_LOOKS.musketeer;
-    if (look.kind === 'cannon' || look.kind === 'ship' || base.kind === 'cannon' || base.kind === 'ship') throw new Error('not a human');
+    if (look.kind === 'cannon' || look.kind === 'ship' || look.kind === 'wagon' || base.kind === 'cannon' || base.kind === 'ship' || base.kind === 'wagon') throw new Error('not a human');
     expect(look.human.skirt?.length ?? 0).toBeGreaterThan(base.human.skirt?.length ?? 0);
   });
 
@@ -105,7 +105,7 @@ describe('Russian unit looks', () => {
     for (const civ of OTHER_LOOK_CIVS) {
       for (const type of TYPES) {
         const look = unitLook(type, civ);
-        if (look.kind !== 'cannon' && look.kind !== 'ship') expect(look.human.back, `${civ} ${type}`).not.toBe('berdysh');
+        if (look.kind !== 'cannon' && look.kind !== 'ship' && look.kind !== 'wagon') expect(look.human.back, `${civ} ${type}`).not.toBe('berdysh');
       }
     }
   });

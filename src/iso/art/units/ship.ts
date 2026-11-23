@@ -142,10 +142,13 @@ export function drawShip(fig: Figure, look: ShipLook, anim: UnitAnim, i: number)
 /** The four ship looks in one civ's palette: hull wood and trim colours (sails stay team colour). */
 export function shipFleet(wood: number, trim: number) {
   const look = (ship: ShipKind) => ({ kind: 'ship' as const, ship: { ship, wood: { color: wood }, trim: { color: trim } } });
+  const transport = look('transport');
   return {
     fishing_boat: look('fishing'),
-    transport: look('transport'),
+    transport,
     galley: look('galley'),
     frigate: look('frigate'),
+    // M17: the trade ship shares the transport's sheet, so it wears the very same look.
+    trade_ship: transport,
   };
 }

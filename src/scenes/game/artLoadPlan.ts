@@ -1,5 +1,6 @@
 import { civUnitTypes } from '../../game/civUnits';
 import { BUILDING_BALANCE, isNavalType, UNIT_BALANCE } from '../../config/balance';
+import { tradePostType } from '../../game/trade';
 import {
   BACKGROUND_ART_EVERY_FRAMES,
   BACKGROUND_ART_FORCE_AFTER_FRAMES,
@@ -25,18 +26,23 @@ export interface ArtPainters {
  * HUD and the build/train panels show them), only the age-1 land types for
  * an AI-only civ; its later sheets follow its age-ups (ageUpArtJobs) and a
  * unit trained before that is painted on demand (unitArt). An AI civ's
- * ships (M14) are always painted on demand: most maps have no water, so
+ * ships (M14) and trade carts (M17) are always painted on demand: most maps have no water, so
  * they never cost texture memory there.
  */
 export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
   const types = civUnitTypes(civ);
-  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1 && !isNavalType(t));
+  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1 && !onDemand(t));
 }
 
-/** The land unit sheets of the types introduced in `age` (ships are painted on demand). */
+/** An AI civ's sheets painted only when such a unit appears: ships (M14) and the trade cart (M17, few AIs trade). */
+function onDemand(t: UnitType): boolean {
+  return isNavalType(t) || tradePostType(t) !== null;
+}
+
+/** The land unit sheets of the types introduced in `age` (ships and trade carts are painted on demand). */
 function unitArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
   return civUnitTypes(civ)
-    .filter((t) => UNIT_BALANCE[t].age === age && !isNavalType(t))
+    .filter((t) => UNIT_BALANCE[t].age === age && !onDemand(t))
     .map((t) => () => paint.unit(t, civ));
 }
 

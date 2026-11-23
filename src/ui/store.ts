@@ -31,6 +31,9 @@ export interface SelectedUnitInfo {
   carrying?: { type: 'food' | 'wood' | 'gold'; amount: number };
   /** A transport's cargo (M14): how many units are aboard. */
   cargo?: number;
+  /** A trader (M17); `route` while it shuttles: its two ends, whether the target is an ally's, the gold per leg. */
+  trader?: true;
+  route?: { home: BuildingType; target: BuildingType; ally: boolean; gold: number };
   /** Owned by the human's ally (M16). */
   ally?: true;
 }

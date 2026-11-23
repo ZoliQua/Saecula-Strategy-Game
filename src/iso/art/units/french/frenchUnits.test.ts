@@ -55,7 +55,7 @@ function teamCoverage(type: UnitType, civ: CivId): number {
 
 /** The silhouette cues of a look: headgear, shield and weapon style. */
 function cues(look: UnitLook): readonly unknown[] {
-  return look.kind === 'cannon' || look.kind === 'ship' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
+  return look.kind === 'cannon' || look.kind === 'ship' || look.kind === 'wagon' ? [] : [look.human.hat, look.human.shield, look.human.weaponStyle];
 }
 
 /** Opaque non-team albedo pixels that read as gold (the fleur-de-lis, gilt trim). */
@@ -93,7 +93,7 @@ describe('French unit looks', () => {
   it('carries the brief’s cues: Gaulish body shield and wheel-crested helm (age 1), hounskull bascinet (age 2), bicorne and crested helm (age 3)', () => {
     const human = (type: UnitType) => {
       const look = unitLook(type, 'french');
-      if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
+      if (look.kind === 'cannon' || look.kind === 'ship' || look.kind === 'wagon') throw new Error('not a human');
       return look.human;
     };
     expect(human('swordsman').shield).toBe('gaulShield');

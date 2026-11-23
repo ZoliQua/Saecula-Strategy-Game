@@ -9,6 +9,7 @@ import { createUnit } from '../archetypes/createUnit';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { gameEvents } from '../../game/events';
+import { tradePostType } from '../../game/trade';
 
 type Trainer = With<
   Entity,
@@ -73,6 +74,8 @@ export class TrainingSystem {
       tile: spawn,
       playerId: trainer.owner.playerId,
     });
+    // A trader's routes start from where it was trained (M17).
+    if (tradePostType(entry.unitType) && trainer.id !== undefined) this.world.addComponent(unit, 'tradeHome', { buildingId: trainer.id });
     gameEvents.emit('unitTrained', { world: this.world, playerId: trainer.owner.playerId, unitType: entry.unitType });
     // HP is stored state: a new unit gets the owner's HP technology once.
     if (unit.health) scaleHealth(unit.health, bonusesFor(this.players, unit).hpMultiplier);

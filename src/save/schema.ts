@@ -50,7 +50,8 @@ import {
  * v8 (0.8.1): a Medium-family AI's given-up monk targets (strategy.monkAvoid).
  * v9 (M14): ships and the dock, fish-school terrain, transport cargo and orders.
  * v10 (M16): the setup's mode fields (allies, treatyMin, startResources, speed).
- * v11 (M17): the market building and each player's market prices (marketPrices).
+ * v11 (M17): the market building and each player's market prices (marketPrices); the trade
+ *   cart and trade ship and their components (tradeHome, tradeRoute).
  */
 
 export const SCHEMA_VERSION = 11;
@@ -107,6 +108,8 @@ const COMPONENT_SHAPE = {
     convertIntent: z.object({ targetId: int, elapsedMs: nonNeg }).strict().optional(),
     converter: z.object({ rechargeMs: nonNeg, healCarry: nonNeg, busy: z.boolean() }).strict().optional(),
     originCiv: z.object({ civ: civId }).strict().optional(),
+    tradeHome: z.object({ buildingId: int }).strict().optional(),
+    tradeRoute: z.object({ homeId: int, targetId: int, toTarget: z.boolean() }).strict().optional(),
     dying: z.object({ ttlMs: num }).strict().optional(),
     wonder: z.object({ heldMs: nonNeg }).strict().optional(),
     fogEmitter: z.object({ sightRange: num }).strict().optional(),

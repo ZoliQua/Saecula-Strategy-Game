@@ -4,7 +4,7 @@ import { footprintDepth, tileDepth } from '../../iso/depth';
 import { DEFAULT_CIV } from '../../config/civs';
 import type { CivId } from '../../types';
 import { uiStore } from '../../ui/store';
-import { infoKey, isLastTownCenter, selectionRingColor, toSelectedInfo, type SelectableWithPos } from './selectedInfo';
+import { infoKey, isLastTownCenter, selectionRingColor, toSelectedInfo, type RouteSource, type SelectableWithPos } from './selectedInfo';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { BUILDING_DEPTH_OFFSET, buildingOutlineDepth } from './renderPlacement';
@@ -39,6 +39,13 @@ export class SelectionSystem {
 
   setAllySource(isAlly: (playerId: number) => boolean): void {
     this.isAlly = isAlly;
+  }
+
+  /** A trader's route for the panel (M17); default none. */
+  private routeOf: RouteSource = () => undefined;
+
+  setRouteSource(routeOf: RouteSource): void {
+    this.routeOf = routeOf;
   }
 
   constructor(scene: Phaser.Scene, world: EcsWorld) {
@@ -173,7 +180,7 @@ export class SelectionSystem {
     // the data the HUD cares about actually changed — pushing every
     // frame churns Zustand subscribers and triggers a full HUD render.
     const primary = selected[0] as SelectableWithPos;
-    const info = toSelectedInfo(primary, this.civOf, this.isAlly);
+    const info = toSelectedInfo(primary, this.civOf, this.isAlly, this.routeOf);
     if (info?.kind === 'building' && isLastTownCenter(this.world, primary)) info.lastTownCenter = true;
     const key = `${infoKey(info)}#${selected.length}`;
     if (key !== this.lastInfoKey) {

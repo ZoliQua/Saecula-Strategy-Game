@@ -183,6 +183,8 @@ export const hu = {
     transport: 'Szállítóhajó',
     galley: 'Gálya',
     frigate: 'Fregatt',
+    trade_cart: 'Kereskedőkocsi',
+    trade_ship: 'Kereskedőhajó',
   },
   buildings: {
     town_center: 'Városháza',
@@ -236,6 +238,11 @@ export const hu = {
     owner: 'Tulajdonos népe',
     carrying: 'Visz',
     cargo: 'Rakomány',
+    /** A trader's route (M17): home ↔ target and the gold one leg brings. */
+    route: 'Útvonal',
+    routeLine: (home: string, target: string, gold: number) => `${home} ↔ ${target}, ~${gold} arany/út`,
+    routeAlly: (name: string) => `${name} (szövetséges)`,
+    noRoute: 'Nincs útvonal — jobb klikk egy másik saját vagy szövetséges piacra (hajóval kikötőre)',
     unload: 'Kirakodás',
     unloadTip: 'A rakomány partra száll a legközelebbi szárazföldön (jobb klikk a partra: ott száll ki).',
     /** The market's exchange buttons (M17). */
@@ -347,6 +354,8 @@ export const hu = {
     transport: `Legfeljebb ${NAVAL.transportCapacity} szárazföldi egységet visz át a vízen`,
     galley: 'Távolsági hajó · hajók és a part ellen',
     frigate: 'Ágyús hadihajó · épület- és hajórombolás',
+    trade_cart: 'Két saját vagy szövetséges piac között ingázik · aranyat hoz',
+    trade_ship: 'Két saját vagy szövetséges kikötő között ingázik · aranyat hoz',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -628,6 +637,14 @@ export const hu = {
     notSaved: 'A beállítások nem menthetők — csak erre a munkamenetre érvényesek',
     /** Keycap labels for keys whose `key` prints nothing useful (by KeyboardEvent.code). */
     keyNames: { Space: 'Szóköz', Tab: 'Tab', Delete: 'Delete', Backspace: 'Backspace' } as Record<string, string>,
+  },
+  /** Trade routes (M17): why a route order was refused. */
+  trade: {
+    tooClose: (min: number) => `Túl közel van: a két épület között legalább ${min} mező kell.`,
+    notFriendly: 'Csak saját vagy szövetséges piaccal (kikötővel) lehet kereskedni.',
+    unfinished: 'Az épület még nem készült el.',
+    sameAsHome: 'Ez a kocsi (hajó) saját piaca: válassz egy másikat.',
+    noHome: 'Nincs kész saját piac (kikötő), ahonnan az útvonal indulhatna.',
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

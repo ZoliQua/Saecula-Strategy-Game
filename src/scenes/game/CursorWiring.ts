@@ -7,6 +7,7 @@ import { cursorFor, type CursorContext, type CursorKind } from '../../ui/cursor'
 import { cursorCss } from '../../ui/cursors';
 import { uiStore } from '../../ui/store';
 import { canConvert, readyToConvert } from '../../game/convert';
+import { checkTradeRoute, isTrader } from '../../game/trade';
 import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
 import { canAttackTarget, moveLayerOf, navGridFor } from '../../ecs/navLayer';
@@ -47,11 +48,14 @@ export function cursorContext(
       converts: readyToConvert(e),
       boards: moveLayerOf(e) === 'land',
       unloads: (e.cargo?.units.length ?? 0) > 0,
+      trades: isTrader(e),
     })),
     land: tile ? map.isPassable(tile.tx, tile.ty) : false,
     target: resource
       ? { kind: target?.kind ?? 'none', resource }
-      : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId, teams, treaty) },
+      : target?.kind === 'tradePost' && target.entity && actor
+        ? { kind: 'tradePost', tradeValid: checkTradeRoute(world, actor, target.entity, teams).ok }
+        : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId, teams, treaty) },
     // A move is allowed where any selected unit can go: a ship on water, a land unit on land (M14).
     passable: tile ? units.some((e) => navGridFor(map, e).isPassable(tile.tx, tile.ty)) || (units.length === 0 && map.isPassable(tile.tx, tile.ty)) : null,
   };

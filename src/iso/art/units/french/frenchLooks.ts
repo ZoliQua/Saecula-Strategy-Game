@@ -3,6 +3,7 @@ import type { UnitLook } from '../looks';
 import { M } from '../materials';
 import { FRENCH_M } from './frenchMaterials';
 import { shipFleet } from '../ship';
+import { tradeCartLook } from '../wagon';
 
 const F = FRENCH_M;
 
@@ -22,6 +23,8 @@ const F = FRENCH_M;
 export const FRENCH_LOOKS: Readonly<Partial<Record<UnitType, UnitLook>>> = {
   // M14: the civ's ships, hull wood and trim in its palette.
   ...shipFleet(0x8c6a46, 0x2c4a8c),
+  // M17: the trade cart, its wood and trim in the ships' palette.
+  trade_cart: tradeCartLook(0x8c6a46, 0x2c4a8c, { coat: M.horse.grey, mane: M.horse.lightMane }),
   villager: {
     kind: 'foot',
     human: {

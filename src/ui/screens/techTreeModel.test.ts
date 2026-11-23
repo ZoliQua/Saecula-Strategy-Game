@@ -18,8 +18,8 @@ describe('techTreeModel civ roster', () => {
     expect(u.find((x) => x.type === 'villager')?.unique).toBe(false);
   });
 
-  it('lists every unit of a civ: eleven land units and four ships', () => {
-    expect(units('finnish')).toHaveLength(15);
+  it('lists every unit of a civ: eleven land units, four ships and the two traders (M17)', () => {
+    expect(units('finnish')).toHaveLength(17);
   });
 });
 

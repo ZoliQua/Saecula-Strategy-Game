@@ -108,7 +108,8 @@ export function unitAnims(type: UnitType): readonly UnitAnim[] {
   if (type === 'monk') return ['idle', 'walk', 'work', 'death'];
   // Ships (M14): the fishing boat hauls its net (work); the transport never fights.
   if (type === 'fishing_boat') return ['idle', 'walk', 'work', 'death'];
-  if (type === 'transport') return ['idle', 'walk', 'death'];
+  // M17: the trade ship shares the transport's sheet (same layout); the trade cart never fights either.
+  if (type === 'transport' || type === 'trade_ship' || type === 'trade_cart') return ['idle', 'walk', 'death'];
   return ['idle', 'walk', 'attack', 'death'];
 }
 
@@ -130,6 +131,9 @@ export const WALK_CYCLE_TILES: Readonly<Record<BaseUnitType, number>> = {
   transport: 2.4,
   galley: 2.2,
   frigate: 2.6,
+  // M17: the cart horse's stride and the wheels' turn; the trade ship sails like the transport.
+  trade_cart: 1.6,
+  trade_ship: 2.4,
 };
 
 /** Walk-cycle ground length of a unit type (unique units use their base unit's). */

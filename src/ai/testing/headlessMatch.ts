@@ -7,6 +7,7 @@ import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
+import { TradeSystem } from '../../ecs/systems/TradeSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
@@ -265,6 +266,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
+    trade: new TradeSystem(world, map, players, paths),
     farms: new FarmRegenSystem(world),
     construction: new ConstructionSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
@@ -285,6 +287,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     paths.reset(dt);
     systems.pathfinding.update();
     systems.gathering.update(dt);
+    systems.trade.update(dt);
     systems.farms.update(dt);
     systems.construction.update(dt);
     systems.training.update(dt);

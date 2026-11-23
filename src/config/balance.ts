@@ -212,10 +212,21 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     range: 7, speed: 1.0, los: 8, cost: c(0, 150, 175), trainTime: 60,
     trainers: ['dock'], popCost: 2, cooldownMs: CANNON_COOLDOWN_MS,
   },
+  // M17 traders: no attack; they shuttle between two friendly markets (cart) or docks (ship), TRADE.
+  trade_cart: {
+    age: 2, hp: 70, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 2,
+    range: 0, speed: 1.0, los: 5, cost: c(0, 100, 50), trainTime: 40,
+    trainers: ['market'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
+  trade_ship: {
+    age: 2, hp: 100, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 6,
+    range: 0, speed: 1.3, los: 5, cost: c(0, 100, 50), trainTime: 45,
+    trainers: ['dock'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
 };
 
 /** Ships (M14): they move on water only; melee units and monks cannot touch them. */
-export const NAVAL_CLASS: readonly UnitType[] = ['fishing_boat', 'transport', 'galley', 'frigate'];
+export const NAVAL_CLASS: readonly UnitType[] = ['fishing_boat', 'transport', 'galley', 'frigate', 'trade_ship'];
 
 /** Whether `type` is a ship (M14). */
 export function isNavalType(type: UnitType): boolean {
@@ -338,6 +349,31 @@ export const MARKET = {
   minPrice: 20,
   maxPrice: 300,
   sellFee: 0.3,
+} as const;
+
+/**
+ * Trade (M17, src/game/trade.ts, TradeSystem). A trade cart shuttles
+ * between two friendly markets (a trade ship between two docks) and earns
+ * its owner, on every arrival at either end,
+ *   round(goldPerTile × distance × (ally target ? 1 + allyBonus : 1) × tradeGoldMultiplier)
+ * gold, where `distance` is the Euclidean distance in tiles between the two
+ * buildings' centre tiles. A route needs at least `minDistance` tiles.
+ *
+ * Rate check (cart, table speed 1.0 → 2.75 tiles/s): on a 60-tile route a
+ * leg is ~57 tiles of walking (each end stops beside a 3×3 footprint),
+ * ~21 s, and pays 0.25 × 60 = 15 gold: ~0.7 gold/s per cart (an ally's
+ * market ~0.9). Because pay and walking time both grow with the distance,
+ * the rate is nearly flat above ~40 tiles and short routes lose to the
+ * fixed stop overhead. One gold miner delivers roughly 0.4–0.5 gold/s at
+ * a near camp (0.6/s at the lode, less the walk), so a cart (150 resources,
+ * 1 population) is worth about one and a half miners, never a mine's worth.
+ * A trade ship (table speed 1.3 → 3.6 tiles/s) earns ~0.9 gold/s on the
+ * same route; water routes are rarer and docks dearer to defend.
+ */
+export const TRADE = {
+  goldPerTile: 0.25,
+  allyBonus: 0.25,
+  minDistance: 20,
 } as const;
 
 /** Buildings a player may own only one of (finished or under construction). */
