@@ -54,7 +54,7 @@ export function cursorContext(
     target: resource
       ? { kind: target?.kind ?? 'none', resource }
       : target?.kind === 'tradePost' && target.entity && actor
-        ? { kind: 'tradePost', tradeValid: checkTradeRoute(world, actor, target.entity, teams).ok }
+        ? { kind: 'tradePost', tradeValid: checkTradeRoute(world, actor, target.entity, teams, map).ok }
         : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId, teams, treaty) },
     // A move is allowed where any selected unit can go: a ship on water, a land unit on land (M14).
     passable: tile ? units.some((e) => navGridFor(map, e).isPassable(tile.tx, tile.ty)) || (units.length === 0 && map.isPassable(tile.tx, tile.ty)) : null,

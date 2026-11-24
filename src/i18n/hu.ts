@@ -645,6 +645,7 @@ export const hu = {
     unfinished: 'Az épület még nem készült el.',
     sameAsHome: 'Ez a kocsi (hajó) saját piaca: válassz egy másikat.',
     noHome: 'Nincs kész saját piac (kikötő), ahonnan az útvonal indulhatna.',
+    unreachable: 'Oda nem lehet eljutni: a piac (kikötő) másik szigeten vagy másik vízen van, vagy el van zárva.',
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

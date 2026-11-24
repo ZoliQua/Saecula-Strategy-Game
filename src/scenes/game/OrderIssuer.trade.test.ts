@@ -8,6 +8,7 @@ import { createMiniSim } from '../../ecs/testing/miniSim';
 import { createPlayers } from '../../game/PlayerManager';
 import type { TreatyGate } from '../../game/treaty';
 import { hu } from '../../i18n/hu';
+import { TERRAIN } from '../../map/TerrainTypes';
 import { cursorFor } from '../../ui/cursor';
 import { cursorContext } from './CursorWiring';
 import { OrderIssuer } from './OrderIssuer';
@@ -39,7 +40,7 @@ describe('trade route orders (M17)', () => {
     const far = market(40, 40, 1);
     expect(cursor([cart], 41, 41)).toBe('trade');
     orders([cart]).issueOrders({ tx: 41, ty: 41 });
-    expect(cart.tradeRoute).toEqual({ homeId: home.id, targetId: far.id, toTarget: true });
+    expect(cart.tradeRoute).toEqual({ homeId: home.id, targetId: far.id, toTarget: true, armed: true });
     expect(notices).toEqual([]);
   });
 
@@ -69,6 +70,16 @@ describe('trade route orders (M17)', () => {
     orders([cart]).issueOrders({ tx: 41, ty: 11 });
     expect(cart.tradeRoute).toBeUndefined();
     expect(notices).toEqual([hu.trade.unfinished, hu.trade.notFriendly]);
+  });
+
+  it('a market across the water is refused with a Hungarian notice and no trade cursor', () => {
+    const { sim, market, cart, orders, cursor, notices } = setup();
+    for (let i = 0; i < 64; i++) for (let k = 30; k < 33; k++) sim.map.setTile(i, k, TERRAIN.water);
+    market(40, 40, 1);
+    expect(cursor([cart], 41, 41)).toBe('forbidden');
+    orders([cart]).issueOrders({ tx: 41, ty: 41 });
+    expect(cart.tradeRoute).toBeUndefined();
+    expect(notices).toEqual([hu.trade.unreachable]);
   });
 
   it('a refused order keeps the current route', () => {

@@ -4,6 +4,11 @@ import type { EcsWorld } from '../ecs/world';
 import type { BuildingType, UnitType } from '../types';
 import { areAllies, type TeamLookup } from './diplomacy';
 import type { Player } from './Player';
+import { onFootprintRing } from '../ecs/footprint';
+import { moveLayerOf, navGridFor } from '../ecs/navLayer';
+import { reachMask } from '../map/gridSteps';
+import type { MapData } from '../map/MapData';
+import { seaAt } from '../map/waterBodies';
 
 /*
  * Trade rules (M17, CLAUDE.md §9 "Kereskedőkocsi", "Kereskedőhajó"): which
@@ -78,12 +83,13 @@ export function routeStillValid(
   route: { homeId: number; targetId: number },
   teams: TeamLookup,
   isDefeated: (playerId: number) => boolean = () => false,
+  find: (id: number) => Entity | undefined = (id) => buildingById(world, id),
 ): boolean {
   const ownerId = trader.owner?.playerId;
   const type = trader.unit ? tradePostType(trader.unit.unitType) : null;
   if (ownerId === undefined || !type) return false;
-  const home = buildingById(world, route.homeId);
-  const target = buildingById(world, route.targetId);
+  const home = find(route.homeId);
+  const target = find(route.targetId);
   return (
     usablePost(home, type, ownerId, teams) &&
     home.owner?.playerId === ownerId &&
@@ -92,7 +98,40 @@ export function routeStillValid(
   );
 }
 
-export type TradeRefusal = 'wrongKind' | 'notFriendly' | 'unfinished' | 'sameAsHome' | 'tooClose' | 'noHome';
+export type TradeRefusal = 'wrongKind' | 'notFriendly' | 'unfinished' | 'sameAsHome' | 'tooClose' | 'noHome' | 'unreachable';
+
+/** Whether `trader` stands on the ring of tiles around `post`'s footprint. */
+export function besidePost(trader: Entity, post: Entity): boolean {
+  return !!trader.position && !!post.position && !!post.building && onFootprintRing(trader.position, post.position, post.building.footprint);
+}
+
+/**
+ * Whether `trader` can get beside `post` at all: some tile of the post's
+ * ring lies in the trader's own connected land area (a cart: the walkable
+ * tiles reachable from it, buildings and walls included) or its own sea (a
+ * ship: the water body, waterBodies.seaAt).
+ */
+export function canReachPost(map: MapData, trader: Entity, post: Entity): boolean {
+  const at = trader.position;
+  const p = post.position;
+  const f = post.building?.footprint;
+  if (!at || !p || !f) return false;
+  let inArea: (tx: number, ty: number) => boolean;
+  if (moveLayerOf(trader) === 'water') {
+    const sea = seaAt(map, at);
+    inArea = (tx, ty) => sea.has(tx, ty);
+  } else {
+    const grid = navGridFor(map, trader);
+    const mask = reachMask(grid, at);
+    inArea = (tx, ty) => tx >= 0 && ty >= 0 && tx < map.width && ty < map.height && mask[ty * map.width + tx] === 1;
+  }
+  for (let tx = p.tx - 1; tx <= p.tx + f.width; tx++) {
+    for (let ty = p.ty - 1; ty <= p.ty + f.height; ty++) {
+      if (onFootprintRing({ tx, ty }, p, f) && inArea(tx, ty)) return true;
+    }
+  }
+  return false;
+}
 
 export type TradeCheck =
   | { readonly ok: true; readonly home: Entity; readonly target: Entity; readonly gold: number }
@@ -122,12 +161,13 @@ function nearestOwnPost(world: EcsWorld, trader: Entity, type: BuildingType, exc
  * must be a market (cart) / dock (ship), its owner's or an ally's (never
  * another team's: no trade with a non-ally, treaty or not), finished, not
  * the trader's home, and at least TRADE.minDistance tiles from the home.
+ * With `map`, both ends must be reachable from the trader (canReachPost).
  * The home is the building the trader was trained at; when that is gone
  * (or the trader never had one: a converted cart) the trader's own nearest
  * finished market / dock other than the target is taken. `gold` is what
  * one arrival would pay.
  */
-export function checkTradeRoute(world: EcsWorld, trader: Entity, target: Entity, teams: TeamLookup, player?: Player): TradeCheck {
+export function checkTradeRoute(world: EcsWorld, trader: Entity, target: Entity, teams: TeamLookup, map?: MapData, player?: Player): TradeCheck {
   const type = trader.unit ? tradePostType(trader.unit.unitType) : null;
   const ownerId = trader.owner?.playerId;
   if (!type || ownerId === undefined || target.building?.type !== type || target.dying) return { ok: false, reason: 'wrongKind' };
@@ -140,21 +180,27 @@ export function checkTradeRoute(world: EcsWorld, trader: Entity, target: Entity,
   const home = savedOk ? saved : nearestOwnPost(world, trader, type, target);
   if (!home) return { ok: false, reason: 'noHome' };
   if (tradeDistance(home, target) < TRADE.minDistance) return { ok: false, reason: 'tooClose' };
+  // Another island or lake: the trader could never get there (or back home).
+  if (map && (!canReachPost(map, trader, target) || !canReachPost(map, trader, home))) return { ok: false, reason: 'unreachable' };
   return { ok: true, home, target, gold: tradeGoldPerTrip(home, target, ownerId, teams, player) };
 }
 
 /**
- * Sets `trader` on the route of a passed check: home is remembered
- * (tradeHome), and it heads to the target first, unless it already stands
- * at the target (then home first, so a repeated order never pays twice in place).
+ * Sets `trader` on the route of a passed check; home is remembered
+ * (tradeHome). A leg pays only when it set out from the other end of the
+ * route (`armed`), so short hops between nearby markets never pay:
+ * beside home it heads to the target armed, beside the target it heads
+ * home armed, and from anywhere else it first goes home unpaid.
  */
-export function startTradeRoute(world: EcsWorld, trader: Entity, check: Extract<TradeCheck, { ok: true }>, atTarget: boolean): void {
+export function startTradeRoute(world: EcsWorld, trader: Entity, check: Extract<TradeCheck, { ok: true }>): void {
   const homeId = check.home.id ?? -1;
   const targetId = check.target.id ?? -1;
   if (trader.tradeHome) trader.tradeHome.buildingId = homeId;
   else world.addComponent(trader, 'tradeHome', { buildingId: homeId });
   if (trader.tradeRoute) world.removeComponent(trader, 'tradeRoute');
-  world.addComponent(trader, 'tradeRoute', { homeId, targetId, toTarget: !atTarget });
+  const atHome = besidePost(trader, check.home);
+  const atTarget = !atHome && besidePost(trader, check.target);
+  world.addComponent(trader, 'tradeRoute', { homeId, targetId, toTarget: atHome, armed: atHome || atTarget });
 }
 
 /**

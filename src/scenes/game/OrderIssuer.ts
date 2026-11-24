@@ -1,7 +1,7 @@
 import { audio, type AudioSink } from '../../audio/AudioManager';
 import { canConvert, readyToConvert } from '../../game/convert';
 import type { Entity } from '../../ecs/components';
-import { insideFootprint, onFootprintRing } from '../../ecs/footprint';
+import { insideFootprint } from '../../ecs/footprint';
 import { checkTradeRoute, startTradeRoute, tradePostType, type TradeRefusal } from '../../game/trade';
 import { TRADE } from '../../config/balance';
 import { clearUnitOrders } from '../../ecs/orders';
@@ -124,14 +124,13 @@ export class OrderIssuer {
       // A trader on a friendly market / dock (M17): a route, or a refusal that leaves its current route alone.
       const post = findTradePostAt(this.world, tile, entity);
       if (post) {
-        const check = checkTradeRoute(this.world, entity, post, this.teams);
+        const check = checkTradeRoute(this.world, entity, post, this.teams, this.map);
         if (!check.ok) {
           refusals.add(tradeRefusalText(check.reason));
           continue;
         }
         clearUnitOrders(this.world, entity);
-        const atTarget = !!entity.position && !!post.position && !!post.building && onFootprintRing(entity.position, post.position, post.building.footprint);
-        startTradeRoute(this.world, entity, check, atTarget);
+        startTradeRoute(this.world, entity, check);
         ordered ??= 'unit_move';
         continue;
       }
@@ -239,6 +238,8 @@ export function tradeRefusalText(reason: TradeRefusal): string {
       return hu.trade.sameAsHome;
     case 'noHome':
       return hu.trade.noHome;
+    case 'unreachable':
+      return hu.trade.unreachable;
     default:
       return hu.trade.notFriendly;
   }

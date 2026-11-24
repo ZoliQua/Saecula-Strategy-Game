@@ -139,9 +139,11 @@ export interface Entity {
   /**
    * A trader's route (M17, TradeSystem): it shuttles between `homeId` and
    * `targetId`, heading to the target while `toTarget`, and earns gold on
-   * every arrival. Removed when either end is gone or no longer friendly.
+   * an arrival when `armed`: the leg set out from the route's other end (a
+   * fresh route from elsewhere first goes home unpaid). Removed when either
+   * end is gone or no longer friendly, or the way is lost for good.
    */
-  tradeRoute?: { homeId: number; targetId: number; toTarget: boolean };
+  tradeRoute?: { homeId: number; targetId: number; toTarget: boolean; armed: boolean };
   /** A converted unit's original civ: it keeps that look under its new owner (M11). */
   originCiv?: { civ: CivId };
   dying?: { ttlMs: number };

@@ -55,7 +55,7 @@ function cart(world: EcsWorld, home: Entity, playerId = 1): Entity {
 function route(world: EcsWorld, players: PlayerManager, c: Entity, target: Entity) {
   const check = checkTradeRoute(world, c, target, players);
   if (!check.ok) throw new Error(`route refused: ${check.reason}`);
-  startTradeRoute(world, c, check, false);
+  startTradeRoute(world, c, check);
   return check;
 }
 
@@ -203,6 +203,85 @@ describe('TradeSystem (M17)', () => {
   });
 });
 
+describe('trade exploits and lost ways (M17 fix round 1)', () => {
+  it('alternating orders between two nearby markets earn nothing; a fresh route from elsewhere goes home unpaid first', () => {
+    const { world, map, players, step } = setup();
+    const home = market(world, map, 2);
+    const m = market(world, map, 50);
+    const t = market(world, map, 55);
+    const c = createUnit(world, { type: 'trade_cart', tile: { tx: 53, ty: 9 }, playerId: 1 });
+    world.addComponent(c, 'tradeHome', { buildingId: home.id! });
+    const p = players.get(1)!;
+    const start = p.resources.gold;
+    for (let k = 0; k < 10; k++) {
+      clearUnitOrders(world, c);
+      route(world, players, c, k % 2 === 0 ? t : m);
+      // Neither beside home nor beside the new target (it stands at the other market): home first, unpaid.
+      if (!c.tradeRoute!.armed) expect(c.tradeRoute!.toTarget).toBe(false);
+      step(3_000);
+    }
+    expect(p.resources.gold).toBe(start);
+  });
+
+  it('a normal shuttle still pays on every arrival once the first (unpaid) leg reaches home', () => {
+    const { world, map, players, step } = setup();
+    const home = market(world, map, 2);
+    const target = market(world, map, 62);
+    const c = createUnit(world, { type: 'trade_cart', tile: { tx: 30, ty: 9 }, playerId: 1 });
+    world.addComponent(c, 'tradeHome', { buildingId: home.id! });
+    const { gold } = route(world, players, c, target);
+    expect(c.tradeRoute).toMatchObject({ toTarget: false, armed: false });
+    const p = players.get(1)!;
+    const start = p.resources.gold;
+    step(15_000);
+    // Reached home: nothing paid, now armed and heading out.
+    expect(c.tradeRoute).toMatchObject({ toTarget: true, armed: true });
+    expect(p.resources.gold).toBe(start);
+    step(25_000);
+    expect(p.resources.gold).toBe(start + gold);
+  });
+
+  it('a market on another island is refused as unreachable (a cart), and so is a dock on another lake (a ship)', () => {
+    const { world, map, players } = setup();
+    // A channel of water from top to bottom at x 30..32 splits the strip.
+    for (let ty = 0; ty < 20; ty++) for (let tx = 30; tx < 33; tx++) map.setTile(tx, ty, TERRAIN.water);
+    const a = market(world, map, 2);
+    const far = market(world, map, 62);
+    const c = cart(world, a);
+    expect(checkTradeRoute(world, c, far, players, map)).toEqual({ ok: false, reason: 'unreachable' });
+    // Without the map (no reach check) the rules alone would allow it.
+    expect(checkTradeRoute(world, c, far, players).ok).toBe(true);
+
+    const sea = new MapData(70, 20, TERRAIN.grass);
+    for (let ty = 0; ty < 20; ty++) {
+      for (let tx = 10; tx < 30; tx++) sea.setTile(tx, ty, TERRAIN.water);
+      for (let tx = 40; tx < 60; tx++) sea.setTile(tx, ty, TERRAIN.water);
+    }
+    const w2 = createEcsWorld();
+    const d1 = createBuilding(w2, { type: 'dock', origin: { tx: 7, ty: 8 }, playerId: 1, mapData: sea });
+    const d2 = createBuilding(w2, { type: 'dock', origin: { tx: 30, ty: 8 }, playerId: 1, mapData: sea });
+    const d3 = createBuilding(w2, { type: 'dock', origin: { tx: 60, ty: 8 }, playerId: 1, mapData: sea });
+    const ship = createUnit(w2, { type: 'trade_ship', tile: { tx: 10, ty: 9 }, playerId: 1 });
+    w2.addComponent(ship, 'tradeHome', { buildingId: d1.id! });
+    // d2 stands on the land between the lakes; its west side touches the first lake.
+    expect(checkTradeRoute(w2, ship, d2, players, sea).ok).toBe(true);
+    expect(checkTradeRoute(w2, ship, d3, players, sea)).toEqual({ ok: false, reason: 'unreachable' });
+  });
+
+  it('a route whose way is closed after the order is dropped after TRADE.maxFailedPlans misses', () => {
+    const { world, map, players, step } = setup();
+    const a = market(world, map, 2);
+    const b = market(world, map, 62);
+    const c = cart(world, a);
+    route(world, players, c, b);
+    // A moat round the target market: its ring can no longer be reached.
+    for (let ty = 6; ty <= 12; ty++) for (let tx = 60; tx <= 66; tx++) if (tx < 62 || tx > 64 || ty < 8 || ty > 10) map.setTile(tx, ty, TERRAIN.water);
+    step(90_000);
+    expect(c.tradeRoute).toBeUndefined();
+    expect(players.get(1)!.resources.gold).toBe(100);
+  });
+});
+
 describe('trader home and panel (M17)', () => {
   it('the market trains trade carts, and a cart remembers the market it was trained at', () => {
     const { world, map, players } = setup();
@@ -245,7 +324,7 @@ describe('trade ship (M17)', () => {
     const check = checkTradeRoute(world, ship, east, players);
     expect(check.ok).toBe(true);
     if (!check.ok) return;
-    startTradeRoute(world, ship, check, false);
+    startTradeRoute(world, ship, check);
     const trade = new TradeSystem(world, map, players);
     const pathing = new PathfindingSystem(world, map);
     const movement = new MovementSystem(world, players, map);

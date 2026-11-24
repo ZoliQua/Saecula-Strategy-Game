@@ -109,7 +109,7 @@ const COMPONENT_SHAPE = {
     converter: z.object({ rechargeMs: nonNeg, healCarry: nonNeg, busy: z.boolean() }).strict().optional(),
     originCiv: z.object({ civ: civId }).strict().optional(),
     tradeHome: z.object({ buildingId: int }).strict().optional(),
-    tradeRoute: z.object({ homeId: int, targetId: int, toTarget: z.boolean() }).strict().optional(),
+    tradeRoute: z.object({ homeId: int, targetId: int, toTarget: z.boolean(), armed: z.boolean() }).strict().optional(),
     dying: z.object({ ttlMs: num }).strict().optional(),
     wonder: z.object({ heldMs: nonNeg }).strict().optional(),
     fogEmitter: z.object({ sightRange: num }).strict().optional(),

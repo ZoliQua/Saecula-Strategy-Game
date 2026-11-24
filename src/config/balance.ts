@@ -374,6 +374,8 @@ export const TRADE = {
   goldPerTile: 0.25,
   allyBonus: 0.25,
   minDistance: 20,
+  /** A trader whose way to its next stop failed this many plans in a row (a wall closed it) drops the route. */
+  maxFailedPlans: 5,
 } as const;
 
 /** Buildings a player may own only one of (finished or under construction). */
