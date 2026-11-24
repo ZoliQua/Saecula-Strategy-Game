@@ -93,6 +93,29 @@ describe('landmark activity (M17)', () => {
     expect(smith.research!.elapsed).toBeCloseTo(2 + LANDMARK.researchSpeed);
   });
 
+  it('the Akadémia never speeds up an age-up (feudalism, enlightenment), only ordinary technologies', () => {
+    const { world, map, players, landmarks, landmarkOf } = setup('french');
+    players.get(1)!.age = 2;
+    players.get(1)!.researched.add('feudalism');
+    const tc = createBuilding(world, { type: 'town_center', origin: { tx: 20, ty: 20 }, playerId: 1, mapData: map });
+    const smith = createBuilding(world, { type: 'blacksmith', origin: { tx: 26, ty: 20 }, playerId: 1, mapData: map });
+    world.addComponent(tc, 'research', { techId: 'enlightenment', elapsed: 0, totalTime: 100 });
+    world.addComponent(smith, 'research', { techId: 'armor_1', elapsed: 0, totalTime: 100 });
+    landmarkOf(1);
+    landmarks.update(16);
+    new ResearchSystem(world, players).update(1000);
+    expect(tc.research!.elapsed).toBeCloseTo(1);
+    expect(smith.research!.elapsed).toBeCloseTo(1 + LANDMARK.researchSpeed);
+    // Feudalism likewise takes its normal time.
+    const s2 = setup('french');
+    const tc2 = createBuilding(s2.world, { type: 'town_center', origin: { tx: 20, ty: 20 }, playerId: 1, mapData: s2.map });
+    s2.world.addComponent(tc2, 'research', { techId: 'feudalism', elapsed: 0, totalTime: 100 });
+    s2.landmarkOf(1);
+    s2.landmarks.update(16);
+    new ResearchSystem(s2.world, s2.players).update(1000);
+    expect(tc2.research!.elapsed).toBeCloseTo(1);
+  });
+
   it('the English Királyi hajógyár trains at the dock 33 % faster (other trainers unchanged)', () => {
     const map = new MapData(40, 40, TERRAIN.grass);
     for (let ty = 0; ty < 40; ty++) for (let tx = 30; tx < 40; tx++) map.setTile(tx, ty, TERRAIN.water);
@@ -210,7 +233,7 @@ describe('fort landmarks (Végvár, Osztrog)', () => {
 });
 
 describe('Finnish Szauna', () => {
-  it('heals every own wounded land unit within range, and nobody else', () => {
+  it('heals every own wounded land unit within range, and nobody else (no ally, enemy, ship or building)', () => {
     const { world, map, players, landmarks, landmarkOf } = setup('finnish', ['english', 'german'], 1);
     landmarkOf(1);
     const unit = (tx: number, ty: number, playerId = 1, type: 'swordsman' | 'galley' = 'swordsman') => {
@@ -223,6 +246,7 @@ describe('Finnish Szauna', () => {
     const out = unit(17, 12); // 5 tiles
     const ally = unit(14, 10, 2);
     const enemy = unit(14, 11, 3);
+    const galley = unit(13, 13, 1, 'galley'); // own ship 1 tile from the footprint
     const house = createBuilding(world, { type: 'house', origin: { tx: 7, ty: 13 }, playerId: 1, mapData: map });
     house.health!.current = 100;
     for (let i = 0; i < 10; i++) landmarks.update(100); // 1 s
@@ -231,6 +255,7 @@ describe('Finnish Szauna', () => {
     expect(out.health!.current).toBe(10);
     expect(ally.health!.current).toBe(10);
     expect(enemy.health!.current).toBe(10);
+    expect(galley.health!.current).toBe(10);
     expect(house.health!.current).toBe(100);
     expect(players.get(1)!.landmarkCarry).toBeLessThan(1);
   });

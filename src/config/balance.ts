@@ -400,7 +400,8 @@ export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>
  *    aura, not one target like the monk (a monk heals 1.5 HP/s to one).
  *    Not buildings, not allies, not ships.
  *  - modifiers: dock training ×(1 + 0.33) (English), trade gold
- *    ×(1 + 0.25) (German), research ×(1 + 0.25) (French), market (Italian):
+ *    ×(1 + 0.25) (German), research ×(1 + 0.25) (French; technologies only,
+ *    never an age-up such as feudalism or enlightenment), market (Italian):
  *    the sell fee ×0.5 (30 % → 15 %) and the price move per trade ×0.6.
  */
 export const LANDMARK = {
