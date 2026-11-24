@@ -215,7 +215,7 @@ function stall(p: IsoPainter, u0: number, v0: number, u1: number, v1: number, cl
 }
 
 /** An upright barrel with iron hoops and a lid. */
-function barrel(p: IsoPainter, u: number, v: number): void {
+export function barrel(p: IsoPainter, u: number, v: number): void {
   const ctx = p.ctx;
   const [x, y] = p.p(u, v, 0);
   const r = 6;
@@ -249,7 +249,7 @@ function barrel(p: IsoPainter, u: number, v: number): void {
 }
 
 /** Three grain sacks slumped together. */
-function sacks(p: IsoPainter, u: number, v: number): void {
+export function sacks(p: IsoPainter, u: number, v: number): void {
   const ctx = p.ctx;
   for (const [du, dv, s] of [[0, 0, 1], [0.12, 0.08, 0.9], [0.05, 0.16, 0.95]] as const) {
     const [x, y] = p.p(u + du, v + dv, 0);

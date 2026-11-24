@@ -7,8 +7,10 @@ import { monasteryArt } from './monastery';
 import { baroqueArt } from './baroque';
 import { ENGLISH_GEORGIAN, ENGLISH_ROMANO_BRITISH, ENGLISH_TUDOR } from './english/englishStyles';
 import { gothicCathedral } from './english/gothicCathedral';
+import { royalDockyardArt } from './english/royalDockyard';
 import { FINNISH_FINNIC, FINNISH_GREYSTONE, FINNISH_GUSTAVIAN } from './finnish/finnishStyles';
 import { nordicArt } from './finnish/nordic';
+import { akademiaArt } from './french/akademia';
 import { chateau } from './french/chateau';
 import { classicTower } from './french/classicTower';
 import { FRENCH_CLASSICISME, FRENCH_GALLO_ROMAN, FRENCH_GOTHIC } from './french/frenchStyles';
@@ -22,6 +24,7 @@ import { romanoBritishArt } from './english/romanoBritish';
 import { georgianArt } from './families/georgian/georgian';
 import { tudorArt } from './families/tudor/tudor';
 import { GERMAN_BACKSTEIN, GERMAN_FACHWERK, GERMAN_LIMES } from './german/germanStyles';
+import { hanseKontorArt } from './german/hanseKontor';
 import { kaiserdom } from './german/kaiserdom';
 import { limesTower } from './german/limesTower';
 import { portaNigra } from './german/portaNigra';
@@ -36,6 +39,7 @@ import { RUSSIAN_GORD, RUSSIAN_MUSCOVY, RUSSIAN_PETRINE } from './russian/russia
 import { hispaniaArt } from './spanish/hispania';
 import { mudejarArt } from './spanish/mudejar';
 import { SPANISH_COLONIAL, SPANISH_HISPANIA, SPANISH_MUDEJAR } from './spanish/spanishStyles';
+import { vegvarArt } from './hungarian/vegvar';
 import { HUNGARIAN_BAROQUE, HUNGARIAN_MEDIEVAL, HUNGARIAN_ROMAN } from './hungarianStyles';
 import { medievalArt } from './medieval';
 import { romanArt } from './roman';
@@ -112,10 +116,10 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
  * the shared placeholder keep.
  */
 export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>> = {
-  hungarian: landmarkKeepArt,
-  english: landmarkKeepArt,
-  german: landmarkKeepArt,
-  french: landmarkKeepArt,
+  hungarian: vegvarArt,
+  english: royalDockyardArt,
+  german: hanseKontorArt,
+  french: akademiaArt,
   spanish: landmarkKeepArt,
   italian: landmarkKeepArt,
   russian: landmarkKeepArt,
