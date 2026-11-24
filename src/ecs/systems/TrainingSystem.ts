@@ -47,7 +47,7 @@ export class TrainingSystem {
       if ((trainer as Entity).underConstruction || (trainer as Entity).dying) continue;
       const entry = trainer.trainingQueue.entries[0];
       if (!entry) continue;
-      // Conscription (M12) speeds up the barracks, archery range and stable.
+      // Conscription (M12) speeds up the barracks, archery range and stable; the dock landmark (M17) the dock.
       const owner = this.players?.get(trainer.owner.playerId);
       entry.elapsed += dt * (owner ? trainSpeedMultiplier(owner, trainer.building.type) : 1);
       if (entry.elapsed >= entry.totalTime) {

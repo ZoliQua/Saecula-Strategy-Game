@@ -15,6 +15,7 @@ import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { BuildingFxSystem } from '../../ecs/systems/BuildingFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
+import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
@@ -93,6 +94,7 @@ export class SystemRunner {
   private readonly movement: MovementSystem;
   private readonly gathering: GatheringSystem;
   private readonly trade: TradeSystem;
+  private readonly landmarks: LandmarkSystem;
   private readonly farms: FarmRegenSystem;
   private readonly construction: ConstructionSystem;
   private readonly training: TrainingSystem;
@@ -168,6 +170,7 @@ export class SystemRunner {
     this.transports = new TransportSystem(world, mapData);
     this.gathering = new GatheringSystem(world, mapData, players, this.paths);
     this.trade = new TradeSystem(world, mapData, players, this.paths);
+    this.landmarks = new LandmarkSystem(world, players);
     this.farms = new FarmRegenSystem(world);
     this.construction = new ConstructionSystem(world, mapData, this.paths, players);
     this.training = new TrainingSystem(world, mapData, players);
@@ -285,6 +288,8 @@ export class SystemRunner {
     this.cameraController.update(realDelta);
     this.tileMap.update(time, delta);
     this.paths.reset(delta);
+    // First: every later system sees this tick's landmark state (M17).
+    this.landmarks.update(delta);
     this.pathfinding.update();
     this.gathering.update(delta);
     this.trade.update(delta);

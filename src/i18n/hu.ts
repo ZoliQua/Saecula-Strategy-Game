@@ -1,4 +1,4 @@
-import { CIV_BONUS, NAVAL } from '../config/balance';
+import { CIV_BONUS, LANDMARK, NAVAL } from '../config/balance';
 
 /** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
 const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
@@ -203,6 +203,18 @@ export const hu = {
     monastery: 'Kolostor',
     dock: 'Kikötő',
     market: 'Piac',
+    landmark: 'Egyedi épület',
+  },
+  /** Each nation's landmark (M17): its name and one-line effect; numbers come from LANDMARK. */
+  landmarks: {
+    hungarian: { name: 'Végvár', role: `Erőd: távolról lő, mint az őrtorony, erősebben (${LANDMARK.fort.range} mező)` },
+    english: { name: 'Királyi hajógyár', role: `A kikötő ${pct(LANDMARK.dockTrainSpeed)}-kal gyorsabban képez` },
+    german: { name: 'Hanza-kontor', role: `A kereskedelem ${pct(LANDMARK.tradeGold)}-kal több aranyat hoz` },
+    french: { name: 'Akadémia', role: `A kutatás ${pct(LANDMARK.researchSpeed)}-kal gyorsabb` },
+    spanish: { name: 'Pénzverde', role: `Percenként ${LANDMARK.mintGoldPerMin} aranyat termel` },
+    italian: { name: 'Bankház', role: 'Jobb piaci árak: kisebb eladási díj, lassabban romló ár' },
+    russian: { name: 'Osztrog', role: `Gerenda-erőd: távolról lő, mint az őrtorony, erősebben (${LANDMARK.fort.range} mező)` },
+    finnish: { name: 'Szauna', role: `A ${LANDMARK.sauna.range} mezőn belül álló saját egységeket gyógyítja (${LANDMARK.sauna.healPerSec} életerő/mp)` },
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -374,6 +386,7 @@ export const hu = {
     monastery: 'Szerzeteseket képez',
     dock: 'Hajókat képez · a halászhajók ide hozzák a halat',
     market: 'Étel és fa vétele, eladása aranyért',
+    landmark: 'A nép egyedi épülete · csak egy építhető',
   },
   mapLoading: {
     kicker: 'Térkép előkészítése',

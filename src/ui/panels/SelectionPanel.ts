@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { effectiveUnitStats } from '../../game/modifiers';
 import { hu } from '../../i18n/hu';
+import { buildingName, buildingRole } from '../buildingText';
 import { decorKeys } from '../../iso/textures';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
@@ -124,7 +125,7 @@ export class SelectionPanel {
       if (sel.trader && own) nodes.push(el('p', { class: 'sel-hint sel-route' }, routeText(sel.route)));
       return nodes;
     }
-    const nodes: Node[] = [head(hu.buildings[sel.buildingType], hu.buildingRoles[sel.buildingType], owner(sel.ownerId, sel.civ, relation), more)];
+    const nodes: Node[] = [head(buildingName(sel.buildingType, sel.civ), buildingRole(sel.buildingType, sel.civ), owner(sel.ownerId, sel.civ, relation), more)];
     if (sel.constructionProgress !== undefined) {
       nodes.push(bar(Math.round(sel.constructionProgress * 100), 100, hu.hud.underConstruction, 'build', '%'));
     } else {

@@ -12,8 +12,9 @@ describe('age styles', () => {
   });
 
   it('covers the civic / economic / military buildings, towers and walls', () => {
-    // The dock (M14) wears its owner's age style like the monastery.
-    expect(AGE_STYLED_BUILDINGS).toHaveLength(14);
+    // The dock (M14), the market and the landmark (M17) wear their owner's age style like the monastery.
+    expect(AGE_STYLED_BUILDINGS).toHaveLength(15);
+    expect(AGE_STYLED_BUILDINGS).toContain('landmark');
     expect(AGE_STYLED_BUILDINGS).toContain('tower');
     expect(AGE_STYLED_BUILDINGS).toContain('wall');
     expect(AGE_STYLED_BUILDINGS).not.toContain('wonder');

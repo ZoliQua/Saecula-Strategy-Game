@@ -1,6 +1,7 @@
 import { MARKET } from '../config/balance';
 import type { Entity } from '../ecs/components';
 import type { Wallet } from '../ecs/research';
+import { marketTerms } from './modifiers';
 import type { Player } from './Player';
 
 /** The resources a market buys and sells for gold (M17). */
@@ -10,18 +11,16 @@ export const MARKET_RESOURCES: readonly MarketResource[] = ['food', 'wood'];
 /**
  * A player's market terms beside the base MARKET table: `feeMul` scales the
  * sell fee, `stepMul` the price move per trade. Identity until a landmark
- * (the Italian Bankház, M17 Task 3) improves them.
+ * (the Italian Bankház, M17) improves them.
  */
 export interface MarketRates {
   readonly feeMul: number;
   readonly stepMul: number;
 }
 
-const IDENTITY_RATES: MarketRates = { feeMul: 1, stepMul: 1 };
-
-/** The player's market terms (hook for M17 Task 3's Bankház; identity for now). */
-export function marketRateMultiplier(_player: Player): MarketRates {
-  return IDENTITY_RATES;
+/** The player's market terms: identity unless a market landmark (the Italian Bankház) stands finished. */
+export function marketRateMultiplier(player: Player): MarketRates {
+  return marketTerms(player);
 }
 
 export interface MarketResult {

@@ -1,6 +1,6 @@
 import { gameEvents } from '../../game/events';
 import { CAVALRY_CLASS } from '../../config/balance';
-import { scaleHealth } from '../../game/modifiers';
+import { researchSpeedMultiplier, scaleHealth } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { TECH_SPECS } from '../../game/technologies';
 import type { UnitType } from '../../types';
@@ -23,7 +23,9 @@ export class ResearchSystem {
     for (const building of [...this.world.with('research', 'owner')]) {
       const research = building.research;
       if ((building as Entity).underConstruction || (building as Entity).dying) continue;
-      research.elapsed += dt;
+      // The research landmark (M17) speeds up every research of its owner.
+      const owner = this.players.get(building.owner.playerId);
+      research.elapsed += dt * (owner ? researchSpeedMultiplier(owner) : 1);
       if (research.elapsed < research.totalTime) continue;
       const { techId } = research;
       this.world.removeComponent(building, 'research');

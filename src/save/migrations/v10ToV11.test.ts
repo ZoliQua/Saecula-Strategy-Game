@@ -16,7 +16,7 @@ describe('v10 → v11 migration', () => {
   it('gives every player the starting market prices and keeps everything else', () => {
     const data = { schemaVersion: 10, players: [{ id: 1, civ: 'hungarian' }, { id: 2 }], gameTimeMs: 5 };
     const start = { food: 100, wood: 100 };
-    const expected = { ...data, players: [{ id: 1, civ: 'hungarian', marketPrices: start }, { id: 2, marketPrices: start }] };
+    const expected = { ...data, players: [{ id: 1, civ: 'hungarian', marketPrices: start, landmarkCarry: 0 }, { id: 2, marketPrices: start, landmarkCarry: 0 }] };
     expect(v10ToV11(data)).toEqual(expected);
     expect(data.players[0]).toEqual({ id: 1, civ: 'hungarian' });
     expect(migrate(data, 11)).toEqual({ ok: true, data: { ...expected, schemaVersion: 11 } });

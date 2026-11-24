@@ -9,6 +9,7 @@ import { isFriendly, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
 import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
+import { isShootingBuilding, shotOrigin } from '../../game/landmarks';
 import { boostArmor, boostAttack, bonusesFor } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import type { ProjectileKind } from '../../types';
@@ -116,7 +117,9 @@ export class CombatSystem {
       this.world.removeComponent(a as Entity, 'attackIntent');
       return;
     }
-    const dist = targetDistance(a.position, target);
+    // A fort landmark measures from its footprint centre (shotOrigin); units and towers from their tile.
+    const origin = shotOrigin(a);
+    const dist = targetDistance(origin, target);
     // A unit on blocked ground (a foundation laid over it) steps out before it fights.
     const stranded = !!a.movable && !navGridFor(this.mapData, a as Entity).isPassable(a.position.tx, a.position.ty);
     if (dist > a.attacker.range || stranded) {
@@ -142,11 +145,11 @@ export class CombatSystem {
       // Ranged: damage lands when the projectile arrives (ProjectileSystem).
       fireProjectile(this.world, {
         kind,
-        from: { x: a.position.tx, y: a.position.ty },
+        from: { x: origin.tx, y: origin.ty },
         target: target as Entity,
         ownerId: a.owner.playerId,
         payload: attack,
-        ...((a as Entity).building?.type === 'tower'
+        ...(isShootingBuilding(a as Entity)
           ? { launchHeight: towerLaunchHeight(this.players?.get(a.owner.playerId)?.age ?? 1) }
           : {}),
       });
@@ -270,11 +273,11 @@ export class CombatSystem {
   }
 }
 
-/** Projectile kind for a ranged attacker (unit or tower); undefined = melee. */
+/** Projectile kind for a ranged attacker (unit, tower or fort landmark); undefined = melee. */
 function projectileKindFor(a: Attacker): ProjectileKind | undefined {
   const e = a as Entity;
   if (e.unit) return UNIT_PROJECTILE[e.unit.unitType];
-  if (e.building?.type === 'tower') return TOWER_PROJECTILE;
+  if (isShootingBuilding(e)) return TOWER_PROJECTILE;
   return undefined;
 }
 

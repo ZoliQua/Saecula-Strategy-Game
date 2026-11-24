@@ -3,8 +3,9 @@ import type { Migration } from './index';
 
 /**
  * v10 (M16) → v11 (M17): the building enum gains the market (a v10 save
- * has none), and every player gains market prices; a v10 player never
- * traded, so each gets MARKET.startPrice. Players that are not objects are
+ * has none, nor a landmark), and every player gains market prices and a
+ * landmark carry; a v10 player never traded, so each gets MARKET.startPrice,
+ * and owns no landmark, so its carry is 0. Players that are not objects are
  * left for the schema to reject.
  */
 export const v10ToV11: Migration = (data) => {
@@ -13,7 +14,7 @@ export const v10ToV11: Migration = (data) => {
   return {
     ...data,
     players: players.map((p: unknown) =>
-      typeof p === 'object' && p !== null && !Array.isArray(p) ? { ...p, marketPrices: { ...MARKET.startPrice } } : p,
+      typeof p === 'object' && p !== null && !Array.isArray(p) ? { ...p, marketPrices: { ...MARKET.startPrice }, landmarkCarry: 0 } : p,
     ),
   };
 };

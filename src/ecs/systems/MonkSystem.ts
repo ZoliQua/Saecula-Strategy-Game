@@ -14,6 +14,7 @@ import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { faceToward } from './facing';
 import { findEntityById } from './gathering/gatherQueries';
+import { applyHeal, carryStep, mostWoundedOwnUnit } from './heal';
 
 /**
  * The monk's healing and conversion (CLAUDE.md M11):
@@ -152,28 +153,15 @@ export class MonkSystem {
 
   private heal(monk: Entity & Required<Pick<Entity, 'converter' | 'position' | 'owner'>>, deltaMs: number): void {
     if (monk.moveIntent || (monk.movable?.path.length ?? 0) > 0) return;
-    let best: Entity | null = null;
-    let bestMissing = 0;
-    for (const u of this.world.with('unit', 'health', 'owner', 'position')) {
-      if (u === monk || u.dying || u.owner.playerId !== monk.owner.playerId) continue;
-      const missing = u.health.max - u.health.current;
-      if (missing <= 0 || chebyshev(u.position, monk.position) > MONK.healRange) continue;
-      if (missing > bestMissing) {
-        best = u;
-        bestMissing = missing;
-      }
-    }
+    const best = mostWoundedOwnUnit(this.world, monk.owner.playerId, (at) => chebyshev(at, monk.position) <= MONK.healRange, monk);
     if (!best?.health) {
       monk.converter.healCarry = 0;
       return;
     }
     monk.converter.busy = true;
     faceToward(monk, best);
-    const c = monk.converter;
-    c.healCarry += (MONK.healPerSec * deltaMs) / 1000;
-    const whole = Math.floor(c.healCarry);
-    if (whole <= 0) return;
-    c.healCarry -= whole;
-    best.health.current = Math.min(best.health.max, best.health.current + whole);
+    const step = carryStep(monk.converter.healCarry, MONK.healPerSec, deltaMs);
+    monk.converter.healCarry = step.carry;
+    if (step.whole > 0) applyHeal(best.health, step.whole);
   }
 }

@@ -133,7 +133,8 @@ export type BuildingType =
   | 'wonder'
   | 'monastery'
   | 'dock'
-  | 'market';
+  | 'market'
+  | 'landmark';
 
 export interface Population {
   current: number;

@@ -2,6 +2,7 @@ import { AI_COMMON, type HardTuning } from '../config/aiBalance';
 import type { Entity } from '../ecs/components';
 import { clearUnitOrders } from '../ecs/orders';
 import { baseUnitType } from '../game/civUnits';
+import { isShootingBuilding } from '../game/landmarks';
 import { chebyshev, type TileCoord } from '../iso/coordinates';
 import type { AIContext } from './AIPlayer';
 import { groupCentre } from './decisions/combat';
@@ -110,7 +111,8 @@ export class HarassControl {
     const enemies = view.visibleEnemyUnits.filter((e) => ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId);
     const near = (e: Entity) => !!e.position && chebyshev(e.position, centre) <= AI_COMMON.engageRadius;
     const armed = enemies.filter((e) => near(e) && e.attacker && !!e.unit && baseUnitType(e.unit.unitType) !== 'villager').length;
-    const towerInRange = view.visibleEnemyBuildings.some((b) => b.building?.type === 'tower' && near(b));
+    // A tower or a fort landmark (M17) in sight ends the raid.
+    const towerInRange = view.visibleEnemyBuildings.some((b) => isShootingBuilding(b) && near(b));
     if (towerInRange || raidOutnumbered(members.length, armed, this.tune.retreatRatio)) {
       return this.end(ctx, view, members, 'retreat');
     }

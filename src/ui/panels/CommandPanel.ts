@@ -9,6 +9,7 @@ import {
 } from '../../game/availability';
 import { TECH_SPECS } from '../../game/technologies';
 import { hu } from '../../i18n/hu';
+import { buildingName, buildingRole } from '../buildingText';
 import type { AgeId, BuildingType, ResourceType, Resources, TechId, UnitType } from '../../types';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
@@ -34,6 +35,7 @@ export const BUILDABLE_BY_VILLAGER: readonly BuildingType[] = [
   'blacksmith',
   'monastery',
   'market',
+  'landmark',
   'tower',
   'wall',
   'foundry',
@@ -145,8 +147,8 @@ export class CommandPanel {
     const spec = BUILDING_SPECS[type];
     return {
       id: type,
-      name: hu.buildings[type],
-      role: hu.buildingRoles[type],
+      name: buildingName(type, uiStore.getState().civ),
+      role: buildingRole(type, uiStore.getState().civ),
       image: buildingThumbnail(this.textures, type, age, uiStore.getState().civ),
       cost: spec.cost,
       pop: 0,

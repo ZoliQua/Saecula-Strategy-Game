@@ -1,5 +1,6 @@
 import { audio } from '../../audio/AudioManager';
 import { hu } from '../../i18n/hu';
+import { buildingName, buildingRole } from '../buildingText';
 import type { AgeId, BuildingType, Resources, ResourceType, UnitType } from '../../types';
 import { el, uiRoot } from '../dom';
 import { icons } from '../icons';
@@ -154,9 +155,9 @@ export class TechTree {
   private building(type: BuildingType, cost: Resources): HTMLElement {
     return el(
       'li',
-      { class: 'tree-bld', title: hu.buildingRoles[type] },
-      this.picture(this.pictures.building(type), hu.buildings[type], 'tree-pic'),
-      el('span', { class: 'tree-bld-text' }, el('span', { class: 'tree-name' }, hu.buildings[type]), this.cost(cost)),
+      { class: 'tree-bld', title: buildingRole(type, this.model.civ) },
+      this.picture(this.pictures.building(type), buildingName(type, this.model.civ), 'tree-pic'),
+      el('span', { class: 'tree-bld-text' }, el('span', { class: 'tree-name' }, buildingName(type, this.model.civ)), this.cost(cost)),
     );
   }
 

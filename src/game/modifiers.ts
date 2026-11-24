@@ -24,6 +24,11 @@ export interface Researched {
   readonly researched: ReadonlySet<TechId>;
   /** When set, the civ's permanent bonus joins the technology effects. */
   readonly civ?: CivId;
+  /**
+   * The owner has a finished, standing landmark (M17, LandmarkSystem keeps
+   * it per tick): a modifier landmark of `civ` joins the effects.
+   */
+  readonly landmarkActive?: boolean;
 }
 
 export interface UnitBonuses {
@@ -63,6 +68,7 @@ const NO_BONUS: UnitBonuses = Object.freeze({
 interface EffectCache {
   size: number;
   civ: CivId | undefined;
+  landmark: boolean;
   effects: readonly TechEffect[];
   units: Map<UnitType, UnitBonuses>;
   gather: Map<ResourceType, number>;
@@ -76,13 +82,19 @@ const caches = new WeakMap<ReadonlySet<TechId>, EffectCache>();
 function cacheOf(player: Researched): EffectCache {
   const set = player.researched;
   let c = caches.get(set);
-  if (!c || c.size !== set.size || c.civ !== player.civ) {
+  const landmark = player.landmarkActive === true;
+  if (!c || c.size !== set.size || c.civ !== player.civ || c.landmark !== landmark) {
     const effects: TechEffect[] = [];
-    if (player.civ) effects.push(CIV_DEFS[player.civ].bonus);
+    if (player.civ) {
+      effects.push(CIV_DEFS[player.civ].bonus);
+      const lm = CIV_DEFS[player.civ].landmark;
+      if (landmark && lm.kind === 'modifier') effects.push(lm.effect);
+    }
     for (const id of set) effects.push(TECH_SPECS[id].effect);
     c = {
       size: set.size,
       civ: player.civ,
+      landmark,
       effects,
       units: new Map(),
       gather: new Map(),
@@ -250,12 +262,43 @@ export function buildSpeedMultiplier(player: Researched): number {
   return cache.buildSpeed;
 }
 
-/** Multiplier on the training speed of a unit queued at `trainer` (conscription, M12). */
+/** Multiplier on the training speed of a unit queued at `trainer` (conscription, M12; the dock landmark, M17). */
 export function trainSpeedMultiplier(player: Researched, trainer: BuildingType): number {
-  if (!CONSCRIPTION_BUILDINGS.includes(trainer)) return 1;
+  const conscription = CONSCRIPTION_BUILDINGS.includes(trainer);
+  if (!conscription && trainer !== 'dock') return 1;
   let m = 1;
-  for (const e of effectsOf(player)) if (e.kind === 'trainSpeed') m *= 1 + e.bonus;
+  for (const e of effectsOf(player)) {
+    if (conscription && e.kind === 'trainSpeed') m *= 1 + e.bonus;
+    if (trainer === 'dock' && e.kind === 'dockTrainSpeed') m *= 1 + e.bonus;
+  }
   return m;
+}
+
+/** Multiplier on research speed at every building (the research landmark, M17). */
+export function researchSpeedMultiplier(player: Researched): number {
+  let m = 1;
+  for (const e of effectsOf(player)) if (e.kind === 'researchSpeed') m *= 1 + e.bonus;
+  return m;
+}
+
+/** Multiplier on the gold of each trade arrival (the trade landmark, M17). */
+export function tradeGoldBonus(player: Researched): number {
+  let m = 1;
+  for (const e of effectsOf(player)) if (e.kind === 'tradeGold') m *= 1 + e.bonus;
+  return m;
+}
+
+/** Market terms: factors on the sell fee and the price move per trade (the market landmark, M17). */
+export function marketTerms(player: Researched): { feeMul: number; stepMul: number } {
+  let feeMul = 1;
+  let stepMul = 1;
+  for (const e of effectsOf(player)) {
+    if (e.kind === 'marketRate') {
+      feeMul *= e.feeMul;
+      stepMul *= e.stepMul;
+    }
+  }
+  return { feeMul, stepMul };
 }
 
 /** Share of MONK.rechargeMs a monk waits after a conversion (illumination, M12). */

@@ -304,6 +304,9 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
   // M17: exchanges food and wood for gold (MARKET); trade carts follow in Task 2.
   market: { age: 2, hp: 1500, width: 3, height: 3, cost: c(0, 175, 0), buildTime: 50, los: 6, popBonus: 0 },
   tower: { age: 2, hp: 850, width: 1, height: 1, cost: c(0, 50, 125), buildTime: 80, los: 9, popBonus: 0 },
+  // M17: the nation's landmark (LANDMARK); one per player (UNIQUE_BUILDINGS). HP of a town centre
+  // (the fort landmarks shoot like towers and must hold), build time of a monastery.
+  landmark: { age: 2, hp: 2400, width: 3, height: 3, cost: c(0, 300, 250), buildTime: 50, los: 8, popBonus: 0 },
   wall: { age: 1, hp: 300, width: 1, height: 1, cost: c(0, 5, 0), buildTime: 6, los: 4, popBonus: 0 },
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },
 };
@@ -379,7 +382,36 @@ export const TRADE = {
 } as const;
 
 /** Buildings a player may own only one of (finished or under construction). */
-export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
+export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder', 'landmark']);
+
+/**
+ * Landmark effects (M17, src/game/landmarks.ts, CivDef.landmark). Every
+ * effect holds only while its owner has a finished, standing landmark.
+ *  - fort (Hungarian Végvár, Russian Osztrog): shoots like a tower, about
+ *    1.5× as hard and as far (pierce 8 vs 5, range 7 vs 5; the range is
+ *    measured from the footprint's centre, so it reaches 6 tiles past the
+ *    walls), same cooldown, arrows. Its HP is the landmark's (a town centre's).
+ *  - mint (Spanish Pénzverde): `mintGoldPerMin` gold per game minute,
+ *    credited as gathered income (it counts in the score like a miner's
+ *    gold); fractions carry over per player (saved `landmarkCarry`).
+ *    30 gold/min ≈ one gold miner (0.4–0.5 gold/s) for 550 resources.
+ *  - sauna (Finnish Szauna): every own wounded land unit within `range`
+ *    tiles (Chebyshev, of the footprint) regains `healPerSec` HP/s — an
+ *    aura, not one target like the monk (a monk heals 1.5 HP/s to one).
+ *    Not buildings, not allies, not ships.
+ *  - modifiers: dock training ×(1 + 0.33) (English), trade gold
+ *    ×(1 + 0.25) (German), research ×(1 + 0.25) (French), market (Italian):
+ *    the sell fee ×0.5 (30 % → 15 %) and the price move per trade ×0.6.
+ */
+export const LANDMARK = {
+  fort: { pierce: 8, range: 7, cooldownMs: TOWER_COOLDOWN_MS },
+  mintGoldPerMin: 30,
+  sauna: { healPerSec: 2, range: 4 },
+  dockTrainSpeed: 0.33,
+  tradeGold: 0.25,
+  researchSpeed: 0.25,
+  marketRate: { feeMul: 0.5, stepMul: 0.6 },
+} as const;
 
 /** How long a finished Wonder must stand for its owner to win (Wonder victory, CLAUDE.md §4.8). */
 export const WONDER_HOLD_MS = 600_000;

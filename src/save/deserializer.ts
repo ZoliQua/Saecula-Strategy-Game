@@ -54,6 +54,7 @@ function restoredPlayer(p: SavedPlayer): Player {
     defeated: p.defeated,
     gatherHandicap: p.gatherHandicap,
     marketPrices: { ...p.marketPrices },
+    landmarkCarry: p.landmarkCarry,
     ...(p.personality !== undefined ? { personality: p.personality } : {}),
   });
 }

@@ -56,12 +56,12 @@ export class MatchArt {
     return [...plan.critical, ...restored];
   }
 
-  /** The first age-up of a civ to `age` queues that age's unit sheets and the next age's wall pieces (once per civ and age). */
+  /** The first age-up of a civ to `age` queues that age's unit sheets, the next age's wall pieces and, at age 2, its landmark (once per civ and age). */
   onAgeChanged(civ: CivId, age: AgeId): void {
     const id = `${civ}:${age}`;
     if (this.ageQueued.has(id)) return;
     this.ageQueued.add(id);
-    this.background?.enqueue(ageUpArtJobs(civ, age, this.painters()));
+    this.background?.enqueue(ageUpArtJobs(civ, age, this.painters(), this.owners.get(civ)));
   }
 
   /** Once per game frame, after the frame's systems ran (BackgroundArt.update). */
@@ -77,7 +77,7 @@ export class MatchArt {
 
   private painters(): ArtPainters {
     return {
-      building: (type, civ, owner) => buildingTexture(this.scene, type, 1, owner, civ),
+      building: (type, civ, owner, age = 1) => buildingTexture(this.scene, type, age, owner, civ),
       wall: (piece, age, civ) => wallTexture(this.scene, piece, age, civ),
       // Not forced: when this frame already made a sheet (one per frame), try again at the back of the queue.
       unit: (type, civ) => {

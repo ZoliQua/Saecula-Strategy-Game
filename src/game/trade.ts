@@ -3,6 +3,7 @@ import type { Entity } from '../ecs/components';
 import type { EcsWorld } from '../ecs/world';
 import type { BuildingType, UnitType } from '../types';
 import { areAllies, type TeamLookup } from './diplomacy';
+import { tradeGoldBonus } from './modifiers';
 import type { Player } from './Player';
 import { onFootprintRing } from '../ecs/footprint';
 import { moveLayerOf, navGridFor } from '../ecs/navLayer';
@@ -50,11 +51,11 @@ export function tradeDistance(a: Entity, b: Entity): number {
 }
 
 /**
- * The player's trade income multiplier (hook for M17 Task 3's Hanseatic
- * kontor, +25 %); identity for now.
+ * The player's trade income multiplier: 1 unless a trade landmark (the
+ * German Hanza-kontor, LANDMARK.tradeGold) stands finished.
  */
-export function tradeGoldMultiplier(_player: Player | undefined): number {
-  return 1;
+export function tradeGoldMultiplier(player: Player | undefined): number {
+  return player ? tradeGoldBonus(player) : 1;
 }
 
 /**

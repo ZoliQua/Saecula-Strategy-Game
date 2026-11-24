@@ -1,4 +1,5 @@
 import { areEnemies, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { isShootingBuilding, shotOrigin } from '../../game/landmarks';
 import { NO_TREATY, type TreatyGate } from '../../game/treaty';
 import type { Entity } from '../components';
 import type { FogOfWarData } from '../../map/FogOfWarData';
@@ -7,7 +8,7 @@ import type { EcsWorld } from '../world';
 const RETARGET_INTERVAL_MS = 250;
 
 /**
- * Gives every finished tower an `attackIntent` on the nearest enemy (M16: other-team) unit in
+ * Gives every finished tower (and fort landmark, M17) an `attackIntent` on the nearest enemy (M16: other-team) unit in
  * range; CombatSystem then fires the arrow when the cooldown allows.
  *
  * Visibility: a tower only shoots units its owner can currently see in that
@@ -33,7 +34,7 @@ export class TowerCombatSystem {
     this.elapsedMs = 0;
 
     for (const tower of this.world.with('position', 'building', 'attacker', 'owner')) {
-      if (tower.building.type !== 'tower') continue;
+      if (!isShootingBuilding(tower)) continue;
       const t = tower as Entity;
       if (t.underConstruction || t.dying) continue;
       this.retarget(tower as TowerEntity);
@@ -48,9 +49,10 @@ export class TowerCombatSystem {
 
     let best: Entity | null = null;
     let bestD = Infinity;
+    const from = shotOrigin(tower);
     for (const u of this.world.with('position', 'unit', 'owner', 'health')) {
       if (!this.isValidTarget(tower, u, range)) continue;
-      const d = (u.position.tx - tower.position.tx) ** 2 + (u.position.ty - tower.position.ty) ** 2;
+      const d = (u.position.tx - from.tx) ** 2 + (u.position.ty - from.ty) ** 2;
       if (d < bestD) {
         bestD = d;
         best = u;
@@ -68,11 +70,9 @@ export class TowerCombatSystem {
     if (!areEnemies(this.teams, target.owner.playerId, tower.owner.playerId)) return false;
     // The treaty (M16): every target left is another team's player, so none while it holds.
     if (this.treaty()) return false;
-    // Same Chebyshev metric as CombatSystem, so an accepted target always fires.
-    const dist = Math.max(
-      Math.abs(target.position.tx - tower.position.tx),
-      Math.abs(target.position.ty - tower.position.ty),
-    );
+    // Same Chebyshev metric and origin (a fort: its footprint centre) as CombatSystem, so an accepted target always fires.
+    const from = shotOrigin(tower);
+    const dist = Math.max(Math.abs(target.position.tx - from.tx), Math.abs(target.position.ty - from.ty));
     if (dist > range) return false;
     return this.isVisibleTo(tower.owner.playerId, target.position.tx, target.position.ty);
   }

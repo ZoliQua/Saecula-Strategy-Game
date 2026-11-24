@@ -1,4 +1,4 @@
-import { CIV_DEFS, DEFAULT_CIV, type ArchStyleId } from '../../config/civs';
+import { CIV_DEFS, CIV_IDS, DEFAULT_CIV, type ArchStyleId } from '../../config/civs';
 import type { AgeId, BuildingType, CivId } from '../../types';
 import { ARCH_ART, ARCH_STYLES } from './architecture/registry';
 import type { ArchStyle } from './architecture/style';
@@ -44,11 +44,26 @@ function wonderArtFor(civ: CivId): WonderArt {
 
 const ALL_TYPES: readonly BuildingType[] = [
   'town_center', 'house', 'farm', 'lumber_camp', 'mining_camp', 'barracks', 'archery_range',
-  'stable', 'blacksmith', 'foundry', 'tower', 'wall', 'wonder', 'monastery', 'dock', 'market',
+  'stable', 'blacksmith', 'foundry', 'tower', 'wall', 'wonder', 'monastery', 'dock', 'market', 'landmark',
 ];
 
+/**
+ * A type's art footprint in tiles, the same for every civ and age: checked
+ * over every civ's every age, since some types (the landmark, M17) have a
+ * painter per civ.
+ */
+function artSizeOf(type: BuildingType): number {
+  const size = artFor(type, 1, DEFAULT_CIV).size;
+  for (const civ of CIV_IDS) {
+    for (const age of [1, 2, 3] as const) {
+      if (artFor(type, age, civ).size !== size) throw new Error(`${type}: ${civ} age ${age} paints another footprint`);
+    }
+  }
+  return size;
+}
+
 export const BUILDING_ART_SIZES: Record<BuildingType, number> = Object.fromEntries(
-  ALL_TYPES.map((t) => [t, artFor(t, 1, DEFAULT_CIV).size]),
+  ALL_TYPES.map((t) => [t, artSizeOf(t)]),
 ) as Record<BuildingType, number>;
 
 /** Painter noise seed of a building; the style's salt is 0 for the Hungarian styles, so their noise is unchanged. */
