@@ -60,6 +60,8 @@ export interface MediumTuning {
   readonly monks: { readonly count: number; readonly minVillagers: number; readonly beforeArmy: boolean };
   /** The navy (M14): see NavalTuning (none on a map without water near the base). */
   readonly navy: NavalTuning;
+  /** Markets, the landmark and trade (M17): see TradeTuning. */
+  readonly trade: TradeTuning;
   /** Wonder play (only when the match can be won by a Wonder). */
   readonly wonder: {
     readonly enabled: boolean;
@@ -68,6 +70,28 @@ export interface MediumTuning {
     /** Villagers sent to build it. */
     readonly builders: number;
   };
+}
+
+/**
+ * Trade play (M17, ai/TradePlay.ts). From age 2, once the economy has
+ * `minVillagers` and the age's military buildings stand: one market
+ * (`market`) and then the nation's landmark (`landmark`), each only from
+ * what the army's savings and the age-up reserve leave over. At the
+ * market it sells (never buys): at most once per `sellEveryMs`, one lot of
+ * food or wood when that stock is above `sellAbove` (and stays above the
+ * reserve after the sale), its gold is below `sellWhenGoldBelow` and the
+ * next age-up or a unit of its army mix needs more gold than it holds.
+ * Up to `carts` trade carts, only in a team match toward an ally's market
+ * the carts can reach (TRADE.minDistance away). No trade ships.
+ */
+export interface TradeTuning {
+  readonly market: boolean;
+  readonly landmark: boolean;
+  readonly minVillagers: number;
+  readonly sellAbove: number;
+  readonly sellWhenGoldBelow: number;
+  readonly sellEveryMs: number;
+  readonly carts: number;
 }
 
 /** Medium AI (§10.2). */
@@ -176,6 +200,12 @@ export const AI_MEDIUM: MediumTuning = {
     frigates: [0, 0, 0, 2],
     transports: 2,
   },
+  /**
+   * M17: market and landmark at 20 villagers (after the monastery's 18, so the monks come first);
+   * a sale every 20 s at most, from a 1000+ food or wood stock while gold is under 200 and needed;
+   * three carts toward an ally's market (Hard and Master inherit).
+   */
+  trade: { market: true, landmark: true, minVillagers: 20, sellAbove: 1000, sellWhenGoldBelow: 200, sellEveryMs: 20_000, carts: 3 },
   /** In the last age, a Wonder as soon as it is affordable with a full economy (Hard inherits). */
   wonder: { enabled: true, minVillagers: 20, builders: 8 },
 };

@@ -31,6 +31,7 @@ import type { WorldView } from '../perception';
 import { expectKind, loadedTime, savedTime, type MediumFields, type StrategyState } from '../strategyState';
 import { PressureControl } from '../PressureControl';
 import { MonkPlay } from '../MonkPlay';
+import { TradePlay } from '../TradePlay';
 import { WonderPlay } from '../WonderPlay';
 import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
 import { BaseStrategy } from './BaseStrategy';
@@ -56,6 +57,7 @@ export class MediumStrategy extends BaseStrategy {
   private readonly wonder: WonderPlay;
   private readonly monks: MonkPlay;
   private readonly naval: NavalPlay;
+  private readonly trade: TradePlay;
   private readonly landing: LandingControl;
   /** Whether the enemy can be walked to (M14), re-checked now and then: [answer, checked at, enemy buildings key]. */
   private walkable: { answer: boolean; atMs: number; key: string } | null = null;
@@ -80,6 +82,15 @@ export class MediumStrategy extends BaseStrategy {
       // Monks spend only what the army's savings (a cannon it is short of) leave over.
       train: (c, v, t, n) => this.train(c, v, t, n, this.armySavings(c, v)),
       waveMembers: () => this.army.members(),
+    });
+    this.trade = new TradePlay(tune.trade, {
+      ownCount: (v, t, f) => this.ownCount(v, t, f),
+      militaryReady: (c, v) => (this.tune.militaryBuildings[c.player.age] ?? []).every((t) => this.ownCount(v, t, true) > 0),
+      // Like the monastery and monks: only what the army's savings (and the age-up reserve) leave over.
+      startBuilding: (c, v, t, a) => this.startBuilding(c, v, t, a, this.armySavings(c, v)),
+      train: (c, v, t, n) => this.train(c, v, t, n, this.armySavings(c, v)),
+      reserve: (c, v) => this.reserve(c, v),
+      goldShort: (c, v) => this.goldShort(c, v),
     });
     this.landing = new LandingControl(this.log, (c, v, units) => {
       this.army.launchWave(c, v, units);
@@ -112,6 +123,7 @@ export class MediumStrategy extends BaseStrategy {
   /** Medium's saved fields; Hard and Mesteri add theirs. */
   protected mediumFields(): MediumFields {
     const monkAvoid = this.monks.snapshot();
+    const lastSellMs = this.trade.snapshot();
     return {
       base: this.baseState(),
       army: this.army.snapshot(),
@@ -122,6 +134,8 @@ export class MediumStrategy extends BaseStrategy {
       ...(this.landing.active ? { landing: this.landing.snapshot() } : {}),
       // Only when there is any: a save without avoided targets stays as before 0.8.1.
       ...(monkAvoid.length > 0 ? { monkAvoid } : {}),
+      // Only after a first market sale (M17): older saves and matches without one stay as before.
+      ...(lastSellMs !== undefined ? { lastSellMs } : {}),
     };
   }
 
@@ -134,6 +148,7 @@ export class MediumStrategy extends BaseStrategy {
     this.lastScoutMs = loadedTime(s.lastScoutMs);
     this.landing.restore(s.landing ?? { members: [], transports: [], target: null, phase: null, sinceMs: 0 });
     this.monks.restore(s.monkAvoid ?? []);
+    this.trade.restore(s.lastSellMs);
   }
 
   /** Units another controller (Hard's raids) owns; the army and pressure squad leave them alone. */
@@ -156,6 +171,7 @@ export class MediumStrategy extends BaseStrategy {
     this.army.update(ctx, view);
     this.monks.control(ctx, view);
     this.naval.control(ctx, view);
+    this.trade.control(ctx, view);
     this.landing.update(ctx, view);
     this.army.scout(ctx, view);
     const waitingForTc = this.tryAgeUp(ctx, view);
@@ -178,12 +194,16 @@ export class MediumStrategy extends BaseStrategy {
     this.buildMilitary(ctx, view);
     this.monks.build(ctx, view);
     this.naval.build(ctx, view);
+    this.trade.build(ctx, view);
     this.keepScouting(ctx, view);
+    // A sale (M17) before the spending below, so the gold it brings is there for it.
+    this.trade.sell(ctx, view);
     // Monks ahead of the army (tune.monks.beforeArmy), or after it; either way only from what its savings leave.
     if (this.tune.monks.beforeArmy) this.monks.train(ctx, view);
     this.trainArmy(ctx, view);
     if (!this.tune.monks.beforeArmy) this.monks.train(ctx, view);
     this.naval.train(ctx, view);
+    this.trade.train(ctx, view);
     this.researchTechs(ctx, view);
     this.pressure.launch(ctx, view);
     this.pressure.recall(ctx, view);
@@ -431,6 +451,15 @@ export class MediumStrategy extends BaseStrategy {
     if (!goal) return reserve;
     const cost = UNIT_SPECS[civUnitType(ctx.player.civ, goal)].cost;
     return reserveForGoal(goal, ctx.player.resources, cost, reserve, AI_COMMON.savesForUnits);
+  }
+
+  /** Whether the next age-up, or a unit of the current army mix, needs more gold than the AI holds (M17 market sales). */
+  private goldShort(ctx: AIContext, view: WorldView): boolean {
+    const gold = ctx.player.resources.gold;
+    const next = this.nextAgeUp(ctx);
+    if (next && !this.agingUp(view) && TECH_SPECS[next].cost.gold > gold) return true;
+    if (!this.trainsArmy(ctx)) return false;
+    return (Object.keys(this.armyMix(ctx, view)) as BaseUnitType[]).some((t) => UNIT_SPECS[civUnitType(ctx.player.civ, t)].cost.gold > gold);
   }
 
   /** Base under attack and outnumbered: cheapest available infantry, no savings kept. */

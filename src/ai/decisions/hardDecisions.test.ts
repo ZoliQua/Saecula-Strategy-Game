@@ -102,6 +102,9 @@ describe('stance switching (Hard AI §10.3)', () => {
 
   it('reads army size and enemy age only from sightings and known buildings', () => {
     expect(enemyArmySeen({ villager: 9, scout: 2, swordsman: 3, archer: 1.5 })).toBeCloseTo(4.5, 6);
+    // Traders (M17) are no army; fishing boats still count, as since M14.
+    expect(enemyArmySeen({ trade_cart: 3, trade_ship: 2, swordsman: 1 })).toBe(1);
+    expect(enemyArmySeen({ fishing_boat: 2 })).toBe(2);
     expect(enemyAgeSeen({ swordsman: 4 }, [{ type: 'barracks' }], 0.5)).toBe(1);
     expect(enemyAgeSeen({ knight: 1 }, [], 0.5)).toBe(2);
     // A faded sighting no longer counts.
@@ -125,6 +128,21 @@ describe('harass target selection', () => {
     expect(pickHarassTarget(seen, towers, opts)?.position).toEqual({ tx: 20, ty: 20 });
     // Non-shooting buildings do not matter.
     expect(pickHarassTarget(seen, [{ type: 'house', ownerId: 1, position: { tx: 44, ty: 44 } }], opts)?.villagers).toBe(3);
+  });
+
+  it('skips spots covered by a known fort landmark, measured from its centre with the fort\'s longer reach (M17)', () => {
+    const seen = [v(40, 40), v(41, 40), v(40, 42), v(20, 20)];
+    const fort = (shoots: boolean) => ({
+      type: 'landmark' as const,
+      ownerId: 1,
+      position: { tx: 49, ty: 49 },
+      footprint: { width: 3, height: 3 },
+      ...(shoots ? { shoots: true as const } : {}),
+    });
+    // Centre (50, 50) is 10 from (40, 40): beyond a tower's 8, within 8 + (fort range − tower range).
+    expect(pickHarassTarget(seen, [fort(true)], opts)?.position).toEqual({ tx: 20, ty: 20 });
+    // A landmark not seen shooting (another civ's, or unfinished) is no danger.
+    expect(pickHarassTarget(seen, [fort(false)], opts)?.villagers).toBe(3);
   });
 
   it('breaks ties by freshness, then by distance from home', () => {

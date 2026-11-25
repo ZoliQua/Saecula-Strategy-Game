@@ -3,6 +3,7 @@ import { createBuilding } from '../ecs/archetypes/building';
 import { createUnit } from '../ecs/archetypes/createUnit';
 import { createResourceNode } from '../ecs/archetypes/resource';
 import { killEntity } from '../game/kill';
+import { fortAttacker } from '../game/landmarks';
 import { createEcsWorld } from '../ecs/world';
 import { createPlayer } from '../game/Player';
 import { FogOfWarData } from '../map/FogOfWarData';
@@ -37,6 +38,19 @@ describe('Perception', () => {
     expect(view.villagers.length).toBe(1);
     expect(view.military.map((u) => u.unit?.unitType)).toEqual(['knight']);
     expect(view.visibleEnemyUnits).toEqual([seen]);
+  });
+
+  it('remembers a fort landmark seen shooting as a danger (M17), and survives a snapshot', () => {
+    const { world, map, fog, ctx, perception } = setup();
+    const fort = createBuilding(world, { type: 'landmark', origin: { tx: 10, ty: 10 }, playerId: 1, mapData: map });
+    reveal(fog, 10, 10, 12, 12);
+    expect(perception.update(ctx).knownEnemyBuildings[0]?.shoots).toBeUndefined();
+    world.addComponent(fort, 'attacker', fortAttacker());
+    expect(perception.update(ctx).knownEnemyBuildings[0]?.shoots).toBe(true);
+    const copy = new Perception();
+    copy.restore(perception.snapshot());
+    fog.dimVisibleToExplored();
+    expect(copy.update(ctx).knownEnemyBuildings[0]?.shoots).toBe(true);
   });
 
   it('remembers a seen enemy building out of sight, and forgets it once it sees the spot empty', () => {

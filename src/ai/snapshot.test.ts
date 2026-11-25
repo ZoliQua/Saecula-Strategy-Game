@@ -60,6 +60,20 @@ describe('AI snapshot / restore', () => {
     expect(fresh.snapshot().strategy).toEqual(withAvoid.strategy);
   });
 
+  it("a hard AI's last market sale and a remembered fort landmark (M17) survive the save schema and a restore", () => {
+    const rng = createStatefulRng(1);
+    const ai = new AIPlayer(createPlayer({ id: 2 }), createStrategy('hard', rng.next), { rng });
+    const s = ai.snapshot();
+    if (s.strategy.kind !== 'hard') throw new Error('hard expected');
+    const fort = { id: 7, type: 'landmark' as const, ownerId: 1, position: { tx: 9, ty: 9 }, footprint: { width: 3, height: 3 }, shoots: true as const };
+    const perception = { ...s.strategy.base.perception, memory: [fort] };
+    const withTrade = { ...s, strategy: { ...s.strategy, lastSellMs: 61_000, base: { ...s.strategy.base, perception } } } as typeof s;
+    const parsed = AIPlayerStateSchema.parse(JSON.parse(JSON.stringify(withTrade)));
+    const fresh = new AIPlayer(ai.player, createStrategy('hard', createStatefulRng(1).next), { rng: createStatefulRng(1) });
+    fresh.restore(parsed);
+    expect(fresh.snapshot().strategy).toEqual(withTrade.strategy);
+  });
+
   it('restoring a hard snapshot into a MediumStrategy throws TypeError', () => {
     const hard = new HardStrategy(createStatefulRng(1).next).snapshot();
     expect(hard.kind).toBe('hard');
