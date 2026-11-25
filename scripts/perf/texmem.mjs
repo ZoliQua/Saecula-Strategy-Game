@@ -1,10 +1,11 @@
 // Texture memory per zoom (M10). Usage:
 //   node scripts/perf/texmem.mjs [--scenario distinct6|twoCiv|medium4|naval6] [--size 1280x720]
-//        [--zooms 1.2,1,0.8,0.65,0.5] [--settle 2500] [--url http://localhost:5173/] [--gpu] [--ships]
+//        [--zooms 1.2,1,0.8,0.65,0.5] [--settle 2500] [--url http://localhost:5173/] [--gpu] [--ships] [--trade]
 // At every zoom the camera visits four map points; the worst total is kept.
 // --ships gives every player one ship of each type first (spawnShips; the naval worst case).
+// --trade gives every player age 2, a finished market, its landmark and a trade cart first (M17).
 // The peak is checked against the budget: 256 MB on a land map, 400 MB on a map with sea (CLAUDE.md §10).
-import { aim, devServer, hasSea, loadPlaywright, openPage, parseArgs, SCENARIOS, spawnShips, startMatch, TEXTURE_BUDGET_MB, textureTally, writeResult } from './lib.mjs';
+import { aim, devServer, hasSea, spawnTrade, loadPlaywright, openPage, parseArgs, SCENARIOS, spawnShips, startMatch, TEXTURE_BUDGET_MB, textureTally, writeResult } from './lib.mjs';
 
 const args = parseArgs();
 const scenario = String(args.scenario ?? 'distinct6');
@@ -28,6 +29,11 @@ try {
     console.log(`ships for ${civs.join(', ')}`);
     await page.waitForTimeout(5000);
   }
+  const tradeCivs = args.trade ? await spawnTrade(page) : null;
+  if (tradeCivs) {
+    console.log(`markets, landmarks and carts for ${tradeCivs.join(', ')}`);
+    await page.waitForTimeout(8000);
+  }
   const rows = [];
   for (const zoom of zooms) {
     let worst = null;
@@ -45,7 +51,7 @@ try {
   console.log(`peak ${peak.totalMB} MB at zoom ${peak.zoom}; match start ${(loadMs / 1000).toFixed(1)} s`);
   console.log(`${withinBudget ? 'WITHIN' : 'OVER'} the ${sea ? 'water' : 'land'} map budget of ${budgetMB} MB`);
   if (!withinBudget) process.exitCode = 1;
-  const path = writeResult(`texmem-${scenario}-${width}x${height}`, { scenario, setup, ships: !!args.ships, civs, sea, budgetMB, withinBudget, viewport: [width, height], loadMs, rows, peak, errors });
+  const path = writeResult(`texmem-${scenario}-${width}x${height}`, { scenario, setup, ships: !!args.ships, trade: !!args.trade, civs: civs ?? tradeCivs, sea, budgetMB, withinBudget, viewport: [width, height], loadMs, rows, peak, errors });
   console.log(`written ${path}`);
   if (errors.length) console.log('page errors:', errors.slice(0, 5));
 } finally {

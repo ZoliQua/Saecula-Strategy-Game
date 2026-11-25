@@ -73,5 +73,6 @@ hibánál 1-es kóddal lép ki.
 | `--url` | Már futó fejlesztői szerver használata, ahelyett hogy az 5199-es porton indítana egyet |
 | `--gpu` | A Chromium alapértelmezett GL-motorja |
 | `--ships` | csak a texmem: mérés előtt minden játékosnak egy-egy hajó minden típusból |
+| `--trade` | csak a texmem: minden játékos a 2. korban, kész piaccal, egyedi épülettel és kereskedőkocsival (M17) |
 
 Az eredmény JSON-ként a `scripts/perf/results/` alá kerül (a git figyelmen kívül hagyja).

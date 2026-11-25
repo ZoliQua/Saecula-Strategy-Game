@@ -59,6 +59,11 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
 - 🤝 **Csapatok és meccs-beállítások** — gépi szövetségesekkel egy ellenséges
   csapat ellen (közös látás, csapatgyőzelem), 10 vagy 20 perces fegyverszünet,
   normál, magas vagy halálmeccs kezdő nyersanyag, és 1×, 1,5× vagy 2× sebesség.
+- 💰 **Kereskedelem és egyedi épületek** — piac, ahol az ételt és a fát változó
+  áron aranyra cserélheted, kereskedőkocsik és -hajók baráti piacok és kikötők
+  között, és néped saját egyedi épülete (végvár, királyi hajógyár, Hanza-kontor,
+  akadémia, pénzverde, bankház, osztrog vagy tóparti szauna), mindegyik saját
+  hatással.
 - 🌗 **Élő világ** — dinamikus 2D fények normal map-ekkel, napszakváltás,
   vetett árnyékok, háborús köd, építési és összeomlási animációk.
 - 🎵 **Procedurális hang** — térbeli hangeffektek és koronkénti generatív
