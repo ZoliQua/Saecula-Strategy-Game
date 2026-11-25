@@ -87,6 +87,8 @@ describe('TradePlay.build', () => {
       const anchor = s.calls.built[0]!.anchor;
       expect(anchor.tx > 6).toBe(lean);
       expect(anchor.ty).toBe(6);
+      // The fake startBuilding places nothing: a fort retries at the base centre in the same decision.
+      expect(s.calls.built.map((b) => b.anchor)).toEqual(lean ? [anchor, { tx: 6, ty: 6 }] : [anchor]);
     }
   });
 
@@ -177,6 +179,19 @@ describe('TradePlay carts', () => {
     s.world.addComponent(cart, 'tradeHome', { buildingId: home.id! });
     s.play.control(s.ctx(0), s.view(0));
     expect(cart.tradeRoute).toMatchObject({ homeId: home.id, targetId: ally.id });
+  });
+
+  it('leaves a cart already on a route untouched (no new order, no armed reset)', () => {
+    const s = scene();
+    const home = market(s, 2, 15, 5);
+    market(s, 1, 15, 40);
+    const other = market(s, 1, 50, 50);
+    const cart = createUnit(s.world, { type: 'trade_cart', tile: { tx: 30, ty: 20 }, playerId: 2 });
+    const route = { homeId: home.id!, targetId: other.id!, toTarget: false, armed: true };
+    s.world.addComponent(cart, 'tradeRoute', route);
+    s.play.control(s.ctx(0), s.view(0));
+    expect(cart.tradeRoute).toBe(route);
+    expect(cart.tradeRoute).toEqual({ homeId: home.id, targetId: other.id, toTarget: false, armed: true });
   });
 
   it('leaves a cart alone without an ally market', () => {

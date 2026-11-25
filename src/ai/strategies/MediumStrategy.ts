@@ -171,7 +171,6 @@ export class MediumStrategy extends BaseStrategy {
     this.army.update(ctx, view);
     this.monks.control(ctx, view);
     this.naval.control(ctx, view);
-    this.trade.control(ctx, view);
     this.landing.update(ctx, view);
     this.army.scout(ctx, view);
     const waitingForTc = this.tryAgeUp(ctx, view);
@@ -195,6 +194,8 @@ export class MediumStrategy extends BaseStrategy {
     this.monks.build(ctx, view);
     this.naval.build(ctx, view);
     this.trade.build(ctx, view);
+    // Idle carts are routed at the decision cadence (each check may flood the map for reachability).
+    this.trade.control(ctx, view);
     this.keepScouting(ctx, view);
     // A sale (M17) before the spending below, so the gold it brings is there for it.
     this.trade.sell(ctx, view);

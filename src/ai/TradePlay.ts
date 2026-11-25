@@ -80,7 +80,9 @@ export class TradePlay {
     }
     // startBuilding's buildBlocker refuses a second landmark (UNIQUE_BUILDINGS).
     if (this.tune.landmark && this.act.ownCount(view, 'landmark') === 0) {
-      this.act.startBuilding(ctx, view, 'landmark', isFortCiv(ctx.player.civ) ? fortAnchor(view, anchor) : anchor);
+      const fort = isFortCiv(ctx.player.civ) ? fortAnchor(view, anchor) : anchor;
+      // No spot (or no money) near the leaning anchor: the base centre in the same decision.
+      if (!this.act.startBuilding(ctx, view, 'landmark', fort) && fort !== anchor) this.act.startBuilding(ctx, view, 'landmark', anchor);
     }
   }
 
@@ -108,7 +110,11 @@ export class TradePlay {
     this.act.train(ctx, view, 'trade_cart', 1);
   }
 
-  /** Routes each idle cart to the reachable ally market that pays most per leg. */
+  /**
+   * Routes each idle cart to the reachable ally market that pays most per
+   * leg. Called once per decision (not per upkeep): with only unreachable
+   * ally markets each idle cart costs a reachability flood per call.
+   */
   control(ctx: AIContext, _view: WorldView): void {
     const idle = TradePlay.cartsOf(ctx).filter((c) => !c.tradeRoute && !c.moveIntent && (c.movable?.path.length ?? 0) === 0);
     if (idle.length === 0) return;

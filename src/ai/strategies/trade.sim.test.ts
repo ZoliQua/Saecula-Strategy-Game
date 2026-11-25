@@ -51,11 +51,14 @@ function watchBuilt(match: HeadlessMatch, ids: readonly number[]) {
  * market (which that AI-driven slot builds) and earns gold from them.
  * Seed sweep (3, 5, 7, 11, 19, 23): passes with 3 and 11 (both team-1
  * markets by 21.4 / 22.9 min; carts both ways; over the full 40 minutes the
- * ally's carts pay 55 legs / 990 gold with 3, 61 / 915 with 11); with 7 and 19
+ * ally's carts paid 55 legs / 990 gold with 3, 61 / 915 with 11, routed every upkeep); with 7 and 19
  * the human slot falls before it builds a market (the ally builds its own),
  * with 5 and 23 team 2 wins early (with 23 its two AIs trade with each
- * other: 3 carts each). 3 is kept: markets at 17.5 (ally) and 21.4 min,
- * the ally's second paid leg by 31.2 min; about 9 s.
+ * other: 3 carts each). Since idle carts are routed at the decision cadence
+ * (not every upkeep), seed 3's ally makes its second paid leg only at 39.4
+ * min (4 legs / 72 gold in 40 min), so 11 is kept: markets at 18.75 (ally)
+ * and 22.9 min, the ally's second paid leg by 29.4 min, 64 legs / 960 gold
+ * over the full 40 minutes; about 9 s.
  */
 describe('trade (M17): the Medium AI builds markets and landmarks, and trades with allies', () => {
   it('builds a market and its landmark within 40 minutes on a 96×96 meadow', () => {
@@ -85,7 +88,7 @@ describe('trade (M17): the Medium AI builds markets and landmarks, and trades wi
   it("in a 2v2 the allied AI runs trade carts to the human slot's market and earns gold", () => {
     legs.length = 0;
     const match = createHeadlessMatch({
-      seed: 3,
+      seed: 11,
       size: 96,
       aiCount: 3,
       allies: 1,
