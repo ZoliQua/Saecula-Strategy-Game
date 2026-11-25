@@ -7,8 +7,7 @@ import { hashPainting, installRecordingCanvas, type RecordedCanvas } from './tes
 
 /*
  * M17 art plumbing: every civ paints a landmark in each of its age styles
- * (LANDMARK_ART, the shared placeholder keep until each civ's own painter
- * lands), the same way twice, in a 3-tile footprint, hiding no lit window.
+ * (LANDMARK_ART, each civ its own painter), the same way twice, in a 3-tile footprint, hiding no lit window.
  * No hash is pinned (draw-log hashes differ between Node versions).
  */
 
@@ -27,6 +26,10 @@ describe('landmark art', () => {
   it('every civ has a landmark painter, in each of its age styles', () => {
     expect(Object.keys(registry.LANDMARK_ART).sort()).toEqual([...CIV_IDS].sort());
     expect(buildings.BUILDING_ART_SIZES.landmark).toBe(3);
+  });
+
+  it('every civ has its own landmark painter (no shared placeholder)', () => {
+    expect(new Set(Object.values(registry.LANDMARK_ART)).size).toBe(CIV_IDS.length);
   });
 
   it.each(CIV_IDS)('%s: the landmark paints in every age, deterministically, in a 3-tile footprint', (civ) => {

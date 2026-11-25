@@ -7,7 +7,7 @@ import { hashPainting, installRecordingCanvas, type RecordedCanvas } from './tes
 
 /*
  * M17 Task 4: the Hungarian Végvár, the English Royal Dockyard, the German
- * Hanza-kontor and the French Akadémia replace the placeholder keep. Each
+ * Hanza-kontor and the French Akadémia, each its own painter. Each
  * paints in the ages it shows (2 and 3) deterministically, differently per
  * age (the palette follows the age), hides no lit window behind a later
  * face, keeps its volume inside its canvas, and still paints in age 1
@@ -22,18 +22,17 @@ const drawCalls = (canvas: HTMLCanvasElement): number => (canvas as unknown as R
 describe('landmark art: Hungarian, English, German, French', () => {
   let buildings: typeof import('./buildings');
   let registry: typeof import('./architecture/registry');
-  let keep: typeof import('./architecture/landmarkKeep');
   let painter: typeof import('./isoPainter');
   beforeAll(async () => {
     installRecordingCanvas();
     buildings = await import('./buildings');
     registry = await import('./architecture/registry');
-    keep = await import('./architecture/landmarkKeep');
     painter = await import('./isoPainter');
   });
 
-  it.each(CIVS)('%s: has its own painter, not the placeholder keep', (civ) => {
-    expect(registry.LANDMARK_ART[civ]).not.toBe(keep.landmarkKeepArt);
+  it.each(CIVS)('%s: has its own painter, shared with no other civ', (civ) => {
+    const others = (Object.keys(registry.LANDMARK_ART) as CivId[]).filter((c) => c !== civ);
+    for (const other of others) expect(registry.LANDMARK_ART[civ]).not.toBe(registry.LANDMARK_ART[other]);
   });
 
   it.each(CIVS)('%s: paints ages 2 and 3 deterministically, differently per age, and age 1 without throwing', (civ) => {

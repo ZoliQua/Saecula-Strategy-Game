@@ -1,6 +1,5 @@
 import { CIV_DEFS, CIV_IDS, type ArchStyleId } from '../../../config/civs';
 import type { CivId } from '../../../types';
-import { landmarkKeepArt } from './landmarkKeep';
 import { dockArt } from './dock';
 import { marketArt } from './market';
 import { monasteryArt } from './monastery';
@@ -10,6 +9,7 @@ import { gothicCathedral } from './english/gothicCathedral';
 import { royalDockyardArt } from './english/royalDockyard';
 import { FINNISH_FINNIC, FINNISH_GREYSTONE, FINNISH_GUSTAVIAN } from './finnish/finnishStyles';
 import { nordicArt } from './finnish/nordic';
+import { saunaArt } from './finnish/sauna';
 import { akademiaArt } from './french/akademia';
 import { chateau } from './french/chateau';
 import { classicTower } from './french/classicTower';
@@ -29,14 +29,17 @@ import { kaiserdom } from './german/kaiserdom';
 import { limesTower } from './german/limesTower';
 import { portaNigra } from './german/portaNigra';
 import { wehrturm } from './german/wehrturm';
+import { bankhausArt } from './italian/bankhaus';
 import { comuneArt } from './italian/comune';
 import { etruriaArt } from './italian/etruria';
 import { ITALIAN_COMUNE, ITALIAN_ETRURIA, ITALIAN_RINASCIMENTO } from './italian/italianStyles';
 import { rinascimentoArt } from './italian/rinascimento';
 import { izbaArt } from './russian/izba';
+import { ostrogArt } from './russian/ostrog';
 import { petrineArt } from './russian/petrine';
 import { RUSSIAN_GORD, RUSSIAN_MUSCOVY, RUSSIAN_PETRINE } from './russian/russianStyles';
 import { hispaniaArt } from './spanish/hispania';
+import { casaMonedaArt } from './spanish/casaMoneda';
 import { mudejarArt } from './spanish/mudejar';
 import { SPANISH_COLONIAL, SPANISH_HISPANIA, SPANISH_MUDEJAR } from './spanish/spanishStyles';
 import { vegvarArt } from './hungarian/vegvar';
@@ -120,10 +123,10 @@ export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>
   english: royalDockyardArt,
   german: hanseKontorArt,
   french: akademiaArt,
-  spanish: landmarkKeepArt,
-  italian: landmarkKeepArt,
-  russian: landmarkKeepArt,
-  finnish: landmarkKeepArt,
+  spanish: casaMonedaArt,
+  italian: bankhausArt,
+  russian: ostrogArt,
+  finnish: saunaArt,
 };
 
 /** The civ whose age styles include `id` (every style belongs to one civ). */
