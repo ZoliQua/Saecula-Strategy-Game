@@ -84,6 +84,8 @@ export interface OrderIssuerOptions {
   readonly treaty?: TreatyGate;
   /** Shows a HUD notice (default: the in-game toast). */
   readonly notice?: (message: string) => void;
+  /** Whether a player is defeated (M17): a defeated ally's market is no trade partner. Absent: nobody. */
+  readonly isDefeated?: (playerId: number) => boolean;
 }
 
 /** Translates a command (right-click or the gesture) on a tile into move / attack / gather / help-build orders. */
@@ -94,6 +96,7 @@ export class OrderIssuer {
   private readonly teams: TeamLookup;
   private readonly treaty: TreatyGate;
   private readonly notice: (message: string) => void;
+  private readonly isDefeated: (playerId: number) => boolean;
 
   constructor(
     private readonly world: EcsWorld,
@@ -107,6 +110,7 @@ export class OrderIssuer {
     this.teams = options.teams ?? NO_TEAMS;
     this.treaty = options.treaty ?? NO_TREATY;
     this.notice = options.notice ?? ((m) => showHudNotice(m));
+    this.isDefeated = options.isDefeated ?? (() => false);
   }
 
   issueOrders(tile: TileCoord): void {
@@ -121,18 +125,20 @@ export class OrderIssuer {
     const refusals = new Set<string>();
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== this.humanId || entity.unit === undefined) continue;
-      // A trader on a friendly market / dock (M17): a route, or a refusal that leaves its current route alone.
+      // A trader on a market / dock (M17): a route; a refused route on a friendly post leaves the current route alone;
+      // a post that is no partner at all (its own home, another team's, a defeated player's) is just walked to.
       const post = findTradePostAt(this.world, tile, entity);
       if (post) {
-        const check = checkTradeRoute(this.world, entity, post, this.teams, this.map);
-        if (!check.ok) {
-          refusals.add(tradeRefusalText(check.reason));
+        const check = checkTradeRoute(this.world, entity, post, this.teams, this.map, undefined, this.isDefeated);
+        if (check.ok) {
+          clearUnitOrders(this.world, entity);
+          startTradeRoute(this.world, entity, check);
+          ordered ??= 'unit_move';
           continue;
         }
-        clearUnitOrders(this.world, entity);
-        startTradeRoute(this.world, entity, check);
-        ordered ??= 'unit_move';
-        continue;
+        const walk = tradeRefusalWalks(check.reason);
+        if (walk !== 'silent') refusals.add(tradeRefusalText(check.reason));
+        if (walk === 'stay') continue;
       }
       // Any new right-click order overrides whatever the unit was
       // doing — clear gather state + build command so the villager
@@ -225,6 +231,22 @@ function findEnemyAt(
     return { enemy: c, truce };
   }
   return { enemy: null, truce };
+}
+
+/**
+ * What a trader does when its route order on a post is refused (M17):
+ * - 'stay': a friendly post it could trade with but not now (too close,
+ *   unfinished, unreachable, no home): a notice, and the current route and
+ *   position stay, so a misclick never breaks a working route;
+ * - 'walk': a post that is no partner (another team's, a defeated
+ *   player's): a notice why, and the trader walks there like any unit;
+ * - 'silent': its own home post: no route to make, it just walks there
+ *   (sending a cart back beside its home is a plain move).
+ */
+export function tradeRefusalWalks(reason: TradeRefusal): 'stay' | 'walk' | 'silent' {
+  if (reason === 'sameAsHome') return 'silent';
+  if (reason === 'notFriendly' || reason === 'wrongKind') return 'walk';
+  return 'stay';
 }
 
 /** Why a route order was refused (M17), as the HUD notice says it. */

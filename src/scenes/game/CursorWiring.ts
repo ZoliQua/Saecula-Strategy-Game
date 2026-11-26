@@ -8,7 +8,7 @@ import { cursorCss } from '../../ui/cursors';
 import { uiStore } from '../../ui/store';
 import { canConvert, readyToConvert } from '../../game/convert';
 import { checkTradeRoute, isTrader } from '../../game/trade';
-import { orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
+import { findTradePostAt, orderActor, resolveOrderTarget, type CanSee } from './OrderIssuer';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
 import { canAttackTarget, moveLayerOf, navGridFor } from '../../ecs/navLayer';
 import { NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
@@ -32,6 +32,8 @@ export function cursorContext(
   teams: TeamLookup = NO_TEAMS,
   /** The treaty (M16): while it holds, another team is no target, so no sword over it. */
   treaty: TreatyGate = NO_TREATY,
+  /** Whether a player is defeated (M17): a defeated ally's market shows no trade cursor. */
+  isDefeated: (playerId: number) => boolean = () => false,
 ): CursorContext {
   const selected = selection.getAllSelected();
   const units = selected.filter((e) => e.unit !== undefined && e.owner?.playerId === humanId && !e.dying);
@@ -39,6 +41,10 @@ export function cursorContext(
   const actor = orderActor(selected, humanId);
   const target = tile && actor ? resolveOrderTarget(world, tile, actor, canSee, teams, treaty) : null;
   const resource = target?.entity?.resourceNode?.type;
+  // The route is checked for the first selected trader (OrderIssuer routes every trader), whoever the actor is;
+  // an enemy under the pointer still wins (the soldiers attack it).
+  const trader = units.find(isTrader);
+  const post = tile && trader && target?.kind !== 'enemy' ? findTradePostAt(world, tile, trader) : null;
   return {
     placing,
     units: units.map((e) => ({
@@ -53,8 +59,8 @@ export function cursorContext(
     land: tile ? map.isPassable(tile.tx, tile.ty) : false,
     target: resource
       ? { kind: target?.kind ?? 'none', resource }
-      : target?.kind === 'tradePost' && target.entity && actor
-        ? { kind: 'tradePost', tradeValid: checkTradeRoute(world, actor, target.entity, teams, map).ok }
+      : post && trader
+        ? { kind: 'tradePost', tradeValid: checkTradeRoute(world, trader, post, teams, map, undefined, isDefeated).ok }
         : { kind: target?.kind ?? 'none', convertible: target?.kind === 'enemy' && canConvert(target.entity ?? undefined, humanId, teams, treaty) },
     // A move is allowed where any selected unit can go: a ship on water, a land unit on land (M14).
     passable: tile ? units.some((e) => navGridFor(map, e).isPassable(tile.tx, tile.ty)) || (units.length === 0 && map.isPassable(tile.tx, tile.ty)) : null,
@@ -77,11 +83,12 @@ export function wireCursor(
   canSee?: CanSee,
   teams: TeamLookup = NO_TEAMS,
   treaty: TreatyGate = NO_TREATY,
+  isDefeated: (playerId: number) => boolean = () => false,
 ): void {
   const canvas = scene.game.canvas;
   let shown: CursorKind = 'default';
   const refresh = (): void => {
-    const kind = cursorFor(cursorContext(world, map, selection, hoverTile(), humanId, canSee, teams, treaty));
+    const kind = cursorFor(cursorContext(world, map, selection, hoverTile(), humanId, canSee, teams, treaty, isDefeated));
     if (kind === shown) return;
     shown = kind;
     canvas.style.cursor = cursorCss(kind);

@@ -21,6 +21,7 @@ function setup(treatyOn = false) {
   const players = createPlayers('hungarian', ['english', 'german'], undefined, 1);
   const treaty: TreatyGate = () => treatyOn;
   const notices: string[] = [];
+  const isDefeated = (id: number) => players.get(id)?.defeated ?? false;
   const market = (tx: number, ty: number, playerId: number, underConstruction = false) =>
     createBuilding(sim.world, { type: 'market', origin: { tx, ty }, playerId, mapData: sim.map, underConstruction });
   const home = market(2, 2, 1);
@@ -28,9 +29,9 @@ function setup(treatyOn = false) {
   sim.world.addComponent(cart, 'tradeHome', { buildingId: home.id! });
   const sword = createUnit(sim.world, { type: 'swordsman', tile: { tx: 6, ty: 6 }, playerId: 1 });
   const orders = (selected: Entity[]) =>
-    new OrderIssuer(sim.world, selectionOf(selected), { playSFX: () => {} }, { map: sim.map, teams: players, treaty, notice: (m) => void notices.push(m) });
+    new OrderIssuer(sim.world, selectionOf(selected), { playSFX: () => {} }, { map: sim.map, teams: players, treaty, notice: (m) => void notices.push(m), isDefeated });
   const cursor = (selected: Entity[], tx: number, ty: number) =>
-    cursorFor(cursorContext(sim.world, sim.map, selectionOf(selected), { tx, ty }, 1, undefined, players, treaty));
+    cursorFor(cursorContext(sim.world, sim.map, selectionOf(selected), { tx, ty }, 1, undefined, players, treaty, isDefeated));
   return { sim, players, notices, market, home, cart, sword, orders, cursor };
 }
 
@@ -62,14 +63,46 @@ describe('trade route orders (M17)', () => {
     expect(notices).toEqual([hu.trade.tooClose(TRADE.minDistance)]);
   });
 
-  it("an unfinished market and an enemy's market are refused with notices", () => {
+  it("an unfinished market and an enemy's market are refused with notices; the cart walks to the enemy's", () => {
     const { market, cart, orders, notices } = setup();
     market(40, 40, 1, true);
     market(40, 10, 3);
     orders([cart]).issueOrders({ tx: 41, ty: 41 });
+    expect(cart.moveIntent).toBeUndefined();
     orders([cart]).issueOrders({ tx: 41, ty: 11 });
     expect(cart.tradeRoute).toBeUndefined();
+    expect(cart.moveIntent?.target).toEqual({ tx: 41, ty: 11 });
     expect(notices).toEqual([hu.trade.unfinished, hu.trade.notFriendly]);
+  });
+
+  it("a defeated ally's still-standing market is refused as not friendly (order and cursor); the cart walks there", () => {
+    const { players, market, cart, orders, cursor, notices } = setup();
+    market(40, 40, 2);
+    players.get(2)!.defeated = true;
+    expect(cursor([cart], 41, 41)).toBe('forbidden');
+    orders([cart]).issueOrders({ tx: 41, ty: 41 });
+    expect(cart.tradeRoute).toBeUndefined();
+    expect(cart.moveIntent?.target).toEqual({ tx: 41, ty: 41 });
+    expect(notices).toEqual([hu.trade.notFriendly]);
+  });
+
+  it('a right-click on its own home market is a plain move, without a notice, and ends the route', () => {
+    const { market, cart, orders, notices } = setup();
+    market(40, 40, 1);
+    orders([cart]).issueOrders({ tx: 41, ty: 41 });
+    expect(cart.tradeRoute).toBeDefined();
+    orders([cart]).issueOrders({ tx: 3, ty: 3 });
+    expect(cart.tradeRoute).toBeUndefined();
+    expect(cart.moveIntent?.target).toEqual({ tx: 3, ty: 3 });
+    expect(notices).toEqual([]);
+  });
+
+  it('soldiers selected before a cart: the cursor checks the route for the cart', () => {
+    const { market, cart, sword, cursor } = setup();
+    market(40, 40, 1);
+    expect(cursor([sword, cart], 41, 41)).toBe('trade');
+    market(2 + TRADE.minDistance - 5, 2, 1);
+    expect(cursor([sword, cart], 2 + TRADE.minDistance - 4, 3)).toBe('forbidden');
   });
 
   it('a market across the water is refused with a Hungarian notice and no trade cursor', () => {

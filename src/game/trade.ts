@@ -5,7 +5,8 @@ import type { BuildingType, UnitType } from '../types';
 import { areAllies, type TeamLookup } from './diplomacy';
 import { tradeGoldBonus } from './modifiers';
 import type { Player } from './Player';
-import { onFootprintRing } from '../ecs/footprint';
+import { footprintCentre, onFootprintRing } from '../ecs/footprint';
+import { findEntityById } from '../ecs/systems/gathering/gatherQueries';
 import { moveLayerOf, navGridFor } from '../ecs/navLayer';
 import { reachMask } from '../map/gridSteps';
 import type { MapData } from '../map/MapData';
@@ -30,17 +31,10 @@ export function isTrader(e: Entity): boolean {
   return !!e.unit && tradePostType(e.unit.unitType) !== null && !e.dying;
 }
 
-/** A building entity by id (traders keep ids of their home and target), or undefined when it is gone. */
-export function buildingById(world: EcsWorld, id: number): Entity | undefined {
-  for (const b of world.with('building')) if (b.id === id) return b;
-  return undefined;
-}
-
 /** The centre tile of a building's footprint (fractional for even sizes). */
 function centre(b: Entity): { x: number; y: number } {
-  const p = b.position ?? { tx: 0, ty: 0 };
-  const f = b.building?.footprint ?? { width: 1, height: 1 };
-  return { x: p.tx + (f.width - 1) / 2, y: p.ty + (f.height - 1) / 2 };
+  const c = footprintCentre(b.position ?? { tx: 0, ty: 0 }, b.building?.footprint ?? { width: 1, height: 1 });
+  return { x: c.tx, y: c.ty };
 }
 
 /** Route length in tiles: the Euclidean distance between the two buildings' centre tiles. */
@@ -84,7 +78,7 @@ export function routeStillValid(
   route: { homeId: number; targetId: number },
   teams: TeamLookup,
   isDefeated: (playerId: number) => boolean = () => false,
-  find: (id: number) => Entity | undefined = (id) => buildingById(world, id),
+  find: (id: number) => Entity | undefined = (id) => findEntityById(world, id),
 ): boolean {
   const ownerId = trader.owner?.playerId;
   const type = trader.unit ? tradePostType(trader.unit.unitType) : null;
@@ -166,16 +160,27 @@ function nearestOwnPost(world: EcsWorld, trader: Entity, type: BuildingType, exc
  * The home is the building the trader was trained at; when that is gone
  * (or the trader never had one: a converted cart) the trader's own nearest
  * finished market / dock other than the target is taken. `gold` is what
- * one arrival would pay.
+ * one arrival would pay. A target whose owner is defeated (`isDefeated`)
+ * is refused as `notFriendly`, as routeStillValid would drop it.
  */
-export function checkTradeRoute(world: EcsWorld, trader: Entity, target: Entity, teams: TeamLookup, map?: MapData, player?: Player): TradeCheck {
+export function checkTradeRoute(
+  world: EcsWorld,
+  trader: Entity,
+  target: Entity,
+  teams: TeamLookup,
+  map?: MapData,
+  player?: Player,
+  isDefeated: (playerId: number) => boolean = () => false,
+): TradeCheck {
   const type = trader.unit ? tradePostType(trader.unit.unitType) : null;
   const ownerId = trader.owner?.playerId;
   if (!type || ownerId === undefined || target.building?.type !== type || target.dying) return { ok: false, reason: 'wrongKind' };
   const targetOwner = target.owner?.playerId;
   if (targetOwner === undefined || (targetOwner !== ownerId && !areAllies(teams, ownerId, targetOwner))) return { ok: false, reason: 'notFriendly' };
+  // A defeated player's market still stands, but routeStillValid would drop the route on the next tick.
+  if (isDefeated(targetOwner)) return { ok: false, reason: 'notFriendly' };
   if (target.underConstruction) return { ok: false, reason: 'unfinished' };
-  const saved = trader.tradeHome ? buildingById(world, trader.tradeHome.buildingId) : undefined;
+  const saved = trader.tradeHome ? findEntityById(world, trader.tradeHome.buildingId) : undefined;
   const savedOk = saved && saved.owner?.playerId === ownerId && saved.building?.type === type && !saved.dying && !saved.underConstruction;
   if (savedOk && saved === target) return { ok: false, reason: 'sameAsHome' };
   const home = savedOk ? saved : nearestOwnPost(world, trader, type, target);
@@ -217,8 +222,8 @@ export function tradeRouteView(
   const route = trader.tradeRoute;
   const ownerId = trader.owner?.playerId;
   if (!route || ownerId === undefined) return undefined;
-  const home = buildingById(world, route.homeId);
-  const target = buildingById(world, route.targetId);
+  const home = findEntityById(world, route.homeId);
+  const target = findEntityById(world, route.targetId);
   if (!home?.building || !target?.building) return undefined;
   const ally = target.owner !== undefined && areAllies(players, ownerId, target.owner.playerId);
   return { home: home.building.type, target: target.building.type, ally, gold: tradeGoldPerTrip(home, target, ownerId, players, players.get(ownerId)) };

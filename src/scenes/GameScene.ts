@@ -266,6 +266,7 @@ export class GameScene extends Phaser.Scene {
       humanId: human?.id ?? 1,
       teams: this.players,
       treaty: this.runner.treaty,
+      isDefeated: (id) => this.players.get(id)?.defeated ?? false,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
       buildingHp: () => {

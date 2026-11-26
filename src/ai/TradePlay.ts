@@ -125,7 +125,7 @@ export class TradePlay {
     for (const cart of idle) {
       let best: Extract<ReturnType<typeof checkTradeRoute>, { ok: true }> | null = null;
       for (const m of partners) {
-        const check = checkTradeRoute(ctx.world, cart, m, teams, ctx.mapData, ctx.player);
+        const check = checkTradeRoute(ctx.world, cart, m, teams, ctx.mapData, ctx.player, ctx.isDefeated);
         if (check.ok && (!best || check.gold > best.gold)) best = check;
       }
       if (best) startTradeRoute(ctx.world, cart, best);
