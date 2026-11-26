@@ -115,6 +115,13 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Változott
 
+- **Lengyel és oszmán műhelyek és erődök:** a két új nép laktanyája, lőtere,
+  istállója és kovácsműhelye minden korban a saját stílusában készül (nádtetős
+  biskupini faépületek, krakkói téglagótika, zamośći attika-pártázat; sávos
+  bizánci kupolák, szeldzsuk kapuzat és kümbet-kúp, oszmán ólomkupolák) a közös
+  római, középkori vagy barokk épületek helyett. A 3. kori erődök saját
+  megjelenést kaptak (a lengyel fehér kő attikát, az oszmán félholdas,
+  kupolás kioszkokat), az oszmán 2. kori Rumeli-tornyok pedig gyilokjárót.
 - **Textúra-keret:** szárazföldi térképen továbbra is 256 MB, tengeres
   térképen 400 MB, ahol minden nép hajója a képernyőn lehet (a tulajdonos
   döntése).

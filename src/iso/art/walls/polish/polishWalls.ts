@@ -13,7 +13,7 @@ import { along, stations, type WallAgeStyle } from '../wallKit';
 import { breakwater, cribFace, stakeBreastwork, turretRing, type TurretRing } from './polishWallParts';
 import { ZAMOSC_BASTION } from './zamoscBastion';
 
-export { BASTION_PARAPET, RUN_PARAPET } from './zamoscBastion';
+export { BASTION_ATTIC, BASTION_CREST_TOP, BASTION_PARAPET, RUN_ATTIC, RUN_CREST_TOP, RUN_PARAPET } from './zamoscBastion';
 
 /*
  * Polish walls (M21), one character per age, matched to the Polish
@@ -25,7 +25,7 @@ export { BASTION_PARAPET, RUN_PARAPET } from './zamoscBastion';
  * on a white stone plinth under white-capped merlons, its round brick
  * towers crowned like the Barbican by a ring of small turrets with
  * copper needle spires round a low tile cone (age 2); and the Zamość
- * bastion trace in brick under grass-grown earthworks (zamoscBastion.ts).
+ * bastion trace in brick under a crested white-stone attic (zamoscBastion.ts).
  */
 
 const B = POLISH_BISKUPIN.palette;

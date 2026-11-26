@@ -6,6 +6,12 @@ import { pinBuildings } from '../../testing/pinnedArt.testkit';
  * later kit and family changes cannot silently change Polish.
  * Recorded at M21 Task 2's final art; M21 Task 3 re-recorded wall@1-3
  * with the Polish walls (box rampart, barbican curtain, Zamość bastion).
+ * M22 Task 2 re-recorded barracks@1, archery_range@1, stable@1,
+ * blacksmith@1-3, barracks@3, archery_range@3 and stable@3 with the
+ * Polish workshops (Biskupin, Kraków smithy, Zamość); its fix round
+ * re-recorded stable@1, blacksmith@1 and blacksmith@3.
+ * M22 Task 3 re-recorded wall@3 (the attic-crested Zamość bastion); the M22
+ * final review re-recorded wall@3 (volume points on the crest pinnacles).
  */
 
 pinBuildings('polish', {
@@ -14,10 +20,10 @@ pinBuildings('polish', {
   'farm@1': '22fac49f54c522aa',
   'lumber_camp@1': '8df7efc35f3664d5',
   'mining_camp@1': 'ee5944898873fee4',
-  'barracks@1': 'fe7e4c131f2fa0cd',
-  'archery_range@1': '663bc0e4a563bfb3',
-  'stable@1': '606f769ea77e9797',
-  'blacksmith@1': '9fbf4cdf2086b8fe',
+  'barracks@1': 'e3a800b58dcd4ca1',
+  'archery_range@1': 'a959db437631fcfa',
+  'stable@1': '4ed881ecc435d308',
+  'blacksmith@1': '2a899f92561f0803',
   'foundry@1': 'b7ed0076c70f1553',
   'tower@1': '47bc003032e21e41',
   'wall@1': '70706bac5976713e',
@@ -30,7 +36,7 @@ pinBuildings('polish', {
   'barracks@2': '8413a3e70fada316',
   'archery_range@2': '2c364aa37447996c',
   'stable@2': '90c2cb0d0164d777',
-  'blacksmith@2': '2895a23d5a424158',
+  'blacksmith@2': '5955c71ee4685c20',
   'foundry@2': 'b6d59bd4b539ba2d',
   'tower@2': '067a698322fe47a4',
   'wall@2': 'd45af7686fd44019',
@@ -40,13 +46,13 @@ pinBuildings('polish', {
   'farm@3': '9e248a3b6376311b',
   'lumber_camp@3': '52ef5c6bf4e134ec',
   'mining_camp@3': 'ddb2805b4527474d',
-  'barracks@3': 'e8eca1f8ddd094e2',
-  'archery_range@3': '2f82ba2b6d430390',
-  'stable@3': '7251ef169ceb26e8',
-  'blacksmith@3': 'ba72ddb6369759ea',
+  'barracks@3': '83ddd257a85f7c27',
+  'archery_range@3': '91181fea914dde63',
+  'stable@3': '9e162219ebff515d',
+  'blacksmith@3': '5abfcc6e3b67a68b',
   'foundry@3': '67c99b8c3f7eb6ba',
   'tower@3': 'e6d60a6438b80085',
-  'wall@3': '26adbbdcfe9b581f',
+  'wall@3': '88f2fc82fdeb255f',
   'wonder@3': '63bf8335ad41ae43',
   'wonder~s1': '2b094b221f34cb08',
   'wonder~s2': '7c604244b5d35810',

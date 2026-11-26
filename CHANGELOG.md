@@ -113,6 +113,14 @@ raises the patch version.
 
 ### Changed
 
+- **Polish and Ottoman workshops and forts:** the barracks, archery ranges,
+  stables and blacksmiths of both new nations are now drawn in their own style
+  in every age (log-and-reed Biskupin halls, Kraków brick Gothic, Zamość attic
+  parapets; banded Byzantine domes, Seljuk portals and kümbet cones, Osmanlı
+  lead domes), instead of the shared Roman, medieval or baroque buildings. The
+  age-3 forts got their own look (a white-stone attic crest for the Polish,
+  domed kiosks with crescents for the Ottoman), and the Ottoman age-2 Rumeli
+  towers a machicolated gallery.
 - **Texture budget:** 256 MB on land maps as before, 400 MB on maps with sea,
   where every nation's ships may be on screen (owner's decision).
 

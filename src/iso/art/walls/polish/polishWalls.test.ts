@@ -123,14 +123,17 @@ describe('Polish wall styles', () => {
     }
   });
 
-  it('age 3: the bastion trace stays low, and corner bastions carry a guérite above it', () => {
+  it('age 3: the bastion trace stays low under its attic, and corner bastions carry an ornamented cap above it', () => {
+    expect(polish.RUN_ATTIC).toBeLessThan(polish.BASTION_ATTIC);
+    expect(polish.RUN_CREST_TOP).toBeLessThan(polish.BASTION_CREST_TOP);
     for (const piece of RUNS) {
       const run = paintWall.paintWallPiece(piece, 3, 'polish');
-      expect(topZ(run), `piece ${piece}`).toBeLessThanOrEqual(polish.BASTION_PARAPET);
+      // The tallest volume point is the run crest's end pinnacle on the attic.
+      expect(topZ(run), `piece ${piece}`).toBe(polish.RUN_CREST_TOP);
     }
     const pier = topZ(paintWall.paintWallPiece(WALL_E | WALL_W | POST, 3, 'polish'));
     const corner = topZ(paintWall.paintWallPiece(WALL_E | WALL_S | POST, 3, 'polish'));
-    expect(pier).toBe(polish.BASTION_PARAPET);
-    expect(corner).toBeGreaterThan(polish.BASTION_PARAPET + 15);
+    expect(pier).toBe(polish.BASTION_CREST_TOP);
+    expect(corner).toBeGreaterThan(polish.BASTION_ATTIC + 15);
   });
 });

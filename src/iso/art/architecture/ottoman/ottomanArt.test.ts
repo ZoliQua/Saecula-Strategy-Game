@@ -10,9 +10,14 @@ import type { LitArt } from '../../lighting/normalLayer';
 import { css } from '../../palette';
 import { canonicalColor, hashPainting, installRecordingCanvas, type RecordedCanvas } from '../../testing/recordingCanvas.testkit';
 import { trimLitArt } from '../../trimArt';
+import { baroqueArt } from '../baroque';
 import { CHARGES } from '../charges';
+import { medievalArt } from '../medieval';
 import { ARCH_FAMILIES, ARCH_STYLES } from '../registry';
+import { romanArt } from '../roman';
+import type { AgeArtSet } from '../types';
 import { WONDER_STAGES } from '../wonder';
+import { byzantineArt, osmanliArt, seljukArt } from './ottoman';
 import { OTTOMAN_BYZANTINE, OTTOMAN_OSMANLI, OTTOMAN_SELJUK } from './ottomanStyles';
 
 const CIV: CivId = 'ottoman';
@@ -200,4 +205,27 @@ describe('Ottoman architecture (Byzantine, Seljuk, Osmanlı, Süleymaniye, hamam
     // The same hamam in each age's own walls and palette.
     expect(new Set(AGES.map((age) => hashPainting(() => paintBuilding('landmark', TEAM, age, CIV, false).volume))).size).toBe(3);
   });
+});
+
+describe('ottoman M22 workshops keep the replaced painters\' canvas', () => {
+  // Texture memory: each M22 slot must keep the size and height budget of
+  // the shared roman / medieval / baroque painter it replaces.
+  type Slot = Exclude<BuildingType, 'wonder'>;
+  const cases: readonly [string, AgeArtSet, AgeArtSet, readonly Slot[]][] = [
+    ['byzantine', byzantineArt(OTTOMAN_BYZANTINE), romanArt(OTTOMAN_BYZANTINE), ['archery_range', 'blacksmith']],
+    ['seljuk', seljukArt(OTTOMAN_SELJUK), medievalArt(OTTOMAN_SELJUK), ['archery_range', 'blacksmith']],
+    ['osmanli', osmanliArt(OTTOMAN_OSMANLI), baroqueArt(OTTOMAN_OSMANLI), ['archery_range', 'stable', 'blacksmith']],
+  ];
+  for (const [name, own, base, slots] of cases) {
+    for (const slot of slots) {
+      it(`${name} ${slot}: same size and maxHeight as the shared painter`, () => {
+        const mine = own[slot];
+        const shared = base[slot];
+        expect(mine).toBeDefined();
+        expect(shared).toBeDefined();
+        expect(mine?.size).toBe(shared?.size);
+        expect(mine?.maxHeight).toBe(shared?.maxHeight);
+      });
+    }
+  }
 });

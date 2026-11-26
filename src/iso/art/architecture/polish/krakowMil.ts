@@ -2,13 +2,15 @@ import type { IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { crest, R } from '../facade';
 import { needleSpire } from '../kits/needleSpire';
-import { strawButt, torch } from '../parts';
+import { anvil } from '../kits/workshopProps';
+import { forgeLight, forgeMouth, strawButt, torch } from '../parts';
 import { finial } from '../roofs';
 import type { ArchStyle } from '../style';
 import { styledGable } from '../styledRoofs';
 import type { BuildingArt } from '../types';
 import type { Block } from './biskupinParts';
-import { brickBlock, buttressLeft, cornerPinnacles, diaper, lancet } from './krakowParts';
+import { brickBlock, buttressLeft, cornerPinnacles, diaper, lancet, stringCourse } from './krakowParts';
+import { stoneBandedStack } from './workParts';
 
 /*
  * Kraków's military buildings (Polish age 2): long diapered brick halls
@@ -16,7 +18,8 @@ import { brickBlock, buttressLeft, cornerPinnacles, diaper, lancet } from './kra
  * marked by a slender brick turret whose spire is ringed by pinnacles
  * (the town's skyline repeated): the barracks' arsenal with its gate,
  * the stable's hall of arched stalls, the archery range's butts before
- * a small brick shooting house.
+ * a small brick shooting house; the smithy (M22) is a short buttressed
+ * hall with a lean-to forge and a tall brick stack banded in white stone.
  */
 
 /** A slender square brick turret at b, rising to `shaft`, under a spire ringed by four pinnacles; returns the apex. */
@@ -134,6 +137,40 @@ function paintRange(p: IsoPainter, s: ArchStyle, team: number): void {
   p.ctx.moveTo(a[0], a[1]);
   p.ctx.lineTo(e[0], e[1]);
   p.ctx.stroke();
+}
+
+function paintSmithy(p: IsoPainter, s: ArchStyle, team: number): void {
+  const c = s.palette;
+  p.footShadow();
+  p.ground(0.08, 0.08, 1.92, 1.92, 0x9a8e7a);
+  const stack: Block = [1.48, 0.2, 1.7, 0.42];
+  stoneBandedStack(p, s, stack, 132, [0.42, 0.7], c.brick, (top, left, right) => brickBlock(p, s, stack, 0, top, left, right));
+  // The hall, its steep plain-tile gable end facing the street.
+  const hall: Block = [0.24, 0.3, 1.3, 1.3];
+  brickBlock(p, s, hall, 0, 44, (w) => {
+    lancet(p, s, w * 0.16, -16, 8, 18, 1);
+    lancet(p, s, w * 0.55 - 1, -2, 18, 30, 1, false);
+    p.door(w * 0.55 + 1, 14, 24, c.doors.work);
+    stringCourse(p.ctx, w, -36, c.trim, 1);
+  }, (w) => lancet(p, s, w * 0.3, -16, 7, 16, R, false), [14]);
+  buttressLeft(p, s, 0.3, 1.3, 40);
+  p.material = 'tile';
+  styledGable(p, s, hall[0], hall[1], hall[2], hall[3], 44, 44, c.roof, c.brick, 'v', 0.08, (w, r) => diaper(p.ctx, w, r, c.brick, 1));
+  // A slender ridge flèche with the owner's colour.
+  const ridge = 44 + 44 * s.roof.pitch;
+  const apex = needleSpire(p, 0.77, 0.8, 0.06, ridge - 8, 34, c.metal, 'copper', 8);
+  p.flag(0.77, 0.8, apex + 2, 12, team);
+  // The forge: a brick lean-to on the hall's flank (drawn after the hall, which it stands before), its mouth glowing on the yard.
+  const forge: Block = [1.3, 0.48, 1.74, 1.08];
+  brickBlock(p, s, forge, 0, 36, (w) => forgeMouth(p, w / 2 - 9, 18, 24), (w) => lancet(p, s, w / 2 - 3, -14, 6, 12, R, false), [30]);
+  p.material = 'tile';
+  styledGable(p, s, forge[0], forge[1], forge[2], forge[3], 36, 18, c.roof, c.brick, 'u', 0.05);
+  forgeLight(p, 1.5, 1.25);
+  anvil(p, 1.5, 1.38, 0.3);
+}
+
+export function krakowSmithy(s: ArchStyle): BuildingArt {
+  return { size: 2, maxHeight: 130 + s.headroom, paint: (p, team) => paintSmithy(p, s, team) };
 }
 
 export function krakowBarracks(s: ArchStyle): BuildingArt {

@@ -5,6 +5,7 @@ import { alem } from '../../architecture/kits/leadDome';
 import { bandedFace, roundPath } from '../../architecture/ottoman/ottomanParts';
 import { OTTOMAN_BYZANTINE, OTTOMAN_OSMANLI, OTTOMAN_SELJUK } from '../../architecture/ottoman/ottomanStyles';
 import type { Ctx } from '../../canvas';
+import { HW, type IsoPainter } from '../../isoPainter';
 import { css, shade } from '../../palette';
 import { reachBody } from '../kits/bankPalisade';
 import { armShadow, drumStart, frontEdge, frustum, padShadow } from '../kits/wallParts';
@@ -19,7 +20,9 @@ import { along, stations, type WallAgeStyle } from '../wallKit';
  * merlons, its square towers banded the same, with round-headed
  * windows in brick voussoirs and a crenellated top (age 1); the
  * Rumelihisarı curtain of grey rubble stone, its big round towers
- * under tall lead cones carrying a gilt crescent finial (age 2); and a
+ * girdled under the top by a machicolated gallery on corbels, crenellated,
+ * with a tall lead cone set back inside it carrying a gilt crescent
+ * finial (age 2); and a
  * bastion trace in pale cut limestone, the star-fort kit in ashlar, its
  * corner bastions crowned by domed köşks (ottomanBastion.ts, age 3).
  */
@@ -102,12 +105,81 @@ const LEAD = OTTOMAN_OSMANLI.palette.metal;
 export const RUMELI_WALK = 50;
 const RUMELI_HALF = 0.19;
 const RUMELI_MERLON = 10;
-/** The big round tower: drum radius, its corbelled top, the lead cone (the age-2 skyline cue). */
+/** The big round tower: drum radius, its machicolated gallery, the tall lead cone (the age-2 skyline cue). */
 export const RUMELI_R = 0.34;
-const RUMELI_DRUM = 80;
-const RUMELI_CROWN = RUMELI_DRUM + 6;
-export const RUMELI_CONE = 40;
-const RUMELI_APEX = RUMELI_CROWN + RUMELI_CONE;
+const RUMELI_DRUM = 66;
+/** Corbels under the gallery, from the drum's top up to the gallery's floor. */
+const RUMELI_CORBEL = 7;
+/** The projecting gallery (machicolated parapet) round the top: its overhang and height. */
+const GALLERY_OUT = 0.065;
+const GALLERY_FLOOR = RUMELI_DRUM + RUMELI_CORBEL;
+const GALLERY_TOP = GALLERY_FLOOR + 8;
+export const RUMELI_CONE = 45;
+const RUMELI_APEX = GALLERY_TOP + RUMELI_CONE;
+
+/** Corbels round a drum from radius r0 (at z0) out to r1 (at z1) on the visible half, with dark machicolation slots between. */
+function corbelRing(p: IsoPainter, r0: number, r1: number, z0: number, z1: number): void {
+  const ctx = p.ctx;
+  const n = 14;
+  for (let k = 0; k <= n; k++) {
+    const a = -Math.PI / 4 + (k / n) * Math.PI;
+    const light = 0.62 + 0.4 * Math.max(0, Math.cos(a - Math.PI * 0.6));
+    // Slot: the dark gap under the gallery floor between this corbel and the next.
+    if (k < n) {
+      const b = a + Math.PI / n;
+      const [x0, y0] = p.p(0.5 + Math.cos(a) * r1, 0.5 + Math.sin(a) * r1, z1);
+      const [x1, y1] = p.p(0.5 + Math.cos(b) * r1, 0.5 + Math.sin(b) * r1, z1);
+      const [x2, y2] = p.p(0.5 + Math.cos(b) * r0, 0.5 + Math.sin(b) * r0, z1 - 2.5);
+      const [x3, y3] = p.p(0.5 + Math.cos(a) * r0, 0.5 + Math.sin(a) * r0, z1 - 2.5);
+      ctx.fillStyle = 'rgba(18,14,12,.85)';
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // Corbel: a stepped bracket widening upwards from the drum face to the gallery's outer rim.
+    const [bx, by] = p.p(0.5 + Math.cos(a) * r0, 0.5 + Math.sin(a) * r0, z0);
+    const [tx, ty] = p.p(0.5 + Math.cos(a) * r1, 0.5 + Math.sin(a) * r1, z1);
+    const half = 1.5 * Math.max(0.35, Math.cos(a - Math.PI / 4));
+    ctx.fillStyle = css(shade(DRESSED, light));
+    ctx.beginPath();
+    ctx.moveTo(bx - half * 0.6, by);
+    ctx.lineTo(bx + half * 0.6, by);
+    ctx.lineTo(tx + half, ty);
+    ctx.lineTo(tx - half, ty);
+    ctx.closePath();
+    ctx.fill();
+  }
+  for (const a of [0, Math.PI / 2, Math.PI / 4]) p.addVolumePoint(0.5 + Math.cos(a) * r1, 0.5 + Math.sin(a) * r1, z1);
+}
+
+/** The gallery's wall-walk: a flat stone disc at z, seen inside the parapet behind the cone. */
+function walkDisc(p: IsoPainter, r: number, z: number): void {
+  const [x, y] = p.p(0.5, 0.5, z);
+  const rx = r * Math.SQRT2 * HW;
+  p.ctx.fillStyle = css(shade(DRESSED, 0.62));
+  p.ctx.beginPath();
+  p.ctx.ellipse(x, y, rx, rx / 2, 0, 0, Math.PI * 2);
+  p.ctx.fill();
+}
+
+/** Square merlons standing on the gallery rim, either the back half (behind the cone) or the front half. */
+function galleryMerlons(p: IsoPainter, half: 'back' | 'front'): void {
+  const r = RUMELI_R + GALLERY_OUT - 0.025;
+  const n = 12;
+  const m = 0.035;
+  const ks = Array.from({ length: n }, (_, k) => ((k + 0.5) / n) * Math.PI * 2)
+    .filter((a) => (Math.cos(a) + Math.sin(a) >= 0) === (half === 'front'))
+    .sort((a, b) => Math.cos(a) + Math.sin(a) - (Math.cos(b) + Math.sin(b)));
+  for (const a of ks) {
+    const u = 0.5 + Math.cos(a) * r;
+    const v = 0.5 + Math.sin(a) * r;
+    p.box(u - m, v - m, u + m, v + m, GALLERY_TOP, GALLERY_TOP + RUMELI_MERLON - 3, { color: RUBBLE, detail: 'stone' }, DRESSED);
+  }
+}
 
 /** Curtain face: courses of dressed stone every so often, and arrow slits. */
 function rumeliFace(ctx: Ctx, w: number, h: number, light: number): void {
@@ -144,13 +216,19 @@ const RUMELI: WallAgeStyle = {
     drumWall(p, 0.5, 0.5, RUMELI_R + 0.03, 0, 12, shade(RUBBLE, 0.9), 'stone');
     drumWall(p, 0.5, 0.5, RUMELI_R, 12, RUMELI_DRUM, RUBBLE, 'stone');
     for (const z of [32, 56]) drumWall(p, 0.5, 0.5, RUMELI_R + 0.004, z, z + 2.5, DRESSED, 'ashlar');
-    for (const [phi, z] of [[Math.PI / 4, 20], [0.3, 42], [1.25, 42], [Math.PI / 4, 64]] as const) drumOpening(p, 0.5, 0.5, RUMELI_R, phi, 1.4, z, 9, DRESSED, 'dark');
-    // A corbelled crown, then the tall lead cone over the whole drum.
-    drumWall(p, 0.5, 0.5, RUMELI_R + 0.025, RUMELI_DRUM, RUMELI_CROWN, DRESSED, 'ashlar');
+    for (const [phi, z] of [[Math.PI / 4, 20], [0.3, 40], [1.25, 40]] as const) drumOpening(p, 0.5, 0.5, RUMELI_R, phi, 1.4, z, 9, DRESSED, 'dark');
+    // Machicolations: a ring of corbels carries the gallery out over the drum, murder holes between them.
+    corbelRing(p, RUMELI_R, RUMELI_R + GALLERY_OUT, RUMELI_DRUM, GALLERY_FLOOR);
+    drumWall(p, 0.5, 0.5, RUMELI_R + GALLERY_OUT, GALLERY_FLOOR, GALLERY_TOP, RUBBLE, 'stone');
+    drumWall(p, 0.5, 0.5, RUMELI_R + GALLERY_OUT + 0.004, GALLERY_TOP - 2, GALLERY_TOP, DRESSED, 'ashlar');
+    // Merlons round the gallery's back rim, the tall lead cone set back inside it, then the front merlons.
+    walkDisc(p, RUMELI_R + GALLERY_OUT, GALLERY_TOP);
+    galleryMerlons(p, 'back');
     const prev = p.material;
     p.material = 'slate';
-    coneRoof(p, 0.5, 0.5, RUMELI_R + 0.05, RUMELI_CROWN, RUMELI_CONE, LEAD, 'slate');
+    coneRoof(p, 0.5, 0.5, RUMELI_R + 0.01, GALLERY_TOP - 1, RUMELI_CONE, LEAD, 'slate');
     p.material = prev;
+    galleryMerlons(p, 'front');
     alem(p, 0.5, 0.5, RUMELI_APEX - 1, 10);
   },
 };

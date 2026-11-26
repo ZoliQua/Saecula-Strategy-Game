@@ -21,7 +21,7 @@ import { bandedBlock, roundPath, terrace, type Block } from './ottomanParts';
  */
 
 /** Round-headed opening in a brick surround (face-local), lit or dark. */
-function arched(p: IsoPainter, s: ArchStyle, x: number, y: number, w: number, h: number, light: number, lit = true): void {
+export function arched(p: IsoPainter, s: ArchStyle, x: number, y: number, w: number, h: number, light: number, lit = true): void {
   const ctx = p.ctx;
   ctx.fillStyle = css(shade(s.palette.brick, light * 0.9));
   roundPath(ctx, x - 1.8, y, w + 3.6, h + 1.8);

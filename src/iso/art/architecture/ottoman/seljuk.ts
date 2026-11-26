@@ -22,7 +22,7 @@ import { ashlarBlock, frieze, kumbet, pishtaqFace, pointedPath, terrace, type Bl
  */
 
 /** Pointed window in a carved surround (face-local), lit or dark. */
-function lancet(p: IsoPainter, s: ArchStyle, x: number, y: number, w: number, h: number, light: number, lit = true): void {
+export function lancet(p: IsoPainter, s: ArchStyle, x: number, y: number, w: number, h: number, light: number, lit = true): void {
   const ctx = p.ctx;
   ctx.fillStyle = css(shade(s.palette.ashlar, light * 1.15));
   pointedPath(ctx, x - 1.6, y + 1, w + 3.2, h + 2.6);
@@ -36,7 +36,7 @@ function lancet(p: IsoPainter, s: ArchStyle, x: number, y: number, w: number, h:
 }
 
 /** A portal block projecting from a +v face: pishtaq on its front, plain ashlar on its side, a frieze and crenels on top. */
-function portalLeft(p: IsoPainter, s: ArchStyle, b: Block, h: number, door = true): void {
+export function portalLeft(p: IsoPainter, s: ArchStyle, b: Block, h: number, door = true): void {
   const [u0, v0, u1, v1] = b;
   const c = s.palette;
   p.box(u0, v0, u1, v1, 0, h, { color: c.ashlar }, c.ashlar);
@@ -47,7 +47,7 @@ function portalLeft(p: IsoPainter, s: ArchStyle, b: Block, h: number, door = tru
 }
 
 /** A portal block projecting from a +u face. */
-function portalRight(p: IsoPainter, s: ArchStyle, b: Block, h: number, door = true): void {
+export function portalRight(p: IsoPainter, s: ArchStyle, b: Block, h: number, door = true): void {
   const [u0, v0, u1, v1] = b;
   const c = s.palette;
   p.box(u0, v0, u1, v1, 0, h, { color: c.ashlar }, c.ashlar);
