@@ -49,6 +49,8 @@ const TEXTURE_KEYS: Record<UnitType, string> = {
   legionary: 'unit_legionary',
   cossack: 'unit_cossack',
   sissi: 'unit_sissi',
+  winged_hussar: 'unit_winged_hussar',
+  janissary: 'unit_janissary',
 };
 
 function toSpec(type: UnitType): UnitSpec {

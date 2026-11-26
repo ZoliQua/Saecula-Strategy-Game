@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../../map/random';
-import { createHeadlessMatch } from '../testing/headlessMatch';
+import { classicCivs, createHeadlessMatch } from '../testing/headlessMatch';
 import { HardStrategy } from './HardStrategy';
 import { MasterStrategy } from './MasterStrategy';
 
 const MIN = 60_000;
 
-/** Mesteri alone (player 2, master handicap) against the passive human: when it reached ages 2 and 3. */
+/**
+ * Mesteri alone (player 2, master handicap) against the passive human: when it reached ages 2 and 3.
+ * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
+ * with the nine-civ pool seed 4 reached age 3 at 20.40 min.
+ */
 function alone(seed: number): { age2: number; age3: number; recent: string } {
   const master = new MasterStrategy(createRng(seed * 31 + 2));
-  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => master, difficulty: () => 'master' });
+  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, civs: classicCivs(seed, 1), strategy: () => master, difficulty: () => 'master' });
   const ai = match.players.get(2)!;
   let age2 = Infinity;
   let age3 = Infinity;
@@ -24,6 +28,8 @@ function alone(seed: number): { age2: number; age3: number; recent: string } {
 /**
  * Mesteri (player 2, master handicap) against Hard (player 3, hard handicap) on a 64×64 meadow, pitted
  * against each other; the passive human (player 1) just sits there. When the rival TC fell.
+ * M21 Task 5: Ottoman joined the mixed pool, which reshuffles this draw; the test keeps its pre-M21 civs (classicCivs):
+ * with the ten-civ pool Mesteri won only seeds 2 and 4 within 27 min.
  */
 function duel(seed: number, minutes: number): { wonAt: number; master: MasterStrategy } {
   const master = new MasterStrategy(createRng(seed * 31 + 2));
@@ -31,6 +37,7 @@ function duel(seed: number, minutes: number): { wonAt: number; master: MasterStr
     seed,
     size: 64,
     aiCount: 2,
+    civs: classicCivs(seed, 2),
     strategy: (id) => (id === 2 ? master : new HardStrategy(createRng(seed * 31 + id))),
     enemyOf: (id) => (id === 2 ? 3 : 2),
     difficulty: (id) => (id === 2 ? 'master' : 'hard'),
@@ -46,9 +53,9 @@ function duel(seed: number, minutes: number): { wonAt: number; master: MasterStr
   return { wonAt, master };
 }
 
-/** Hard alone (same setup as `alone`): when it reached age 2. */
+/** Hard alone (same setup and civs as `alone`): when it reached age 2. */
 function hardAge2(seed: number): number {
-  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
+  const match = createHeadlessMatch({ seed, size: 64, aiCount: 1, civs: classicCivs(seed, 1), strategy: () => new HardStrategy(createRng(seed * 31 + 2)), difficulty: () => 'hard' });
   const ai = match.players.get(2)!;
   let age2 = Infinity;
   match.run(16 * MIN, 100, (t) => {

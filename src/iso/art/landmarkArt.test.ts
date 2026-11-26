@@ -29,7 +29,7 @@ describe('landmark art', () => {
   });
 
   it('every civ has its own landmark painter (no shared placeholder)', () => {
-    expect(new Set(Object.values(registry.LANDMARK_ART)).size).toBe(CIV_IDS.length);
+    expect(new Set(CIV_IDS.map((civ) => registry.LANDMARK_ART[civ])).size).toBe(CIV_IDS.length);
   });
 
   it.each(CIV_IDS)('%s: the landmark paints in every age, deterministically, in a 3-tile footprint', (civ) => {

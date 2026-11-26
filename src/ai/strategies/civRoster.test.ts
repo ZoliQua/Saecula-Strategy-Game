@@ -116,7 +116,7 @@ describe('AI civ roster (M8)', () => {
     it(`no ${difficulty} AI path queues a replaced base type`, () => {
       const offenders: string[] = [];
       attempts.length = 0;
-      for (const civs of [ALL_CIVS.slice(0, 4), ALL_CIVS.slice(4, 8)]) {
+      for (const civs of [ALL_CIVS.slice(0, 4), ALL_CIVS.slice(4, 8), ALL_CIVS.slice(8)]) {
         const [human, ...ais] = civs as [CivId, ...CivId[]];
         const seed = 11;
         const match = createHeadlessMatch({
@@ -126,7 +126,7 @@ describe('AI civ roster (M8)', () => {
           civs: { human, ais },
           strategy: (id) => createStrategy(difficulty, createRng(seed * 31 + id)),
           difficulty: () => difficulty,
-          enemyOf: (id) => (id % 4) + 1,
+          enemyOf: (id) => (id % civs.length) + 1,
           humanStrategy: createStrategy(difficulty, createRng(seed * 31 + 1)),
           humanEnemy: () => 2,
         });

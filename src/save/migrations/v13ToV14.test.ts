@@ -14,14 +14,13 @@ describe('v13 → v14 migration', () => {
     const data = { schemaVersion: 13, setup: { mission: 'age_of_wonders' }, entities: [], gameTimeMs: 5 };
     expect(v13ToV14(data)).toEqual(data);
     expect(migrate(data, 14)).toEqual({ ok: true, data: { ...data, schemaVersion: 14 } });
-    expect(SCHEMA_VERSION).toBe(14);
   });
 
   it('the v13 fixture migrates unchanged and plays on', () => {
     expect(v13Save.schemaVersion).toBe(13);
     const parsed = parseSave(JSON.stringify(v13Save));
     if (!parsed.ok) throw new Error(`fixture did not parse: ${parsed.reason}`);
-    expect(parsed.save).toEqual({ ...v13Save, schemaVersion: 14 });
+    expect(parsed.save).toEqual({ ...v13Save, schemaVersion: SCHEMA_VERSION });
     const match = resumeHeadlessMatch(parsed.save);
     match.run(MIN, STEP_MS);
     expect(parseSave(JSON.stringify(match.snapshot(FIXED_DATE))).ok).toBe(true);

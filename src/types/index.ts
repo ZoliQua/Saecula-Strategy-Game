@@ -52,7 +52,10 @@ export type CivId =
   | 'spanish'
   | 'italian'
   | 'russian'
-  | 'finnish';
+  | 'finnish'
+  // M21
+  | 'polish'
+  | 'ottoman';
 
 export type ResourceType = 'food' | 'wood' | 'gold';
 
@@ -95,7 +98,10 @@ export type UniqueUnitType =
   | 'conquistador'
   | 'legionary'
   | 'cossack'
-  | 'sissi';
+  | 'sissi'
+  // M21
+  | 'winged_hussar'
+  | 'janissary';
 
 export type UnitType = BaseUnitType | UniqueUnitType;
 

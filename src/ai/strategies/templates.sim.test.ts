@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_TEMPLATES } from '../../map/generator';
 import { createRng } from '../../map/random';
-import { createHeadlessMatch } from '../testing/headlessMatch';
+import { classicCivs, createHeadlessMatch } from '../testing/headlessMatch';
 import { MediumStrategy } from './MediumStrategy';
 
 const MIN = 60_000;
@@ -16,6 +16,8 @@ const MIN = 60_000;
  * loser of the early raids may be crippled before it raids (random seed 1: player 2 loses 8 of 11
  * villagers at 6-7 min), so raiding is not required of both; its base may also be razed by the end,
  * so a building counts once finished at any time during the match.
+ * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
+ * with the nine-civ pool no AI reached age 2 by 15 min on the fortress.
  */
 describe.each(MAP_TEMPLATES)('Medium vs Medium on %s (64×64, seed 1)', (template) => {
   it('both build a base; a raid leaves by 9 min and an AI reaches age 2 by 15 min', () => {
@@ -24,6 +26,7 @@ describe.each(MAP_TEMPLATES)('Medium vs Medium on %s (64×64, seed 1)', (templat
       seed,
       size: 64,
       aiCount: 2,
+      civs: classicCivs(seed, 2),
       template,
       strategy: (id) => new MediumStrategy(createRng(id * 977 + seed)),
       enemyOf: (id) => (id === 2 ? 3 : 2),

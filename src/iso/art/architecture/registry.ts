@@ -34,6 +34,12 @@ import { comuneArt } from './italian/comune';
 import { etruriaArt } from './italian/etruria';
 import { ITALIAN_COMUNE, ITALIAN_ETRURIA, ITALIAN_RINASCIMENTO } from './italian/italianStyles';
 import { rinascimentoArt } from './italian/rinascimento';
+import { hamamArt } from './ottoman/hamam';
+import { byzantineArt, osmanliArt, seljukArt } from './ottoman/ottoman';
+import { OTTOMAN_BYZANTINE, OTTOMAN_OSMANLI, OTTOMAN_SELJUK } from './ottoman/ottomanStyles';
+import { biskupinArt, krakowArt, zamoscArt } from './polish/polish';
+import { POLISH_ATTIC, POLISH_BISKUPIN, POLISH_KRAKOW } from './polish/polishStyles';
+import { saltMineArt } from './polish/saltMine';
 import { izbaArt } from './russian/izba';
 import { ostrogArt } from './russian/ostrog';
 import { petrineArt } from './russian/petrine';
@@ -87,6 +93,12 @@ export const ARCH_STYLES: Readonly<Record<ArchStyleId, ArchStyle>> = {
   finnic: FINNISH_FINNIC,
   greystone: FINNISH_GREYSTONE,
   gustavian: FINNISH_GUSTAVIAN,
+  biskupin: POLISH_BISKUPIN,
+  krakow_gothic: POLISH_KRAKOW,
+  polish_attic: POLISH_ATTIC,
+  byzantine: OTTOMAN_BYZANTINE,
+  seljuk: OTTOMAN_SELJUK,
+  osmanli: OTTOMAN_OSMANLI,
 };
 
 /** Painter families: each lays a style's palette, roofs and ornaments over its building layouts. */
@@ -110,6 +122,12 @@ export const ARCH_FAMILIES: Readonly<Record<ArchFamily, (s: ArchStyle) => AgeArt
   izba: izbaArt,
   petrine: petrineArt,
   nordic: nordicArt,
+  biskupin: biskupinArt,
+  krakow: krakowArt,
+  zamosc: zamoscArt,
+  byzantine: byzantineArt,
+  seljuk: seljukArt,
+  osmanli: osmanliArt,
 };
 
 /**
@@ -127,12 +145,19 @@ export const LANDMARK_ART: Readonly<Record<CivId, (s: ArchStyle) => BuildingArt>
   italian: bankhausArt,
   russian: ostrogArt,
   finnish: saunaArt,
+  polish: saltMineArt,
+  ottoman: hamamArt,
 };
 
-/** The civ whose age styles include `id` (every style belongs to one civ). */
-const STYLE_CIV = new Map<ArchStyleId, CivId>(
-  CIV_IDS.flatMap((civ) => Object.values(CIV_DEFS[civ].architecture).map((id) => [id, civ] as const)),
-);
+/**
+ * The civ whose age styles include `id` (every style belongs to one civ).
+ * The first civ in registry order wins, so a civ that borrows another's
+ * styles (as Polish and Ottoman did during M21) never takes over that civ's landmark.
+ */
+const STYLE_CIV = new Map<ArchStyleId, CivId>();
+for (const civ of CIV_IDS) {
+  for (const id of Object.values(CIV_DEFS[civ].architecture)) if (!STYLE_CIV.has(id)) STYLE_CIV.set(id, civ);
+}
 
 /** The landmark of the civ owning style `id`, painted in that style (none for a style no civ uses). */
 function landmarkFor(id: ArchStyleId, s: ArchStyle): { landmark?: BuildingArt } {

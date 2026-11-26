@@ -7,6 +7,7 @@ import {
   gatherMultiplier,
   houseBonus,
   scaleHealth,
+  trainSpeedMultiplier,
   unitBonuses,
 } from './modifiers';
 import { createPlayer } from './Player';
@@ -131,6 +132,25 @@ describe('civ bonuses', () => {
     expect(unitBonuses(fi, 'sissi').speedMultiplier).toBeCloseTo(1.1, 10);
     expect(unitBonuses(fi, 'swordsman').speedMultiplier).toBeCloseTo(1.1, 10);
     expect(unitBonuses(fi, 'knight').speedMultiplier).toBe(1);
+  });
+
+  it('Polish villagers are 10 % faster, stacking with the wheelbarrow; soldiers are not', () => {
+    expect(unitBonuses(civ('polish'), 'villager').speedMultiplier).toBeCloseTo(1.1, 10);
+    expect(unitBonuses(civ('polish'), 'swordsman').speedMultiplier).toBe(1);
+    expect(unitBonuses(civ('polish'), 'winged_hussar').speedMultiplier).toBe(1);
+    expect(unitBonuses(civ('polish', 'wheelbarrow'), 'villager').speedMultiplier).toBeCloseTo(1.1 * 1.1, 10);
+  });
+
+  it('Ottoman barracks, archery range and stable train 10 % faster (M21 tuning; 15 % before), stacking with conscription; other buildings do not', () => {
+    const ot = civ('ottoman');
+    for (const b of ['barracks', 'archery_range', 'stable'] as const) {
+      expect(trainSpeedMultiplier(ot, b)).toBeCloseTo(1.1, 10);
+      expect(trainSpeedMultiplier(civ('ottoman', 'conscription'), b)).toBeCloseTo(1.1 * 1.25, 10);
+    }
+    expect(trainSpeedMultiplier(ot, 'town_center')).toBe(1);
+    expect(trainSpeedMultiplier(ot, 'dock')).toBe(1);
+    expect(trainSpeedMultiplier(ot, 'monastery')).toBe(1);
+    expect(trainSpeedMultiplier(civ('hungarian'), 'barracks')).toBe(1);
   });
 
   it('French stable units get more HP, barracks units do not', () => {

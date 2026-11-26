@@ -59,9 +59,10 @@ import {
  * v13 (M19): the setup's victory enum gains regicide and hill, the unit-type enum the king, and the
  *   ownerless hill entity its component (hill: each team's time, the holder, contested).
  * v14 (M20): the setup's mission enum gains the chapter-2 missions and the short scenarios.
+ * v15 (M21): the civ enum gains polish and ottoman, the unit-type enum winged_hussar and janissary.
  */
 
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 const nonNeg = num.nonnegative();
 /** Record keys are player or team ids in decimal. */

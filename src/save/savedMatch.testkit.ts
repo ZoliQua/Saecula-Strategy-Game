@@ -3,6 +3,7 @@ import { pickPersonality } from '../ai/personality';
 import { createHeadlessMatch, type HeadlessMatch } from '../ai/testing/headlessMatch';
 import type { Difficulty, TreatyMinutes, VictoryMode } from '../game/GameSetupConfig';
 import { createStatefulRng, type StatefulRng } from '../map/random';
+import type { CivId } from '../types';
 
 /** The `createdAt` every save test snapshots with, so snapshots compare equal. */
 export const FIXED_DATE = new Date('2026-10-28T12:00:00.000Z');
@@ -17,6 +18,8 @@ export interface SavedMatchOptions {
   readonly difficulty?: Difficulty;
   readonly victory?: VictoryMode;
   readonly treatyMin?: TreatyMinutes;
+  /** Fixed civs instead of the seeded draw. */
+  readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
 }
 
 /**
@@ -45,5 +48,6 @@ export function savableMatch(options: SavedMatchOptions = {}): HeadlessMatch {
     wonderVictory: true,
     ...(options.victory ? { victory: options.victory } : {}),
     ...(options.treatyMin ? { treatyMin: options.treatyMin } : {}),
+    ...(options.civs ? { civs: options.civs } : {}),
   });
 }

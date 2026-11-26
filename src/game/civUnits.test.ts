@@ -34,12 +34,26 @@ describe('civ unit roster', () => {
     expect(canCivTrain('english', 'knight')).toBe(true);
   });
 
-  it('has 8 distinct unique units replacing 8 distinct base types', () => {
+  it('has 10 distinct unique units; the M21 two replace slots another civ also replaces', () => {
     const uniques = CIV_IDS.map((c) => CIV_DEFS[c].uniqueUnit);
-    expect(new Set(uniques).size).toBe(8);
+    expect(new Set(uniques).size).toBe(10);
     const bases = uniques.map((u: UniqueUnitType) => UNIT_BALANCE[u].replaces);
+    // The winged hussar replaces the cavalry (as the conquistador does), the janissary the crossbowman (as the longbowman does).
     expect(new Set(bases).size).toBe(8);
     expect(baseUnitType('sissi')).toBe('archer');
     expect(baseUnitType('archer')).toBe('archer');
+  });
+
+  it('the Polish winged hussar replaces the cavalry, the Ottoman janissary the crossbowman', () => {
+    expect(baseUnitType('winged_hussar')).toBe('cavalry');
+    expect(baseUnitType('janissary')).toBe('crossbowman');
+    expect(canCivTrain('polish', 'winged_hussar')).toBe(true);
+    expect(canCivTrain('polish', 'cavalry')).toBe(false);
+    expect(canCivTrain('polish', 'crossbowman')).toBe(true);
+    expect(canCivTrain('ottoman', 'janissary')).toBe(true);
+    expect(canCivTrain('ottoman', 'crossbowman')).toBe(false);
+    expect(canCivTrain('ottoman', 'cavalry')).toBe(true);
+    expect(canCivTrain('hungarian', 'winged_hussar')).toBe(false);
+    expect(canCivTrain('hungarian', 'janissary')).toBe(false);
   });
 });

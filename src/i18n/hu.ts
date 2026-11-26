@@ -49,6 +49,8 @@ export const hu = {
     italian: 'Olasz',
     russian: 'Orosz',
     finnish: 'Finn',
+    polish: 'Lengyel',
+    ottoman: 'Oszmán',
   },
   setup: {
     eyebrow: 'Új játék · Skirmish',
@@ -83,6 +85,8 @@ export const hu = {
       italian: 'Téglatornyok fecskefarkú pártázattal, árkádok, terrakotta kupolák',
       russian: 'Gerendaházak, sátortetős tornyok, aranyló hagymakupolák',
       finnish: 'Tőzegtetős faházak, gránitvár harangtoronnyal, vörös deszkaházak',
+      polish: 'Nádtetős sorházak, téglagótika egyenlőtlen ikertoronnyal, csipkés attikák',
+      ottoman: 'Sávos falak, ólomkupolák, ceruzavékony minaretek',
     },
     /** The permanent bonus of each civ, one line under its description (M8); percentages come from CIV_BONUS. */
     civBonus: {
@@ -94,6 +98,8 @@ export const hu = {
       italian: `Építés ${pct(CIV_BONUS.buildSpeed)}-kal gyorsabb`,
       russian: `Fagyűjtés +${pct(CIV_BONUS.woodGather)}`,
       finnish: `Gyalogság +${pct(CIV_BONUS.infantrySpeed)} sebesség`,
+      polish: `Falusiak +${pct(CIV_BONUS.villagerSpeed)} sebesség`,
+      ottoman: `Laktanya, lőtér és istálló ${pct(CIV_BONUS.trainSpeed)}-kal gyorsabban képez`,
     },
     /** The unique unit line; `replaced` is the base unit's name (lower-cased here, "az" before a vowel). */
     uniqueUnit: (unit: string, replaced: string) => {
@@ -208,6 +214,8 @@ export const hu = {
     legionary: 'Légiós',
     cossack: 'Kozák',
     sissi: 'Sissi',
+    winged_hussar: 'Szárnyas huszár',
+    janissary: 'Janicsár',
     monk: 'Szerzetes',
     fishing_boat: 'Halászhajó',
     transport: 'Szállítóhajó',
@@ -246,6 +254,8 @@ export const hu = {
     italian: { name: 'Bankház', role: 'Jobb piaci árak: kisebb eladási díj, lassabban romló ár' },
     russian: { name: 'Osztrog', role: `Gerenda-erőd: távolról lő, mint az őrtorony, erősebben (${LANDMARK.fort.range} mező)` },
     finnish: { name: 'Szauna', role: `A ${LANDMARK.sauna.range} mezőn belül álló saját egységeket gyógyítja (${LANDMARK.sauna.healPerSec} életerő/mp)` },
+    polish: { name: 'Wieliczkai sóbánya', role: `Percenként ${LANDMARK.mintGoldPerMin} aranyat termel` },
+    ottoman: { name: 'Hamam', role: `A ${LANDMARK.sauna.range} mezőn belül álló saját egységeket gyógyítja (${LANDMARK.sauna.healPerSec} életerő/mp)` },
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -394,6 +404,8 @@ export const hu = {
     legionary: 'Nyílálló gyalogos',
     cossack: 'Portyázó lovas',
     sissi: 'Gyors portyázó íjász',
+    winged_hussar: 'Rohamozó lovas',
+    janissary: 'Elit íjász',
     monk: 'Gyógyít · ellenséges egységet térít',
     fishing_boat: 'Halból ételt gyűjt · a kikötőbe viszi',
     transport: `Legfeljebb ${NAVAL.transportCapacity} szárazföldi egységet visz át a vízen`,

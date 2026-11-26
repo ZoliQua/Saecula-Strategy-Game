@@ -10,11 +10,11 @@ import { arrowStep, nextEnabled } from './radioNav';
 const CHECK = `<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>`;
 
 /**
- * The human's civ choice on the setup card: a 4×2 grid with a card per
- * playable civ, each showing its lit age-1 town centre with flickering
- * windows. Each card carries its civ's heraldic colours; the chosen civ's
- * one-line description shows in `caption` (the card's accessible
- * description is its own line). A radiogroup: arrows move between civs.
+ * The human's civ choice on the setup card: a two-row grid (4×2 for eight
+ * civs, 5×2 for ten) with a card per playable civ, each showing its lit
+ * age-1 town centre with flickering windows. Each card carries its civ's
+ * heraldic colours; the chosen civ's one-line description shows in
+ * `caption` (the card's accessible description is its own line). A radiogroup: arrows move between civs.
  */
 export class CivPicker {
   readonly root: HTMLElement;
@@ -30,7 +30,8 @@ export class CivPicker {
 
   constructor(value: CivId, previews: (civ: CivId) => CivPreview | undefined, private readonly onChange: (civ: CivId) => void) {
     this.value = value;
-    this.root = el('div', { class: 'civ-grid', role: 'radiogroup', 'aria-label': hu.setup.civ });
+    // Two rows of cards: four columns for eight civs, five for ten.
+    this.root = el('div', { class: 'civ-grid', role: 'radiogroup', 'aria-label': hu.setup.civ, style: `--civ-cols:${Math.ceil(AVAILABLE_CIVS.length / 2)}` });
     AVAILABLE_CIVS.forEach((id, i) => {
       const button = this.card(id, previews(id));
       button.dataset['civ'] = id;

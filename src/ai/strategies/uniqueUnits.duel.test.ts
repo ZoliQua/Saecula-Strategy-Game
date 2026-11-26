@@ -16,6 +16,10 @@ import { DUEL_BUDGET, fairDuel } from '../testing/unitDuel';
  * 0.9.1 baseline (0.9.0 stats): cossack vs swordsman +90 while the scout scores -528 (rule b
  * fails); landsknecht vs pikeman +698, legionary vs swordsman +560 (both pass).
  * Final (cossack HP 50 / attack 5): cossack vs swordsman -575, cossack vs scout +152.
+ * M21: the winged hussar passes with its starting stats (vs cavalry -28). The janissary's starting
+ * stats (HP 45, pierce armour 1, cost 30 food / 45 gold) scored +879 vs the crossbowman and beat
+ * the swordsman (+175, a crossbowman counter); with HP 42, pierce armour 0 and 30 food / 50 gold it
+ * scores +251 vs the crossbowman and loses to the swordsman (-360) and the scout (-491).
  */
 
 const UNIQUES = (Object.keys(UNIT_BALANCE) as UnitType[]).filter(isUniqueUnit) as UniqueUnitType[];
@@ -38,13 +42,12 @@ function counterPool(age: number, base: BaseUnitType): BaseUnitType[] {
 }
 
 describe('unique units in equal-cost duels', () => {
-  it('there are eight unique units', () => {
-    expect(UNIQUES).toHaveLength(8);
+  it('there are ten unique units', () => {
+    expect(UNIQUES).toHaveLength(10);
   });
 
   for (const u of UNIQUES) {
     const b = baseOf(u);
-
     it(`(a) ${u} stays within half the budget of ${b}`, () => {
       const score = fairDuel(u, b);
       expect(Math.abs(score), `${u} vs ${b}: ${Math.round(score)}`).toBeLessThanOrEqual(0.5 * DUEL_BUDGET);

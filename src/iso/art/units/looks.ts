@@ -6,6 +6,8 @@ import { FRENCH_LOOKS } from './french/frenchLooks';
 import { GERMAN_LOOKS } from './german/germanLooks';
 import { HUNGARIAN_LOOKS } from './hungarian/hungarianLooks';
 import { ITALIAN_LOOKS } from './italian/italianLooks';
+import { OTTOMAN_LOOKS } from './ottoman/ottomanLooks';
+import { POLISH_LOOKS } from './polish/polishLooks';
 import { RUSSIAN_LOOKS } from './russian/russianLooks';
 import { SPANISH_LOOKS } from './spanish/spanishLooks';
 import type { HorseLook } from './horse';
@@ -209,6 +211,8 @@ export const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record
   italian: ITALIAN_LOOKS,
   russian: RUSSIAN_LOOKS,
   finnish: FINNISH_LOOKS,
+  polish: POLISH_LOOKS,
+  ottoman: OTTOMAN_LOOKS,
 };
 
 /** The look a civ's units of a type wear: that of the type whose sheet draws it (civ registry unitLook → override, else the look of its base slot). */

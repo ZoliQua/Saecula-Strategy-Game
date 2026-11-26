@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../../map/random';
-import { createHeadlessMatch } from '../testing/headlessMatch';
+import { classicCivs, createHeadlessMatch } from '../testing/headlessMatch';
 import { EasyStrategy } from './EasyStrategy';
 import { HardStrategy } from './HardStrategy';
 import { MediumStrategy } from './MediumStrategy';
@@ -36,6 +36,8 @@ const SIM_TIMEOUT_MS = 60_000;
  * no human foundry is left, with 4, 6 and 13 the human slot has no cannon, with 10 Hard has
  * none), so RNG 5, which also passed in the 0.9.2 sweep, replaces 7.
  * Medium and Hard alone are pinned to a cannon count below.
+ * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs)
+ * (with the nine-civ pool no cannonball flew in time); the RNGs above are unchanged.
  */
 describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Hard AI', () => {
   it('both reach age 3, fight with age-3 armies, and the world stays within the 500-entity budget', () => {
@@ -44,6 +46,7 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
       seed: 3,
       size: 96,
       aiCount: 2,
+      civs: classicCivs(3, 2),
       strategy: (id) => (id === 2 ? new HardStrategy(createRng(10)) : new EasyStrategy(createRng(4))),
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
       // Hard and the human go for Easy first; Easy (3) fights back at Hard.
@@ -101,13 +104,15 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
  * spending all gold on cheaper units. Measured to 32 min: Medium 12 cannons
  * (first at 22.03 min), Hard 13 (first at 22.07); on seeds 2, 3 and 8 Medium
  * trains 11 / 9 / 13 and Hard 14 / 12 / 14.
+ * M21 Task 3: Polish joined the mixed pool, which reshuffles this draw (no Polish is drawn); the test keeps its pre-M21 civs (classicCivs):
+ * with the nine-civ pool Medium paid for only 2 cannons by 26 min.
  */
 describe.each([
   ['medium', (seed: number) => new MediumStrategy(createRng(977 * 2 + seed))],
   ['hard', (seed: number) => new HardStrategy(createRng(seed * 31 + 2))],
 ] as const)('%s AI alone in the Enlightenment (64×64, seed 1)', (difficulty, make) => {
   it('pays for at least 3 cannons from mined gold by 26 min', () => {
-    const match = createHeadlessMatch({ seed: 1, size: 64, aiCount: 1, strategy: () => make(1), difficulty: () => difficulty });
+    const match = createHeadlessMatch({ seed: 1, size: 64, aiCount: 1, civs: classicCivs(1, 1), strategy: () => make(1), difficulty: () => difficulty });
     const cannons = new Set<number>();
     match.run(26 * MIN, 100, () => {
       for (const e of match.world.entities) if (e.unit?.unitType === 'cannon' && e.owner?.playerId === 2 && e.id !== undefined) cannons.add(e.id);

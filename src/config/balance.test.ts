@@ -13,8 +13,8 @@ import type { UnitType } from '../types';
 describe('unique unit rows', () => {
   const uniques = (Object.keys(UNIT_BALANCE) as UnitType[]).filter(isUniqueUnit);
 
-  it('has the 8 unique rows', () => {
-    expect(uniques).toHaveLength(8);
+  it('has the 10 unique rows', () => {
+    expect(uniques).toHaveLength(10);
   });
 
   it("unique unit belongs to its base unit's classes", () => {

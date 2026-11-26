@@ -1,6 +1,6 @@
 import { applyMissionStart } from '../../campaign/missionStart';
 import { missionSetup, type ScenarioId } from '../../campaign/missions';
-import { DEFAULT_CIV } from '../../config/civs';
+import { CLASSIC_CIVS, DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
@@ -155,6 +155,16 @@ function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
 function victoryOf(wonder: boolean, time: boolean): GameSetupConfig['victory'] {
   if (wonder && time) return 'all';
   return wonder ? 'conquest_wonder' : time ? 'conquest_time' : 'conquest';
+}
+
+/**
+ * The line-up a default headless skirmish of `seed` with `aiCount` AIs
+ * drew before M21 (the mixed draw from the eight classic civs). Simulation
+ * tests whose measurements are not about the civ mix pass it as `civs`,
+ * so the larger pool (Polish, later Ottoman) does not move their draw.
+ */
+export function classicCivs(seed: number, aiCount: number): { human: CivId; ais: CivId[] } {
+  return matchCivs({ ...defaultSetupConfig(seed), aiCount }, CLASSIC_CIVS);
 }
 
 /**

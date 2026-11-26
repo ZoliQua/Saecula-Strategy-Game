@@ -106,6 +106,15 @@ const GRAZED_CEILINGS: Readonly<Record<string, number>> = {
   'russian wonder@2': 2,
   'russian foundry@3': 1,
   'russian wonder@3': 2,
+  // M21 Polish: the medieval barracks' first upper light behind its corner tower, the shared foundry's front light behind its furnace.
+  'polish barracks@1': 1,
+  'polish foundry@1': 1,
+  'polish foundry@2': 1,
+  'polish foundry@3': 1,
+  // M21 Ottoman: the shared foundry's front light behind its furnace, in every age.
+  'ottoman foundry@1': 1,
+  'ottoman foundry@2': 1,
+  'ottoman foundry@3': 1,
 };
 
 let buildings: typeof import('./buildings');

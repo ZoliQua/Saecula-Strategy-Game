@@ -23,7 +23,7 @@ egyszerűbb scope-pal.
 
 - Egyjátékos mód AI ellenfelekkel (max 6 játékos: 1 ember + 5 AI).
 - 3 történelmi kor, amelyek között a játékos fejlődhet.
-- 8 nép, mindegyik vizuálisan megkülönböztethető építészettel.
+- 10 nép (az M21-ig 8), mindegyik vizuálisan megkülönböztethető építészettel.
 - Alapvető RTS hurok: nyersanyaggyűjtés → építés → egységek képzése →
   harc → győzelem.
 - Böngészőben, telepítés nélkül játszható.
@@ -169,7 +169,7 @@ válnak elérhetővé.
 
 ### 4.2 Népek (nations)
 
-Nyolc nép, mindegyiknek **saját építészeti stílusa**:
+Tíz nép (az M21-ig nyolc), mindegyiknek **saját építészeti stílusa**:
 
 | Nép | Angol név | Építészeti karakter |
 |---|---|---|
@@ -181,10 +181,12 @@ Nyolc nép, mindegyiknek **saját építészeti stílusa**:
 | Olasz | Italian | Reneszánsz, árkádok, terrakotta |
 | Orosz | Russian | Hagymakupolás, gerenda-ház, fenyő |
 | Finn | Finnish | Északi fa, tőzeges tető, zord |
+| Lengyel | Polish | Téglagótika, attikás reneszánsz (M21) |
+| Oszmán | Ottoman | Sávos fal, ólomkupolák, minaretek (M21) |
 
 **Minden nép minden kort megél** — azaz a magyar római kora és a magyar
-középkora különböző megjelenésű. Összesen tehát: **8 nép × 3 kor = 24
-egyedi architekturális készlet.**
+középkora különböző megjelenésű. Összesen tehát: **10 nép × 3 kor = 30
+egyedi architekturális készlet** (az M21-ig 8 × 3 = 24).
 
 ⚠️ **Art budget figyelmeztetés:** ez egyedül az épületekre ~240+ sprite.
 A MVP fázisban (lásd 9. szekció) csak 2 néppel és 1 korral indulunk.
@@ -1986,6 +1988,178 @@ csapatok, fegyverszünet, Királygyilkos, A domb ura) mutatják be.
   a 4. elérhető, az 5–6. zárolt, egy rövid küldetés pipával), az *Új partok*
   eligazítása, *A domb* indítása középkorban, dombbal és célpanellel,
   konzolhiba nélkül. A záró átnézés blokkoló hibát nem talált.
+
+### M21 — Két új nép: lengyel és oszmán
+Ág: `feat/M21-new-civs` (a `main`-ből, az M20 merge-e után). Változat:
+kiadatlan (az 1.0.0 utáni MINOR kiadásba kerül). Az indítást a tulajdonos
+2026-11-24-én jóváhagyta („Folytasd. Jóváhagyom.”, az M20 utáni „új népek”
+lépésre); a népek kiválasztása és minden részlet Claude döntése, a tulajdonos
+felülírhatja. Az 1.1 („8 nép”) és a 4.2 ennyiben módosul: **10 nép**. A
+meccsenkénti legfeljebb 6 nép (1.1) nem változik.
+- **Miért ez a kettő** (Claude döntése): mindkettő a játék korszakaiban
+  (4.1) meghatározó európai hatalom, a magyar néppel közös történelemmel, és
+  sziluettben új építészetet hoz (a lengyel attikás reneszánsz, az oszmán
+  ólomkupolák és minaretek), amely egyik meglévő néphez sem hasonlít.
+- **Lengyel (`polish`, Lengyel):**
+  - címer: fehér sas vörös mezőben (fehér, vörös, arany; töltet `white_eagle`);
+  - építészet: 1. kor `biskupin` (a biskupini cölöpös erődtelep: sorházak
+    nádtetővel, deszkautcák, faláda-sánc kapuval; jel: hosszú, sorolt nádtetős
+    házsorok — a finn tőzegtetőtől és az orosz meredek deszkatetőtől eltérő);
+    2. kor `krakow_gothic` (krakkói téglagótika fehér kő díszítéssel, meredek
+    tetők, a városháza a Mária-templom két egyenlőtlen tornyával, az egyik
+    koronás sisakkal; jel: egyenlőtlen ikertorony, lépcsős oromzat nélkül — a
+    német `backstein`-től eltérő); 3. kor `polish_attic` (lengyel reneszánsz:
+    a tetőt eltakaró, oromdíszes attika-pártázat, színes, árkádos zamośći
+    házak; jel: lapos hatású, csipkés attika-tetővonal);
+  - Csoda: **Wawel** (dombi vár árkádos reneszánsz udvarral, a székesegyház
+    aranykupolás kápolnájával és óratoronnyal);
+  - falak: `box_rampart` (földdel töltött faláda-sánc) / `barbican_curtain`
+    (téglafal a krakkói barbakán sok kis tornyocskás kerek tornyaival) /
+    `zamosc_bastion` (csillagerőd-készlet téglából, földhányással);
+  - egységek: vörös–fehér–arany; jelek: 1. kor kerek szláv pajzs és
+    kúpos sisak, 2. kor kapaláncsisak (kettle hat) a lándzsáson és a
+    számszeríjászon, 3. kor szárnyas huszár szárnyai (hátsó tárgy) és
+    karabély-sisak;
+  - egyedi egység: **Szárnyas huszár (`winged_hussar`)**, a `cavalry`-t
+    váltja le (3. kor, istálló): rohamozó lovas — nagyobb támadás és
+    sebesség, kisebb páncél, mint a spanyol konkvisztádoré;
+  - népbónusz: falusiak +10 % sebesség (`villagerSpeed`, a talicskával
+    szorzódik);
+  - egyedi épület: **Wieliczkai sóbánya** (aknatorony lóvontatta
+    járgánnyal, sóhordók): percenként aranyat termel (`mint`, mint a
+    spanyol Pénzverde).
+- **Oszmán (`ottoman`, Oszmán):**
+  - címer: fehér félhold és csillag vörös mezőben (vörös, fehér, zöld;
+    töltet `crescent`);
+  - építészet: 1. kor `byzantine` (kis-ázsiai római–bizánci: tégla- és
+    kősávos falak (opus mixtum), alacsony kupolák a csarnokokon, lapos
+    cseréptetők; jel: sávos fal és lapos kupola); 2. kor `seljuk` (szeldzsuk:
+    faragott kő, magas, díszes kapuzat (pistak), kúpos tetejű sírtornyok
+    (kümbet), karavánszeráj-udvar; jel: kúpos kümbet-tetők és kiugró
+    kapuzat); 3. kor `osmanli` (klasszikus oszmán: lépcsőzetes ólomkupolák,
+    a városházán ceruza-minaret, a házak kiugró emeletes (cumba), széles
+    ereszű, alacsony kontytetős favázas házak; jel: széles eresz, ólomkupola,
+    minaret);
+  - Csoda: **Szulejmán-mecset** (lépcsőzetes kupolák, négy ceruza-minaret,
+    árkádos előudvar);
+  - falak: `opus_mixtum` (a theodosiusi falak mintájára: sávos fal szögletes
+    tornyokkal) / `rumeli` (a Rumelihisarı mintájára: kőfal nagy kerek
+    tornyokkal, ólom kúpsüveggel) / `ottoman_bastion` (csillagerőd-készlet
+    faragott kőből);
+  - egységek: vörös–zöld–fehér; jelek: 1. kor ovális pajzs és
+    taréjos sisak, 2. kor turbánnal tekert csúcsos sisak (lovag,
+    lándzsás), 3. kor janicsár-börk (magas fehér nemezsüveg) a muskétáson;
+  - egyedi egység: **Janicsár (`janissary`)**, a `crossbowman`-t váltja le
+    (2. kor, lőtér): elit íjász — több életerő és támadás, a hosszúíjásznál
+    rövidebb lőtáv, aranyba kerül (a nyíl-egység osztályába tartozik);
+  - népbónusz: a laktanya, a lőtér és az istálló 10 %-kal gyorsabban képez
+    (a tervezett 15 % a körmérkőzésen túl erősnek bizonyult, lásd Állapot)
+    (`trainSpeed`, a Sorozással szorzódik);
+  - egyedi épület: **Hamam** (kupolás fürdő üvegszemes kupolákkal): a
+    közelében álló saját egységeket gyógyítja (`sauna`, mint a finn Szauna).
+- **Új mechanika nincs:** minden hatás-fajta (`villagerSpeed`, `trainSpeed`,
+  `mint`, `sauna`) és minden épület- és egységtípus a meglévő; a két új
+  egyedi egység az M8 leváltási szabálya szerint működik (egy alap egység lapját
+  váltja, újat nem ad: a népenkénti egységlapok száma nem nő). A kikötő, a kolostor, a piac és a
+  hajótest a nép stílusának palettájából jön (meglévő közös festők); a király
+  a nép lovag-lapját használja (M19).
+- **Új nép felvétele:** az M5 ellenőrzőlistája szerint (1–6. pont), a népek
+  saját mappáiban (`architecture/<nép>/`, `walls/<nép>/`, `units/<nép>/`),
+  rögzítő tesztekkel; a régi népek rögzítései változatlanok. Az egyedi épület
+  festője a nép architecture-mappájában (mint a `sauna.ts`).
+- **Vegyes népsorsolás** (Claude döntése): a skirmish „Vegyes” sorsolása mind
+  a 10 népből húz, így **ugyanaz a mag más AI-népeket adhat, mint az M20-ban**
+  (a térkép változatlan). A kampány küldetései a régi 8 népes készletből
+  húznak (`CLASSIC_CIVS`), így minden küldetés bitre ugyanaz marad. A betöltött
+  mentés népei a mentésből jönnek, nem a sorsolásból.
+- **UI:** a nép-választó 10 kártyája és az „Ellenfelek népe” 11 lehetősége
+  elfér 1280×720-on és 1400×900-on (a Start gomb látszik); a főmenü
+  jellemző-sora „10 nép”; a nép neve és egysoros leírása, az egyedi egység és
+  az egyedi épület neve és leírása a `hu.ts`-ben.
+- **Mentés:** `schemaVersion` 15, migrációval (a `CivId` és a `UnitType` enum
+  bővül; a régi mentés változatlanul betöltődik), valódi v14-es mentéssel.
+- **Egyensúly:** csak a két új nép számai (`balance.ts`) hangolhatók. Cél: a
+  0.9.1-es szárazföldi körmérkőzés (most 10 néppel: Nehéz magonként és
+  helyenként 9 ellenfél, 4 mag, népenként 72 meccs; Mesteri 2 mag, 36 meccs)
+  sávjai minden népre (Nehéz 40–60 %, Mesteri 35–65 %, egy meccs tűréssel); a
+  vízi körmérkőzésen (`BALANCE=water`) egy nép sem esik 25 % alá vagy 75 %
+  fölé. Az egyenlő költségű párviadal (`unitDuel`) szabályai a két új egyedi
+  egységre is. Ha egy régi nép az új ellenfelek miatt esik ki a sávból, azt
+  jelentjük, a tulajdonos dönt.
+- **Tesztek:** rajz-tesztek (minden épület, kor, Csoda-szakasz, egyedi épület,
+  fal, egység megfesthető, a vásznon belül, nincs takart ablakfény,
+  csapatszín látszik), az egységjel-szabály és a csapatszín-olvashatóság
+  (M5), rögzítő tesztek, a nép-felület tesztje (`civSurface.test.ts`), a
+  modifier-tesztek az új bónuszokra, az egyedi épületek hatása, mentés
+  oda-vissza és v14 → v15 migráció, a kampány küldetéseinek civ-sorsolása
+  változatlan, AI-szimuláció: mindkét új nép AI-ja képzi a saját egyedi
+  egységét és felépíti az egyedi épületét, eljut a 3. korba.
+- Nem része: új mechanika vagy hatás-fajta, népenként második egyedi egység
+  vagy épület, új kampány-küldetés az új népekkel, saját hajó- vagy
+  királygrafika, a régi népek számainak hangolása.
+- Keret (10.): szárazföldön ≤ 256 MB, tengeres térképen ≤ 400 MB textúra a
+  legrosszabb 6 népes esetben (a két új néppel újraszámolt `heavy6` és a
+  Királygyilkos `--trade` mérés is, amely az M19-ben 249,6 MB volt); népenként
+  legfeljebb ~1 s betöltési többlet; JS-bundle < 2 MB gzip. Ha egy mérés
+  túllép, előbb a nép grafikáján csökkentünk (rajzolási részletek, nem
+  felbontás), és jelentjük.
+- **Állapot (2026-12-12):** kész. Lengyel és oszmán nép (`available: true`)
+  saját építészettel (`biskupin`, `krakow_gothic`, `polish_attic`; `byzantine`,
+  `seljuk`, `osmanli`; közös készletek: `kits/leadDome.ts`, `kits/minaret.ts`),
+  Csodával (Wawel, Szulejmán-mecset), falakkal, egységviselettel, egyedi
+  egységgel (szárnyas huszár, janicsár) és egyedi épülettel (sóbánya, hamam);
+  `schemaVersion` 15 valódi v14-mentéssel; a skirmish „Vegyes” sorsolása 10
+  népből húz, a kampány a `CLASSIC_CIVS`-ből (a 10 küldetés sorsolása és a régi
+  népek meccsei bitre azonosak, a záró átnézés ellenőrizte). Hangolás (Claude
+  döntése a mérés után): janicsár életerő 45 → 42, szúróvédelem 1 → 0, ár
+  30 étel / 45 arany → 30 / 50; az oszmán képzési bónusz 15 → **10 %** (15 %-kal
+  az oszmán Nehéz szinten 47/72 volt); a szárnyas huszár és a lengyel bónusz
+  változatlan. Párviadal (22/22): janicsár–számszeríjász +251, a kardforgatótól
+  (−360) és a felderítőtől (−491) kikap; szárnyas huszár–könnyűlovas −28.
+  Körmérkőzés (10 nép):
+
+  | Nép | Nehéz /72 | Mesteri /36 | Beltenger /36 |
+  |---|---|---|---|
+  | magyar | 42 | 13,5 | 22 |
+  | angol | 34 | 17,5 | 23 |
+  | német | 32,5 | 20,5 | 18,5 |
+  | francia | 33 | 20,5 | 17 |
+  | spanyol | 34 | 20 | 17 |
+  | olasz | 39 | 16,5 | 13,5 |
+  | orosz | 40,5 | 18 | 20 |
+  | finn | 34 | 20,5 | 17 |
+  | lengyel | 37,5 | 17 | 10 (28 %) |
+  | oszmán | 33,5 | 16 | 22 |
+
+  Mind sávon belül (Nehéz 27,8–44,2, Mesteri 11,6–24,4, vízen 25–75 %);
+  szélhez közel: a magyar Nehéz 42 és a lengyel vízi 28 %. Döntetlen 6 / 9 / 5;
+  futásidő kb. 15, 10 és 21 perc. Szimuláció (`newCivs.sim.test.ts`): a lengyel
+  AI (2. mag) 19,3 percnél 3. kor, 21,6 percnél sóbánya, 23,2 percnél első
+  szárnyas huszár; az oszmán (5. mag) 12,2 percnél első janicsár, 18,7 percnél
+  3. kor, 21,7 percnél hamam. A keverék-érzékeny szimulációk (Mesteri, Nehéz
+  korverseny) a `classicCivs` segéddel a régi népeken futnak. Mérve (1280×720,
+  swiftshader): `distinct6` 164,8–166,8 MB; Királygyilkos `distinct6 --trade`
+  (Szigetek) a legnehezebb népsorral (magyar, angol, lengyel, francia, orosz,
+  német) **258,0 MB** a 0,65-ös nagyításon, **2 MB-tal a 256 MB-os keret
+  fölött**; ugyanez csak régi népekkel (a lengyel helyett spanyol) 255,5 MB, a
+  népek grafikája a kettőben 220,7, illetve 220,2 MB — a túllépés a terep-
+  gyorsítótár 0,65-ös ingadozása egy már az M21 előtt is a keret szélén álló
+  esetben (az M19 egy könnyebb népsort mért: 249,6 MB). **Tulajdonosi döntés
+  (2026-11-26): elfogadva**, ismert szélső esetként, a keret nem változik.
+  `naval6 --ships --trade` 396,5 MB ≤ 400 MB (M19: 392,8); JS-bundle 0,82 MB gzip
+  (M19: 0,78). Betöltés (kicsi Mezőség, magyar ember és egy AI, friss fej nélküli
+  Chrome GPU-val, 3 futás mediánja): magyar AI-val 0,72 s, finn 0,97, lengyel
+  0,95, oszmán 0,95 s — egy új nép +0,22–0,23 s, mint a régieké. Böngésző-smoke
+  (5196, fej nélküli Chrome): a beállítóképernyő 10 népkártyája 1280×720-on és
+  1400×900-on; lengyelként ház, 3. kor, szárnyas huszár az istállóban (könnyűlovas
+  nem), sóbánya (29 arany/perc); oszmánként janicsár a lőtéren (számszeríjász
+  nem), hamam gyógyít; egy régi mentés importja betölt; `smoke:input` 5/5;
+  konzolhiba nélkül. Ismert grafikai gyengeségek: a lengyel és az oszmán 3. kori
+  bástya főleg anyagában tér el a közös csillagerődtől, az oszmán 1–2. kori
+  műhelyek átszínezett körvonalak, a Rumeli-tornyok a „kerek torony + kúp”
+  családba tartoznak (ezüstös kúppal). A záró átnézés (Ready with fixes, 5 apró
+  megjegyzés) javításai a `947f0ba`-ban; a Királygyilkos-szimuláció pontos
+  egyezésre váró ellenőrzésének törékenysége M21 utánra maradt.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét

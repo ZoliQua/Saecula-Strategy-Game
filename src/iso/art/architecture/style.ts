@@ -79,9 +79,10 @@ export interface RoofProfile {
    * forces that form; 'halfHip' turns the family's gables into half-hips
    * (Krüppelwalm, kits/halfHip.ts) and keeps its hips; 'pavilion' turns
    * every main roof (hips, gables, mansards) into a tall truncated hip
-   * with a leaded crest (kits/pavilionRoof.ts).
+   * with a leaded crest (kits/pavilionRoof.ts); 'attic' hides every main
+   * roof behind a crested Renaissance attic parapet (kits/atticParapet.ts).
    */
-  readonly form: 'native' | 'hip' | 'gable' | 'halfHip' | 'pavilion';
+  readonly form: 'native' | 'hip' | 'gable' | 'halfHip' | 'pavilion' | 'attic';
   /** Cover painted on main roofs; undefined keeps each painter's own material. */
   readonly material?: RoofMaterial;
 }
@@ -261,7 +262,19 @@ export type ArchFamily =
   /** Baroque layouts with onion domes, a palace-and-church town centre, an onion tower, a cannon yard and St Basil's as Wonder (Russian age 3). */
   | 'petrine'
   /** Nordic layouts: low log buildings under turf, shingle or gambrel roofs by age, a longhouse / granite castle / manor town centre, bell towers and the Petäjävesi church as Wonder (Finnish ages 1-3). */
-  | 'nordic';
+  | 'nordic'
+  /** Medieval layouts under reed thatch with Biskupin's terraced row houses, box-rampart gate tower and crib tower (Polish age 1). */
+  | 'biskupin'
+  /** Medieval layouts in brick and plain tile with St Mary's uneven twin towers as town centre, a brick Gothic tower and town house (Polish age 2). */
+  | 'krakow'
+  /** Baroque layouts under crested attic parapets with arcaded Zamość houses, a Zamość town hall and Wawel as Wonder (Polish age 3). */
+  | 'zamosc'
+  /** Roman workplaces with banded opus mixtum halls under saucer domes, a domed church-hall town centre and a Theodosian tower (Ottoman age 1). */
+  | 'byzantine'
+  /** Medieval workplaces in honey ashlar with a caravanserai town centre, pishtaq portals and conical kümbet towers (Ottoman age 2). */
+  | 'seljuk'
+  /** Baroque layouts under wide-eaved low hips with a lead-domed mosque and pencil minaret, cumba houses, domed halls and the Süleymaniye (Ottoman age 3). */
+  | 'osmanli';
 
 /**
  * Families whose painters size their canvases from the style
@@ -269,7 +282,7 @@ export type ArchFamily =
  * civ styles ride. Bespoke families size their own canvases, so they
  * must fit whatever headroom a style sets (style.test.ts).
  */
-export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles', 'petrine'];
+export const PARAMETRIC_FAMILIES: readonly ArchFamily[] = ['roman', 'medieval', 'baroque', 'porta_nigra', 'maison_carree', 'gothic_fr', 'versailles', 'petrine', 'biskupin', 'krakow', 'zamosc', 'byzantine', 'seljuk', 'osmanli'];
 
 export interface ArchStyle {
   readonly id: ArchStyleId;

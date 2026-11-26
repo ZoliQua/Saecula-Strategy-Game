@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CIV_DEFS, CIV_IDS } from '../../config/civs';
+import { AVAILABLE_CIVS, CIV_DEFS, CIV_IDS } from '../../config/civs';
 import { WALL_E, WALL_W } from '../../game/wallNeighbours';
 import type { AgeId } from '../../types';
 import { PIN_TEAM, PINNED_BUILDING_TYPES } from './testing/pinnedArt.testkit';
@@ -22,7 +22,8 @@ const drawCalls = (canvas: HTMLCanvasElement): number => (canvas as unknown as R
 
 describe('all civs', () => {
   it('are all available', () => {
-    expect(CIV_IDS.length).toBe(8);
+    expect(AVAILABLE_CIVS).toEqual(CIV_IDS);
+    expect(AVAILABLE_CIVS.length).toBe(10);
     for (const civ of CIV_IDS) expect(CIV_DEFS[civ].available, civ).toBe(true);
   });
 

@@ -34,7 +34,13 @@ export type ArchStyleId =
   | 'petrine'
   | 'finnic'
   | 'greystone'
-  | 'gustavian';
+  | 'gustavian'
+  | 'biskupin'
+  | 'krakow_gothic'
+  | 'polish_attic'
+  | 'byzantine'
+  | 'seljuk'
+  | 'osmanli';
 /** Wall painter style (art/walls/wallStyles.ts). */
 export type WallStyleId =
   | 'palisade'
@@ -60,9 +66,15 @@ export type WallStyleId =
   | 'kremlin'
   | 'hillfort'
   | 'granite_curtain'
-  | 'granite_bastion';
+  | 'granite_bastion'
+  | 'box_rampart'
+  | 'barbican_curtain'
+  | 'zamosc_bastion'
+  | 'opus_mixtum'
+  | 'rumeli'
+  | 'ottoman_bastion';
 /** Unit palette / heraldry look (art/units). */
-export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish';
+export type UnitLookId = 'hungarian' | 'english' | 'german' | 'french' | 'spanish' | 'italian' | 'russian' | 'finnish' | 'polish' | 'ottoman';
 
 /** Heraldic colours (banners, shields, liveries), 0xRRGGBB. */
 export interface Heraldry {
@@ -106,7 +118,15 @@ export const CIV_IDS: readonly CivId[] = [
   'italian',
   'russian',
   'finnish',
+  'polish',
+  'ottoman',
 ];
+
+/**
+ * The eight civs before M21. Campaign missions draw their mixed AI civs
+ * from this pool, so every mission's line-up stays what it was.
+ */
+export const CLASSIC_CIVS: readonly CivId[] = CIV_IDS.slice(0, 8);
 
 /** Fallback civ: setup default and any missing civ lookup. */
 export const DEFAULT_CIV: CivId = 'hungarian';
@@ -203,6 +223,28 @@ export const CIV_DEFS: Readonly<Record<CivId, CivDef>> = {
     heraldry: { primary: 0xf2efe6, secondary: 0x1f4f9a, accent: 0x7d8a96 },
     uniqueUnit: 'sissi',
     bonus: { kind: 'infantrySpeed', bonus: CIV_BONUS.infantrySpeed },
+    landmark: { kind: 'sauna' },
+  },
+  // White eagle on red: red, white, gold. Biskupin / Kraków Gothic / Polish attic buildings; box rampart, barbican curtain with turret-crowned towers and a brick Zamość bastion trace; Polish unit liveries.
+  polish: {
+    available: true,
+    architecture: { 1: 'biskupin', 2: 'krakow_gothic', 3: 'polish_attic' },
+    wallStyle: { 1: 'box_rampart', 2: 'barbican_curtain', 3: 'zamosc_bastion' },
+    unitLook: 'polish',
+    heraldry: { primary: 0xdc143c, secondary: 0xf2efe6, accent: 0xd4a017 },
+    uniqueUnit: 'winged_hussar',
+    bonus: { kind: 'villagerSpeed', bonus: CIV_BONUS.villagerSpeed },
+    landmark: { kind: 'mint' },
+  },
+  // White crescent and star on red: red, white, green. Byzantine / Seljuk / Osmanlı buildings; the Theodosian opus mixtum wall, Rumelihisarı round towers under lead cones and an ashlar bastion trace; Ottoman unit liveries.
+  ottoman: {
+    available: true,
+    architecture: { 1: 'byzantine', 2: 'seljuk', 3: 'osmanli' },
+    wallStyle: { 1: 'opus_mixtum', 2: 'rumeli', 3: 'ottoman_bastion' },
+    unitLook: 'ottoman',
+    heraldry: { primary: 0xc8102e, secondary: 0xf2efe6, accent: 0x1f7a3a },
+    uniqueUnit: 'janissary',
+    bonus: { kind: 'trainSpeed', bonus: CIV_BONUS.trainSpeed },
     landmark: { kind: 'sauna' },
   },
 };

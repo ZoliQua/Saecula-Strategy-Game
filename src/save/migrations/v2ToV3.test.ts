@@ -10,7 +10,7 @@ import v2Save from './fixtures/v2-m7.json';
 import { migrate } from './index';
 import { v2ToV3 } from './v2ToV3';
 
-const UNIQUE_UNIT_TYPES: readonly UniqueUnitType[] = ['hussar', 'longbowman', 'landsknecht', 'mousquetaire', 'conquistador', 'legionary', 'cossack', 'sissi'];
+const UNIQUE_UNIT_TYPES: readonly UniqueUnitType[] = ['hussar', 'longbowman', 'landsknecht', 'mousquetaire', 'conquistador', 'legionary', 'cossack', 'sissi', 'winged_hussar', 'janissary'];
 
 /*
  * fixtures/v2-m7.json: a real M7 (schema v2) save, written by the M7
@@ -58,7 +58,7 @@ describe('v2 → v3 migration', () => {
     match.run(5_000, STEP_MS); // fog of war is computed on the first steps
     UNIQUE_UNIT_TYPES.forEach((type, i) => createUnit(match.world, { type, tile: { tx: 4 + i, ty: 4 }, playerId: 1 }));
     const s = match.snapshot(FIXED_DATE);
-    expect(s.entities.filter((e) => e.components.unit && (UNIQUE_UNIT_TYPES as readonly string[]).includes(e.components.unit.unitType))).toHaveLength(8);
+    expect(s.entities.filter((e) => e.components.unit && (UNIQUE_UNIT_TYPES as readonly string[]).includes(e.components.unit.unitType))).toHaveLength(UNIQUE_UNIT_TYPES.length);
     const parsed = parseSave(JSON.stringify(s));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;

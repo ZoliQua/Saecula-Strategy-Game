@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CIV_DEFS } from '../../config/civs';
+import { CIV_DEFS, CIV_IDS } from '../../config/civs';
 import type { AgeId, CivId } from '../../types';
 import { occludedGlows } from './testing/occludedGlows.testkit';
 import { PIN_TEAM } from './testing/pinnedArt.testkit';
@@ -31,7 +31,7 @@ describe('landmark art: Spanish, Italian, Russian, Finnish', () => {
   });
 
   it.each(CIVS)('%s: has its own painter, shared with no other civ', (civ) => {
-    const others = (Object.keys(registry.LANDMARK_ART) as CivId[]).filter((c) => c !== civ);
+    const others = CIV_IDS.filter((c) => c !== civ);
     for (const other of others) expect(registry.LANDMARK_ART[civ]).not.toBe(registry.LANDMARK_ART[other]);
   });
 
