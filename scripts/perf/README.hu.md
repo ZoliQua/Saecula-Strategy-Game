@@ -27,6 +27,16 @@ mapjével együtt szélesség × magasság × 4 bájtnak számít. A terep-darab
 külön is szerepelnek, azzal együtt, hogy hány van teljes, háromnegyedes és
 fél felbontásban a memóriában.
 
+A csúcsot a szkript a textúra-kerettel veti össze: szárazföldi térképen
+256 MB, tengeres térképen (ahol hajó építhető) 400 MB (CLAUDE.md 10.).
+`WITHIN` vagy `OVER` sort ír, túllépésnél 1-es kóddal lép ki. A vízi
+legrosszabb esethez a `--ships` előbb minden játékosnak ad egy-egy hajót
+minden típusból, így minden nép hajólapjai elkészülnek:
+
+```sh
+npm run perf:texmem -- --scenario naval6 --ships
+```
+
 ## Képkockaidő
 
 ```sh
@@ -42,13 +52,26 @@ futtat, hogy legyenek seregek.
 lassú, kevés a képkocka, ezért az ilyen méréseket csak egymással vesd
 össze, és `--warmup 0` vagy kis érték kell.
 
+## Elvesztett WebGL-kontextus
+
+```sh
+node scripts/perf/contextlost.mjs [--shot kartya.png]
+```
+
+Az 1.0-s biztosítékot ellenőrzi: elindít egy kis meccset, elveszíti a
+WebGL-kontextust (`WEBGL_lose_context`), és megnézi, hogy megjelenik-e a
+kártya, a meccs megáll és elmentődik-e, és az „Újratöltés és folytatás”
+ugyanazt a meccset tölti-e be. Ellenőrzésenként `PASS` / `FAIL` sort ír,
+hibánál 1-es kóddal lép ki.
+
 ## Kapcsolók
 
 | Kapcsoló | Jelentés |
 |---|---|
-| `--scenario` | `distinct6` (128×128 Szigetek, 6 játékos), `twoCiv` (96×96, magyar + angol), `medium4` (96×96, 4 játékos) |
+| `--scenario` | `distinct6` (128×128 Szigetek, 6 játékos), `twoCiv` (96×96, magyar + angol), `medium4` (96×96, 4 játékos), `naval6` (128×128 Szigetvilág, 6 Nehéz játékos) |
 | `--size` | Nézetméret, például `1728x963` |
 | `--url` | Már futó fejlesztői szerver használata, ahelyett hogy az 5199-es porton indítana egyet |
 | `--gpu` | A Chromium alapértelmezett GL-motorja |
+| `--ships` | csak a texmem: mérés előtt minden játékosnak egy-egy hajó minden típusból |
 
 Az eredmény JSON-ként a `scripts/perf/results/` alá kerül (a git figyelmen kívül hagyja).

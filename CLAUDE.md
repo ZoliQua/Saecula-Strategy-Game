@@ -1406,6 +1406,55 @@ gálya, fregatt).
   olasz +15 % építés csak az időzítést tolja el ezen a késélen. A nyitás az M15-be
   kerül.
 
+### 1.0 előkészítés — teljesítmény, mentések, biztosíték
+Ág: `chore/1.0-prep` (a `main`-ből, a 0.9.2 után). Változat: nem változik (a
+kiadásról a tulajdonos dönt). A 0.9.2 utáni terv 1.0-s pontja: teljesítmény
+újramérése hajókkal, mentés-kompatibilitás az 1–9. sémára, kiadási feltételek.
+- **Újramérés:** a `scripts/perf/` új forgatókönyve a `naval6` (128×128
+  Szigetvilág, 6 Nehéz játékos, vegyes népek); a `texmem.mjs --ships` mérés
+  előtt minden játékosnak egy-egy hajót ad minden típusból, így minden nép
+  hajólapjai elkészülnek (a vízi legrosszabb eset, amit az M14 nem mért).
+- **Mérés (2026-11-09):** `naval6 --ships` csúcs **351,5 MB** (hajók nélkül
+  155,7 MB; egy nép négy hajólapja kb. 36 MB); legfeljebb **566 entitás**
+  (6 játékos, Szigetvilág, 21. perc; Beltengeren 354, réten 292–329).
+- **Tulajdonosi döntés (2026-11-13):** a textúra-keret szárazföldi térképen
+  marad **256 MB**, tengeres térképen (Beltenger, Szigetvilág, tengeres
+  Véletlen: ahol hajó építhető) **400 MB** (10.). A hajólapok változatlanok
+  (képkocka- és felbontás-vágás nem kell). A `texmem.mjs` a térkép szerinti
+  kerethez méri a csúcsot (`WITHIN` / `OVER`, túllépésnél 1-es kilépési kód).
+- **Biztosíték (elvesztett WebGL-kontextus):** ha a böngésző visszaveszi a
+  grafikus memóriát (`webglcontextlost`), a játék nem fagy le némán: a futó,
+  el nem dőlt meccs megáll és az automatikus mentés helyére (`save:auto`)
+  mentődik (a játékállapot az ECS-ben van, nem a GPU-n), egy magyar kártya
+  elmondja, mi történt, és az „Újratöltés és folytatás” gomb újratölti az
+  oldalt; a főmenü egyszer (`sessionStorage`, `isorts.resume.v1`) betölti az
+  automatikus mentést. Sikertelen mentésnél a régebbi automatikus mentést
+  kínálja; meccsen kívül csak újratöltést. Kód: `src/scenes/game/contextGuard.ts`,
+  `src/save/resumeRequest.ts`, `src/ui/screens/ContextLost.ts`; böngészős
+  ellenőrzés: `scripts/perf/contextlost.mjs`.
+- **Mentés-kompatibilitás:** a `src/save/migrations/allVersions.test.ts` minden
+  séma (1–8. rögzített mentés és egy friss 9-es) mentését betölti, két
+  játékpercet futtatja, és újra elmenti.
+- **Nyitott tulajdonosi döntés:** az entitás-keret (500) 6 játékos
+  Szigetvilágon túllépve (566); a népesség-korlát játékosonként 200.
+- Nem része: új funkció, a mentési séma változása (`schemaVersion` 9 marad),
+  az entitás-keret javítása (döntésre vár), a kiadási feltételek (külön
+  javaslat a tulajdonosnak).
+- **Állapot (2026-11-16):** kész. Mérve (1280×720, swiftshader):
+  `naval6 --ships` csúcs 351,5 MB a 0,65-ös nagyításon — a vízi kereten
+  (400 MB) belül; `distinct6` (Szigetek, szárazföldi) 179,4 MB — a 256 MB-on
+  belül. Képkocka-CPU (`medium4`, fej nélküli Chrome GPU-val): p95 6,6 ms,
+  átlag 2,5 ms, de csak 46 képkocka 1 játékperc után — a fej nélküli böngésző
+  kb. 5 képkockát rajzol másodpercenként, így a 10 perces bemelegítés órákig
+  tartana; a 60 FPS-es mérés valódi böngészőablakban az 1.0 kiadási feltételei
+  között van. JS-bundle 0,75 MB gzip. A teljes tesztcsomag zöld (3065 teszt).
+  Böngészős ellenőrzés (`contextlost.mjs`, 9/9 PASS): nyitott szünet menü
+  mellett elvesztett kontextus, a kártya alatt az Esc nem indítja újra a
+  meccset, a betöltés közbeni második elvesztés után is ugyanaz a meccs
+  folytatódik. A független kódáttekintés két hibát talált (a szünet menü
+  billentyűi a kártya alatt; a betöltés közbeni elvesztés elejtette a
+  folytatást), és egy apróságot a javítás után; mind javítva.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét
@@ -1423,6 +1472,11 @@ Browser RTS nehéz. Tartsuk be:
 
 - **Max entitás szám** egyszerre: 500 (tesztelve: ~200 már kényelmes,
   300 felett érdemes profilozni)
+- **Textúra-memória** (csak textúrák, WebGL framebufferek nélkül, 1280×720-as
+  nézet, `scripts/perf/texmem.mjs`): szárazföldi térképen ≤ 256 MB, tengeres
+  térképen (ahol hajó építhető) ≤ 400 MB (tulajdonosi döntés, 2026-11-13).
+  Elvesztett WebGL-kontextusnál a meccs elmentődik és folytatható (1.0
+  előkészítés).
 - **Rajzolt csempe** egyszerre: csak a kamera által látható (viewport
   culling kötelező)
 - **Pathfinding hívás** max: 5 / frame (queue-ba tesszük a többit)
@@ -1513,4 +1567,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-08. Zoli projekt — Saecula, v0.9.2.*
+*Utolsó frissítés: 2026-11-15. Zoli projekt — Saecula, v0.9.2.*

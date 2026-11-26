@@ -17,6 +17,8 @@ export const SCENARIOS = {
   twoCiv: { template: 'meadow', mapSize: 'medium', aiCount: 3, civ: 'hungarian', aiCivs: 'english', seed: 4242, difficulty: 'easy', victory: 'conquest_wonder' },
   /** The frame-rate target (CLAUDE.md §10): 96×96, 4 players. */
   medium4: { template: 'meadow', mapSize: 'medium', aiCount: 3, civ: 'hungarian', aiCivs: 'mixed', seed: 4242, difficulty: 'hard', victory: 'conquest_wonder' },
+  /** The naval worst case (M14): 128×128 Archipelago, 6 Hard players; texmem --ships gives every civ its ship sheets, frametime --warmup 20 reaches the entity peak. */
+  naval6: { template: 'archipelago', mapSize: 'large', aiCount: 5, civ: 'hungarian', aiCivs: 'mixed', seed: 4242, difficulty: 'hard', victory: 'all' },
 };
 
 /** `--name value` / `--flag` arguments. */
@@ -95,6 +97,58 @@ export async function startMatch(page, url, setup) {
     { timeout: 300_000 },
   );
   return Date.now() - t0;
+}
+
+/**
+ * Gives every player one ship of each naval type on the sea nearest its town
+ * centre, so every civ's ship sheets are painted and stay resident (an AI
+ * civ's ships are painted on demand, M14). Returns the civs in the match.
+ */
+export async function spawnShips(page) {
+  return page.evaluate(async () => {
+    const { createUnit } = await import('/src/ecs/archetypes/createUnit.ts');
+    const { isSea } = await import('/src/map/TerrainTypes.ts');
+    const sc = window.__game.scene.getScene('GameScene');
+    const map = sc.mapData;
+    const taken = new Set();
+    const civs = [];
+    for (const p of sc.players.all()) {
+      civs.push(p.civ);
+      const tc = sc.world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === p.id);
+      if (!tc) continue;
+      let placed = 0;
+      for (let r = 1; r < 40 && placed < 4; r++) {
+        for (let dy = -r; dy <= r && placed < 4; dy++) {
+          for (let dx = -r; dx <= r && placed < 4; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+            const tx = tc.position.tx + dx;
+            const ty = tc.position.ty + dy;
+            if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height || taken.has(`${tx},${ty}`) || !isSea(map.getTile(tx, ty))) continue;
+            taken.add(`${tx},${ty}`);
+            createUnit(sc.world, { type: ['fishing_boat', 'transport', 'galley', 'frigate'][placed], tile: { tx, ty }, playerId: p.id });
+            placed++;
+          }
+        }
+      }
+    }
+    return civs;
+  });
+}
+
+/**
+ * The texture budget (CLAUDE.md §10, MB; textures only): 256 on a land map,
+ * 400 on a map with sea, where ships can be built (1.0 decision, 2026-11-13).
+ */
+export const TEXTURE_BUDGET_MB = { land: 256, water: 400 };
+
+/** Whether the running match's map has sea (any water or fish tile): its texture budget is the water one. */
+export async function hasSea(page) {
+  return page.evaluate(async () => {
+    const { isSea } = await import('/src/map/TerrainTypes.ts');
+    const map = window.__game.scene.getScene('GameScene').mapData;
+    for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) if (isSea(map.getTile(tx, ty))) return true;
+    return false;
+  });
 }
 
 /** Centres the camera on a map fraction (fx, fy) at `zoom`. */
