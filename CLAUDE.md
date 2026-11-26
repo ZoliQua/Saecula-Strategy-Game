@@ -1392,8 +1392,19 @@ gálya, fregatt).
   2/28-at: a gyanú az AI vízi térképes játéka (hajók, nyitás). A réten erős a
   helyhatás (az olasz AI-helyről 13/14, emberi helyről 2/14), a Beltengeren
   mindkét helyről kikap. Az orosz 68 % / 34 % kilengése két maggal térkép- és
-  mintazaj. **Nyitott tulajdonosi döntés:** az olasz 2/28 a Beltengeren; az orosz
-  68 %-át zajnak olvassuk. A `balance.ts` nem változott.
+  mintazaj. A `balance.ts` nem változott.
+  **Az olasz 2/28 kivizsgálása (2026-11-09):** zaj, korrelált mintákkal, nem olasz
+  hiba. Egy nép egy magon és helyen szinte ugyanazt a meccset játssza mind a hét
+  ellenfele ellen, így a 28 meccs csak kb. 4 független minta. Négy új magon
+  (11, 19, 23, 29; népenként 56 meccs) az olasz 21/56 (38 %), és az angol lóg ki
+  (42,5/56, 76 %). Páros mérés (olasz és francia ugyanabban a helyzetben, német és
+  spanyol ellenféllel, 31–70. mag, mindkét hely, népenként 160 meccs): olasz
+  81,5/160 (51 %), francia 73/160 (46 %). A valódi ok a Nehéz AI vízi nyitása: a
+  két nyitó portya mindkét gazdaságot letarolja, és az nyer, akinek addigra van
+  kikötője. A kikötő 10 falusit vár (`navy.minVillagers`), a portya előtti
+  visszatartás (`holdsVillagers`) viszont 9-nél megállítja a falusi-képzést; az
+  olasz +15 % építés csak az időzítést tolja el ezen a késélen. A nyitás az M15-be
+  kerül.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
