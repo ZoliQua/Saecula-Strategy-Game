@@ -1,6 +1,7 @@
 import { LANDMARK } from '../config/balance';
 import { landmarkOf } from '../config/civs';
 import type { Entity } from '../ecs/components';
+import { footprintCentre } from '../ecs/footprint';
 import type { EcsWorld } from '../ecs/world';
 import type { CivId } from '../types';
 
@@ -59,8 +60,7 @@ export function fortAttacker(): NonNullable<Entity['attacker']> {
  */
 export function shotOrigin(e: Required<Pick<Entity, 'position'>> & Entity): { tx: number; ty: number } {
   const fp = e.building?.footprint;
-  if (!fp || (fp.width === 1 && fp.height === 1)) return e.position;
-  return { tx: e.position.tx + (fp.width - 1) / 2, ty: e.position.ty + (fp.height - 1) / 2 };
+  return fp ? footprintCentre(e.position, fp) : e.position;
 }
 
 /** Chebyshev distance from `at` to the footprint at `origin` (0 on it). */

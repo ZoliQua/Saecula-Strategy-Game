@@ -21,3 +21,11 @@ export function onFootprintRing(v: TileCoord, origin: TileCoord, size: Footprint
     v.tx >= origin.tx - 1 && v.tx <= origin.tx + size.width && v.ty >= origin.ty - 1 && v.ty <= origin.ty + size.height;
   return inRing && !insideFootprint(v, origin, size);
 }
+
+/**
+ * The centre tile of the footprint at `origin` (its top tile): fractional
+ * for even sizes (a 2×2 at (4, 4) → (4.5, 4.5)), the middle tile for odd.
+ */
+export function footprintCentre(origin: TileCoord, size: FootprintSize): TileCoord {
+  return { tx: origin.tx + (size.width - 1) / 2, ty: origin.ty + (size.height - 1) / 2 };
+}

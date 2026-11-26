@@ -1,5 +1,6 @@
 import { LANDMARK, TOWER_ATTACK } from '../../config/balance';
 import { type TileCoord, chebyshev } from '../../iso/coordinates';
+import { footprintCentre } from '../../ecs/footprint';
 import type { BuildingType } from '../../types';
 
 /** A remembered enemy villager (see perception `enemyVillagers`). */
@@ -27,8 +28,7 @@ export interface KnownDanger {
 function covers(d: KnownDanger, p: TileCoord, radius: number): boolean {
   if (d.type === 'tower') return chebyshev(d.position, p) <= radius;
   if (d.shoots !== true) return false;
-  const f = d.footprint ?? { width: 1, height: 1 };
-  const centre = { tx: d.position.tx + Math.floor(f.width / 2), ty: d.position.ty + Math.floor(f.height / 2) };
+  const centre = footprintCentre(d.position, d.footprint ?? { width: 1, height: 1 });
   return chebyshev(centre, p) <= radius + LANDMARK.fort.range - TOWER_ATTACK.range;
 }
 
