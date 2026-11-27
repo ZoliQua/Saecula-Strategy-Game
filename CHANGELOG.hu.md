@@ -6,9 +6,13 @@ A Saecula minden lényeges változása itt szerepel. A formátum a
 [Keep a Changelog](https://keepachangelog.com/hu/1.1.0/) ajánlását követi, a
 verziószámozás a [szemantikus verziózást](https://semver.org/lang/hu/).
 Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
-(minor) számot növeli, a csak javításokat tartalmazó kiadás az utolsót (patch).
+(minor) számot növelte, a csak javításokat tartalmazó kiadás az utolsót (patch).
+Az 1.0-tól az új funkció a középső, a javítás az utolsó számot növeli, a
+főverziót (major) csak az a változás, amely a régi mentéseket elejti.
 
 ## [Kiadatlan]
+
+## [1.0.0] — 2026-11-27
 
 ### Új
 

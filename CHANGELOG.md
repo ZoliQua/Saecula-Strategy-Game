@@ -5,10 +5,13 @@
 All notable changes to Saecula are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/). Before 1.0, a new milestone
-or larger feature set raises the minor version and a release with only fixes
-raises the patch version.
+or larger feature set raised the minor version and a release with only fixes
+the patch version. From 1.0 on, new features raise the minor version, fixes
+the patch version, and only a change that drops old saves the major version.
 
 ## [Unreleased]
+
+## [1.0.0] — 2026-11-27
 
 ### Added
 

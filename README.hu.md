@@ -5,7 +5,7 @@
 **Izometrikus, történelmi, valós idejű stratégiai játék a böngésződben.**
 Három kor · nyolc nép · AI ellenfelek — Rómától a felvilágosodásig.
 
-[![Verzió](https://img.shields.io/badge/verzi%C3%B3-0.9.2-f5a857)](CHANGELOG.hu.md)
+[![Verzió](https://img.shields.io/badge/verzi%C3%B3-1.0.0-f5a857)](CHANGELOG.hu.md)
 [![CI](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Saecula-Strategy-Game/actions/workflows/ci.yml)
 [![Licenc: MIT](https://img.shields.io/badge/licenc-MIT-blue)](LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
@@ -142,7 +142,7 @@ megjelenítik. A teljes architektúra, a scope és a konvenciók a
 
 ## Állapot és ütemterv
 
-A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
+A Saecula jelenlegi verziója **1.0.0**. Az egyes verziók tartalmát a
 [változásnapló](CHANGELOG.hu.md) sorolja fel.
 
 | Mérföldkő | Tartalom | Állapot |
@@ -158,7 +158,10 @@ A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
 | M12 | Tíz új technológia | ✅ 0.7.0 |
 | M13 | Háromküldetéses kampány | ✅ 0.8.0 |
 | M14 | Hajók, kikötő, halászat és két vízi térkép | ✅ 0.9.0 |
-| Következő | A tesztjátékok alapján | 🔜 |
+| 1.0 | Vízi textúra-keret, grafikus biztosíték, vízi nyitás javítása | ✅ 1.0.0 |
+| M16 | Szövetséges AI-k (csapatok), fegyverszünet, kezdő nyersanyag, sebesség | ✅ 1.0.0 |
+| M17 | Piac, kereskedőkocsi és -hajó, népenként egy egyedi épület | ✅ 1.0.0 |
+| Következő | A tesztjátékok alapján (1.0.x javítások) | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, hosszú sztori-kampány.
 

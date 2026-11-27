@@ -6,7 +6,7 @@
 > magad. A scope szigorú — ha egy feature nincs itt leírva, nincs benne.
 
 **Név:** **Saecula** (latin: „korszakok, évszázadok”; korábbi munkacím: `IsoRTS`)
-**Játékverzió:** 0.9.2 (lásd 7.6 és `CHANGELOG.md`)
+**Játékverzió:** 1.0.0 (lásd 7.6 és `CHANGELOG.md`)
 **Nyelv:** felhasználói felület magyar, kód és commit üzenetek angol
 
 ---
@@ -595,7 +595,9 @@ scripts/smoke/                   ← böngészős smoke-szkriptek (fej nélküli
   localStorage): átnevezésük elveszítené a játékosok mentéseit, beállításait
   és meccsnaplóját. Nem láthatók, ezért nem nevezzük át őket.
 - **SemVer** (`MAJOR.MINOR.PATCH`), 1.0 előtt: új milestone vagy nagyobb
-  funkciócsomag → MINOR, csak javítás → PATCH. A jelenlegi verzió **0.9.2**.
+  funkciócsomag → MINOR, csak javítás → PATCH. Az 1.0-tól (Claude döntése):
+  új funkció → MINOR, javítás → PATCH, MAJOR csak a régi mentéseket elejtő
+  változásnál. A jelenlegi verzió **1.0.0**.
 - A verzió egyetlen forrása a `package.json` `version` mezője; a játék a
   `src/config/version.ts` `APP_VERSION`-jén át mutatja (főmenü lábléc).
 - Kiadáskor: `CHANGELOG.md` és `CHANGELOG.hu.md` frissítése (Keep a Changelog
@@ -1511,8 +1513,8 @@ készüljön; a döntések itt „Claude döntése” jelöléssel szerepelnek.
   változatban sem talál kikötőhelyet).
 
 ### M16 — Csapatok és játékmódok
-Ág: `feat/M16-modes-teams` (az M15 ágára épül). Változat: 1.1.0 (az 1.0.0
-után). A scope Claude döntése (a tulajdonos 2026-11-13-i kérése szerint: „1, 2,
+Ág: `feat/M16-modes-teams` (az M15 ágára épül). Változat: 1.0.0 (Claude döntése: a tulajdonos
+egyben olvasztotta be az M15–M17-et, így egyetlen 1.0.0 kiadásba kerülnek). A scope Claude döntése (a tulajdonos 2026-11-13-i kérése szerint: „1, 2,
 majd 3, automatikus döntésekkel”); a tulajdonos felülírhatja. Az M9 „Nem része:
 csapatok” pontja ennyiben módosul; a 1.2 nem-céljai (multiplayer, diplomácia
 tárgyalással) érvényesek.
@@ -1609,7 +1611,7 @@ tárgyalással) érvényesek.
   megtámadhatta); javítva, és a szövetséges Csodáját a HUD barátként jelzi.
 
 ### M17 — Kereskedelem és népenkénti egyedi épület
-Ág: `feat/M17-trade-landmarks` (az M16 ágára épül). Változat: 1.2.0. A scope
+Ág: `feat/M17-trade-landmarks` (az M16 ágára épül). Változat: 1.0.0 (lásd M16). A scope
 Claude döntése (a tulajdonos 2026-11-13-i kérése: „1, 2, majd 3, automatikus
 döntésekkel”); a tulajdonos felülírhatja. A 4.3 harmadik pontja („1 egyedi
 épület / nép”) és az M14 „Nem része: kereskedelmi hajó” pontja ennyiben
@@ -1702,6 +1704,30 @@ módosul.
   Minden feladatot független átnézés követett; a talált hibák (rövid oda-vissza
   utakért járó teljes fizetés, elérhetetlen célpiac felé végtelen próbálkozás,
   az Akadémia és a korváltás) javítva.
+
+### 1.0.0 — Kiadás
+Ág: `chore/release-1.0.0` (a `main`-ből, a PR #14–#18 beolvasztása után). Változat:
+1.0.0; tartalma az 1.0 előkészítés, az M15, az M16 és az M17. A tulajdonos
+2026-11-14-én hagyta jóvá a beolvasztást („Mehet”).
+- **Kiadási feltételek (M15) ellenőrzése (2026-11-14):**
+  1. Keretek: textúra distinct6 `--trade` 205,1 MB (≤ 256), naval6 `--ships
+     --trade` 392,6 MB (≤ 400); entitás-keret 650; bundle 0,78 MB gzip. ✅
+  2. 60 FPS a tulajdonos gépén, valódi Chrome-ablakban (Apple M2 Max, ANGLE
+     Metal, 1728×963, 2× DPR): 96×96 rét, 4 játékos (Nehéz, vegyes népek,
+     4242-es mag; 20 perces fegyverszünettel, hogy a tétlen emberi hely ne essen
+     ki), 13,5. játékperc, 30 s: 59,9 FPS, képkocka-CPU átlag 1,63 ms, **p95
+     3,0 ms**, legrosszabb 34,1 ms; 1164 entitás (nyersanyag-lelőhelyekkel). ✅
+     Fegyverszünet nélkül az idle emberi helyet a Nehéz AI-k 8 perc alatt
+     legyőzik, ezért a 10. perces mérés így készült.
+  3. CI zöld a `main`-en (2f256ce); `npm run smoke:input` 5/5; a
+     `scripts/perf/contextlost.mjs` 9/9 PASS. ✅
+  4. Minden régi mentés (1–10. séma) betölthető (`allVersions.test.ts`). ✅
+  5. Egyensúly: szárazföldön a 0.9.1-es sávok (Nehéz, Mesteri), vízen minden
+     nép 32–66 %. ✅
+  6. Emberi játék (30 perc Chrome, rövid Safari): **a tulajdonosé, nyitott.**
+  7. Dokumentáció: README, CHANGELOG (EN/HU), CLAUDE.md frissítve. ✅
+- **Állapot:** a verzió 1.0.0; a `v1.0.0` tag és a GitHub release a tulajdonos
+  jóváhagyására vár (a 6. feltétel).
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
@@ -1816,4 +1842,4 @@ verification).
 
 ---
 
-*Utolsó frissítés: 2026-11-15. Zoli projekt — Saecula, v0.9.2.*
+*Utolsó frissítés: 2026-11-27. Zoli projekt — Saecula, v1.0.0.*
