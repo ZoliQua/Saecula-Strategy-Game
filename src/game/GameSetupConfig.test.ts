@@ -13,6 +13,7 @@ import {
   mapTiles,
   playerCount,
   randomSeed,
+  startResourcesFor,
   VICTORY_MODES,
   withSetup,
   type GameSetupConfig,
@@ -30,6 +31,10 @@ describe('GameSetupConfig', () => {
       aiCivs: 'mixed',
       seed: 42,
       victory: 'conquest_wonder',
+      allies: 0,
+      treatyMin: 0,
+      startResources: 'normal',
+      speed: 1,
     });
     expect(mapTiles(c)).toBe(96);
     expect(playerCount(c)).toBe(4);
@@ -195,5 +200,42 @@ describe('assignCivs', () => {
     expect(matchCivs(c)).toEqual({ human: 'english', ais: ['english', 'english', 'english'] });
     expect(civsInPlay(c)).toEqual(['english']);
     expect(civsInPlay(withSetup(c, { aiCivs: 'hungarian' }))).toEqual(['english', 'hungarian']);
+  });
+
+  describe('M16 modes', () => {
+    it('clamps allies to 0..aiCount - 1 and re-clamps when the AI count drops', () => {
+      const base = withSetup(defaultSetupConfig(1), { aiCount: 4 });
+      expect(withSetup(base, { allies: 2 }).allies).toBe(2);
+      expect(withSetup(base, { allies: 9 }).allies).toBe(3);
+      expect(withSetup(base, { allies: -2 }).allies).toBe(0);
+      expect(withSetup(base, { allies: 1.6 }).allies).toBe(2);
+      expect(withSetup(base, { allies: Number.NaN }).allies).toBe(0);
+      expect(withSetup(withSetup(base, { allies: 3 }), { aiCount: 2 }).allies).toBe(1);
+      expect(withSetup(withSetup(base, { allies: 3 }), { aiCount: 1 }).allies).toBe(0);
+    });
+
+    it('defaults unknown treaty, start-resource and speed values', () => {
+      const bad = { treatyMin: 15, startResources: 'huge', speed: 3 } as unknown as Partial<GameSetupConfig>;
+      const c = withSetup(defaultSetupConfig(1), bad);
+      expect([c.treatyMin, c.startResources, c.speed]).toEqual([0, 'normal', 1]);
+      const ok = withSetup(defaultSetupConfig(1), { treatyMin: 20, startResources: 'deathmatch', speed: 1.5 });
+      expect([ok.treatyMin, ok.startResources, ok.speed]).toEqual([20, 'deathmatch', 1.5]);
+    });
+
+    it('a setup without the M16 fields (older caller) gets the defaults', () => {
+      const { allies: _a, treatyMin: _t, startResources: _s, speed: _sp, ...old } = defaultSetupConfig(1);
+      const c = withSetup(old as GameSetupConfig, {});
+      expect([c.allies, c.treatyMin, c.startResources, c.speed]).toEqual([0, 0, 'normal', 1]);
+    });
+
+    it('startResourcesFor returns the three presets as fresh copies', () => {
+      const base = defaultSetupConfig(1);
+      expect(startResourcesFor(base)).toEqual({ food: 200, wood: 200, gold: 100 });
+      expect(startResourcesFor(withSetup(base, { startResources: 'high' }))).toEqual({ food: 2000, wood: 2000, gold: 1500 });
+      expect(startResourcesFor(withSetup(base, { startResources: 'deathmatch' }))).toEqual({ food: 20000, wood: 20000, gold: 20000 });
+      const a = startResourcesFor(base);
+      a.food = 0;
+      expect(startResourcesFor(base).food).toBe(200);
+    });
   });
 });

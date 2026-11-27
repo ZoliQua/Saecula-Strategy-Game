@@ -10,6 +10,12 @@ describe('TimeLimitClock', () => {
     expect(timeLimitLabels(info({ leaderId: 1 })).leader).toBe('Te vezetsz');
   });
 
+  it('team match (M16): the human\'s team or the enemy team leads; no teams keeps "Te vezetsz"', () => {
+    expect(timeLimitLabels(info({ leaderId: 1, teams: true })).leader).toBe('Csapatod vezet');
+    expect(timeLimitLabels(info({ leaderId: 3, teams: true })).leader).toBe('Az ellenséges csapat vezet');
+    expect(timeLimitLabels(info({ leaderId: null, teams: true })).leader).toBe('Éllovas');
+  });
+
   it('enteredFinal fires once, on the first final update', () => {
     expect(enteredFinal(null, info())).toBe(false);
     expect(enteredFinal(info(), info({ final: true }))).toBe(true);

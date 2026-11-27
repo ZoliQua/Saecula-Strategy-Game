@@ -3,12 +3,23 @@ import { el, formatClock } from '../dom';
 import { hex } from '../format';
 import type { TimeLimitInfo, UiStore } from '../store';
 
-/** The clock's texts: time left, and who leads (`humanId` reads as "you"). */
+/**
+ * The clock's texts: time left, and who leads (`humanId` reads as "you"). In a
+ * team match (M16) the leader is a team, named for its lowest standing id: the
+ * human's team (`humanId`, player 1) or the enemy team.
+ */
 export function timeLimitLabels(info: TimeLimitInfo, humanId = 1): { time: string; leader: string } {
-  return {
-    time: hu.hud.timeLimitClock(formatClock(info.remainingMs)),
-    leader: info.leaderId === humanId ? hu.hud.timeLimitLeaderYou : hu.hud.timeLimitLeader,
-  };
+  const ours = info.leaderId === humanId;
+  const leader = info.teams
+    ? info.leaderId === null
+      ? hu.hud.timeLimitLeader
+      : ours
+        ? hu.hud.timeLimitLeaderTeam
+        : hu.hud.timeLimitLeaderEnemyTeam
+    : ours
+      ? hu.hud.timeLimitLeaderYou
+      : hu.hud.timeLimitLeader;
+  return { time: hu.hud.timeLimitClock(formatClock(info.remainingMs)), leader };
 }
 
 /** True on the update the clock first enters its final window (the HUD toasts once). */

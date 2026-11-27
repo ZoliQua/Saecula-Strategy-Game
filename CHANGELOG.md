@@ -12,6 +12,20 @@ raises the patch version.
 
 ### Added
 
+- **Teams:** choose up to `AI count − 1` allied AIs on the setup card. Allies
+  never fight or convert each other, share their vision, and win or lose as a
+  team (conquest, Wonder and time victory count the team). Allied AIs attack
+  the enemy team; the score panel and the game-over card mark allies.
+- **Treaty:** an optional 10- or 20-minute treaty. Until it ends, players of
+  different teams cannot hurt or convert each other, the AIs launch no attack,
+  and an attack order becomes a move. A countdown shows under the clock.
+- **Starting resources:** normal (200 food, 200 wood, 100 gold), high or
+  deathmatch.
+- **Game speed:** 1×, 1.5× or 2× game time; camera scrolling stays at real
+  speed.
+- Saves move to version 10; older saves load with the new options at their
+  defaults.
+
 - **Lost graphics safeguard:** if the browser takes back the game's graphics
   memory (a lost WebGL context), the running match stops and is saved to
   the autosave slot, a card explains what happened, and "Reload and

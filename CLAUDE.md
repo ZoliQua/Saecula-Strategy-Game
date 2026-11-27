@@ -1509,6 +1509,104 @@ készüljön; a döntések itt „Claude döntése” jelöléssel szerepelnek.
   utána mindegyik 5,1 percen belül kész (a 11. magon a második játékos egyik
   változatban sem talál kikötőhelyet).
 
+### M16 — Csapatok és játékmódok
+Ág: `feat/M16-modes-teams` (az M15 ágára épül). Változat: 1.1.0 (az 1.0.0
+után). A scope Claude döntése (a tulajdonos 2026-11-13-i kérése szerint: „1, 2,
+majd 3, automatikus döntésekkel”); a tulajdonos felülírhatja. Az M9 „Nem része:
+csapatok” pontja ennyiben módosul; a 1.2 nem-céljai (multiplayer, diplomácia
+tárgyalással) érvényesek.
+- **Csapatok (rögzített szövetség):** a beállítás új „Szövetségesek” sora:
+  0 (alapértelmezett, a mai játék: mindenki ellenség, az AI-k az embert
+  támadják) … `aiCount − 1`. Az ember csapata az 1. játékos és a 2…(1 +
+  szövetségesek) AI; a többi AI az ellenséges csapat (legalább egy). A
+  szövetség a meccs alatt nem változik; tárgyalás, adó (tribute), közös
+  nyersanyag nincs.
+- **Ellenség-szabály egy helyen:** új `src/game/diplomacy.ts`: `areEnemies(a, b)`
+  (különböző csapat és egyik sem Gaia) és `areAllies(a, b)`. Minden
+  „ellenség”-jelentésű ellenőrzés ezt használja: harc (`CombatSystem`,
+  `TowerCombatSystem`, `ProjectileSystem`, `breach`), térítés (`convert`), a
+  játékos parancsa és kurzora (`OrderIssuer.findEnemyAt`), az AI látása
+  (`perception`), a pontszám (szövetséges megölése nem ad `killValue`-t), a
+  kijelölés-gyűrű, a minimap és a kijelölés-panel színezése. A „saját”-
+  jelentésű ellenőrzések (gyűjtés, lerakás, építés, beszállás, falak, kutatás,
+  népesség, parancsok) változatlanok: szövetséges épületébe nem lehet lerakni,
+  szövetséges hajójára nem lehet beszállni.
+- **Közös látás:** a szövetségesek látótere közös (`FogOfWarSystem` minden
+  szövetséges látóforrást beleszámol); a minimap és a térkép a szövetségesek
+  egységeit és épületeit csapatszínnel mutatja.
+- **AI csapatban:** a szövetséges AI az ellenséges csapatot támadja (a
+  városházájához legközelebbi, még talpon lévő ellenséges játékost, aki elesése
+  után a következőt), az ellenséges AI-k továbbra is az embert. Az AI
+  `enemyPlayerId`-je így játékosonként, futás közben dől el (`SystemRunner`).
+  Szövetségest az AI nem támad és nem térít.
+- **Győzelem csapatban:** a csapat nyer, ha minden ellenséges játékos elesett;
+  az ember veszít, ha az ő városházái elestek (a szövetségesei sorsától
+  függetlenül). Csoda: a szövetséges Csodája a csapat győzelme. Idő: a csapatok
+  pontszám-összege dönt. A játék vége képernyő és a pontszám-panel jelöli a
+  szövetségeseket.
+- **Fegyverszünet:** a beállítás új „Fegyverszünet” sora: nincs
+  (alapértelmezett) / 10 / 20 perc (`TREATY` a `balance.ts`-ben). Alatta
+  különböző csapatok között nincs harc (a támadási szándék elvész, a tornyok
+  nem lőnek, a lövedék nem sebez, nincs térítés), az AI nem indít hullámot,
+  portyát és partraszállást, a játékos támadó parancsa mozgásra vált egy magyar
+  értesítéssel. A HUD az óra alatt visszaszámlálót mutat; a végén értesítés.
+  A Csoda 10 perces visszaszámlálója csak a fegyverszünet után indul.
+- **Kezdő nyersanyag:** a beállítás új „Kezdő nyersanyag” sora: normál
+  (200 étel / 200 fa / 100 arany, a mai) / magas / halálmeccs (`START_RESOURCES`
+  a `balance.ts`-ben; a ma kétszer beírt érték innen jön). Minden játékos
+  ugyanannyival indul.
+- **Játéksebesség:** a beállítás új „Sebesség” sora: 1× (alapértelmezett) /
+  1,5× / 2×. A játékidő ennyivel gyorsabb (minden rendszer, AI, napszak,
+  automatikus mentés a játékidőn); a kamera-görgetés valós időben marad. A
+  fejlesztői `__timeScale` a választott sebességre szorzódik.
+- **Mentés:** `schemaVersion` 10, migrációval; a `GameSetupConfig` új mezői:
+  `allies`, `treatyMin`, `startResources`, `speed` (régi mentés: 0, 0,
+  `normal`, 1). A csapat a beállításból számolódik, külön nem mentjük.
+- **Kampány:** változatlan (a küldetések szövetséges nélkül, fegyverszünet
+  nélkül, normál nyersanyaggal és 1× sebességgel futnak).
+- **Tesztek:** `areEnemies` és a harc-, torony-, lövedék-, térítés-szabályok
+  szövetségesre; közös látás; csapat-győzelem (hódítás, Csoda, idő);
+  fegyverszünet (harc, torony, AI-hullám, parancs); kezdő nyersanyag; sebesség;
+  mentés oda-vissza és v9 → v10 migráció; AI-szimuláció: 2v2 (ember helyén AI)
+  közepes térképen, a szövetséges AI az ellenséges AI-t támadja és egy csapat
+  nyer; fegyverszünet alatt egyetlen sebzés sincs csapatok között.
+- Nem része: szövetség-váltás, tárgyalás, adó, közös nyersanyag, csapat-
+  kampány, királygyilkos és „domb ura” mód (új grafika kellene), sebesség
+  váltása meccs közben.
+- Keret (10.): az M15 keretei (új textúra nincs).
+- **Állapot (2026-11-22):** kész. `src/game/diplomacy.ts` (`areAllies`,
+  `areEnemies`, `isFriendly`; a csapat a beállításból: 1…1+szövetségesek = 1.
+  csapat, a többi 2.; 0 szövetségesnél mindenki a saját csapata, így a mai játék
+  változatlan), közös látás (emberé és minden AI-é), szövetséges-jelölés
+  (kijelölő gyűrű, „Szövetséges” címke, minimap, pontszám-panel, játék vége),
+  `src/ai/targetPlayer.ts` (a szövetséges AI a legközelebbi talpon lévő
+  ellenséget támadja; csapatmeccsen a hullám bármely útjába eső ellenséges
+  egységgel megküzd, épületet csak a választott ellenségét bontja),
+  csapatgyőzelem (a vereségben szövetséges sosem „győztes”; csapat-szövegek a
+  játék vége kártyán és az időkorlát-órán; az M9-es „vezető visszafogja magát”
+  szabály a csapatot nézi), `src/game/treaty.ts` (a játékidőből számolt
+  fegyverszünet, nincs mentett állapota; alatta az AI nem lát fenyegetést, így nem
+  dermed meg egy bázisán álló ellenséges egységtől), kezdő nyersanyag
+  (`START_RESOURCES`), játéksebesség (`src/scenes/game/gameClock.ts`; a kamera
+  valós időben), `schemaVersion` 10 (valódi v9-mentéssel; a régi játéknapló-
+  rekordok alapértékekkel olvasódnak). A szövetséges épületéből nem lehet gyűjteni
+  (az átnézés találta: a szövetséges farmját az ember falusija learatta volna).
+  Szimulációk: 2v2 Közepes (96×96 rét, 3. mag) — szövetségesek között egyetlen
+  találat sincs, a szövetséges AI ellenséges épületeket rombol, az 1. csapat
+  27,4 percnél nyer (3., 7., 11., 19. mag átmegy; 5. és 23.: az ellenséges csapat
+  hamarabb nyer, mint hogy a szövetséges hulláma épületet érne); fegyverszünet
+  (64×64 rét, Nehéz–Nehéz, 10 perc): 10:00 előtt nincs sebzés és támadás, az első
+  hullám 10:00–10:02, az első találat 10:01–10:09 (hat mag). Mérve: textúra
+  (`distinct6`) 171,3 MB (új textúra nincs), JS-bundle 0,75 MB gzip, a teljes
+  tesztcsomag 3166 teszt. Böngésző-smoke (5196): a négy új beállítás-sor, egy 2v2
+  meccs 10 perces fegyverszünettel, magas nyersanyaggal és 2× sebességgel —
+  visszaszámláló, „Szövetséges” jelölés, a szövetséges városa a minimapen,
+  oldalhiba nélkül; 2× sebességnél a játékidő 1,9-szer gyorsabb, a kamera
+  változatlan sebességű. A záró, teljes ágat néző átnézés egy hibát talált: a
+  Csoda 10 perces visszaszámlálója a fegyverszünet alatt is futott (magas vagy
+  halálmeccs nyersanyaggal egy Csoda megnyerhette volna a meccset, mielőtt bárki
+  megtámadhatta); javítva, és a szövetséges Csodáját a HUD barátként jelzi.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét

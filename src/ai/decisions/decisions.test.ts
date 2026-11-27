@@ -243,6 +243,17 @@ describe('combat decisions', () => {
     expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 1)?.id).toBe(2);
   });
 
+  it("pickAttackTarget skips an ally's Wonder (M16 teams)", () => {
+    const b = (id: number, type: KnownBuilding['type'], ownerId: number, tx: number): KnownBuilding => ({
+      id, type, ownerId, position: { tx, ty: 0 }, footprint: { width: 1, height: 1 },
+    });
+    const known = [b(2, 'town_center', 3, 10), b(4, 'wonder', 3, 60), b(5, 'wonder', 4, 40)];
+    // Player 4 is an ally: its nearer Wonder is skipped for the enemy's.
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 3, { canWin: () => true, isEnemy: (id) => id !== 4 })?.id).toBe(4);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 3, { canWin: () => true, isEnemy: (id) => id === 4 })?.id).toBe(5);
+    expect(pickAttackTarget(known, { tx: 0, ty: 0 }, 3, { canWin: () => true, isEnemy: () => false })?.id).toBe(2);
+  });
+
   it('pickFlankTarget picks the farthest economy building past minSeparation, or null', () => {
     const b = (id: number, type: KnownBuilding['type'], ownerId: number, tx: number, ty = 0): KnownBuilding => ({
       id, type, ownerId, position: { tx, ty }, footprint: { width: 1, height: 1 },

@@ -66,7 +66,8 @@ export class PressureControl {
    * token force.
    */
   launch(ctx: AIContext, view: WorldView): void {
-    if (this.sentFlag) return;
+    // The treaty (M16): the raid waits for its end (no state changes, so it leaves right after).
+    if (this.sentFlag || ctx.treatyActive === true) return;
     const squad = this.squad(view);
     if (ctx.timeMs < this.act.firstAttackAtMs() || squad.length < this.tune.pressure.minArmy || this.army.attacking) return;
     this.army.launchWave(ctx, view, squad);

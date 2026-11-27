@@ -20,6 +20,7 @@ function bytesFit(text: string, length: number, max = 255): boolean {
 
 /**
  * What zod cannot see: byte-array lengths, unique ids, exactly one human,
+ * fewer allies than AIs,
  * records keyed by real players (stats by every player), timeline samples
  * of one value per player, and every tile on the map.
  */
@@ -30,6 +31,8 @@ function consistent(save: SaveData): boolean {
   const playerIds = new Set(save.players.map((p) => p.id));
   if (playerIds.size !== save.players.length) return false;
   if (save.players.filter((p) => p.isHuman).length !== 1) return false;
+  // At least one AI is always on the enemy team (M16).
+  if (save.setup.allies >= save.setup.aiCount) return false;
   if (!Object.keys(save.fogOfWar).every((id) => playerIds.has(Number(id)))) return false;
   const aiIds = new Set(save.players.filter((p) => !p.isHuman).map((p) => p.id));
   if (!Object.keys(save.ai).every((id) => aiIds.has(Number(id)))) return false;

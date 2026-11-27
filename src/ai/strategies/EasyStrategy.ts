@@ -76,7 +76,8 @@ export class EasyStrategy extends BaseStrategy {
     this.naval.build(ctx, view);
     this.naval.train(ctx, view);
     const swords = view.military.length;
-    if (!this.army.attacking && attackReady({
+    // The treaty (M16): no wave while it holds.
+    if (ctx.treatyActive !== true && !this.army.attacking && attackReady({
       armySize: swords,
       wave: AI_EASY.attackWave,
       timeMs: ctx.timeMs,

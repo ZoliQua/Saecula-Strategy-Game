@@ -20,7 +20,7 @@ import {
   isAdjacentToFootprint,
   isAdjacentToNode,
 } from './gathering/gatherGeometry';
-import { findEntityById, findNearestDropoff, findNearestNodeOfType } from './gathering/gatherQueries';
+import { findEntityById, findNearestDropoff, findNearestNodeOfType, isWorkableBy } from './gathering/gatherQueries';
 import type { Dropoff, ResourceNode, Villager } from './gathering/gatherTypes';
 import type { EcsWorld } from '../world';
 import { TERRAIN } from '../../map/TerrainTypes';
@@ -75,6 +75,12 @@ export class GatheringSystem {
 
   private applyIntent(v: Villager): void {
     if (!v.gatherIntent) return;
+    const node = findEntityById(this.world, v.gatherIntent.nodeId);
+    // Another (non-Gaia) player's node, an ally's farm included (M16): never worked, the order is dropped.
+    if (node && !isWorkableBy(node, (v as Entity).owner?.playerId)) {
+      this.world.removeComponent(v as Entity, 'gatherIntent');
+      return;
+    }
     v.gatherer.targetNodeId = v.gatherIntent.nodeId;
     v.gatherer.dropoffId = undefined;
     this.world.removeComponent(v as Entity, 'gatherIntent');

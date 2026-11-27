@@ -1,4 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import { START_RESOURCES } from '../config/balance';
 import { DEFAULT_CIV } from '../config/civs';
 import type { WonderClockInfo } from '../game/wonderClocks';
 import type { VillagerActivity } from '../stats/villagerActivity';
@@ -29,6 +30,8 @@ export interface SelectedUnitInfo {
   carrying?: { type: 'food' | 'wood' | 'gold'; amount: number };
   /** A transport's cargo (M14): how many units are aboard. */
   cargo?: number;
+  /** Owned by the human's ally (M16). */
+  ally?: true;
 }
 
 export interface SelectedBuildingInfo {
@@ -50,6 +53,8 @@ export interface SelectedBuildingInfo {
   /** Technologies this building type researches. */
   researchable?: readonly TechId[];
   research?: { techId: TechId; progress: number };
+  /** Owned by the human's ally (M16). */
+  ally?: true;
 }
 
 export interface SelectedResourceInfo {
@@ -85,6 +90,8 @@ export interface TimeLimitInfo {
   readonly leaderColor: number | null;
   /** Inside the final TIME_VICTORY.holdLeadMs. */
   readonly final: boolean;
+  /** A team match (M16): the leader line names the team ("Csapatod vezet"); absent = no teams. */
+  readonly teams?: true;
 }
 
 /** One row of the side panel's score view (HudSync, once a second). */
@@ -95,6 +102,8 @@ export interface ScoreRowInfo {
   isHuman: boolean;
   score: number;
   defeated: boolean;
+  /** On the human's team (M16): the row carries a "Szövetséges" chip. */
+  ally: boolean;
 }
 
 export type SidePanelView = 'score' | 'villagers';
@@ -127,6 +136,8 @@ export interface UiState {
   wonders: readonly WonderClockInfo[];
   /** The time-victory clock (null: the match has no time limit). */
   timeLimit: TimeLimitInfo | null;
+  /** Treaty time left (M16; HudSync once a second): null with no treaty, 0 once it is over. */
+  treatyLeftMs: number | null;
   /** A campaign mission's objectives (null outside the campaign). */
   objectives: { readonly title: string; readonly rows: readonly ObjectiveRowInfo[] } | null;
   /** Building whose delete button is armed (the next press deletes it), or null. */
@@ -153,6 +164,7 @@ export interface UiActions {
   setGameTime: (ms: number) => void;
   setWonders: (wonders: readonly WonderClockInfo[]) => void;
   setTimeLimit: (info: TimeLimitInfo | null) => void;
+  setTreatyLeft: (ms: number | null) => void;
   setObjectives: (objectives: UiStore['objectives']) => void;
   /** Arms the delete of building `id` with the refund `refundPct` locked (null disarms). */
   setDeleteArmed: (id: number | null, refundPct?: number) => void;
@@ -167,7 +179,7 @@ export interface UiActions {
 export type UiStore = UiState & UiActions;
 
 const INITIAL: UiState = {
-  resources: { food: 200, wood: 200, gold: 100 },
+  resources: { ...START_RESOURCES.normal },
   population: { current: 3, cap: 10 },
   currentAge: 1,
   civ: DEFAULT_CIV,
@@ -180,6 +192,7 @@ const INITIAL: UiState = {
   gameTimeMs: 0,
   wonders: [],
   timeLimit: null,
+  treatyLeftMs: null,
   objectives: null,
   deleteArmedId: null,
   deleteArmedPct: 0,
@@ -211,6 +224,7 @@ export function createUiStore(): StoreApi<UiStore> {
     setGameTime: (ms) => set({ gameTimeMs: ms }),
     setWonders: (wonders) => set({ wonders }),
     setTimeLimit: (timeLimit) => set({ timeLimit }),
+    setTreatyLeft: (treatyLeftMs) => set({ treatyLeftMs }),
     setObjectives: (objectives) => set({ objectives }),
     setDeleteArmed: (id, refundPct = 0) => set({ deleteArmedId: id, deleteArmedPct: id === null ? 0 : refundPct }),
     showSidePanel: (view) => set({ sidePanel: { open: true, view } }),
@@ -220,9 +234,13 @@ export function createUiStore(): StoreApi<UiStore> {
   }));
 }
 
-export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
+/**
+ * Back to a fresh match's UI state; `resources` is the human's starting
+ * stock (a new skirmish passes its setup's preset, startResourcesFor).
+ */
+export function resetUiStore(store: StoreApi<UiStore> = uiStore, resources: Readonly<Resources> = INITIAL.resources): void {
   store.setState({
-    resources: { ...INITIAL.resources },
+    resources: { ...resources },
     population: { ...INITIAL.population },
     currentAge: INITIAL.currentAge,
     civ: INITIAL.civ,
@@ -235,6 +253,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore): void {
     gameTimeMs: 0,
     wonders: [],
     timeLimit: null,
+    treatyLeftMs: null,
     objectives: null,
     deleteArmedId: null,
     deleteArmedPct: 0,

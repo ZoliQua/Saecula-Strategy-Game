@@ -1,6 +1,8 @@
 import { PROJECTILE_HIT_RADIUS } from '../../config/balance';
 import { computeDamage } from '../../game/damage';
 import { applyDamage } from '../../game/kill';
+import { areEnemies, NO_TEAMS } from '../../game/diplomacy';
+import { NO_TREATY, truceBetween, type TreatyGate } from '../../game/treaty';
 import { boostArmor, bonusesFor } from '../../game/modifiers';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { distanceToEntity } from '../../game/targetGeometry';
@@ -19,7 +21,7 @@ const NO_ARMOR = { melee: 0, pierce: 0 } as const;
 /**
  * Advances projectiles along their flight and resolves the payload on
  * arrival. Single-target shots hit only if the target is still alive,
- * hostile and within PROJECTILE_HIT_RADIUS of the impact point (moving
+ * hostile (an enemy: not own, allied or Gaia) and within PROJECTILE_HIT_RADIUS of the impact point (moving
  * targets can be missed). Splash shots hit every hostile unit and
  * building within their radius. The projectile entity is removed on
  * impact either way.
@@ -28,6 +30,8 @@ export class ProjectileSystem {
   constructor(
     private readonly world: EcsWorld,
     private readonly players: PlayerManager | null = null,
+    /** The treaty (M16): while it holds, a shot hurts no other team's player (splash included). */
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {}
 
   update(deltaMs: number): void {
@@ -67,7 +71,9 @@ export class ProjectileSystem {
   }
 
   private isHostile(v: Victim, shot: Shot): boolean {
-    return !v.dying && v.owner.playerId !== shot.ownerId && v.owner.playerId !== 0;
+    // Enemies only (M16): never the shooter's own, an ally's (splash included) or Gaia's.
+    const teams = this.players ?? NO_TEAMS;
+    return !v.dying && areEnemies(teams, v.owner.playerId, shot.ownerId) && !truceBetween(this.treaty, teams, v.owner.playerId, shot.ownerId);
   }
 
   private findVictim(id: number): Victim | undefined {

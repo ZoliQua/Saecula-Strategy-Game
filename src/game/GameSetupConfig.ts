@@ -1,10 +1,12 @@
 import { MISSION_IDS, type MissionId } from '../campaign/missions';
+import { GAME_SPEEDS, START_RESOURCES, TREATY, type StartResourcesId } from '../config/balance';
 import { AVAILABLE_CIVS, DEFAULT_CIV } from '../config/civs';
 import { MAP_TEMPLATES, type MapTemplate } from '../map/generator';
 import { createRng } from '../map/random';
-import type { CivId } from '../types';
+import { MODE_DEFAULTS } from './matchModes';
+import type { CivId, Resources } from '../types';
 
-export { AVAILABLE_CIVS };
+export { AVAILABLE_CIVS, MODE_DEFAULTS };
 
 export type MapSizeId = 'small' | 'medium' | 'large';
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'master';
@@ -44,6 +46,15 @@ export function hasTimeVictory(mode: VictoryMode): boolean {
   return mode === 'conquest_time' || mode === 'all';
 }
 
+/** Treaty length in game minutes (0 = none, M16). */
+export type TreatyMinutes = (typeof TREATY.minutes)[number];
+/** Game-speed multiplier (M16). */
+export type GameSpeed = (typeof GAME_SPEEDS)[number];
+export type { StartResourcesId };
+export const TREATY_MINUTES: readonly TreatyMinutes[] = TREATY.minutes;
+export const START_RESOURCE_IDS: readonly StartResourcesId[] = ['normal', 'high', 'deathmatch'];
+export const SPEED_CHOICES: readonly GameSpeed[] = GAME_SPEEDS;
+
 export const MIN_AI = 1;
 export const MAX_AI = 5;
 export const MAX_SEED = 999_999;
@@ -62,6 +73,14 @@ export interface GameSetupConfig {
   readonly victory: VictoryMode;
   /** A campaign mission (M13): the match is that mission's fixed setup with its objectives. */
   readonly mission?: MissionId | undefined;
+  /** AIs on the human's team (players 2..1 + allies), 0..aiCount - 1 (M16; 0 = everyone is an enemy). */
+  readonly allies: number;
+  /** Treaty length in game minutes (M16; 0 = none). */
+  readonly treatyMin: TreatyMinutes;
+  /** Starting-resource preset for every player (M16; START_RESOURCES). */
+  readonly startResources: StartResourcesId;
+  /** Game-speed multiplier (M16). */
+  readonly speed: GameSpeed;
 }
 
 export type AiCivChoice = 'mixed' | CivId;
@@ -84,7 +103,19 @@ export function defaultSetupConfig(seed: number = randomSeed()): GameSetupConfig
     aiCivs: 'mixed',
     seed: clampSeed(seed),
     victory: 'conquest_wonder',
+    ...MODE_DEFAULTS,
   };
+}
+
+/** Allies clamped to 0..aiCount - 1 (at least one AI is always an enemy). */
+export function clampAllies(allies: number, aiCount: number): number {
+  if (!Number.isFinite(allies)) return 0;
+  return Math.min(Math.max(0, aiCount - 1), Math.max(0, Math.round(allies)));
+}
+
+/** A fresh copy of the setup's starting resources: every player's stock, and the human's UI-store stock, at match start. */
+export function startResourcesFor(setup: Pick<GameSetupConfig, 'startResources'>): Resources {
+  return { ...(START_RESOURCES[setup.startResources] ?? START_RESOURCES.normal) };
 }
 
 export function clampSeed(seed: number): number {
@@ -99,20 +130,26 @@ export function clampAiCount(count: number): number {
 
 /**
  * Applies a partial change and returns a valid config: unsupported
- * template / difficulty / civ / victory values fall back to the working ones,
- * numbers are clamped.
+ * template / difficulty / civ / victory / treaty / start-resource / speed
+ * values fall back to the working ones (or defaults), numbers are clamped
+ * (allies to 0..aiCount - 1, so a smaller AI count re-clamps them).
  */
 export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig>): GameSetupConfig {
   const next = { ...base, ...change };
+  const aiCount = clampAiCount(next.aiCount);
   return {
     template: AVAILABLE_TEMPLATES.includes(next.template) ? next.template : 'meadow',
     mapSize: MAP_SIZE_IDS.includes(next.mapSize) ? next.mapSize : 'medium',
-    aiCount: clampAiCount(next.aiCount),
+    aiCount,
     difficulty: AVAILABLE_DIFFICULTIES.includes(next.difficulty) ? next.difficulty : 'easy',
     civ: AVAILABLE_CIVS.includes(next.civ) ? next.civ : DEFAULT_CIV,
     aiCivs: next.aiCivs !== 'mixed' && AVAILABLE_CIVS.includes(next.aiCivs) ? next.aiCivs : 'mixed',
     seed: clampSeed(next.seed),
     victory: VICTORY_MODES.includes(next.victory) ? next.victory : 'conquest_wonder',
+    allies: clampAllies(next.allies, aiCount),
+    treatyMin: TREATY_MINUTES.includes(next.treatyMin) ? next.treatyMin : MODE_DEFAULTS.treatyMin,
+    startResources: START_RESOURCE_IDS.includes(next.startResources) ? next.startResources : MODE_DEFAULTS.startResources,
+    speed: SPEED_CHOICES.includes(next.speed) ? next.speed : MODE_DEFAULTS.speed,
     ...(next.mission !== undefined && (MISSION_IDS as readonly string[]).includes(next.mission) ? { mission: next.mission } : {}),
   };
 }

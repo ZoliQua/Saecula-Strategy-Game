@@ -13,6 +13,8 @@ export interface GameOverData {
   players: GameOverPlayerRow[];
   /** A campaign mission's closing text (M13); replaces the cause's body line. */
   missionText?: string;
+  /** The match had teams (M16, setup allies > 0): team wording on the card. */
+  teams: boolean;
 }
 
 /** Thin scene that owns the DOM game-over card (src/ui/screens/GameOver.ts). */

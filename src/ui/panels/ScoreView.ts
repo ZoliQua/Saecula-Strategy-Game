@@ -21,7 +21,8 @@ interface Row {
 /**
  * The side panel's "Pontszám" view: one row per player, highest score
  * first, with the player's colour crest, civ name ("Te" on the human's),
- * the score counting up to its new value and a bar relative to the
+ * a "Szövetséges" chip on the human's allies (M16, teams are fixed for the
+ * match), the score counting up to its new value and a bar relative to the
  * leader. A rank change slides the rows to their new places (FLIP);
  * defeated players are struck through.
  */
@@ -68,9 +69,10 @@ export class ScoreView {
     const fill = el('i');
     const name = el('span', { class: 'sc-name' }, el('span', { class: 'sc-civ' }, hu.civs[s.civ]));
     if (s.isHuman) name.append(el('em', { class: 'sc-you' }, hu.side.you));
+    else if (s.ally) name.append(el('em', { class: 'sc-ally' }, hu.side.ally));
     const node = el(
       'div',
-      { class: s.isHuman ? 'sc-row you' : 'sc-row', style: `--pc:${hex(s.color)}` },
+      { class: s.isHuman ? 'sc-row you' : s.ally ? 'sc-row ally' : 'sc-row', style: `--pc:${hex(s.color)}` },
       rank,
       el('span', { class: 'sc-crest' }, hu.civs[s.civ].charAt(0)),
       name,

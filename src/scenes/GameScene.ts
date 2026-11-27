@@ -3,7 +3,7 @@ import { buildingHpMultiplier } from '../game/modifiers';
 import Phaser from 'phaser';
 import { DEFAULT_CIV } from '../config/civs';
 import { CAMERA_BOUNDS_PADDING } from '../config/constants';
-import { hasWonderVictory, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
+import { hasWonderVictory, startResourcesFor, type Difficulty, type GameSetupConfig } from '../game/GameSetupConfig';
 import { timeRuleFor } from '../game/timeVictory';
 import { decidedWinner, gameOverRows } from '../game/gameOverStats';
 import type { PlayerManager } from '../game/PlayerManager';
@@ -14,6 +14,7 @@ import { VictoryChecker } from '../game/VictoryChecker';
 import { cancelQueuedUnit, queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
+import { isFriendly } from '../game/diplomacy';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
 import { WONDER_HOLD_MS } from '../config/balance';
 import { DAY_START_PHASE } from '../config/visual';
@@ -38,6 +39,7 @@ import { CampaignRunner } from './game/CampaignRunner';
 import type { SaveData } from '../save/schema';
 import { liveMatchState, MatchSave, type SaveOutcome } from './game/MatchSave';
 import { MatchRecorder } from './game/MatchRecorder';
+import { gameDelta } from './game/gameClock';
 import { applyRestoredView, cameraView, type LoadRequest } from './game/MatchRestore';
 import { prepareMatch, runnerFor, startFromSlot, type MatchStart, type MenuReturn } from './game/MatchStart';
 import type { GameOverData } from './GameOverScene';
@@ -95,10 +97,12 @@ export class GameScene extends Phaser.Scene {
 
   create(data?: Partial<GameSetupConfig> | LoadRequest): void {
     this.cameras.main.setBackgroundColor('#090c12');
-    resetUiStore();
     this.contextLost = false;
     this.loadingSave = data && 'load' in data ? data.load : null;
     const prepared = prepareMatch(data);
+    // The human's stock lives in the UI store during play: a new match starts it from the setup's preset (a save restores it later).
+    const newStart = prepared.ok && prepared.match.start.kind === 'new';
+    resetUiStore(uiStore, newStart ? startResourcesFor(prepared.match.setup) : undefined);
     if (!prepared.ok) return this.backToMenu(prepared.back);
     const { start, art } = prepared.match;
     ({ setup: this.setup, matchId: this.matchId } = prepared.match);
@@ -240,7 +244,8 @@ export class GameScene extends Phaser.Scene {
     this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, restored?.campaign?.done) : null;
     if (this.campaign && !restored) CampaignRunner.publishStart(this.players);
     this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time, this.campaign);
-    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time);
+    const treatyLeft = config.treatyMin > 0 ? () => this.runner.treatyLeftMs() : null;
+    this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time, treatyLeft);
     this.gameOverTriggered = false;
     if (restored) applyRestoredView(this, restored, this.lighting);
     this.matchSave = new MatchSave(() => this.captureMatch(), this.storage, this.gameElapsedMs);
@@ -258,6 +263,8 @@ export class GameScene extends Phaser.Scene {
       selection: this.runner.selection,
       fog: this.runner.fogData,
       humanId: human?.id ?? 1,
+      teams: this.players,
+      treaty: this.runner.treaty,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
       buildingHp: () => {
@@ -357,6 +364,7 @@ export class GameScene extends Phaser.Scene {
           const { sx, sy } = tileToScreen({ tx, ty });
           this.cameras.main.centerOn(sx, sy);
         },
+        (ownerId) => isFriendly(this.players, ownerId, this.players.human()?.id ?? 1),
       );
     });
   }
@@ -365,8 +373,8 @@ export class GameScene extends Phaser.Scene {
     // After a lost context nothing may advance the saved match (a resumed pause menu included).
     if (this.contextLost) return;
     const frameStart = performance.now();
-    const delta = realDelta * this.timeScale;
-    this.runner.update(time, delta);
+    const delta = gameDelta(realDelta, this.setup.speed, this.timeScale);
+    this.runner.update(time, delta, realDelta);
     this.lighting.update(delta);
     this.placement.updateGhost();
 
@@ -441,6 +449,7 @@ export class GameScene extends Phaser.Scene {
       durationMs: this.gameElapsedMs,
       cause: state.cause,
       players: gameOverRows(this.players.all(), winnerId, this.difficulty),
+      teams: this.players.hasTeams(),
       ...(this.campaign ? { missionText: this.campaign.finish(state.kind === 'victory') } : {}),
     };
     this.scene.launch('GameOverScene', data);

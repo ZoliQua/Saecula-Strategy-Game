@@ -1,6 +1,7 @@
 import type { AgeId, CivId, Resources, TechId } from '../types';
 import { DEFAULT_CIV } from '../config/civs';
 import type { PersonalityId } from '../config/aiPersonality';
+import { START_RESOURCES } from '../config/balance';
 
 export interface Player {
   id: number;
@@ -17,6 +18,11 @@ export interface Player {
    * 20% faster); 1 for the human and the other difficulties.
    */
   gatherHandicap: number;
+  /**
+   * Team (M16): derived from the setup's `allies` (teamFor), never saved.
+   * Players on one team are allies; with no allies each player is its own team.
+   */
+  team: number;
   /** Seeded AI personality (Medium, Hard and Mesteri AIs only; absent for the human and Easy). */
   personality?: PersonalityId;
 }
@@ -35,11 +41,12 @@ export function createPlayer(partial: Partial<Player> & { id: number }): Player 
     isHuman: false,
     civ: DEFAULT_CIV,
     color: PLAYER_COLORS[(partial.id - 1) % PLAYER_COLORS.length] ?? 0xffffff,
-    resources: { food: 200, wood: 200, gold: 100 },
+    resources: { ...START_RESOURCES.normal },
     age: 1,
     researched: new Set<TechId>(),
     defeated: false,
     gatherHandicap: 1,
+    team: partial.id,
     ...partial,
   };
 }

@@ -59,3 +59,31 @@ describe('gameOverRows', () => {
     expect(decidedWinner({ kind: 'victory', winnerId: 1, cause: 'wonder' }, wonder)).toBe(1);
   });
 });
+
+describe('game over in teams (M16)', () => {
+  /** 2v2: human 1 + ally 2 vs 3 and 4. */
+  function teamPlayers(defeated: readonly number[]) {
+    return [1, 2, 3, 4].map((id) => {
+      const p = createPlayer({ id, isHuman: id === 1, defeated: defeated.includes(id) });
+      p.team = id <= 2 ? 1 : 2;
+      return p;
+    });
+  }
+
+  it('the human fell: decided once only one team stands, named for its lowest standing id', () => {
+    expect(decidedWinner({ kind: 'defeat', winnerId: 3, cause: 'conquest' }, teamPlayers([1]))).toBeNull();
+    expect(decidedWinner({ kind: 'defeat', winnerId: 3, cause: 'conquest' }, teamPlayers([1, 2]))).toBe(3);
+    expect(decidedWinner({ kind: 'defeat', winnerId: 4, cause: 'conquest' }, teamPlayers([1, 2, 3]))).toBe(4);
+    // The human and the last enemy fell in the same tick: only the ally stands, and a defeat never crowns it.
+    const together = teamPlayers([1, 3, 4]);
+    expect(decidedWinner({ kind: 'defeat', winnerId: 0, cause: 'conquest' }, together)).toBeNull();
+    expect(gameOverRows(together, null, 'hard').map((r) => r.outcome)).toEqual(['defeated', 'standing', 'defeated', 'defeated']);
+  });
+
+  it("rows mark the human's allies only; without teams no row carries the mark", () => {
+    const rows = gameOverRows(teamPlayers([3, 4]), 1, 'hard');
+    expect(rows.map((r) => r.ally ?? false)).toEqual([false, true, false, false]);
+    const ffa = gameOverRows([createPlayer({ id: 1, isHuman: true }), createPlayer({ id: 2 })], 1, 'hard');
+    expect(ffa.every((r) => !('ally' in r))).toBe(true);
+  });
+});

@@ -57,6 +57,9 @@ in English and Hungarian.
   army across the water by transport (the AI does it too).
 - 🏆 **Three victory conditions** — Conquest, holding a Wonder for ten minutes,
   or the best score when the 60-minute time limit runs out.
+- 🤝 **Teams and match options** — fight with allied AIs against an enemy
+  team (shared vision, team victory), add a 10- or 20-minute treaty, start
+  with normal, high or deathmatch resources, and play at 1×, 1.5× or 2× speed.
 - 🌗 **Living world** — dynamic 2D lighting with normal maps, a day–night cycle,
   cast shadows, fog of war, construction and collapse animations.
 - 🎵 **Procedural audio** — positional sound effects and generative music per

@@ -1,5 +1,7 @@
 import { MONK } from '../../config/balance';
 import { canConvert, convertUnit, markConvertGivenUp } from '../../game/convert';
+import { NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { NO_TREATY, type TreatyGate } from '../../game/treaty';
 import { convertRechargeMultiplier, type Researched } from '../../game/modifiers';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import type { MapData } from '../../map/MapData';
@@ -40,6 +42,10 @@ export class MonkSystem {
     private readonly researchOf: (playerId: number) => Researched | undefined = () => undefined,
     /** The shared per-tick path-search budget (CLAUDE.md §10). */
     private readonly paths: PathAllowance = UNLIMITED_PATHS,
+    /** Teams (M16): an ally is never converted (healing stays own-only). */
+    private readonly teams: TeamLookup = NO_TEAMS,
+    /** The treaty (M16): no conversion while it holds (the order goes; a new one works after it). */
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {}
 
   update(deltaMs: number): void {
@@ -59,7 +65,7 @@ export class MonkSystem {
   private convert(monk: Entity & Required<Pick<Entity, 'converter' | 'position' | 'owner'>>, deltaMs: number): void {
     const intent = monk.convertIntent!;
     const target = findEntityById(this.world, intent.targetId);
-    if (monk.converter.rechargeMs > 0 || !canConvert(target, monk.owner.playerId)) {
+    if (monk.converter.rechargeMs > 0 || !canConvert(target, monk.owner.playerId, this.teams, this.treaty)) {
       this.world.removeComponent(monk, 'convertIntent');
       this.forgetApproach(monk);
       return;

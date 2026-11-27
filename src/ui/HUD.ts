@@ -12,7 +12,8 @@ import { SelectionPanel } from './panels/SelectionPanel';
 import { SidePanel } from './panels/SidePanel';
 import { ObjectivesPanel } from './panels/ObjectivesPanel';
 import { TimeLimitClock } from './panels/TimeLimitClock';
-import { WonderTimers } from './panels/WonderTimers';
+import { TreatyClock } from './panels/TreatyClock';
+import { WonderTimers, wonderCompletedText } from './panels/WonderTimers';
 import type { Minimap } from './Minimap';
 import { guardPageZoom } from './pageZoomGuard';
 import { settingsStore } from './settings';
@@ -53,6 +54,11 @@ export class Hud {
   private readonly wonderTimers = new WonderTimers();
   private readonly objectives = new ObjectivesPanel();
   private readonly timeLimit = new TimeLimitClock(() => this.toast(hu.hud.timeLimitFinal, 'ok'));
+  /** The treaty countdown (M16); its end is announced with the war horn. */
+  private readonly treaty = new TreatyClock(() => {
+    audio().playSFX('notification_attacked');
+    this.toast(hu.treaty.ended);
+  });
   private readonly side = new SidePanel();
   private readonly dockWatch: ResizeObserver | null;
   /** Removes the page-zoom guard (a pinch over a HUD card must not zoom the browser page). */
@@ -67,6 +73,8 @@ export class Hud {
   private readonly unsubscribeResearch: () => void;
   private readonly unsubscribeWonders: () => void;
   private minimap: Minimap | null = null;
+  /** Owners on the human's side (M16: the human and its allies), for the Wonder toast. */
+  private friendly: (ownerId: number) => boolean = (ownerId) => ownerId === 1;
   private lastToast = '';
   private lastToastAt = 0;
   private readonly notice = (message: string, tone: ToastTone): void => this.toast(message, tone);
@@ -111,7 +119,7 @@ export class Hud {
       this.minimapSlot,
     );
     const bottom = el('div', { class: 'hud-bottom' }, minimapCard, this.selection.root, this.commands.root);
-    const right = el('div', { class: 'hud-right' }, this.objectives.root, this.timeLimit.root, this.wonderTimers.root, this.side.root);
+    const right = el('div', { class: 'hud-right' }, this.objectives.root, this.timeLimit.root, this.treaty.root, this.wonderTimers.root, this.side.root);
     this.root = el('div', { class: 'hud' }, top, right, this.hint, this.toasts, bottom);
     uiRoot().append(this.root);
     this.unguardZoom = guardPageZoom(uiRoot(), document);
@@ -130,7 +138,7 @@ export class Hud {
       if (playerId === 1) this.toast(hu.hud.researchElsewhere, 'error');
     });
     const offCompleted = gameEvents.on('wonderCompleted', ({ playerId }) => {
-      this.toast(playerId === 1 ? hu.hud.wonderOwn : hu.hud.wonderEnemy(playerId));
+      this.toast(wonderCompletedText(playerId, this.friendly));
     });
     // Only Wonders the HUD shows a countdown for (not a defeated owner's).
     const offLost = gameEvents.on('wonderLost', ({ entityId }) => {
@@ -154,6 +162,11 @@ export class Hud {
   /** Room the bottom-right build panel takes (its height, the dock margin and a gap), for the right column. */
   private fitDock(): void {
     this.root.style.setProperty('--dock-h', `${this.commands.root.offsetHeight + 14 + 12}px`);
+  }
+
+  /** The human's side (M16), set with the minimap once the match is wired. */
+  setFriendly(friendly: (ownerId: number) => boolean): void {
+    this.friendly = friendly;
   }
 
   attachMinimap(minimap: Minimap): void {
@@ -183,6 +196,7 @@ export class Hud {
     this.commands.render(state);
     this.objectives.render(state);
     this.timeLimit.render(state);
+    this.treaty.render(state);
     this.wonderTimers.render(state);
     this.side.render(state);
     this.ageChip.textContent = AGE_NAME[state.currentAge];
@@ -206,6 +220,7 @@ export class Hud {
     this.unsubscribeWonders();
     this.objectives.destroy();
     this.timeLimit.destroy();
+    this.treaty.destroy();
     this.wonderTimers.destroy();
     this.dockWatch?.disconnect();
     this.side.destroy();

@@ -4,7 +4,7 @@ import { footprintDepth, tileDepth } from '../../iso/depth';
 import { DEFAULT_CIV } from '../../config/civs';
 import type { CivId } from '../../types';
 import { uiStore } from '../../ui/store';
-import { infoKey, isLastTownCenter, toSelectedInfo, type SelectableWithPos } from './selectedInfo';
+import { infoKey, isLastTownCenter, selectionRingColor, toSelectedInfo, type SelectableWithPos } from './selectedInfo';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { BUILDING_DEPTH_OFFSET, buildingOutlineDepth } from './renderPlacement';
@@ -15,9 +15,6 @@ import { BUILDING_DEPTH_OFFSET, buildingOutlineDepth } from './renderPlacement';
  * `selectable.selected`; the system renders a circle under the
  * selected unit and keeps it in sync with the entity's tile position.
  */
-const SELECT_OWN = 0xffd27a;
-const SELECT_ENEMY = 0xff6b5b;
-
 export class SelectionSystem {
   private readonly scene: Phaser.Scene;
   private readonly world: EcsWorld;
@@ -35,6 +32,13 @@ export class SelectionSystem {
 
   setCivSource(civOf: (playerId: number) => CivId): void {
     this.civOf = civOf;
+  }
+
+  /** Whether a player is the human's ally (M16: ring colour and the panel's label); default nobody. */
+  private isAlly: (playerId: number) => boolean = () => false;
+
+  setAllySource(isAlly: (playerId: number) => boolean): void {
+    this.isAlly = isAlly;
   }
 
   constructor(scene: Phaser.Scene, world: EcsWorld) {
@@ -169,7 +173,7 @@ export class SelectionSystem {
     // the data the HUD cares about actually changed — pushing every
     // frame churns Zustand subscribers and triggers a full HUD render.
     const primary = selected[0] as SelectableWithPos;
-    const info = toSelectedInfo(primary, this.civOf);
+    const info = toSelectedInfo(primary, this.civOf, this.isAlly);
     if (info?.kind === 'building' && isLastTownCenter(this.world, primary)) info.lastTownCenter = true;
     const key = `${infoKey(info)}#${selected.length}`;
     if (key !== this.lastInfoKey) {
@@ -193,8 +197,7 @@ export class SelectionSystem {
   ): void {
     g.clear();
     const e = selected as Entity;
-    const own = e.owner?.playerId === 1;
-    const color = e.owner === undefined ? 0xf2efe9 : own ? SELECT_OWN : SELECT_ENEMY;
+    const color = selectionRingColor(e.owner?.playerId, this.isAlly);
     const pulse = 0.75 + 0.25 * Math.sin(this.scene.time.now / 220);
     g.setAlpha(pulse);
     if (e.building) {

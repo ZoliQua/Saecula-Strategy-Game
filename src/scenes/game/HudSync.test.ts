@@ -34,7 +34,7 @@ describe('HudSync', () => {
     const { world, players, wonder } = setup();
     new HudSync(world, players, WONDER_HOLD_MS).secondTick();
     expect(uiStore.getState().wonders).toEqual([
-      { entityId: wonder.id, playerId: 1, color: players.get(1)!.color, remainingMs: WONDER_HOLD_MS - 60_000 },
+      { entityId: wonder.id, playerId: 1, color: players.get(1)!.color, friendly: true, remainingMs: WONDER_HOLD_MS - 60_000 },
     ]);
   });
 
@@ -55,6 +55,26 @@ describe('HudSync', () => {
     expect(s.villagerCounts).toEqual({ food: 0, wood: 0, gold: 0, build: 0, idle: 1, other: 0 });
   });
 
+  it("marks the human's allies on the score rows (M16); the human and enemies carry no mark", () => {
+    const world = createEcsWorld();
+    const players = new PlayerManager([1, 2, 3].map((id) => createPlayer({ id, isHuman: id === 1 })));
+    players.assignTeams(1);
+    new HudSync(world, players, null, new MatchStats(world, players)).secondTick();
+    const rows = [...uiStore.getState().scores].sort((a, b) => a.playerId - b.playerId);
+    expect(rows.map((r) => [r.playerId, r.ally])).toEqual([[1, false], [2, true], [3, false]]);
+  });
+
+  it('a team match marks the time clock as teamed (M16); a free-for-all clock carries no mark', () => {
+    const world = createEcsWorld();
+    const players = new PlayerManager([1, 2, 3].map((id) => createPlayer({ id, isHuman: id === 1 })));
+    const time = { limitMs: TIME_VICTORY.limitMs, nowMs: () => 0, standing: () => ({ score: 0, killValue: 0 }) };
+    new HudSync(world, players, null, null, time).secondTick();
+    expect(uiStore.getState().timeLimit && 'teams' in uiStore.getState().timeLimit!).toBe(false);
+    players.assignTeams(1);
+    new HudSync(world, players, null, null, time).secondTick();
+    expect(uiStore.getState().timeLimit?.teams).toBe(true);
+  });
+
   it('with a time limit, publishes the time left, the leader and the final-window flag', () => {
     const { world, players } = setup();
     let now = 0;
@@ -67,6 +87,23 @@ describe('HudSync', () => {
     scores[1] = 99;
     sync.secondTick();
     expect(uiStore.getState().timeLimit).toMatchObject({ remainingMs: TIME_VICTORY.holdLeadMs, leaderId: 1, final: true });
+  });
+
+  it('with a treaty, publishes the treaty time left (M16), 0 once over; without one it stays null', () => {
+    const { world, players } = setup();
+    let left = 600_000;
+    const sync = new HudSync(world, players, null, null, null, () => left);
+    // Shown at once, before the first second ticks.
+    expect(uiStore.getState().treatyLeftMs).toBe(600_000);
+    left = 599_000;
+    sync.secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBe(599_000);
+    left = 0;
+    sync.secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBe(0);
+    resetUiStore();
+    new HudSync(world, players, null).secondTick();
+    expect(uiStore.getState().treatyLeftMs).toBeNull();
   });
 
   it('without a time limit the clock stays null', () => {

@@ -12,6 +12,8 @@ import {
   MIN_AI,
   playerCount,
   randomSeed,
+  SPEED_CHOICES,
+  TREATY_MINUTES,
   withSetup,
   VICTORY_MODES,
   type GameSetupConfig,
@@ -26,6 +28,7 @@ import { ChipGroup, type ChipItem } from './ChipGroup';
 import { hex } from '../format';
 import { CivPicker } from './CivPicker';
 import { E_UP_S } from './MainMenu';
+import { alliesItems, parseChoice, speedItems, startResourceItems, treatyItems } from './modeItems';
 import { Segmented, type SegmentItem } from './Segmented';
 import '../hud.css';
 import '../screens.css';
@@ -46,7 +49,7 @@ export interface GameSetupHandlers {
 
 /**
  * Game setup card: map template / size, AI count, difficulty, victory
- * conditions, the human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
+ * conditions, allies, treaty, starting resources, game speed (M16), the human's civ, the AIs' civ and seed. Options that are not implemented yet are shown disabled with a
  * "hamarosan" tag. Lives over the main menu's live diorama.
  */
 export class GameSetup {
@@ -57,6 +60,15 @@ export class GameSetup {
   private readonly sizeSeg: Segmented<string>;
   private readonly diffSeg: Segmented<string>;
   private readonly victorySeg: Segmented<string>;
+  /** Rebuilt when the AI count changes (its options are 0..aiCount - 1). */
+  private alliesSeg: Segmented<string>;
+  private alliesFor: number;
+  private readonly alliesHost: HTMLElement;
+  private readonly alliesRow: HTMLElement;
+  private readonly alliesHint: HTMLElement;
+  private readonly treatySeg: Segmented<string>;
+  private readonly startResSeg: Segmented<GameSetupConfig['startResources']>;
+  private readonly speedSeg: Segmented<string>;
   private readonly aiCivChips: ChipGroup<GameSetupConfig['aiCivs']>;
   private readonly civPicker: CivPicker;
   private readonly seedInput: HTMLInputElement;
@@ -121,6 +133,22 @@ export class GameSetup {
       this.change({ victory: v as GameSetupConfig['victory'] }),
     );
 
+    this.alliesFor = this.config.aiCount;
+    this.alliesSeg = this.makeAlliesSeg();
+    this.alliesHost = el('div', {}, this.alliesSeg.root);
+    this.alliesHint = el('div', { class: 'setup-hint', 'aria-live': 'polite' });
+    this.treatySeg = new Segmented('treaty', t.treaty, treatyItems(), String(this.config.treatyMin), (v) => {
+      const treatyMin = parseChoice(v, TREATY_MINUTES);
+      if (treatyMin !== undefined) this.change({ treatyMin });
+    });
+    this.startResSeg = new Segmented('start-res', t.startResources, startResourceItems(), this.config.startResources, (v) =>
+      this.change({ startResources: v }),
+    );
+    this.speedSeg = new Segmented('speed', t.speed, speedItems(), String(this.config.speed), (v) => {
+      const speed = parseChoice(v, SPEED_CHOICES);
+      if (speed !== undefined) this.change({ speed });
+    });
+
     this.aiHint = el('div', { class: 'setup-hint', 'aria-live': 'polite' });
 
     this.civPicker = new CivPicker(this.config.civ, civPreview, (civ) => this.change({ civ }));
@@ -166,6 +194,21 @@ export class GameSetup {
         el('div', { class: 'setup-control' }, control, extra),
       );
 
+    // Built in display order: each field takes the next entrance stagger slot.
+    const rows: HTMLElement[] = [
+      field(t.template, templateGrid),
+      field(t.size, this.sizeSeg.root),
+      field(t.opponents, this.aiSeg.root, this.aiHint),
+      field(t.difficulty, this.diffSeg.root),
+      field(t.victory, this.victorySeg.root),
+      (this.alliesRow = field(t.allies, this.alliesHost, this.alliesHint)),
+      field(t.treaty, this.treatySeg.root),
+      field(t.startResources, this.startResSeg.root),
+      field(t.speed, this.speedSeg.root),
+      field(t.civ, this.civPicker.root, undefined, this.civPicker.caption),
+      field(t.aiCivs, this.aiCivChips.root),
+      field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
+    ];
     this.card = el(
       'section',
       { class: 'glass setup-card', role: 'dialog', 'aria-label': t.title },
@@ -179,14 +222,7 @@ export class GameSetup {
       el(
         'div',
         { class: 'setup-body' },
-        field(t.template, templateGrid),
-        field(t.size, this.sizeSeg.root),
-        field(t.opponents, this.aiSeg.root, this.aiHint),
-        field(t.difficulty, this.diffSeg.root),
-        field(t.victory, this.victorySeg.root),
-        field(t.civ, this.civPicker.root, undefined, this.civPicker.caption),
-        field(t.aiCivs, this.aiCivChips.root),
-        field(t.seed, el('div', { class: 'seed-row' }, this.seedInput, reroll), el('div', { class: 'setup-hint' }, t.seedHint)),
+        ...rows,
       ),
       notice ? el('div', { class: 'setup-notice', role: 'alert' }, notice) : null,
       el(
@@ -246,6 +282,12 @@ export class GameSetup {
     this.refresh();
   }
 
+  private makeAlliesSeg(): Segmented<string> {
+    return new Segmented('allies', hu.setup.allies, alliesItems(this.config.aiCount), String(this.config.allies), (v) =>
+      this.change({ allies: Number(v) }),
+    );
+  }
+
   private syncSeed(): void {
     this.config = withSetup(this.config, {});
     this.seedInput.value = String(this.config.seed);
@@ -257,6 +299,20 @@ export class GameSetup {
     this.aiSeg.set(String(c.aiCount));
     this.diffSeg.set(c.difficulty);
     this.victorySeg.set(c.victory);
+    if (this.alliesFor !== c.aiCount) {
+      this.alliesFor = c.aiCount;
+      const focused = this.alliesSeg.root.contains(document.activeElement);
+      this.alliesSeg = this.makeAlliesSeg();
+      this.alliesHost.replaceChildren(this.alliesSeg.root);
+      if (focused) this.alliesSeg.root.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+    }
+    this.alliesSeg.set(String(c.allies));
+    // One AI is always the enemy: with a single AI there is nothing to choose.
+    this.alliesRow.hidden = c.aiCount <= 1;
+    this.alliesHint.textContent = hu.setup.alliesHint(c.allies, c.aiCount - c.allies);
+    this.treatySeg.set(String(c.treatyMin));
+    this.startResSeg.set(c.startResources);
+    this.speedSeg.set(String(c.speed));
     for (const chip of this.templateChips) chip.setAttribute('aria-checked', String(chip.dataset['tpl'] === c.template));
     this.aiCivChips.set(c.aiCivs);
     this.civPicker.set(c.civ);

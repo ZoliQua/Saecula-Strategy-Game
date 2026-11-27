@@ -8,6 +8,7 @@ import { MovementSystem } from '../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../ecs/systems/PathfindingSystem';
 import { createEcsWorld } from '../ecs/world';
 import { createPlayer } from '../game/Player';
+import { createPlayers } from '../game/PlayerManager';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
 import { TERRAIN } from '../map/TerrainTypes';
@@ -76,6 +77,24 @@ describe('ArmyControl', () => {
     expect(send({ remainingMs: TIME_VICTORY.holdLeadMs + 1, leaderId: 2 })).toBe(5);
     expect(send({ remainingMs: 1000, leaderId: 1 })).toBe(5);
     expect(send(undefined)).toBe(5);
+  });
+
+  it('no wave leaves while the treaty holds (M16); the same army goes once it ends', () => {
+    const map = new MapData(32, 32);
+    const world = createEcsWorld();
+    const fog = new FogOfWarData(32, 32);
+    createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 2, mapData: map });
+    createBuilding(world, { type: 'town_center', origin: { tx: 24, ty: 24 }, playerId: 1, mapData: map });
+    const army = Array.from({ length: 5 }, (_, i) => createUnit(world, { type: 'swordsman', tile: { tx: 6 + i, ty: 6 }, playerId: 2 }));
+    fog.markVisible(25, 25);
+    const base: AIContext = { world, mapData: map, player: createPlayer({ id: 2 }), timeMs: 0, fog, enemyPlayerId: 1 };
+    const control = new ArmyControl(new ThoughtLog(), createRng(3));
+    const during = { ...base, treatyActive: true };
+    expect(control.launchWave(during, new Perception().update(during))).toBe(0);
+    expect(control.attacking).toBe(false);
+    expect(army.every((u) => !u.moveIntent && !u.attackIntent)).toBe(true);
+    const after = { ...base, treatyActive: false };
+    expect(control.launchWave(after, new Perception().update(after))).toBe(5);
   });
 
   it('a wave member converted away (M11) leaves the wave and keeps its new owner\'s orders', () => {
@@ -160,5 +179,29 @@ describe('ArmyControl and ships (M14)', () => {
     expect(archer.attackIntent?.targetId).toBe(galley.id);
     control.launchWave(ctx, perception.update(ctx), swords);
     for (const s of swords) expect(s.attackIntent?.targetId).not.toBe(galley.id);
+  });
+
+  it("in a team match a wave fights any enemy-team unit it meets, but marches on the chosen enemy's buildings (M16)", () => {
+    const run = (allies: number) => {
+      const map = new MapData(48, 48);
+      const world = createEcsWorld();
+      const fog = new FogOfWarData(48, 48);
+      for (let x = 0; x < 48; x++) for (let y = 0; y < 48; y++) fog.markVisible(x, y);
+      const players = createPlayers('hungarian', ['english', 'german', 'french'], undefined, allies);
+      createBuilding(world, { type: 'town_center', origin: { tx: 2, ty: 2 }, playerId: 2, mapData: map });
+      const enemyTc = createBuilding(world, { type: 'town_center', origin: { tx: 40, ty: 40 }, playerId: 4, mapData: map });
+      const army = Array.from({ length: 4 }, (_, i) => createUnit(world, { type: 'swordsman', tile: { tx: 10 + i, ty: 10 }, playerId: 2 }));
+      const other = createUnit(world, { type: 'swordsman', tile: { tx: 12, ty: 12 }, playerId: 3 });
+      const ctx: AIContext = { world, mapData: map, player: players.get(2)!, timeMs: 0, fog, enemyPlayerId: 4, teams: players };
+      const control = new ArmyControl(new ThoughtLog(), createRng(3));
+      control.launchWave(ctx, new Perception().update(ctx), army);
+      return { army, other, enemyTc };
+    };
+    // allies 1: team 1 = {1, 2}, player 3 is an enemy-team AI next to the wave.
+    const teams = run(1);
+    expect(teams.army.some((u) => u.attackIntent?.targetId === teams.other.id)).toBe(true);
+    // No teams (allies 0): only the chosen enemy counts, the wave goes for its town centre.
+    const ffa = run(0);
+    expect(ffa.army.every((u) => u.attackIntent?.targetId === ffa.enemyTc.id)).toBe(true);
   });
 });

@@ -88,12 +88,14 @@ export class SelectionPanel {
         stats([[sel.resourceType, hu.resources[sel.resourceType], `${sel.amount}`]]),
       ];
     }
-    const enemy = sel.ownerId !== 1;
+    const own = sel.ownerId === 1;
+    // An ally's (M16) is neither own nor enemy: labelled "Szövetséges", its technologies stay private.
+    const relation: Relation = own ? 'own' : sel.ally ? 'ally' : 'enemy';
     const more = count > 1 ? `+${count - 1} ${hu.hud.selectedMore}` : undefined;
     if (sel.kind === 'unit') {
       const spec = UNIT_SPECS[sel.unitType];
       // Technology bonuses are only known for the human's own units; the owner's civ bonus is public.
-      const eff = effectiveUnitStats({ researched: new Set(enemy ? [] : researched), civ: sel.civ }, sel.unitType);
+      const eff = effectiveUnitStats({ researched: new Set(own ? researched : []), civ: sel.civ }, sel.unitType);
       const base = spec.balance;
       const attackBonus = eff.meleeAtk - base.meleeAtk + (eff.pierceAtk - base.pierceAtk);
       const rows: Array<[IconName, string, string]> = [
@@ -111,19 +113,19 @@ export class SelectionPanel {
       if (sel.carrying) rows.push([sel.carrying.type, hu.hud.carrying, `${sel.carrying.amount}`]);
       if (sel.cargo !== undefined) rows.push(['pop', hu.hud.cargo, cargoLine(sel.cargo)]);
       return [
-        head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, enemy), more),
+        head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, relation), more),
         bar(sel.hp.current, sel.hp.max, hu.hud.hp),
         stats(rows),
       ];
     }
-    const nodes: Node[] = [head(hu.buildings[sel.buildingType], hu.buildingRoles[sel.buildingType], owner(sel.ownerId, sel.civ, enemy), more)];
+    const nodes: Node[] = [head(hu.buildings[sel.buildingType], hu.buildingRoles[sel.buildingType], owner(sel.ownerId, sel.civ, relation), more)];
     if (sel.constructionProgress !== undefined) {
       nodes.push(bar(Math.round(sel.constructionProgress * 100), 100, hu.hud.underConstruction, 'build', '%'));
     } else {
       nodes.push(bar(sel.hp.current, sel.hp.max, hu.hud.hp));
     }
     if (sel.queue && sel.queue.length > 0) nodes.push(this.queue(sel));
-    if (sel.research && !enemy) nodes.push(this.research(sel));
+    if (sel.research && own) nodes.push(this.research(sel));
     return nodes;
   }
 
@@ -188,14 +190,19 @@ function head(name: string, role: string, badge?: Node, more?: string): Node {
   );
 }
 
-/** Owner badge: the player's colour swatch and civ name, marked when it is an enemy's. */
-function owner(ownerId: number, civ: CivId, enemy: boolean): Node {
+/** Whose the selection is, from the human's side (M16 adds allies). */
+export type Relation = 'own' | 'ally' | 'enemy';
+
+/** Owner badge: the player's colour swatch and civ name, marked when it is an enemy's or an ally's (M16). */
+function owner(ownerId: number, civ: CivId, relation: Relation): Node {
+  const mark = relation === 'own' ? '' : ` ${relation}`;
   return el(
     'span',
-    { class: `sel-owner${enemy ? ' enemy' : ''}`, title: `${hu.hud.owner}: ${hu.civs[civ]}`, style: `--owner:${playerColorCss(ownerId)}` },
+    { class: `sel-owner${mark}`, title: `${hu.hud.owner}: ${hu.civs[civ]}`, style: `--owner:${playerColorCss(ownerId)}` },
     el('i', { class: 'sel-swatch' }),
     el('span', {}, hu.civs[civ]),
-    enemy ? el('span', { class: 'sel-enemy' }, hu.hud.enemy) : null,
+    relation === 'enemy' ? el('span', { class: 'sel-enemy' }, hu.hud.enemy) : null,
+    relation === 'ally' ? el('span', { class: 'sel-ally' }, hu.hud.ally) : null,
   );
 }
 

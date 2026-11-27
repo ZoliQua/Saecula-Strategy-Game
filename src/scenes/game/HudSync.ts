@@ -5,6 +5,7 @@ import type { PlayerManager } from '../../game/PlayerManager';
 import { wonderClocks, type WonderClockInfo } from '../../game/wonderClocks';
 import type { MatchStats } from '../../stats/MatchStats';
 import { VILLAGER_ACTIVITIES, villagerActivity, type VillagerActivity } from '../../stats/villagerActivity';
+import { areAllies } from '../../game/diplomacy';
 import { timeLeader, type TimeVictoryRule } from '../../game/timeVictory';
 import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
 
@@ -13,8 +14,9 @@ import { uiStore, type ScoreRowInfo, type TimeLimitInfo } from '../../ui/store';
  * systems: which limited buildings (wonder) the human already has, for
  * the build menu, and the running Wonder countdowns (none when the
  * match cannot be won by a Wonder), and the side panel's every-player
- * scores (highest first) and the human's villager activity counts, and
- * the time-victory clock (time left and the leader) when the match has one.
+ * scores (highest first; the human's allies marked, M16) and the human's villager activity counts, and
+ * the time-victory clock (time left and the leader) when the match has one,
+ * and the treaty countdown (M16) when the match has a treaty.
  */
 export class HudSync {
   constructor(
@@ -26,7 +28,12 @@ export class HudSync {
     private readonly stats: MatchStats | null = null,
     /** The time-victory rule (null: no time limit, no clock). */
     private readonly time: TimeVictoryRule | null = null,
-  ) {}
+    /** Treaty time left (M16; 0 once over); null: the match has no treaty. */
+    private readonly treatyLeftMs: (() => number) | null = null,
+  ) {
+    // The treaty countdown shows from the first frame, not after the first second.
+    if (treatyLeftMs) this.syncTreaty(treatyLeftMs());
+  }
 
   secondTick(): void {
     this.syncUniqueBuildings();
@@ -34,6 +41,11 @@ export class HudSync {
     this.syncScores();
     this.syncVillagers();
     if (this.time) this.syncTimeLimit(this.time);
+    if (this.treatyLeftMs) this.syncTreaty(this.treatyLeftMs());
+  }
+
+  private syncTreaty(leftMs: number): void {
+    if (uiStore.getState().treatyLeftMs !== leftMs) uiStore.getState().setTreatyLeft(leftMs);
   }
 
   private syncTimeLimit(time: TimeVictoryRule): void {
@@ -44,18 +56,28 @@ export class HudSync {
       leaderId,
       leaderColor: leaderId === null ? null : (this.players.get(leaderId)?.color ?? null),
       final: remainingMs <= TIME_VICTORY.holdLeadMs,
+      ...(this.players.hasTeams() ? { teams: true as const } : {}),
     };
     const prev = uiStore.getState().timeLimit;
-    const same = prev && prev.remainingMs === next.remainingMs && prev.leaderId === next.leaderId && prev.final === next.final;
+    const same = prev && prev.remainingMs === next.remainingMs && prev.leaderId === next.leaderId && prev.final === next.final && prev.teams === next.teams;
     if (!same) uiStore.getState().setTimeLimit(next);
   }
 
   private syncScores(): void {
     const stats = this.stats;
     if (!stats) return;
+    const human = this.players.human();
     const rows: ScoreRowInfo[] = this.players
       .all()
-      .map((p) => ({ playerId: p.id, civ: p.civ, color: p.color, isHuman: p.isHuman, score: stats.scoreOf(p.id), defeated: p.defeated }))
+      .map((p) => ({
+        playerId: p.id,
+        civ: p.civ,
+        color: p.color,
+        isHuman: p.isHuman,
+        score: stats.scoreOf(p.id),
+        defeated: p.defeated,
+        ally: human !== undefined && areAllies(this.players, human.id, p.id),
+      }))
       .sort((a, b) => b.score - a.score || a.playerId - b.playerId);
     const prev = uiStore.getState().scores;
     const same =

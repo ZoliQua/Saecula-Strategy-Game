@@ -93,7 +93,8 @@ export class NavalPlay {
     const near = (e: Entity) =>
       !!e.position && chebyshev(e.position, at) <= AI_NAVAL.engageRadius && canAttackTarget(ship, e) &&
       shootableFromWater(ctx.mapData, (sea ??= this.seaOf(ctx, ship)), e, range);
-    const foe =
+    // The treaty (M16): ships engage nothing while it holds; they keep exploring and come home.
+    const foe = ctx.treatyActive === true ? undefined :
       view.visibleEnemyUnits.find((e) => e.unit && isNavalType(e.unit.unitType) && near(e)) ??
       view.visibleEnemyUnits.find(near) ??
       view.visibleEnemyBuildings.find(near);

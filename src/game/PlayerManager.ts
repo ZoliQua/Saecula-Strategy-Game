@@ -1,9 +1,11 @@
-import type { CivId } from '../types';
+import type { CivId, Resources } from '../types';
+import { START_RESOURCES } from '../config/balance';
 import { DEFAULT_CIV } from '../config/civs';
 import type { Player } from './Player';
 import { createPlayer } from './Player';
+import { teamFor, type TeamLookup } from './diplomacy';
 
-export class PlayerManager {
+export class PlayerManager implements TeamLookup {
   private readonly playersById = new Map<number, Player>();
 
   constructor(players: Iterable<Player> = []) {
@@ -34,6 +36,22 @@ export class PlayerManager {
     return this.all().filter((p) => p.id !== viewer.id && !p.defeated);
   }
 
+  /** Player `id`'s team (M16); an unknown id (Gaia) is its own team. */
+  teamOf(id: number): number {
+    return this.playersById.get(id)?.team ?? id;
+  }
+
+  /** Sets every player's team from the setup's `allies` (new matches and restored saves: teams are not saved). */
+  assignTeams(allies: number): void {
+    for (const p of this.playersById.values()) p.team = teamFor(p.id, allies);
+  }
+
+  /** True when the match has teams (setup allies > 0): some player is on a team other than its own id (TeamLookup). */
+  hasTeams(): boolean {
+    for (const p of this.playersById.values()) if (p.team !== p.id) return true;
+    return false;
+  }
+
   markDefeated(playerId: number): void {
     const p = this.playersById.get(playerId);
     if (p) p.defeated = true;
@@ -42,12 +60,22 @@ export class PlayerManager {
 
 /**
  * Human (id 1) plus one AI per entry of `aiCivs` (ids 2..), each with its
- * own colour and the civ given for it (GameSetupConfig matchCivs).
+ * own colour and the civ given for it (GameSetupConfig matchCivs). Every
+ * player starts with its own copy of `resources` (the setup's preset,
+ * startResourcesFor; default the normal one). Teams follow `allies` (teamFor;
+ * 0 = everyone on its own team).
  */
-export function createPlayers(humanCiv: CivId, aiCivs: readonly CivId[]): PlayerManager {
-  const players = [createPlayer({ id: 1, isHuman: true, civ: humanCiv })];
-  aiCivs.forEach((civ, i) => players.push(createPlayer({ id: i + 2, isHuman: false, civ })));
-  return new PlayerManager(players);
+export function createPlayers(
+  humanCiv: CivId,
+  aiCivs: readonly CivId[],
+  resources: Readonly<Resources> = START_RESOURCES.normal,
+  allies = 0,
+): PlayerManager {
+  const players = [createPlayer({ id: 1, isHuman: true, civ: humanCiv, resources: { ...resources } })];
+  aiCivs.forEach((civ, i) => players.push(createPlayer({ id: i + 2, isHuman: false, civ, resources: { ...resources } })));
+  const manager = new PlayerManager(players);
+  manager.assignTeams(allies);
+  return manager;
 }
 
 export function createDefaultPlayers(): PlayerManager {

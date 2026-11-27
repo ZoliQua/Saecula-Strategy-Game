@@ -1,3 +1,5 @@
+import { areEnemies, NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
+import { NO_TREATY, type TreatyGate } from '../../game/treaty';
 import type { Entity } from '../components';
 import type { FogOfWarData } from '../../map/FogOfWarData';
 import type { EcsWorld } from '../world';
@@ -5,7 +7,7 @@ import type { EcsWorld } from '../world';
 const RETARGET_INTERVAL_MS = 250;
 
 /**
- * Gives every finished tower an `attackIntent` on the nearest enemy unit in
+ * Gives every finished tower an `attackIntent` on the nearest enemy (M16: other-team) unit in
  * range; CombatSystem then fires the arrow when the cooldown allows.
  *
  * Visibility: a tower only shoots units its owner can currently see in that
@@ -19,6 +21,10 @@ export class TowerCombatSystem {
     private readonly world: EcsWorld,
     /** Fog of war of a player, or null when that player has none. */
     private readonly fogFor: (playerId: number) => FogOfWarData | null = () => null,
+    /** Teams (M16): allies are never a target; default none (everyone hostile). */
+    private readonly teams: TeamLookup = NO_TEAMS,
+    /** The treaty (M16): while it holds, towers shoot no player at all. */
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {}
 
   update(deltaMs: number): void {
@@ -58,8 +64,10 @@ export class TowerCombatSystem {
   private isValidTarget(tower: TowerEntity, target: Entity, range: number): boolean {
     if (!target.position || !target.owner || !target.health || !target.unit) return false;
     if (target.dying || target.health.current <= 0) return false;
-    // Gaia (0) is neutral wildlife/resources, never a tower target.
-    if (target.owner.playerId === tower.owner.playerId || target.owner.playerId === 0) return false;
+    // Enemies only: never own, an ally's (M16) or Gaia's (neutral wildlife/resources).
+    if (!areEnemies(this.teams, target.owner.playerId, tower.owner.playerId)) return false;
+    // The treaty (M16): every target left is another team's player, so none while it holds.
+    if (this.treaty()) return false;
     // Same Chebyshev metric as CombatSystem, so an accepted target always fires.
     const dist = Math.max(
       Math.abs(target.position.tx - tower.position.tx),

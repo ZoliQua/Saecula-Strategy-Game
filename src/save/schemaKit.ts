@@ -15,6 +15,12 @@ export function enumOf<T extends string>(values: readonly T[]): z.ZodType<T> {
   return z.custom<T>((v) => typeof v === 'string' && allowed.includes(v));
 }
 
+/** A number that is one of `values` (exact match, e.g. a treaty length or a game speed). */
+export function numberOf<T extends number>(values: readonly T[]): z.ZodType<T> {
+  const allowed: readonly number[] = values;
+  return z.custom<T>((v) => typeof v === 'number' && allowed.includes(v));
+}
+
 /** The keys of a table keyed by every member of a union (so none is missed). */
 const keysOf = <K extends string>(table: Readonly<Record<K, unknown>>): K[] => Object.keys(table) as K[];
 

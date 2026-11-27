@@ -8,8 +8,9 @@ export const FOG_SCAN_INTERVAL_MS = 250;
  * Recomputes per-tile visibility for one viewing player (the human, or
  * an AI for its own perception). On each scan:
  *   1) All currently-visible tiles drop to 'explored'.
- *   2) Every player-owned entity with a fogEmitter stamps a circular
- *      Chebyshev-distance area back to 'visible'.
+ *   2) Every entity with a fogEmitter whose owner shares its sight with
+ *      the viewer (the viewer itself, and its allies: M16 shared vision)
+ *      stamps a circular area back to 'visible'.
  * Runs every `intervalMs` (250 ms by default — plenty for unit motion at
  * 2.5 tiles/s). The first update always scans.
  */
@@ -19,8 +20,10 @@ export class FogOfWarSystem {
   constructor(
     private readonly world: EcsWorld,
     private readonly fog: FogOfWarData,
-    private readonly viewerPlayerId: number,
+    viewerPlayerId: number,
     private readonly intervalMs = FOG_SCAN_INTERVAL_MS,
+    /** Whose emitters light the viewer's fog (M16 shared vision); default the viewer's own only. */
+    private readonly sharedWith: (ownerId: number) => boolean = (ownerId) => ownerId === viewerPlayerId,
   ) {
     this.elapsedMs = intervalMs;
   }
@@ -42,7 +45,7 @@ export class FogOfWarSystem {
     this.fog.dimVisibleToExplored();
     const emitters = this.world.with('position', 'fogEmitter', 'owner');
     for (const e of emitters) {
-      if (e.owner.playerId !== this.viewerPlayerId) continue;
+      if (!this.sharedWith(e.owner.playerId)) continue;
       const range = e.fogEmitter.sightRange;
       for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {

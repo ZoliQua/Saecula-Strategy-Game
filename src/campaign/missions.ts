@@ -1,4 +1,5 @@
 import type { GameSetupConfig } from '../game/GameSetupConfig';
+import { MODE_DEFAULTS } from '../game/matchModes';
 import type { AgeId, Resources } from '../types';
 import type { Objective } from './objectives';
 
@@ -24,7 +25,7 @@ const MIN = 60_000;
 export const MISSIONS: Readonly<Record<MissionId, MissionDef>> = {
   first_monastery: {
     id: 'first_monastery',
-    setup: { template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'easy', civ: 'hungarian', aiCivs: 'english', seed: 1101, victory: 'conquest' },
+    setup: { template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'easy', civ: 'hungarian', aiCivs: 'english', seed: 1101, victory: 'conquest', ...MODE_DEFAULTS },
     start: {},
     objectives: [
       { kind: 'reachAge', age: 2 },
@@ -34,7 +35,7 @@ export const MISSIONS: Readonly<Record<MissionId, MissionDef>> = {
   },
   border_guards: {
     id: 'border_guards',
-    setup: { template: 'fortress', mapSize: 'medium', aiCount: 2, difficulty: 'medium', civ: 'english', aiCivs: 'german', seed: 2202, victory: 'conquest' },
+    setup: { template: 'fortress', mapSize: 'medium', aiCount: 2, difficulty: 'medium', civ: 'english', aiCivs: 'german', seed: 2202, victory: 'conquest', ...MODE_DEFAULTS },
     start: { age: 2, bonus: { food: 200, wood: 400, gold: 500 } },
     objectives: [
       { kind: 'survive', ms: 20 * MIN },
@@ -43,7 +44,7 @@ export const MISSIONS: Readonly<Record<MissionId, MissionDef>> = {
   },
   age_of_wonders: {
     id: 'age_of_wonders',
-    setup: { template: 'islands', mapSize: 'medium', aiCount: 2, difficulty: 'hard', civ: 'italian', aiCivs: 'mixed', seed: 3303, victory: 'conquest_wonder' },
+    setup: { template: 'islands', mapSize: 'medium', aiCount: 2, difficulty: 'hard', civ: 'italian', aiCivs: 'mixed', seed: 3303, victory: 'conquest_wonder', ...MODE_DEFAULTS },
     start: { age: 3, bonus: { food: 1000, wood: 1000, gold: 800 } },
     objectives: [{ kind: 'winMatch' }],
   },

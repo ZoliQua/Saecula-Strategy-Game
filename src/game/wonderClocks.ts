@@ -1,4 +1,5 @@
 import type { EcsWorld } from '../ecs/world';
+import { isFriendly } from './diplomacy';
 import type { PlayerManager } from './PlayerManager';
 
 /** One running Wonder countdown, for the HUD. */
@@ -7,6 +8,8 @@ export interface WonderClockInfo {
   readonly playerId: number;
   /** Owner's player colour (0xRRGGBB). */
   readonly color: number;
+  /** The human's own Wonder or an ally's (M16): a win for the human's team. */
+  readonly friendly: boolean;
   /** Time left until the owner wins (never negative). */
   readonly remainingMs: number;
 }
@@ -18,6 +21,7 @@ export interface WonderClockInfo {
  */
 export function wonderClocks(world: EcsWorld, players: PlayerManager, holdMs: number): WonderClockInfo[] {
   const out: WonderClockInfo[] = [];
+  const humanId = players.human()?.id ?? 1;
   for (const e of world.with('wonder', 'owner')) {
     if (e.dying) continue;
     const owner = players.get(e.owner.playerId);
@@ -26,6 +30,7 @@ export function wonderClocks(world: EcsWorld, players: PlayerManager, holdMs: nu
       entityId: e.id ?? -1,
       playerId: owner.id,
       color: owner.color,
+      friendly: isFriendly(players, owner.id, humanId),
       remainingMs: Math.max(0, holdMs - e.wonder.heldMs),
     });
   }

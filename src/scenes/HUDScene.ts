@@ -42,7 +42,10 @@ export class HUDScene extends Phaser.Scene {
     fog: FogOfWarData,
     gameCamera: Phaser.Cameras.Scene2D.Camera,
     onJumpTo: (tx: number, ty: number) => void,
+    /** Owners the minimap always shows (M16: the human and its allies). */
+    friendly?: (ownerId: number) => boolean,
   ): void {
-    this.hud?.attachMinimap(new Minimap(MINIMAP_CSS_SIZE, world, mapData, fog, gameCamera, onJumpTo));
+    if (friendly) this.hud?.setFriendly(friendly);
+    this.hud?.attachMinimap(new Minimap(MINIMAP_CSS_SIZE, world, mapData, fog, gameCamera, onJumpTo, friendly));
   }
 }

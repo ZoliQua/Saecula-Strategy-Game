@@ -20,6 +20,15 @@ const TERRAIN_COLOR: Record<TerrainId, number> = {
 };
 
 /**
+ * Whether the minimap draws an entity of `ownerId`: the human's own and its
+ * allies' (M16, `friendly`) always, anyone else's only on a visible tile
+ * (or always without fog).
+ */
+export function minimapShows(ownerId: number, friendly: (ownerId: number) => boolean, visible: () => boolean): boolean {
+  return friendly(ownerId) || visible();
+}
+
+/**
  * Isometric overview drawn on a DOM canvas. Tiles, fog, units and
  * buildings are repainted twice a second; the camera frustum is
  * redrawn every frame. Clicking or dragging jumps the main camera.
@@ -44,6 +53,8 @@ export class Minimap {
     private readonly fog: FogOfWarData | null,
     private readonly camera: Phaser.Cameras.Scene2D.Camera,
     private readonly onJumpTo: (tx: number, ty: number) => void,
+    /** Owners always drawn (M16: the human and its allies, in their colour); default the human only. */
+    private readonly friendly: (ownerId: number) => boolean = (ownerId) => ownerId === 1,
   ) {
     this.size = sizeCss;
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -143,8 +154,9 @@ export class Minimap {
     }
     for (const e of this.world.with('owner', 'position')) {
       if (!e.unit && !e.building) continue;
-      const own = e.owner.playerId === 1;
-      if (!own && this.fog && !this.fog.isVisible(e.position.tx, e.position.ty)) continue;
+      const fog = this.fog;
+      const { tx: ex, ty: ey } = e.position;
+      if (!minimapShows(e.owner.playerId, this.friendly, () => !fog || fog.isVisible(ex, ey))) continue;
       const color = PLAYER_COLORS[(e.owner.playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
       const b = e.building;
       const tx = e.position.tx + (b ? (b.footprint.width - 1) / 2 : 0);

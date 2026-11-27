@@ -26,14 +26,19 @@ import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../
 import { resetUiStore } from '../../ui/store';
 import type { PersonalityId } from '../../config/aiPersonality';
 import {
+  clampAllies,
   defaultSetupConfig,
   hasTimeVictory,
   hasWonderVictory,
   MAP_SIZE_IDS,
   MAP_SIZES,
   matchCivs,
+  startResourcesFor,
   type Difficulty,
   type GameSetupConfig,
+  type GameSpeed,
+  type StartResourcesId,
+  type TreatyMinutes,
 } from '../../game/GameSetupConfig';
 import { restoreMatch } from '../../save/deserializer';
 import type { SaveData } from '../../save/schema';
@@ -45,6 +50,8 @@ import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
 import { buildMatchAIs } from '../matchAIs';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
+import { treatyActive, type TreatyGate } from '../../game/treaty';
+import { chooseEnemyPlayer } from '../targetPlayer';
 
 export interface HeadlessMatchOptions {
   readonly seed: number;
@@ -56,13 +63,13 @@ export interface HeadlessMatchOptions {
   readonly strategy: (playerId: number) => AIStrategy;
   /** The StatefulRng each AI's strategy draws from (snapshot tests; sims use their own createRng). */
   readonly rng?: (playerId: number) => StatefulRng;
-  /** Whom each AI attacks (default: the passive human, player 1). */
+  /** Whom each AI attacks (default: the passive human, player 1; with allies, the live game's chooseEnemyPlayer). */
   readonly enemyOf?: (playerId: number) => number;
   /** Difficulty handicap per AI player (default: none). */
   readonly difficulty?: (playerId: number) => Difficulty;
   /** Drives the human slot (player 1) with an AI too, attacking `humanEnemy` (default: passive human). */
   readonly humanStrategy?: AIStrategy;
-  /** Whom the AI-driven human attacks (default player 2; read every step, so it may change). */
+  /** Whom the AI-driven human attacks (default player 2, with allies chooseEnemyPlayer; read every step, so it may change). */
   readonly humanEnemy?: () => number;
   /** Civs of the human and the AIs (default: Hungarian human, seeded mixed AIs as in a real game). */
   readonly civs?: { readonly human: CivId; readonly ais: readonly CivId[] };
@@ -74,6 +81,14 @@ export interface HeadlessMatchOptions {
   readonly timeVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
+  /** AIs on the human's team (M16 setup `allies`, clamped to 0..aiCount - 1; default 0). Stored in the setup only. */
+  readonly allies?: number;
+  /** Treaty length in game minutes (M16; default 0). Stored in the setup only. */
+  readonly treatyMin?: TreatyMinutes;
+  /** Starting-resource preset for every player (M16; default 'normal'). */
+  readonly startResources?: StartResourcesId;
+  /** Game-speed multiplier (M16; default 1). Stored in the setup only: `run` steps are game time. */
+  readonly speed?: GameSpeed;
   /** The match id its saves carry (default `headless-<seed>`, so equal runs save equal). */
   readonly matchId?: string;
 }
@@ -112,6 +127,10 @@ function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
     mapSize,
     difficulty: options.difficulty?.(2) ?? 'medium',
     victory: victoryOf(options.wonderVictory === true, options.timeVictory === true),
+    allies: clampAllies(options.allies ?? 0, options.aiCount),
+    treatyMin: options.treatyMin ?? 0,
+    startResources: options.startResources ?? 'normal',
+    speed: options.speed ?? 1,
   };
 }
 
@@ -124,11 +143,13 @@ function victoryOf(wonder: boolean, time: boolean): GameSetupConfig['victory'] {
  * A skirmish without Phaser: the template's map (meadow by default), starting entities, every
  * gameplay system in SystemRunner order and the AI players. The human
  * (player 1) stays passive; AIs attack it unless `enemyOf` pits them
- * against each other. Used by AI simulation tests.
+ * against each other. With allies (M16 teams) and no `enemyOf`, each AI
+ * picks its enemy as the live game does (chooseEnemyPlayer). Used by AI
+ * simulation tests.
  */
 export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatch {
-  resetUiStore();
   const setup = setupOf(options);
+  resetUiStore(undefined, startResourcesFor(setup));
   const generated = generateMap({
     template: setup.template,
     width: options.size,
@@ -139,7 +160,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const map = generated.map;
   const world = createEcsWorld();
   const civs = options.civs ?? matchCivs(options.mission ? setup : { ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
-  const players = createPlayers(civs.human, civs.ais);
+  const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup), setup.allies);
   if (options.mission) applyMissionStart(players, options.mission);
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
@@ -161,8 +182,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
     players,
     ais,
     humanAi,
-    humanEnemy: options.humanEnemy ?? (() => 2),
-    enemyOf: options.enemyOf ?? (() => 1),
+    humanEnemy: options.humanEnemy ?? (players.hasTeams() ? () => chooseEnemyPlayer(players, 1, world) : () => 2),
+    enemyOf: options.enemyOf ?? defaultEnemyOf(players, world),
     startMs: 0,
     camera: { tx: options.size / 2, ty: options.size / 2, zoom: 1 },
     lightPhase: 0,
@@ -173,7 +194,8 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
 /**
  * A headless match continued from a save: the saved world, map, fogs and
  * players, and AIs rebuilt and restored by the live game's own
- * buildMatchAIs. AIs attack the human, as in a default headless match.
+ * buildMatchAIs. AIs attack the human (with allies: chooseEnemyPlayer), as
+ * in a default headless match.
  */
 export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
   resetUiStore();
@@ -193,12 +215,22 @@ export function resumeHeadlessMatch(save: SaveData): HeadlessMatch {
     ais,
     humanAi: null,
     humanEnemy: () => 2,
-    enemyOf: () => 1,
+    enemyOf: defaultEnemyOf(r.players, r.world),
     startMs: r.gameTimeMs,
     camera: r.camera,
     lightPhase: r.lightPhase,
     stats: r.stats,
   });
+}
+
+/** Whom each AI attacks by default: the human (player 1), or with allies the live game's choice (SystemRunner). */
+function defaultEnemyOf(players: PlayerManager, world: EcsWorld): (playerId: number) => number | undefined {
+  return players.hasTeams() ? (id) => chooseEnemyPlayer(players, id, world) : () => 1;
+}
+
+/** The AI context with `enemyPlayerId` only when there is one (undefined = every hostile, as in SystemRunner). */
+function withEnemy<T extends object>(base: T, enemy: number | undefined): T & { enemyPlayerId?: number } {
+  return enemy === undefined ? base : { ...base, enemyPlayerId: enemy };
 }
 
 interface MatchParts {
@@ -209,8 +241,8 @@ interface MatchParts {
   readonly players: PlayerManager;
   readonly ais: readonly AIPlayer[];
   readonly humanAi: AIPlayer | null;
-  readonly humanEnemy: () => number;
-  readonly enemyOf: (playerId: number) => number;
+  readonly humanEnemy: () => number | undefined;
+  readonly enemyOf: (playerId: number) => number | undefined;
   readonly startMs: number;
   readonly camera: MatchState['camera'];
   readonly lightPhase: number;
@@ -227,6 +259,9 @@ function assemble(parts: MatchParts): HeadlessMatch {
   const paths = new PathBudget();
   const wonderVictory = hasWonderVictory(setup.victory);
   const isDefeated = (id: number) => players.get(id)?.defeated ?? false;
+  let now = parts.startMs;
+  // The treaty (M16): from the setup and this match's clock, like the live runner.
+  const treaty: TreatyGate = () => treatyActive(setup, now);
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
@@ -234,17 +269,16 @@ function assemble(parts: MatchParts): HeadlessMatch {
     construction: new ConstructionSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
-    towers: new TowerCombatSystem(world, fogFor),
-    combat: new CombatSystem(world, map, players, paths),
-    monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths),
-    projectiles: new ProjectileSystem(world, players),
+    towers: new TowerCombatSystem(world, fogFor, players, treaty),
+    combat: new CombatSystem(world, map, players, paths, treaty),
+    monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths, players, treaty),
+    projectiles: new ProjectileSystem(world, players, treaty),
     movement: new MovementSystem(world, players, map),
     transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),
-    wonders: new WonderSystem(world, wonderVictory),
+    wonders: new WonderSystem(world, wonderVictory, treaty),
     population: new PopulationSystem(world, 1, players),
   };
-  let now = parts.startMs;
   const timeLimit = hasTimeVictory(setup.victory) ? new TimeLimitWatch(players, stats, now) : null;
   const step = (dt: number) => {
     now += dt;
@@ -265,9 +299,9 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.wonders.update(dt);
     timeLimit?.advance(dt);
     const timeVictory = timeLimit?.view();
-    const base = { world, mapData: map, wonderVictory, isDefeated, ...(timeVictory && { timeVictory }) };
-    for (const ai of ais) ai.update({ ...base, enemyPlayerId: enemyOf(ai.player.id) }, dt);
-    humanAi?.update({ ...base, enemyPlayerId: humanEnemy() }, dt);
+    const base = { world, mapData: map, wonderVictory, isDefeated, teams: players, treatyActive: treaty(), ...(timeVictory && { timeVictory }) };
+    for (const ai of ais) ai.update(withEnemy(base, enemyOf(ai.player.id)), dt);
+    humanAi?.update(withEnemy(base, humanEnemy()), dt);
     systems.population.update();
     stats.update(dt);
   };

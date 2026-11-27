@@ -98,6 +98,16 @@ export const hu = {
     summary: (players: number, tiles: number) => `${players} játékos · ${tiles}×${tiles} mező`,
     victory: 'Győzelem',
     victories: { conquest: 'Hódítás', conquest_wonder: 'Hódítás vagy Csoda', conquest_time: 'Hódítás vagy idő', all: 'Mind' },
+    allies: 'Szövetségesek',
+    /** Under the allies row: who is on whose side (M16). */
+    alliesHint: (allies: number, enemies: number) =>
+      allies === 0 ? 'Minden gépi ellenfél ellened játszik' : `Csapatod: te és ${allies} gépi szövetséges · ellenfél: ${enemies}`,
+    treaty: 'Fegyverszünet',
+    treatyLabel: (minutes: number) => (minutes === 0 ? 'Nincs' : `${minutes} perc`),
+    startResources: 'Kezdő nyersanyag',
+    startResourceNames: { normal: 'Normál', high: 'Magas', deathmatch: 'Halálmeccs' },
+    speed: 'Sebesség',
+    speedLabel: (speed: number) => `${String(speed).replace('.', ',')}×`,
     mapFailed: 'Ezzel a térkép-maggal nem sikerült játszható térképet készíteni. Válassz másik magot vagy térképtípust.',
   },
   game: {
@@ -196,6 +206,8 @@ export const hu = {
     score: 'Pontszám',
     villagers: 'Falusiak',
     you: 'Te',
+    /** Chip on an allied player's score row (M16). */
+    ally: 'Szövetséges',
     defeated: 'Legyőzve',
     /** `key`: the score panel key as bound. */
     collapse: (key: string) => `Panel összecsukása (${key})`,
@@ -240,6 +252,8 @@ export const hu = {
     populationTip: 'Népesség · kattints: mit csinálnak a falusiak',
     underConstruction: 'Építés alatt',
     enemy: 'Ellenség',
+    /** An allied player's unit or building (M16). */
+    ally: 'Szövetséges',
     selectedMore: 'további kijelölve',
     population: 'Népesség',
     wallLineHint: (segments: number, wood: number) => `${segments} szakasz · ${wood} fa`,
@@ -272,8 +286,12 @@ export const hu = {
     timeLimitClock: (t: string) => `Időkorlát: ${t}`,
     timeLimitLeader: 'Éllovas',
     timeLimitLeaderYou: 'Te vezetsz',
+    /** Team match (M16): the human's team leads / the enemy team leads. */
+    timeLimitLeaderTeam: 'Csapatod vezet',
+    timeLimitLeaderEnemyTeam: 'Az ellenséges csapat vezet',
     timeLimitFinal: 'Az utolsó 5 perc! A legtöbb pont nyer.',
     wonderOwn: 'Felépült a Csodád! Tartsd meg 10 percig a győzelemhez.',
+    wonderAlly: 'Szövetségesed Csodája elkészült — 10 perc múlva győztök!',
     wonderEnemy: (id: number) => `A(z) ${id}. játékos Csodát épített — 10 perc múlva győz!`,
     wonderLost: 'Egy Csoda elpusztult.',
     /** Conversions (M11). */
@@ -365,6 +383,21 @@ export const hu = {
         defeat: 'A küldetés nem sikerült. Próbáld újra!',
       },
     },
+    /** Body lines in a team match (M16): the team wins or loses together, the human loses alone when their town centres fall. */
+    teamBodies: {
+      conquest: {
+        victory: 'Az ellenséges csapat minden városházája elpusztult. A föld a csapatodé.',
+        defeat: 'Elestek a városházáid, számodra véget ért a meccs. Még egy menet?',
+      },
+      wonder: {
+        victory: 'Csapatod Csodája 10 percig dacolt az ellenséggel. A győzelem a tiétek.',
+        defeat: 'Az ellenséges csapat Csodája 10 percig állt. Még egy menet?',
+      },
+      time: {
+        victory: 'Lejárt a 60 perc, és csapatod összpontszáma a legmagasabb. A győzelem a tiétek.',
+        defeat: 'Lejárt a 60 perc, és az ellenséges csapat több pontot gyűjtött. Még egy menet?',
+      },
+    },
     backToMenu: 'Vissza a főmenübe',
     statsHeader: 'Statisztika',
     durationLabel: 'Játékidő',
@@ -373,6 +406,8 @@ export const hu = {
     /** The player table. */
     players: 'Játékosok',
     human: 'Te',
+    /** Chip on an allied player's row (M16). */
+    ally: 'Szövetséges',
     outcomes: { winner: 'Győztes', defeated: 'Legyőzve', standing: 'Talpon' },
     ageLabel: (a: number) => `${a}. kor`,
   },
@@ -583,6 +618,12 @@ export const hu = {
     notSaved: 'A beállítások nem menthetők — csak erre a munkamenetre érvényesek',
     /** Keycap labels for keys whose `key` prints nothing useful (by KeyboardEvent.code). */
     keyNames: { Space: 'Szóköz', Tab: 'Tab', Delete: 'Delete', Backspace: 'Backspace' } as Record<string, string>,
+  },
+  /** The treaty (M16): the HUD countdown and its notices. */
+  treaty: {
+    clock: (t: string) => `Fegyverszünet: ${t}`,
+    blocked: 'Fegyverszünet van: most nem támadhatsz, az egységek csak odamennek.',
+    ended: 'Véget ért a fegyverszünet! Kezdődhet a harc.',
   },
   common: {
     yes: 'Igen',

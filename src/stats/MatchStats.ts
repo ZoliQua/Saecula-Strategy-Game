@@ -1,5 +1,6 @@
 import { SCORE_BALANCE } from '../config/balance';
 import type { EcsWorld } from '../ecs/world';
+import { areEnemies } from '../game/diplomacy';
 import { gameEvents } from '../game/events';
 import { houseBonus } from '../game/modifiers';
 import type { PlayerManager } from '../game/PlayerManager';
@@ -94,7 +95,8 @@ export class MatchStats {
       gameEvents.on('entityKilled', (e) => {
         if (!mine(e.world) || e.victimOwnerId === 0) return;
         this.edit(e.victimOwnerId, (s) => (e.buildingType ? s.buildingsLost++ : s.unitsLost++));
-        if (e.killerId !== null && e.killerId !== e.victimOwnerId && e.killerId !== 0) {
+        // Only an enemy's kill earns kill value (M16: never one's own, an ally's or Gaia's).
+        if (e.killerId !== null && areEnemies(this.players, e.killerId, e.victimOwnerId)) {
           this.edit(e.killerId, (s) => (s.killValue += victimValue(e)));
         }
       }),

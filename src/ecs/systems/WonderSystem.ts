@@ -1,4 +1,5 @@
 import { gameEvents } from '../../game/events';
+import { NO_TREATY, type TreatyGate } from '../../game/treaty';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 
@@ -9,6 +10,8 @@ import type { EcsWorld } from '../world';
  * its clock (`wonderLost`). Inactive when the match's victory mode does
  * not include the Wonder: nothing is added and nothing is emitted.
  * VictoryChecker reads the clocks; this system decides nothing itself.
+ * While the treaty holds (M16) no clock advances: nobody may attack a
+ * Wonder then, so its 10-minute hold starts at the treaty's end.
  */
 export class WonderSystem {
   /** Wonders with a running clock, to notice one removed without dying first. */
@@ -17,10 +20,12 @@ export class WonderSystem {
   constructor(
     private readonly world: EcsWorld,
     private readonly enabled: boolean,
+    private readonly treaty: TreatyGate = NO_TREATY,
   ) {}
 
   update(deltaMs: number): void {
     if (!this.enabled) return;
+    const holding = !this.treaty();
     const wonders: Entity[] = [];
     for (const e of this.world.with('building', 'owner')) {
       if (e.building.type === 'wonder') wonders.push(e);
@@ -38,7 +43,7 @@ export class WonderSystem {
         gameEvents.emit('wonderCompleted', { playerId: e.owner?.playerId ?? 0, entityId: e.id ?? -1 });
       } else {
         // A clock already running (e.g. restored from a save) is tracked from here on.
-        e.wonder.heldMs += deltaMs;
+        if (holding) e.wonder.heldMs += deltaMs;
       }
       this.tracked.add(e);
     }

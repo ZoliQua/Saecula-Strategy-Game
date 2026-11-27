@@ -56,6 +56,9 @@ A játék felülete **magyar**; a kód angol, a dokumentáció angol és magyar.
   szállítóhajón kel át a vízen (az AI is így tesz).
 - 🏆 **Három győzelmi feltétel** — hódítás, egy Csoda megtartása tíz percig,
   vagy a legtöbb pont, amikor lejár a 60 perces időkorlát.
+- 🤝 **Csapatok és meccs-beállítások** — gépi szövetségesekkel egy ellenséges
+  csapat ellen (közös látás, csapatgyőzelem), 10 vagy 20 perces fegyverszünet,
+  normál, magas vagy halálmeccs kezdő nyersanyag, és 1×, 1,5× vagy 2× sebesség.
 - 🌗 **Élő világ** — dinamikus 2D fények normal map-ekkel, napszakváltás,
   vetett árnyékok, háborús köd, építési és összeomlási animációk.
 - 🎵 **Procedurális hang** — térbeli hangeffektek és koronkénti generatív

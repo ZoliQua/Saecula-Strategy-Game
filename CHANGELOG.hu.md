@@ -12,6 +12,21 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
+- **Csapatok:** a beállításban legfeljebb `AI-k száma − 1` gépi szövetséges
+  választható. A szövetségesek nem harcolnak egymással és nem térítik egymást,
+  közös a látásuk, és csapatként nyernek vagy veszítenek (a hódítás, a Csoda és
+  az idő is a csapatot számolja). A szövetséges AI az ellenséges csapatot
+  támadja; a pontszám-panel és a játék vége képernyő jelöli a szövetségeseket.
+- **Fegyverszünet:** választható 10 vagy 20 perc. Amíg tart, a különböző
+  csapatok játékosai nem sebezhetik és nem téríthetik egymást, az AI nem indít
+  támadást, a támadó parancs mozgásra vált. Az óra alatt visszaszámláló fut.
+- **Kezdő nyersanyag:** normál (200 étel, 200 fa, 100 arany), magas vagy
+  halálmeccs.
+- **Játéksebesség:** 1×, 1,5× vagy 2× játékidő; a kamera valós sebességgel
+  görget.
+- A mentések a 10-es verzióra lépnek; a régi mentések az új beállítások
+  alapértékeivel töltődnek be.
+
 - **Biztosíték grafikus hibára:** ha a böngésző visszaveszi a játék grafikus
   memóriáját (elvesztett WebGL-kontextus), a futó meccs megáll és az
   automatikus mentés helyére mentődik, egy kártya elmondja, mi történt, és az

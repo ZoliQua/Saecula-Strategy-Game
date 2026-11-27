@@ -14,7 +14,7 @@ describe('v6 → v7 migration', () => {
   it('returns the data unchanged (optional mission and campaign fields added)', () => {
     const data = { schemaVersion: 6, setup: { victory: 'conquest' } };
     expect(v6ToV7(data)).toEqual(data);
-    expect(migrate(data)).toEqual({ ok: true, data: { ...data, schemaVersion: SCHEMA_VERSION } });
+    expect(migrate(data, 7)).toEqual({ ok: true, data: { ...data, schemaVersion: 7 } });
   });
 
   it('the v6 fixture migrates, parses (no mission) and plays on', () => {
