@@ -9,6 +9,7 @@ import { createUnit } from '../archetypes/createUnit';
 import type { Entity } from '../components';
 import type { EcsWorld } from '../world';
 import { gameEvents } from '../../game/events';
+import { tradePostType } from '../../game/trade';
 
 type Trainer = With<
   Entity,
@@ -46,7 +47,7 @@ export class TrainingSystem {
       if ((trainer as Entity).underConstruction || (trainer as Entity).dying) continue;
       const entry = trainer.trainingQueue.entries[0];
       if (!entry) continue;
-      // Conscription (M12) speeds up the barracks, archery range and stable.
+      // Conscription (M12) speeds up the barracks, archery range and stable; the dock landmark (M17) the dock.
       const owner = this.players?.get(trainer.owner.playerId);
       entry.elapsed += dt * (owner ? trainSpeedMultiplier(owner, trainer.building.type) : 1);
       if (entry.elapsed >= entry.totalTime) {
@@ -73,6 +74,8 @@ export class TrainingSystem {
       tile: spawn,
       playerId: trainer.owner.playerId,
     });
+    // A trader's routes start from where it was trained (M17).
+    if (tradePostType(entry.unitType) && trainer.id !== undefined) this.world.addComponent(unit, 'tradeHome', { buildingId: trainer.id });
     gameEvents.emit('unitTrained', { world: this.world, playerId: trainer.owner.playerId, unitType: entry.unitType });
     // HP is stored state: a new unit gets the owner's HP technology once.
     if (unit.health) scaleHealth(unit.health, bonusesFor(this.players, unit).hpMultiplier);

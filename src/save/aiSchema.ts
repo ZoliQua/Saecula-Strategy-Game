@@ -14,7 +14,9 @@ const stance = enumOf(Object.keys(STANCE_TABLE) as Stance[]);
 const time = num.nullable();
 const ids = z.array(int).readonly();
 
-const knownBuilding = z.object({ id: int, type: buildingType, ownerId: int, position: tile, footprint }).strict();
+const knownBuilding = z
+  .object({ id: int, type: buildingType, ownerId: int, position: tile, footprint, shoots: z.literal(true).optional() })
+  .strict();
 
 const perception = z
   .object({
@@ -46,6 +48,7 @@ const mediumFields = {
     })
     .strict()
     .optional(),
+  lastSellMs: num.optional(),
 };
 
 const hardFields = {

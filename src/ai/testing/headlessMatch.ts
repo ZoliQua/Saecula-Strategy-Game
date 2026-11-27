@@ -2,11 +2,13 @@ import { applyMissionStart } from '../../campaign/missionStart';
 import { missionSetup, type MissionId } from '../../campaign/missions';
 import { DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
+import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
+import { TradeSystem } from '../../ecs/systems/TradeSystem';
 import { MovementSystem } from '../../ecs/systems/MovementSystem';
 import { PathfindingSystem } from '../../ecs/systems/PathfindingSystem';
 import { PopulationSystem } from '../../ecs/systems/PopulationSystem';
@@ -265,6 +267,8 @@ function assemble(parts: MatchParts): HeadlessMatch {
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
+    trade: new TradeSystem(world, map, players, paths),
+    landmarks: new LandmarkSystem(world, players),
     farms: new FarmRegenSystem(world),
     construction: new ConstructionSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
@@ -283,8 +287,10 @@ function assemble(parts: MatchParts): HeadlessMatch {
   const step = (dt: number) => {
     now += dt;
     paths.reset(dt);
+    systems.landmarks.update(dt);
     systems.pathfinding.update();
     systems.gathering.update(dt);
+    systems.trade.update(dt);
     systems.farms.update(dt);
     systems.construction.update(dt);
     systems.training.update(dt);

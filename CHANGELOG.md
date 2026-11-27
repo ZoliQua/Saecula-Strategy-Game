@@ -12,6 +12,22 @@ raises the patch version.
 
 ### Added
 
+- **Market:** a new age-2 building. Buy or sell 100 food or wood for gold;
+  each trade moves that resource's price, and selling costs a fee. It trains
+  trade carts.
+- **Trade carts and trade ships:** send them between two of your own or an
+  ally's markets (docks for ships) at least 20 tiles apart; each arrival pays
+  gold by distance, more toward an ally. A trade ship looks like a transport.
+- **Landmarks:** every nation can raise one landmark from age 2 with its own
+  art and effect — Hungarian Végvár and Russian Osztrog shoot like strong
+  towers, the English Royal Dockyard trains ships faster, the German Hanseatic
+  Kontor raises trade gold, the French Academy speeds up research (not
+  age-ups), the Spanish Mint makes gold, the Italian Bank improves market
+  rates, and the Finnish Sauna heals nearby units.
+- The Medium, Hard and Master AIs build a market and their landmark, sell
+  surplus for gold, and trade with an ally's market.
+- Saves move to version 11.
+
 - **Teams:** choose up to `AI count − 1` allied AIs on the setup card. Allies
   never fight or convert each other, share their vision, and win or lose as a
   team (conquest, Wonder and time victory count the team). Allied AIs attack

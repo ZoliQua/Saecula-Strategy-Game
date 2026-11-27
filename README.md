@@ -60,6 +60,11 @@ in English and Hungarian.
 - 🤝 **Teams and match options** — fight with allied AIs against an enemy
   team (shared vision, team victory), add a 10- or 20-minute treaty, start
   with normal, high or deathmatch resources, and play at 1×, 1.5× or 2× speed.
+- 💰 **Trade and landmarks** — build a market to exchange food and wood for
+  gold at shifting prices, send trade carts and trade ships between friendly
+  markets and docks, and raise your nation's own landmark (a frontier castle,
+  a royal dockyard, a Hanseatic kontor, an academy, a mint, a bank palazzo, a
+  log fortress or a lakeside sauna), each with its own effect.
 - 🌗 **Living world** — dynamic 2D lighting with normal maps, a day–night cycle,
   cast shadows, fog of war, construction and collapse animations.
 - 🎵 **Procedural audio** — positional sound effects and generative music per

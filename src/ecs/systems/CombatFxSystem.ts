@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PROJECTILE_HIT_RADIUS, UNIT_PROJECTILE } from '../../config/balance';
 import { COMBAT_FX, SHOT_LOOK } from '../../config/visual';
+import { isShootingBuilding } from '../../game/landmarks';
 import { distanceToEntity, entityPoint, type Point } from '../../game/targetGeometry';
 import { ART_SCALE } from '../../iso/art/canvas';
 import { EXPLOSION_FRAMES, EXPLOSION_ORIGIN_Y } from '../../iso/art/explosionArt';
@@ -250,7 +251,7 @@ export class CombatFxSystem {
 /** Ranged attackers (their shots get their own effects). Mirrors CombatSystem.projectileKindFor. */
 function isShooter(a: Entity): boolean {
   if (a.unit) return UNIT_PROJECTILE[a.unit.unitType] !== undefined;
-  return a.building?.type === 'tower';
+  return isShootingBuilding(a);
 }
 
 function screenOf(p: Point): { sx: number; sy: number } {

@@ -9,10 +9,10 @@ import { ageUpArtJobs, BackgroundArt, civBaseOwners, evictionTimer, planArtLoad,
 const ALL_TYPES = Object.keys(BUILDING_SPECS) as BuildingType[];
 const AGE1_TYPES = ALL_TYPES.filter((t) => BUILDING_BALANCE[t].age === 1);
 
-/** Test painters: each paint is logged as 'building <type> <civ> <owner>', 'wall <piece> <age> <civ>' or 'unit <type> <civ>'. */
+/** Test painters: each paint is logged as 'building <type> <civ> <owner>' (plus ' @<age>' when an age is given), 'wall <piece> <age> <civ>' or 'unit <type> <civ>'. */
 function recordingPainters(log: string[]): ArtPainters {
   return {
-    building: (type, civ, owner) => log.push(`building ${type} ${civ} ${owner}`),
+    building: (type, civ, owner, age) => log.push(`building ${type} ${civ} ${owner}${age === undefined ? '' : ` @${age}`}`),
     wall: (piece, age, civ) => log.push(`wall ${piece} ${age} ${civ}`),
     unit: (type, civ) => log.push(`unit ${type} ${civ}`),
   };
@@ -39,8 +39,8 @@ function recordPlan(human: 'hungarian' | 'english', civs: Array<'hungarian' | 'e
 describe('N-civ art budget (M5 Task 1)', () => {
   it('AI-only civs prewarm only age-1 unit types', () => {
     expect(prewarmUnitTypes('english', 'hungarian').sort()).toEqual(['archer', 'scout', 'swordsman', 'villager']);
-    // The human's civ: all eleven land units and the four ships (their train buttons show them, M14).
-    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(15);
+    // The human's civ: all eleven land units, the four ships (their train buttons show them, M14) and the traders (M17).
+    expect(prewarmUnitTypes('hungarian', 'hungarian')).toHaveLength(17);
   });
 
   it('age-up jobs paint that age’s unit sheets and the next age’s wall pieces', () => {
@@ -64,6 +64,15 @@ describe('N-civ art budget (M5 Task 1)', () => {
     ageUpArtJobs('hungarian', 2, recordingPainters(log)).forEach((j) => j());
     expect(log).toContain('unit hussar hungarian');
     expect(log).not.toContain('unit knight hungarian');
+  });
+
+  it('age-up jobs to age 2 paint the civ’s landmark in its age-2 style when the base owner is known (M17)', () => {
+    const log: string[] = [];
+    ageUpArtJobs('german', 2, recordingPainters(log), 3).forEach((j) => j());
+    expect(log).toContain('building landmark german 3 @2');
+    const late: string[] = [];
+    ageUpArtJobs('german', 3, recordingPainters(late), 3).forEach((j) => j());
+    expect(late.some((l) => l.startsWith('building'))).toBe(false);
   });
 
   it('age-up jobs to the last age paint its unit sheets and no wall pieces', () => {
@@ -169,14 +178,17 @@ describe('planArtLoad for a loaded save (age spans)', () => {
     expect(units(critical, 'english')).toEqual(['unit knight english', 'unit longbowman english', 'unit monk english', 'unit pikeman english']);
   });
 
-  it('a civ at age 1 keeps today’s walls (age 1 loading, age 2 in the background); buildings unchanged', () => {
+  it('a civ at age 1 keeps today’s walls (age 1 loading, age 2 in the background); buildings unchanged but the landmark', () => {
     const today = run();
     const { critical, background } = run(new Map([['hungarian', span(1, 1)], ['english', span(3, 3)]]));
     expect(wallAges(critical, 'hungarian')).toEqual([1]);
     expect(wallAges(background, 'hungarian')).toEqual([2]);
-    const buildings = (list: string[]) => list.filter((l) => l.startsWith('building'));
+    const buildings = (list: string[]) => list.filter((l) => l.startsWith('building') && !l.startsWith('building landmark'));
     expect(buildings(critical)).toEqual(buildings(today.critical));
     expect(buildings(background)).toEqual(buildings(today.background));
+    // M17: the landmark of a civ past age 1 is queued in its top age style; none for a civ still at age 1.
+    expect(background.filter((l) => l.startsWith('building landmark'))).toEqual([`building landmark english ${owners.get('english')} @3`]);
+    expect(today.background.some((l) => l.startsWith('building landmark'))).toBe(false);
   });
 
   it('no spans (a new match) keeps today’s plan', () => {

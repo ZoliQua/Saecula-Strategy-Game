@@ -53,13 +53,15 @@ export function canConvert(target: Entity | undefined, playerId: number, teams: 
 
 /**
  * Hands `target` to `toPlayerId` (a monk's conversion, M11): its orders
- * are dropped, it is deselected, it keeps its original civ's look
+ * (a trader's route and home too, M17) are dropped, it is deselected, it keeps its original civ's look
  * (`originCiv`) and `unitConverted` is emitted (scores, toasts).
  */
 export function convertUnit(world: EcsWorld, target: Entity, toPlayerId: number, civOf: (playerId: number) => CivId): void {
   if (!target.owner || !target.unit) return;
   const fromPlayerId = target.owner.playerId;
   clearUnitOrders(world, target);
+  // A converted trader (M17) has no route (cleared above) and no home: its old owner's market is no start.
+  if (target.tradeHome) world.removeComponent(target, 'tradeHome');
   if (target.movable) {
     target.movable.path = [];
     target.movable.progress = 0;

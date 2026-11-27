@@ -36,6 +36,9 @@ const TEXTURE_KEYS: Record<UnitType, string> = {
   transport: 'unit_transport',
   galley: 'unit_galley',
   frigate: 'unit_frigate',
+  trade_cart: 'unit_trade_cart',
+  // M17: the trade ship is drawn with the transport's sheet (texture budget); name and panel tell them apart.
+  trade_ship: 'unit_transport',
   hussar: 'unit_hussar',
   longbowman: 'unit_longbowman',
   landsknecht: 'unit_landsknecht',

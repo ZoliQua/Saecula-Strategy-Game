@@ -12,6 +12,23 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
+- **Piac:** új épület a 2. kortól. 100 étel vagy fa vehető vagy adható el
+  aranyért; minden csere mozdít az adott nyersanyag árán, az eladásnak díja
+  van. Kereskedőkocsit képez.
+- **Kereskedőkocsi és kereskedőhajó:** két saját vagy szövetséges piac (hajónál
+  kikötő) között ingáznak, legalább 20 mező távolságra; minden érkezés a
+  távolsággal arányos aranyat hoz, szövetséges felé többet. A kereskedőhajó a
+  szállítóhajó grafikáját használja.
+- **Egyedi épületek:** minden nép a 2. kortól felépítheti a saját egyedi
+  épületét, saját grafikával és hatással — a magyar Végvár és az orosz Osztrog
+  erős toronyként lő, az angol Királyi hajógyár gyorsabban képez hajót, a német
+  Hanza-kontor több aranyat hoz a kereskedelemből, a francia Akadémia gyorsítja
+  a kutatást (a korváltást nem), a spanyol Pénzverde aranyat termel, az olasz
+  Bankház jobb piaci árakat ad, a finn Szauna gyógyítja a közeli egységeket.
+- A Közepes, Nehéz és Mesteri AI piacot és egyedi épületet épít, a feleslegét
+  aranyért eladja, és szövetséges piaccal kereskedik.
+- A mentések a 11-es verzióra lépnek.
+
 - **Csapatok:** a beállításban legfeljebb `AI-k száma − 1` gépi szövetséges
   választható. A szövetségesek nem harcolnak egymással és nem térítik egymást,
   közös a látásuk, és csapatként nyernek vagy veszítenek (a hódítás, a Csoda és

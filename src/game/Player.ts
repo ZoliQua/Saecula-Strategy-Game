@@ -1,7 +1,7 @@
 import type { AgeId, CivId, Resources, TechId } from '../types';
 import { DEFAULT_CIV } from '../config/civs';
 import type { PersonalityId } from '../config/aiPersonality';
-import { START_RESOURCES } from '../config/balance';
+import { MARKET, START_RESOURCES } from '../config/balance';
 
 export interface Player {
   id: number;
@@ -23,6 +23,16 @@ export interface Player {
    * Players on one team are allies; with no allies each player is its own team.
    */
   team: number;
+  /** Market prices (M17, src/game/market.ts): gold per MARKET.lot of food and of wood; saved. */
+  marketPrices: { food: number; wood: number };
+  /**
+   * Has a finished, standing landmark (M17): derived each tick by
+   * LandmarkSystem (refreshLandmarks), never saved. Modifier landmarks
+   * join the effects only while it is true (game/modifiers.ts).
+   */
+  landmarkActive: boolean;
+  /** Fraction carried between ticks by the landmark (M17): mint gold or sauna HP not yet whole; saved. */
+  landmarkCarry: number;
   /** Seeded AI personality (Medium, Hard and Mesteri AIs only; absent for the human and Easy). */
   personality?: PersonalityId;
 }
@@ -47,6 +57,9 @@ export function createPlayer(partial: Partial<Player> & { id: number }): Player 
     defeated: false,
     gatherHandicap: 1,
     team: partial.id,
+    marketPrices: { ...MARKET.startPrice },
+    landmarkActive: false,
+    landmarkCarry: 0,
     ...partial,
   };
 }

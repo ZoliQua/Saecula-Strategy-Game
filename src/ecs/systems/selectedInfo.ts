@@ -1,5 +1,6 @@
 import type { With } from 'miniplex';
-import type { CivId } from '../../types';
+import type { BuildingType, CivId } from '../../types';
+import { tradePostType } from '../../game/trade';
 import type { SelectedEntityInfo } from '../../ui/store';
 import { civUnitTypes } from '../../game/civUnits';
 import { techsForBuilding } from '../../game/technologies';
@@ -32,7 +33,8 @@ export function infoKey(info: SelectedEntityInfo | null): string {
   if (!info) return 'null';
   if (info.kind === 'unit') {
     const c = info.carrying ? `${info.carrying.type}:${info.carrying.amount}` : '-';
-    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}${info.ally ? ':A' : ''}`;
+    const rt = info.route ? `${info.route.home}>${info.route.target}:${info.route.gold}${info.route.ally ? 'a' : ''}` : '-';
+    return `u:${info.id}:${info.ownerId}:${info.hp.current}/${info.hp.max}:${info.tile.tx},${info.tile.ty}:${c}:${info.cargo ?? '-'}:${rt}${info.ally ? ':A' : ''}`;
   }
   if (info.kind === 'building') {
     const q = (info.queue ?? [])
@@ -48,10 +50,14 @@ export function infoKey(info: SelectedEntityInfo | null): string {
 }
 
 /** The store's view of a selected entity; units and buildings carry their owner's civ, and `ally` when the human's ally owns them (M16). */
+/** A trader's route as the panel shows it (M17), or undefined without one. */
+export type RouteSource = (entity: Entity) => { home: BuildingType; target: BuildingType; ally: boolean; gold: number } | undefined;
+
 export function toSelectedInfo(
   entity: SelectableWithPos,
   civOf: (playerId: number) => CivId,
   isAlly: (playerId: number) => boolean = () => false,
+  routeOf: RouteSource = () => undefined,
 ): SelectedEntityInfo | null {
   if (entity.id === undefined) return null;
   const r = (entity as Entity).resourceNode;
@@ -85,6 +91,7 @@ export function toSelectedInfo(
           }
         : {}),
       ...(entity.unit.unitType === 'transport' ? { cargo: entity.cargo?.units.length ?? 0 } : {}),
+      ...traderInfo(entity, routeOf),
       ...ally,
     };
   }
@@ -120,6 +127,12 @@ export function toSelectedInfo(
     return info;
   }
   return null;
+}
+
+function traderInfo(entity: Entity, routeOf: RouteSource): { trader?: true; route?: ReturnType<RouteSource> & object } {
+  if (!entity.unit || !tradePostType(entity.unit.unitType)) return {};
+  const route = entity.tradeRoute ? routeOf(entity) : undefined;
+  return route ? { trader: true, route } : { trader: true };
 }
 
 /**

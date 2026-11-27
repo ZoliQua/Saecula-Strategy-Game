@@ -136,6 +136,61 @@ export async function spawnShips(page) {
 }
 
 /**
+ * M17 worst case: every player reaches age 2 and gets a finished market, its
+ * nation's landmark and a trade cart next to its town centre, so every civ's
+ * market, landmark and cart art is painted and stays resident. Returns the
+ * civs in the match.
+ */
+export async function spawnTrade(page) {
+  return page.evaluate(async () => {
+    const { createBuilding, BUILDING_SPECS } = await import('/src/ecs/archetypes/building.ts');
+    const { createUnit } = await import('/src/ecs/archetypes/createUnit.ts');
+    const { gameEvents } = await import('/src/game/events.ts');
+    const sc = window.__game.scene.getScene('GameScene');
+    const map = sc.mapData;
+    const civs = [];
+    const free = (tx, ty, w, h) => {
+      for (let dy = -1; dy <= h; dy++) for (let dx = -1; dx <= w; dx++) if (!map.isBuildable(tx + dx, ty + dy)) return false;
+      return true;
+    };
+    for (const p of sc.players.all()) {
+      civs.push(p.civ);
+      if (p.age < 2) {
+        p.age = 2;
+        gameEvents.emit('ageChanged', { playerId: p.id, age: 2 });
+      }
+      const tc = sc.world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === p.id);
+      if (!tc) continue;
+      for (const type of ['market', 'landmark']) {
+        const spec = BUILDING_SPECS[type];
+        let placed = false;
+        for (let r = 4; r < 30 && !placed; r++) {
+          for (let dy = -r; dy <= r && !placed; dy++) {
+            for (let dx = -r; dx <= r && !placed; dx++) {
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+              const tx = tc.position.tx + dx;
+              const ty = tc.position.ty + dy;
+              if (!free(tx, ty, spec.width, spec.height)) continue;
+              createBuilding(sc.world, { type, origin: { tx, ty }, playerId: p.id, mapData: map });
+              placed = true;
+            }
+          }
+        }
+      }
+      for (let r = 2; r < 10; r++) {
+        const tx = tc.position.tx - r;
+        const ty = tc.position.ty;
+        if (map.isWalkable?.(tx, ty) ?? map.isBuildable(tx, ty)) {
+          createUnit(sc.world, { type: 'trade_cart', tile: { tx, ty }, playerId: p.id });
+          break;
+        }
+      }
+    }
+    return civs;
+  });
+}
+
+/**
  * The texture budget (CLAUDE.md §10, MB; textures only): 256 on a land map,
  * 400 on a map with sea, where ships can be built (1.0 decision, 2026-11-13).
  */

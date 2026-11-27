@@ -98,6 +98,8 @@ export interface MediumFields {
   readonly monkAvoid?: MonkAvoidState | undefined;
   /** A landing in progress (M14); absent when there is none. */
   readonly landing?: LandingState | undefined;
+  /** TradePlay's last market sale (M17); absent before the first. */
+  readonly lastSellMs?: number | undefined;
 }
 
 export interface MediumState extends MediumFields {
@@ -160,5 +162,12 @@ export function loadedTime(ms: number | null): number {
 export const copyTile = (t: TileCoord): TileCoord => ({ tx: t.tx, ty: t.ty });
 
 export function copyKnown(b: KnownBuilding): KnownBuilding {
-  return { id: b.id, type: b.type, ownerId: b.ownerId, position: copyTile(b.position), footprint: { ...b.footprint } };
+  return {
+    id: b.id,
+    type: b.type,
+    ownerId: b.ownerId,
+    position: copyTile(b.position),
+    footprint: { ...b.footprint },
+    ...(b.shoots === true ? { shoots: true as const } : {}),
+  };
 }

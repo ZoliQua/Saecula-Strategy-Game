@@ -130,6 +130,20 @@ export interface Entity {
    * channels (its work animation).
    */
   converter?: { rechargeMs: number; healCarry: number; busy: boolean };
+  /**
+   * A trader's home (M17): the market (cart) or dock (ship) it was trained
+   * at, where its routes start. Dropped on conversion; a stale id simply
+   * means the next route order picks the nearest own market / dock.
+   */
+  tradeHome?: { buildingId: number };
+  /**
+   * A trader's route (M17, TradeSystem): it shuttles between `homeId` and
+   * `targetId`, heading to the target while `toTarget`, and earns gold on
+   * an arrival when `armed`: the leg set out from the route's other end (a
+   * fresh route from elsewhere first goes home unpaid). Removed when either
+   * end is gone or no longer friendly, or the way is lost for good.
+   */
+  tradeRoute?: { homeId: number; targetId: number; toTarget: boolean; armed: boolean };
   /** A converted unit's original civ: it keeps that look under its new owner (M11). */
   originCiv?: { civ: CivId };
   dying?: { ttlMs: number };

@@ -6,7 +6,6 @@ import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
 import { findPath, findPathToAny } from '../../map/pathfinding';
 import type { TileCoord } from '../../iso/coordinates';
 import type { ResourceType } from '../../types';
-import { uiStore } from '../../ui/store';
 import type { Entity } from '../components';
 import { escapeRulesAt } from '../escapeRules';
 import { navGridFor } from '../navLayer';
@@ -24,7 +23,7 @@ import { findEntityById, findNearestDropoff, findNearestNodeOfType, isWorkableBy
 import type { Dropoff, ResourceNode, Villager } from './gathering/gatherTypes';
 import type { EcsWorld } from '../world';
 import { TERRAIN } from '../../map/TerrainTypes';
-import { gameEvents } from '../../game/events';
+import { creditGathered } from '../../game/credit';
 
 /**
  * Full gather cycle state machine for villagers with a `gatherer`
@@ -273,16 +272,7 @@ export class GatheringSystem {
   private deposit(v: Villager, type: ResourceType, amount: number): void {
     const floored = Math.floor(amount);
     if (floored <= 0) return;
-    const ownerId = v.owner.playerId;
-    const player = this.players?.get(ownerId);
-    if (player) {
-      player.resources[type] += floored;
-      gameEvents.emit('resourcesDelivered', { world: this.world, playerId: ownerId, amount: floored });
-    }
-    if (ownerId === 1) {
-      const state = uiStore.getState();
-      state.setResources({ [type]: state.resources[type] + floored });
-    }
+    creditGathered(this.world, this.players, v.owner.playerId, type, floored);
     v.gatherer.carrying -= floored;
   }
 }

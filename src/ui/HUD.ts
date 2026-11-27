@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { audio } from '../audio/AudioManager';
 import { gameEvents } from '../game/events';
 import { hu } from '../i18n/hu';
+import { buildingName } from './buildingText';
 import type { AgeId } from '../types';
 import { el, formatClock, uiRoot } from './dom';
 import { dispatchCommand } from './events';
@@ -204,7 +205,7 @@ export class Hud {
     if (state.placementBuilding) {
       const base = state.placementBuilding === 'wall' ? hu.hud.wallPlacementHint : hu.hud.placementHint;
       const line = state.wallPreview ? ` · ${hu.hud.wallLineHint(state.wallPreview.segments, state.wallPreview.wood)}` : '';
-      this.hint.replaceChildren(el('b', {}, hu.buildings[state.placementBuilding]), ` — ${base}${line}`);
+      this.hint.replaceChildren(el('b', {}, buildingName(state.placementBuilding, state.civ)), ` — ${base}${line}`);
       this.hint.classList.add('show');
     } else {
       this.hint.classList.remove('show');

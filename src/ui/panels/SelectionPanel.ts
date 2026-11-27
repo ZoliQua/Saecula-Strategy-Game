@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { effectiveUnitStats } from '../../game/modifiers';
 import { hu } from '../../i18n/hu';
+import { buildingName, buildingRole } from '../buildingText';
 import { decorKeys } from '../../iso/textures';
 import { el } from '../dom';
 import { dispatchCommand } from '../events';
@@ -9,6 +10,7 @@ import { icons, type IconName } from '../icons';
 import { type SelectedBuildingInfo, type SelectedEntityInfo, type UiStore } from '../store';
 import { buildingThumbnail, thumbnail, unitThumbnail } from '../thumbnails';
 import { DeleteButton } from './DeleteButton';
+import { MarketPanel } from './MarketPanel';
 import { cargoLine, UnloadButton } from './UnloadButton';
 import { formatStat, playerColor, playerColorCss } from '../format';
 import { keysHint } from '../keymap';
@@ -29,13 +31,14 @@ export class SelectionPanel {
   private readonly body: HTMLElement;
   private readonly deleteButton = new DeleteButton();
   private readonly unloadButton = new UnloadButton();
+  private readonly marketPanel = new MarketPanel();
   private identity = '';
   private bodyKey = '';
 
   constructor(private readonly textures: Phaser.Textures.TextureManager) {
     this.portrait = el('div', { class: 'portrait empty' });
     this.body = el('div', { class: 'sel-body' });
-    const main = el('div', { class: 'sel-main' }, this.body, this.deleteButton.row, this.unloadButton.row);
+    const main = el('div', { class: 'sel-main' }, this.body, this.marketPanel.row, this.deleteButton.row, this.unloadButton.row);
     this.root = el('div', { class: 'glass selection anim-in' }, this.portrait, main);
   }
 
@@ -43,6 +46,7 @@ export class SelectionPanel {
     const sel = state.selectedEntity;
     this.deleteButton.render(sel, state.deleteArmedId, state.deleteArmedPct);
     this.unloadButton.render(sel);
+    this.marketPanel.render(sel, state.marketQuotes, state.resources);
     // The building portrait follows its age style, so a re-skin refreshes it.
     const identity = sel ? `${sel.kind}:${sel.id}:${sel.kind === 'building' ? (sel.textureKey ?? '') : ''}` : 'none';
     if (identity !== this.identity) {
@@ -112,13 +116,16 @@ export class SelectionPanel {
       ]);
       if (sel.carrying) rows.push([sel.carrying.type, hu.hud.carrying, `${sel.carrying.amount}`]);
       if (sel.cargo !== undefined) rows.push(['pop', hu.hud.cargo, cargoLine(sel.cargo)]);
-      return [
+      const nodes: Node[] = [
         head(hu.units[sel.unitType], hu.unitRoles[sel.unitType], owner(sel.ownerId, sel.civ, relation), more),
         bar(sel.hp.current, sel.hp.max, hu.hud.hp),
         stats(rows),
       ];
+      // A trader's route (M17): only the owner sees where its carts go.
+      if (sel.trader && own) nodes.push(el('p', { class: 'sel-hint sel-route' }, routeText(sel.route)));
+      return nodes;
     }
-    const nodes: Node[] = [head(hu.buildings[sel.buildingType], hu.buildingRoles[sel.buildingType], owner(sel.ownerId, sel.civ, relation), more)];
+    const nodes: Node[] = [head(buildingName(sel.buildingType, sel.civ), buildingRole(sel.buildingType, sel.civ), owner(sel.ownerId, sel.civ, relation), more)];
     if (sel.constructionProgress !== undefined) {
       nodes.push(bar(Math.round(sel.constructionProgress * 100), 100, hu.hud.underConstruction, 'build', '%'));
     } else {
@@ -216,6 +223,13 @@ function bar(current: number, max: number, label: string, variant?: 'build', suf
     el('span', { class: `hp-bar ${cls}` }, el('i', { style: `width:${pct * 100}%` })),
     el('b', {}, suffix ? `${current}${suffix}` : `${current} / ${max}`),
   );
+}
+
+/** "Útvonal: Piac ↔ Piac, ~15 arany/út" (M17), or the hint how to set one. */
+export function routeText(route: Extract<SelectedEntityInfo, { kind: 'unit' }>['route']): string {
+  if (!route) return hu.hud.noRoute;
+  const target = route.ally ? hu.hud.routeAlly(hu.buildings[route.target]) : hu.buildings[route.target];
+  return `${hu.hud.route}: ${hu.hud.routeLine(hu.buildings[route.home], target, route.gold)}`;
 }
 
 function stats(rows: Array<[IconName, string, string]>): Node {

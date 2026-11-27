@@ -1,4 +1,4 @@
-import { CIV_BONUS, NAVAL } from '../config/balance';
+import { CIV_BONUS, LANDMARK, NAVAL } from '../config/balance';
 
 /** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
 const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
@@ -183,6 +183,8 @@ export const hu = {
     transport: 'Szállítóhajó',
     galley: 'Gálya',
     frigate: 'Fregatt',
+    trade_cart: 'Kereskedőkocsi',
+    trade_ship: 'Kereskedőhajó',
   },
   buildings: {
     town_center: 'Városháza',
@@ -200,6 +202,19 @@ export const hu = {
     wonder: 'Csoda',
     monastery: 'Kolostor',
     dock: 'Kikötő',
+    market: 'Piac',
+    landmark: 'Egyedi épület',
+  },
+  /** Each nation's landmark (M17): its name and one-line effect; numbers come from LANDMARK. */
+  landmarks: {
+    hungarian: { name: 'Végvár', role: `Erőd: távolról lő, mint az őrtorony, erősebben (${LANDMARK.fort.range} mező)` },
+    english: { name: 'Királyi hajógyár', role: `A kikötő ${pct(LANDMARK.dockTrainSpeed)}-kal gyorsabban képez` },
+    german: { name: 'Hanza-kontor', role: `A kereskedelem ${pct(LANDMARK.tradeGold)}-kal több aranyat hoz` },
+    french: { name: 'Akadémia', role: `A kutatás ${pct(LANDMARK.researchSpeed)}-kal gyorsabb` },
+    spanish: { name: 'Pénzverde', role: `Percenként ${LANDMARK.mintGoldPerMin} aranyat termel` },
+    italian: { name: 'Bankház', role: 'Jobb piaci árak: kisebb eladási díj, lassabban romló ár' },
+    russian: { name: 'Osztrog', role: `Gerenda-erőd: távolról lő, mint az őrtorony, erősebben (${LANDMARK.fort.range} mező)` },
+    finnish: { name: 'Szauna', role: `A ${LANDMARK.sauna.range} mezőn belül álló saját egységeket gyógyítja (${LANDMARK.sauna.healPerSec} életerő/mp)` },
   },
   /** The right-edge side panel (M7): scores and villager activity. */
   side: {
@@ -235,8 +250,21 @@ export const hu = {
     owner: 'Tulajdonos népe',
     carrying: 'Visz',
     cargo: 'Rakomány',
+    /** A trader's route (M17): home ↔ target and the gold one leg brings. */
+    route: 'Útvonal',
+    routeLine: (home: string, target: string, gold: number) => `${home} ↔ ${target}, ~${gold} arany/út`,
+    routeAlly: (name: string) => `${name} (szövetséges)`,
+    noRoute: 'Nincs útvonal — jobb klikk egy másik saját vagy szövetséges piacra (hajóval kikötőre)',
     unload: 'Kirakodás',
     unloadTip: 'A rakomány partra száll a legközelebbi szárazföldön (jobb klikk a partra: ott száll ki).',
+    /** The market's exchange buttons (M17). */
+    market: {
+      title: 'Csere',
+      lot: { food: 'étel', wood: 'fa' },
+      buy: (lot: number, res: string, gold: number) => `Vétel ${lot} ${res} — ${gold} arany`,
+      sell: (lot: number, res: string, gold: number) => `Eladás ${lot} ${res} — ${gold} arany`,
+      tip: 'Minden vétel drágítja, minden eladás olcsóbbítja az adott nyersanyagot; az eladásnál díj vonódik le.',
+    },
     amount: 'Készlet',
     queue: 'Kiképzési sor',
     build: 'Építés',
@@ -338,6 +366,8 @@ export const hu = {
     transport: `Legfeljebb ${NAVAL.transportCapacity} szárazföldi egységet visz át a vízen`,
     galley: 'Távolsági hajó · hajók és a part ellen',
     frigate: 'Ágyús hadihajó · épület- és hajórombolás',
+    trade_cart: 'Két saját vagy szövetséges piac között ingázik · aranyat hoz',
+    trade_ship: 'Két saját vagy szövetséges kikötő között ingázik · aranyat hoz',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -355,6 +385,8 @@ export const hu = {
     wonder: 'Győzelmi emlékmű',
     monastery: 'Szerzeteseket képez',
     dock: 'Hajókat képez · a halászhajók ide hozzák a halat',
+    market: 'Étel és fa vétele, eladása aranyért',
+    landmark: 'A nép egyedi épülete · csak egy építhető',
   },
   mapLoading: {
     kicker: 'Térkép előkészítése',
@@ -618,6 +650,15 @@ export const hu = {
     notSaved: 'A beállítások nem menthetők — csak erre a munkamenetre érvényesek',
     /** Keycap labels for keys whose `key` prints nothing useful (by KeyboardEvent.code). */
     keyNames: { Space: 'Szóköz', Tab: 'Tab', Delete: 'Delete', Backspace: 'Backspace' } as Record<string, string>,
+  },
+  /** Trade routes (M17): why a route order was refused. */
+  trade: {
+    tooClose: (min: number) => `Túl közel van: a két épület között legalább ${min} mező kell.`,
+    notFriendly: 'Csak saját vagy szövetséges piaccal (kikötővel) lehet kereskedni.',
+    unfinished: 'Az épület még nem készült el.',
+    sameAsHome: 'Ez a kocsi (hajó) saját piaca: válassz egy másikat.',
+    noHome: 'Nincs kész saját piac (kikötő), ahonnan az útvonal indulhatna.',
+    unreachable: 'Oda nem lehet eljutni: a piac (kikötő) másik szigeten vagy másik vízen van, vagy el van zárva.',
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

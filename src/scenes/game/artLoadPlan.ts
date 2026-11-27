@@ -1,5 +1,6 @@
 import { civUnitTypes } from '../../game/civUnits';
 import { BUILDING_BALANCE, isNavalType, UNIT_BALANCE } from '../../config/balance';
+import { tradePostType } from '../../game/trade';
 import {
   BACKGROUND_ART_EVERY_FRAMES,
   BACKGROUND_ART_FORCE_AFTER_FRAMES,
@@ -13,8 +14,8 @@ import type { AgeId, BuildingType, CivId, UnitType } from '../../types';
 
 /** Paints (and registers) one texture; textures already present are cache hits. */
 export interface ArtPainters {
-  /** A building type's age-1 base, in the colour of `owner` (its civ's base owner). */
-  building(type: BuildingType, civ: CivId, owner: number): void;
+  /** A building type's base in its `age` style (default 1), in the colour of `owner` (its civ's base owner). */
+  building(type: BuildingType, civ: CivId, owner: number, age?: AgeId): void;
   wall(piece: number, age: AgeId, civ: CivId): void;
   /** A unit type's sheet (allocation + first idle frames). */
   unit(type: UnitType, civ: CivId): void;
@@ -25,28 +26,35 @@ export interface ArtPainters {
  * HUD and the build/train panels show them), only the age-1 land types for
  * an AI-only civ; its later sheets follow its age-ups (ageUpArtJobs) and a
  * unit trained before that is painted on demand (unitArt). An AI civ's
- * ships (M14) are always painted on demand: most maps have no water, so
+ * ships (M14) and trade carts (M17) are always painted on demand: most maps have no water, so
  * they never cost texture memory there.
  */
 export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
   const types = civUnitTypes(civ);
-  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1 && !isNavalType(t));
+  return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1 && !onDemand(t));
 }
 
-/** The land unit sheets of the types introduced in `age` (ships are painted on demand). */
+/** An AI civ's sheets painted only when such a unit appears: ships (M14) and the trade cart (M17, few AIs trade). */
+function onDemand(t: UnitType): boolean {
+  return isNavalType(t) || tradePostType(t) !== null;
+}
+
+/** The land unit sheets of the types introduced in `age` (ships and trade carts are painted on demand). */
 function unitArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
   return civUnitTypes(civ)
-    .filter((t) => UNIT_BALANCE[t].age === age && !isNavalType(t))
+    .filter((t) => UNIT_BALANCE[t].age === age && !onDemand(t))
     .map((t) => () => paint.unit(t, civ));
 }
 
 /**
  * Background jobs when the first player of `civ` reaches `age`: the unit
- * sheets of that age's types and the civ's common wall pieces of the
- * next age (the one its owners can show next).
+ * sheets of that age's types, the civ's common wall pieces of the next
+ * age (the one its owners can show next) and, given the civ's base
+ * `owner`, its landmark (M17) in the age it unlocks in.
  */
-export function ageUpArtJobs(civ: CivId, age: AgeId, paint: ArtPainters): Array<() => void> {
+export function ageUpArtJobs(civ: CivId, age: AgeId, paint: ArtPainters, owner?: number): Array<() => void> {
   const jobs = unitArtJobs(civ, age, paint);
+  if (owner !== undefined && age === BUILDING_BALANCE.landmark.age) jobs.push(() => paint.building('landmark', civ, owner, age));
   if (age < 3) {
     const next = (age + 1) as AgeId;
     for (const piece of COMMON_WALL_PIECES) jobs.push(() => paint.wall(piece, next, civ));
@@ -103,6 +111,10 @@ const BACKGROUND_BUILDINGS: readonly BuildingType[] = ['foundry', 'wonder'];
  *    go to the background queue instead, so the first one placed in age 3
  *    reuses the painted base (normal map, trim) rather than a 50-80 ms
  *    frame; only the owner's team-colour variant is still painted then.
+ *  - The landmark (M17, a painter per civ, only the match's civs): an
+ *    AI-only civ's in its age-2 style in the background when the civ
+ *    first reaches age 2 (ageUpArtJobs); a loaded save queues it at each
+ *    civ's highest age (2 or more) in the background.
  *  - Every civ: the age-1 common wall pieces; age 2 goes to the
  *    background queue, done seconds into the game — long before anyone
  *    can leave the Roman age. Age 3 is queued when the civ reaches age 2
@@ -146,6 +158,11 @@ export function planArtLoad(
     for (const age of shownWallAges(span)) walls(civ, age, age <= span.max ? critical : nextWalls);
   }
   background.push(...nextWalls, ...lateBuildings);
+  // The landmark (M17) of every civ already past its unlock age, in its owners' top age style.
+  for (const [civ, owner] of owners) {
+    const max = spans.get(civ)?.max ?? 1;
+    if (max >= BUILDING_BALANCE.landmark.age) background.push(() => paint.building('landmark', civ, owner, max));
+  }
   for (const [civ, { max }] of spans) {
     for (let a = 2; a <= max; a++) critical.push(...unitArtJobs(civ, a as AgeId, paint));
   }

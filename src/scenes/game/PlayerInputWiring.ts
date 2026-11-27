@@ -25,6 +25,8 @@ export interface PlayerInputDeps {
   readonly teams: TeamLookup;
   /** The treaty (M16): an attack on another team becomes a move with a notice (and no sword cursor). Absent: none. */
   readonly treaty?: TreatyGate;
+  /** Whether a player is defeated (M17): a defeated ally's market is no trade partner (order nor cursor). */
+  readonly isDefeated?: (playerId: number) => boolean;
   readonly civ: CivId;
   readonly age: () => AgeId;
   /** Max-HP multiplier for the human's new buildings (civ bonus). */
@@ -42,7 +44,7 @@ export interface PlayerInputDeps {
  */
 export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildPlacement {
   const canSee = fogCanSee(d.fog, d.humanId);
-  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee, map: d.mapData, teams: d.teams, ...(d.treaty && { treaty: d.treaty }) });
+  const orders = new OrderIssuer(d.world, d.selection, undefined, { humanId: d.humanId, canSee, map: d.mapData, teams: d.teams, ...(d.treaty && { treaty: d.treaty }), ...(d.isDefeated && { isDefeated: d.isDefeated }) });
   // The placement ghost and the cursor read the hover tile from the pointer handler.
   let pointer: PointerInput | null = null;
   const hoverTile = () => pointer?.getHoverTile() ?? null;
@@ -51,7 +53,7 @@ export function wirePlayerInput(scene: Phaser.Scene, d: PlayerInputDeps): BuildP
   pointer.register();
   const registered = pointer;
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => registered.unregister());
-  wireCursor(scene, d.world, d.mapData, d.selection, hoverTile, d.humanId, canSee, d.teams, d.treaty);
+  wireCursor(scene, d.world, d.mapData, d.selection, hoverTile, d.humanId, canSee, d.teams, d.treaty, d.isDefeated);
   wireBuildingDeletion(scene, d.world, d.humanId);
   return placement;
 }

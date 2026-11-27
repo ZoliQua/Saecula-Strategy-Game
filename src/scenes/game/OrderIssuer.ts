@@ -2,6 +2,8 @@ import { audio, type AudioSink } from '../../audio/AudioManager';
 import { canConvert, readyToConvert } from '../../game/convert';
 import type { Entity } from '../../ecs/components';
 import { insideFootprint } from '../../ecs/footprint';
+import { checkTradeRoute, startTradeRoute, tradePostType, type TradeRefusal } from '../../game/trade';
+import { TRADE } from '../../config/balance';
 import { clearUnitOrders } from '../../ecs/orders';
 import { canWorkNode, isBuilder } from '../../ecs/workers';
 import { isWorkableBy } from '../../ecs/systems/gathering/gatherQueries';
@@ -20,7 +22,7 @@ import { showHudNotice } from '../../ui/HUD';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
-  readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'none';
+  readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'tradePost' | 'none';
   readonly entity: Entity | null;
   /** True when another team's player is on the tile but the treaty holds (M16): no target, the units just move. */
   readonly truce?: true;
@@ -58,6 +60,9 @@ export function resolveOrderTarget(
   const found = findEnemyAt(world, tile, actor, canSee, teams, treaty);
   if (found.enemy) return { kind: 'enemy', entity: found.enemy };
   const truce = found.truce ? ({ truce: true } as const) : {};
+  // A trader (M17) aims at a market (cart) / dock (ship) not taken as an enemy above (the order says why it may not trade).
+  const post = findTradePostAt(world, tile, actor);
+  if (post) return { kind: 'tradePost', entity: post, ...truce };
   const site = findOwnSiteAt(world, tile, actor);
   if (site) return { kind: 'ownSite', entity: site, ...truce };
   const transport = findOwnTransportAt(world, tile, actor);
@@ -79,6 +84,8 @@ export interface OrderIssuerOptions {
   readonly treaty?: TreatyGate;
   /** Shows a HUD notice (default: the in-game toast). */
   readonly notice?: (message: string) => void;
+  /** Whether a player is defeated (M17): a defeated ally's market is no trade partner. Absent: nobody. */
+  readonly isDefeated?: (playerId: number) => boolean;
 }
 
 /** Translates a command (right-click or the gesture) on a tile into move / attack / gather / help-build orders. */
@@ -89,6 +96,7 @@ export class OrderIssuer {
   private readonly teams: TeamLookup;
   private readonly treaty: TreatyGate;
   private readonly notice: (message: string) => void;
+  private readonly isDefeated: (playerId: number) => boolean;
 
   constructor(
     private readonly world: EcsWorld,
@@ -102,6 +110,7 @@ export class OrderIssuer {
     this.teams = options.teams ?? NO_TEAMS;
     this.treaty = options.treaty ?? NO_TREATY;
     this.notice = options.notice ?? ((m) => showHudNotice(m));
+    this.isDefeated = options.isDefeated ?? (() => false);
   }
 
   issueOrders(tile: TileCoord): void {
@@ -113,8 +122,24 @@ export class OrderIssuer {
     let ordered: 'unit_move' | 'unit_attack' | 'unit_convert' | null = null;
     const boarders: Entity[] = [];
     let truceMove = false;
+    const refusals = new Set<string>();
     for (const entity of selectedAll) {
       if (entity.owner?.playerId !== this.humanId || entity.unit === undefined) continue;
+      // A trader on a market / dock (M17): a route; a refused route on a friendly post leaves the current route alone;
+      // a post that is no partner at all (its own home, another team's, a defeated player's) is just walked to.
+      const post = findTradePostAt(this.world, tile, entity);
+      if (post) {
+        const check = checkTradeRoute(this.world, entity, post, this.teams, this.map, undefined, this.isDefeated);
+        if (check.ok) {
+          clearUnitOrders(this.world, entity);
+          startTradeRoute(this.world, entity, check);
+          ordered ??= 'unit_move';
+          continue;
+        }
+        const walk = tradeRefusalWalks(check.reason);
+        if (walk !== 'silent') refusals.add(tradeRefusalText(check.reason));
+        if (walk === 'stay') continue;
+      }
       // Any new right-click order overrides whatever the unit was
       // doing — clear gather state + build command so the villager
       // actually listens.
@@ -161,6 +186,7 @@ export class OrderIssuer {
       if (target.truce) truceMove = true;
     }
     if (truceMove) this.notice(hu.treaty.blocked);
+    for (const text of refusals) this.notice(text);
     // The transport comes to meet the units it takes aboard (unless it was given its own order).
     const ship = target.kind === 'ownTransport' ? target.entity : null;
     const centre = boarders[0]?.position;
@@ -205,6 +231,56 @@ function findEnemyAt(
     return { enemy: c, truce };
   }
   return { enemy: null, truce };
+}
+
+/**
+ * What a trader does when its route order on a post is refused (M17):
+ * - 'stay': a friendly post it could trade with but not now (too close,
+ *   unfinished, unreachable, no home): a notice, and the current route and
+ *   position stay, so a misclick never breaks a working route;
+ * - 'walk': a post that is no partner (another team's, a defeated
+ *   player's): a notice why, and the trader walks there like any unit;
+ * - 'silent': its own home post: no route to make, it just walks there
+ *   (sending a cart back beside its home is a plain move).
+ */
+export function tradeRefusalWalks(reason: TradeRefusal): 'stay' | 'walk' | 'silent' {
+  if (reason === 'sameAsHome') return 'silent';
+  if (reason === 'notFriendly' || reason === 'wrongKind') return 'walk';
+  return 'stay';
+}
+
+/** Why a route order was refused (M17), as the HUD notice says it. */
+export function tradeRefusalText(reason: TradeRefusal): string {
+  switch (reason) {
+    case 'tooClose':
+      return hu.trade.tooClose(TRADE.minDistance);
+    case 'unfinished':
+      return hu.trade.unfinished;
+    case 'sameAsHome':
+      return hu.trade.sameAsHome;
+    case 'noHome':
+      return hu.trade.noHome;
+    case 'unreachable':
+      return hu.trade.unreachable;
+    default:
+      return hu.trade.notFriendly;
+  }
+}
+
+/**
+ * The market (for a trade cart) or dock (for a trade ship) on the tile, not
+ * dying (M17): a route order's target, whoever owns it (checkTradeRoute
+ * refuses another team's). Null for any other unit.
+ */
+export function findTradePostAt(world: EcsWorld, tile: TileCoord, actor: Entity): Entity | null {
+  const type = actor.unit ? tradePostType(actor.unit.unitType) : null;
+  const actorPlayer = actor.owner?.playerId;
+  if (!type || actorPlayer === undefined || actor.dying) return null;
+  for (const b of world.with('position', 'owner', 'building')) {
+    if (b.building.type !== type || b.dying || !covers(b, tile)) continue;
+    return b;
+  }
+  return null;
 }
 
 /** An own, living transport on the tile (M14): a boarding target. */

@@ -1,6 +1,7 @@
 import type { CivId, UnitType } from '../../../types';
 import { cannonFall, drawCannon } from './cannon';
 import { drawShip } from './ship';
+import { drawWagon } from './wagon';
 import { Figure } from './figure';
 import { bitPoint, drawHorse, horseFall } from './horse';
 import { drawHuman } from './humanoid';
@@ -24,6 +25,11 @@ export function buildFigure(type: UnitType, civ: CivId, slot: number, anim: Unit
   const dir = PAINTED_HEADINGS[slot] ?? 'SE';
   const look = unitLook(type, civ);
   const fig = new Figure(headingBasis(dir), look.kind === 'cannon' ? CANNON_SCALE : look.kind === 'ship' ? SHIP_SCALE : RIG_SCALE);
+  if (look.kind === 'wagon') {
+    // The horse and the cart fall each in their own frame (drawWagon places them).
+    drawWagon(fig, look.wagon, anim, i);
+    return fig;
+  }
   if (look.kind === 'ship') {
     // The sinking is part of the ship's own transform (drawShip).
     drawShip(fig, look.ship, anim, i);

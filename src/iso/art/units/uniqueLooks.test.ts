@@ -19,7 +19,7 @@ import { sheetGeometry } from './sheet';
 const uniqueOf = (civ: CivId): UnitType => CIV_DEFS[civ].uniqueUnit;
 
 function human(look: UnitLook) {
-  if (look.kind === 'cannon' || look.kind === 'ship') throw new Error('not a human');
+  if (look.kind === 'cannon' || look.kind === 'ship' || look.kind === 'wagon') throw new Error('not a human');
   return look.human;
 }
 
@@ -59,9 +59,9 @@ describe('unique unit looks', () => {
   it.each(CIV_IDS)('%s: the unique unit’s headgear is worn by none of the civ’s other units', (civ) => {
     const type = uniqueOf(civ);
     const hat = human(unitLook(type, civ)).hat;
-    // Ships (M14) wear nothing.
+    // Ships (M14) and the trade cart (M17) wear nothing.
     for (const other of civUnitTypes(civ).filter((t) => !isNavalType(t))) {
-      if (other === type || other === 'cannon') continue;
+      if (other === type || other === 'cannon' || other === 'trade_cart') continue;
       expect(human(unitLook(other, civ)).hat, `${type} vs ${other}`).not.toBe(hat);
     }
   });

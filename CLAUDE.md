@@ -490,6 +490,7 @@ Saecula-Strategy-Game/
     │   │   ├── architecture/    ← épület-festők koronként (ArchStyle, stíluscsaládok)
     │   │   │   ├── kits/        ← népek közös díszítő-készletei (favázas rács, lépcsős oromzat, hagymakupola…)
     │   │   │   ├── families/    ← több nép által használt festőcsaládok (tudor, georgian) és közös kellékeik
+    │   │   │   ├── hungarian/   ← magyar egyedi épület (Végvár; a magyar korstílusok a hungarianStyles.ts-ben)
     │   │   │   ├── english/     ← angol építészet (romano-brit, Tudor/normann, georgiánus, gótikus katedrális)
     │   │   │   ├── german/      ← német (limes, Fachwerk, Backstein, speyeri császári dóm)
     │   │   │   ├── french/      ← francia (gallo-római, loire-i gótika, klasszicizmus, versailles-i palota)
@@ -1606,6 +1607,101 @@ tárgyalással) érvényesek.
   Csoda 10 perces visszaszámlálója a fegyverszünet alatt is futott (magas vagy
   halálmeccs nyersanyaggal egy Csoda megnyerhette volna a meccset, mielőtt bárki
   megtámadhatta); javítva, és a szövetséges Csodáját a HUD barátként jelzi.
+
+### M17 — Kereskedelem és népenkénti egyedi épület
+Ág: `feat/M17-trade-landmarks` (az M16 ágára épül). Változat: 1.2.0. A scope
+Claude döntése (a tulajdonos 2026-11-13-i kérése: „1, 2, majd 3, automatikus
+döntésekkel”); a tulajdonos felülírhatja. A 4.3 harmadik pontja („1 egyedi
+épület / nép”) és az M14 „Nem része: kereskedelmi hajó” pontja ennyiben
+módosul.
+- **Piac (`market`, Piac):** új épület, 3×3, 2. kortól, minden népnek a saját
+  stílusának palettájával (közös, palettavezérelt festő, a kolostor és a kikötő
+  mintájára). Két feladata: (1) **csere** — 100 étel vagy fa eladása aranyért,
+  illetve vétele aranyért; az ár játékosonként változik (minden vétel drágítja,
+  minden eladás olcsóbbítja az adott nyersanyagot, `MARKET` a `balance.ts`-ben,
+  alsó és felső határral), az eladásnál díj vonódik le; (2) **kereskedőkocsi**
+  képzése.
+- **Kereskedőkocsi (`trade_cart`, Kereskedőkocsi):** új szárazföldi egység, 2.
+  kortól, a piac képzi. A kijelölt kocsi jobb klikkje egy másik saját vagy
+  szövetséges piacra útvonalat indít: a kocsi a két piac között ingázik, és minden
+  megérkezéskor a tulajdonosa a két piac távolságával arányos aranyat kap
+  (`TRADE` a `balance.ts`-ben; szövetséges piac felé többet, legalább
+  `TRADE.minDistance` mezőnyi távolság kell). Nem harcol, megölhető. Saját
+  grafika: lóvontatta, ponyvás kocsi, a ponyva csapatszínű, a fa és a vasalás a
+  nép palettájából.
+- **Kereskedőhajó (`trade_ship`, Kereskedőhajó):** új hajó, 2. kortól, a kikötő
+  képzi, ugyanígy ingázik két saját vagy szövetséges kikötő között. Claude
+  döntése: a szállítóhajó grafikáját használja (a tengeres térkép 400 MB-os
+  textúra-keretébe így belefér); a kijelölés-panel és a név különbözteti meg.
+- **Egyedi épület (`landmark`):** egyetlen új épülettípus, amelynek nevét,
+  grafikáját és hatását a nép adja (`config/civs.ts`, `CivDef.landmark`); 3×3,
+  2. kortól, játékosonként egy (mint a Csoda), a hatás csak amíg kész állapotban
+  áll. Grafika népenként saját festővel (`architecture/<nép>/`), a nép
+  koronkénti palettájával. A nyolc épület:
+
+  | Nép | Épület | Hatás |
+  |---|---|---|
+  | Magyar | Végvár | erőd: távolról lő (mint a torony, erősebben, több életerővel) |
+  | Angol | Királyi hajógyár | a kikötő 33 %-kal gyorsabban képez |
+  | Német | Hanza-kontor | a kereskedelem 25 %-kal több aranyat hoz |
+  | Francia | Akadémia | a kutatás 25 %-kal gyorsabb |
+  | Spanyol | Pénzverde | percenként aranyat termel |
+  | Olasz | Bankház | jobb piaci árak (kisebb eladási díj, lassabban romló ár) |
+  | Orosz | Osztrog | erőd: távolról lő (gerenda-erőd) |
+  | Finn | Szauna | a közelében álló saját egységeket gyógyítja |
+
+  Számok a `balance.ts`-ben (`LANDMARK`). Új hatás-fajták: `tradeGold`,
+  `researchSpeed`, `marketRate`, `dockTrainSpeed`.
+- **AI (Közepestől):** a 2. korban piacot és egyedi épületet épít (a kor katonai
+  épületei után); a piacon elad, ha egy nyersanyagból nagy a feleslege és
+  aranyból hiány van; kereskedőkocsit csak szövetséges piac felé indít
+  (csapatmeccsen), legfeljebb néhányat. A Könnyű AI egyiket sem csinálja.
+- **UI:** a piac kijelölés-paneljén vétel / eladás gombok az aktuális árral; a
+  kocsi és a hajó útvonala a kijelölés-panelen; kereskedelmi kurzor; a fejlődési
+  fa a piacot, a kocsit, a hajót és csak a saját nép egyedi épületét mutatja.
+  Minden szöveg a `hu.ts`-ben.
+- **Mentés:** `schemaVersion` 11, migrációval; új: a játékosonkénti piaci árak,
+  a kocsi és a hajó útvonala (`tradeRoute`), az aranytermelés maradéka.
+- **Tesztek:** árváltozás és határok, díj, Bankház-kedvezmény; útvonal (ingázás,
+  arany a távolsággal, szövetséges bónusz, túl közeli piac elutasítva, a cél piac
+  lerombolása után a kocsi megáll); kereskedőhajó; az egyedi épület egy
+  játékosonként, a négy hatás-fajta és az erőd és a szauna működése; minden nép
+  egyedi épülete és a piac minden korban megfesthető, determinisztikus, nincs
+  takart ablakfénye; mentés oda-vissza és v10 → v11 migráció valódi v10
+  mentéssel; AI-szimuláció: a Közepes AI piacot és egyedi épületet épít.
+- Nem része: népenként több egyedi épület, kereskedelmi technológiák, piaci
+  adó szövetségesnek (tribute), a kocsi saját védelme, új nyersanyag.
+- Keret (10.): szárazföldön ≤ 256 MB, tengeres térképen ≤ 400 MB textúra (a
+  kocsi és az egyedi épület lapjai igény szerint készülnek), mérve a
+  `scripts/perf/texmem.mjs`-szel.
+- **Állapot (2026-11-26):** kész. Piac (`src/game/market.ts`, közös
+  palettavezérelt festő, `MARKET`: 100-as tétel, 3 %-os árlépés, 30 % eladási díj,
+  20–300 közötti ár; vétel–eladás körrel nem lehet nyerni), kereskedőkocsi és
+  -hajó (`src/ecs/systems/TradeSystem.ts`, `src/game/trade.ts`; `TRADE`: 0,25
+  arany/mező, +25 % szövetséges felé, legalább 20 mező; egy 60 mezős úton kb. 0,7
+  arany/s kocsinként; egy út csak akkor fizet, ha a túlsó végről indult; elérhetetlen
+  célt a parancs elutasít; a kocsi saját grafika, a hajó a szállítóhajóé),
+  egyedi épület (`landmark`, népenkénti festő `architecture/<nép>/`,
+  `LandmarkSystem`; erőd: 8 szúró, 7 lőtáv a középponttól; Pénzverde 30
+  arany/perc; Szauna 2 életerő/s 4 mezőn belül; az Akadémia a korváltást nem
+  gyorsítja — Claude döntése az egyensúlyért), AI `TradePlay` (Közepestől: piac és
+  egyedi épület a 2. kor katonai épületei után, a takarékosság fölötti
+  nyersanyagból; eladás legfeljebb 20 mp-enként, vétel nincs; kocsi csak
+  szövetséges piac felé, legfeljebb 3; kereskedőhajó nincs; a látott erődöt a
+  portya úgy kerüli, mint a tornyot), `schemaVersion` 11 (valódi v10-mentéssel).
+  Mérve: textúra `distinct6 --trade` (minden nép 2. korban piaccal, egyedi
+  épülettel, kocsival) 205,1 MB ≤ 256 MB; `naval6 --ships --trade` **392,6 MB** ≤
+  400 MB — a vízi keret szélén (7 MB tartalék); körmérkőzés: szárazföldön (Nehéz,
+  Mesteri) meccsre azonos a 0.9.1-gyel, vízen (Nehéz) minden nép 32–66 %
+  (olasz 9/28, angol 18,5/28). Szimulációk: a Közepes AI felépíti a piacot és az
+  egyedi épületét (96×96 rét, 1. mag); 2v2-ben a szövetséges AI kocsijai 40 perc
+  alatt 960 aranyat hoznak (11. mag; a 3. magon a második fizetett út csak 39,4
+  percnél jönne); a `threeAges` és a `mixedCivs` emberi helyének RNG-je 7 → 5,
+  illetve 5 → 11 (a söprés a tesztek megjegyzésében). Böngésző-smoke (5196): piac,
+  Végvár és egy útvonalon járó kereskedőkocsi, aranyat hoz, oldalhiba nélkül.
+  Minden feladatot független átnézés követett; a talált hibák (rövid oda-vissza
+  utakért járó teljes fizetés, elérhetetlen célpiac felé végtelen próbálkozás,
+  az Akadémia és a korváltás) javítva.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét

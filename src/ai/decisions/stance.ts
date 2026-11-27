@@ -1,6 +1,7 @@
 import { BUILDING_BALANCE, UNIT_BALANCE } from '../../config/balance';
 import type { StanceTuning } from '../../config/aiBalance';
 import type { AgeId, BuildingType, UnitType } from '../../types';
+import { tradePostType } from '../../game/trade';
 
 /**
  * Hard AI strategy stances (§10.3 "stratégiai váltás"):
@@ -60,11 +61,16 @@ export function decayedPeak(previous: number, now: number, elapsedMs: number, de
   return Math.max(now, previous * Math.pow(decayPerMin, elapsedMs / 60_000));
 }
 
-/** Enemy military seen: sightings of everything but villagers and scouts (exact types: a cossack counts). */
+/**
+ * Enemy military seen: sightings of everything but villagers, scouts and
+ * traders (exact types: a cossack counts). Trade carts and ships (M17) are
+ * unarmed economy like villagers; fishing boats and transports still count,
+ * as since M14 (left as they were, so existing water matches play on unchanged).
+ */
 export function enemyArmySeen(sightings: Readonly<Partial<Record<UnitType, number>>>): number {
   let n = 0;
   for (const [type, count] of Object.entries(sightings) as [UnitType, number][]) {
-    if (type !== 'villager' && type !== 'scout') n += count;
+    if (type !== 'villager' && type !== 'scout' && tradePostType(type) === null) n += count;
   }
   return n;
 }

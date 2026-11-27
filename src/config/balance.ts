@@ -212,10 +212,21 @@ export const UNIT_BALANCE: Record<UnitType, UnitBalance> = {
     range: 7, speed: 1.0, los: 8, cost: c(0, 150, 175), trainTime: 60,
     trainers: ['dock'], popCost: 2, cooldownMs: CANNON_COOLDOWN_MS,
   },
+  // M17 traders: no attack; they shuttle between two friendly markets (cart) or docks (ship), TRADE.
+  trade_cart: {
+    age: 2, hp: 70, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 2,
+    range: 0, speed: 1.0, los: 5, cost: c(0, 100, 50), trainTime: 40,
+    trainers: ['market'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
+  trade_ship: {
+    age: 2, hp: 100, meleeAtk: 0, pierceAtk: 0, meleeDef: 0, pierceDef: 6,
+    range: 0, speed: 1.3, los: 5, cost: c(0, 100, 50), trainTime: 45,
+    trainers: ['dock'], popCost: 1, cooldownMs: MELEE_COOLDOWN_MS,
+  },
 };
 
 /** Ships (M14): they move on water only; melee units and monks cannot touch them. */
-export const NAVAL_CLASS: readonly UnitType[] = ['fishing_boat', 'transport', 'galley', 'frigate'];
+export const NAVAL_CLASS: readonly UnitType[] = ['fishing_boat', 'transport', 'galley', 'frigate', 'trade_ship'];
 
 /** Whether `type` is a ship (M14). */
 export function isNavalType(type: UnitType): boolean {
@@ -290,7 +301,12 @@ export const BUILDING_BALANCE: Record<BuildingType, BuildingBalance> = {
     age: 1, hp: 1800, width: 3, height: 3, cost: c(0, 150, 0), buildTime: 35,
     los: 6, popBonus: 0, dropoff: ['food'],
   },
+  // M17: exchanges food and wood for gold (MARKET); trade carts follow in Task 2.
+  market: { age: 2, hp: 1500, width: 3, height: 3, cost: c(0, 175, 0), buildTime: 50, los: 6, popBonus: 0 },
   tower: { age: 2, hp: 850, width: 1, height: 1, cost: c(0, 50, 125), buildTime: 80, los: 9, popBonus: 0 },
+  // M17: the nation's landmark (LANDMARK); one per player (UNIQUE_BUILDINGS). HP of a town centre
+  // (the fort landmarks shoot like towers and must hold), build time of a monastery.
+  landmark: { age: 2, hp: 2400, width: 3, height: 3, cost: c(0, 300, 250), buildTime: 50, los: 8, popBonus: 0 },
   wall: { age: 1, hp: 300, width: 1, height: 1, cost: c(0, 5, 0), buildTime: 6, los: 4, popBonus: 0 },
   wonder: { age: 3, hp: 4800, width: 4, height: 4, cost: c(2000, 2000, 1000), buildTime: 600, los: 4, popBonus: 0 },
 };
@@ -323,8 +339,80 @@ export const SCORE_BALANCE = {
   sampleMs: 60_000,
 } as const;
 
+/**
+ * Market exchange (M17, src/game/market.ts). Prices are per player and in
+ * gold per `lot`: a buy pays the price, a sale receives price × (1 −
+ * sellFee). Each buy raises that resource's price by `step` × price, each
+ * sale lowers it by the same share; prices stay within [minPrice, maxPrice].
+ */
+export const MARKET = {
+  lot: 100,
+  startPrice: { food: 100, wood: 100 },
+  step: 0.03,
+  minPrice: 20,
+  maxPrice: 300,
+  sellFee: 0.3,
+} as const;
+
+/**
+ * Trade (M17, src/game/trade.ts, TradeSystem). A trade cart shuttles
+ * between two friendly markets (a trade ship between two docks) and earns
+ * its owner, on every arrival at either end,
+ *   round(goldPerTile × distance × (ally target ? 1 + allyBonus : 1) × tradeGoldMultiplier)
+ * gold, where `distance` is the Euclidean distance in tiles between the two
+ * buildings' centre tiles. A route needs at least `minDistance` tiles.
+ *
+ * Rate check (cart, table speed 1.0 → 2.75 tiles/s): on a 60-tile route a
+ * leg is ~57 tiles of walking (each end stops beside a 3×3 footprint),
+ * ~21 s, and pays 0.25 × 60 = 15 gold: ~0.7 gold/s per cart (an ally's
+ * market ~0.9). Because pay and walking time both grow with the distance,
+ * the rate is nearly flat above ~40 tiles and short routes lose to the
+ * fixed stop overhead. One gold miner delivers roughly 0.4–0.5 gold/s at
+ * a near camp (0.6/s at the lode, less the walk), so a cart (150 resources,
+ * 1 population) is worth about one and a half miners, never a mine's worth.
+ * A trade ship (table speed 1.3 → 3.6 tiles/s) earns ~0.9 gold/s on the
+ * same route; water routes are rarer and docks dearer to defend.
+ */
+export const TRADE = {
+  goldPerTile: 0.25,
+  allyBonus: 0.25,
+  minDistance: 20,
+  /** A trader whose way to its next stop failed this many plans in a row (a wall closed it) drops the route. */
+  maxFailedPlans: 5,
+} as const;
+
 /** Buildings a player may own only one of (finished or under construction). */
-export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder']);
+export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder', 'landmark']);
+
+/**
+ * Landmark effects (M17, src/game/landmarks.ts, CivDef.landmark). Every
+ * effect holds only while its owner has a finished, standing landmark.
+ *  - fort (Hungarian Végvár, Russian Osztrog): shoots like a tower, about
+ *    1.5× as hard and as far (pierce 8 vs 5, range 7 vs 5; the range is
+ *    measured from the footprint's centre, so it reaches 6 tiles past the
+ *    walls), same cooldown, arrows. Its HP is the landmark's (a town centre's).
+ *  - mint (Spanish Pénzverde): `mintGoldPerMin` gold per game minute,
+ *    credited as gathered income (it counts in the score like a miner's
+ *    gold); fractions carry over per player (saved `landmarkCarry`).
+ *    30 gold/min ≈ one gold miner (0.4–0.5 gold/s) for 550 resources.
+ *  - sauna (Finnish Szauna): every own wounded land unit within `range`
+ *    tiles (Chebyshev, of the footprint) regains `healPerSec` HP/s — an
+ *    aura, not one target like the monk (a monk heals 1.5 HP/s to one).
+ *    Not buildings, not allies, not ships.
+ *  - modifiers: dock training ×(1 + 0.33) (English), trade gold
+ *    ×(1 + 0.25) (German), research ×(1 + 0.25) (French; technologies only,
+ *    never an age-up such as feudalism or enlightenment), market (Italian):
+ *    the sell fee ×0.5 (30 % → 15 %) and the price move per trade ×0.6.
+ */
+export const LANDMARK = {
+  fort: { pierce: 8, range: 7, cooldownMs: TOWER_COOLDOWN_MS },
+  mintGoldPerMin: 30,
+  sauna: { healPerSec: 2, range: 4 },
+  dockTrainSpeed: 0.33,
+  tradeGold: 0.25,
+  researchSpeed: 0.25,
+  marketRate: { feeMul: 0.5, stepMul: 0.6 },
+} as const;
 
 /** How long a finished Wonder must stand for its owner to win (Wonder victory, CLAUDE.md §4.8). */
 export const WONDER_HOLD_MS = 600_000;

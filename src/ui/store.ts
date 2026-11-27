@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { START_RESOURCES } from '../config/balance';
 import { DEFAULT_CIV } from '../config/civs';
+import type { MarketQuotes } from '../game/market';
 import type { WonderClockInfo } from '../game/wonderClocks';
 import type { VillagerActivity } from '../stats/villagerActivity';
 import type {
@@ -30,6 +31,9 @@ export interface SelectedUnitInfo {
   carrying?: { type: 'food' | 'wood' | 'gold'; amount: number };
   /** A transport's cargo (M14): how many units are aboard. */
   cargo?: number;
+  /** A trader (M17); `route` while it shuttles: its two ends, whether the target is an ally's, the gold per leg. */
+  trader?: true;
+  route?: { home: BuildingType; target: BuildingType; ally: boolean; gold: number };
   /** Owned by the human's ally (M16). */
   ally?: true;
 }
@@ -149,6 +153,8 @@ export interface UiState {
   scores: readonly ScoreRowInfo[];
   /** The human's villagers per activity. */
   villagerCounts: Readonly<Record<VillagerActivity, number>>;
+  /** The human's market prices per lot (M17; HudSync and every trade): the market panel's labels. */
+  marketQuotes: MarketQuotes | null;
 }
 
 export interface UiActions {
@@ -174,6 +180,7 @@ export interface UiActions {
   toggleSidePanel: () => void;
   setScores: (rows: readonly ScoreRowInfo[]) => void;
   setVillagerCounts: (counts: Readonly<Record<VillagerActivity, number>>) => void;
+  setMarketQuotes: (quotes: MarketQuotes | null) => void;
 }
 
 export type UiStore = UiState & UiActions;
@@ -199,6 +206,7 @@ const INITIAL: UiState = {
   sidePanel: { open: true, view: 'score' },
   scores: [],
   villagerCounts: { food: 0, wood: 0, gold: 0, build: 0, idle: 0, other: 0 },
+  marketQuotes: null,
 };
 
 export function createUiStore(): StoreApi<UiStore> {
@@ -231,6 +239,7 @@ export function createUiStore(): StoreApi<UiStore> {
     toggleSidePanel: () => set((state) => ({ sidePanel: { ...state.sidePanel, open: !state.sidePanel.open } })),
     setScores: (rows) => set({ scores: rows }),
     setVillagerCounts: (counts) => set({ villagerCounts: counts }),
+    setMarketQuotes: (marketQuotes) => set({ marketQuotes }),
   }));
 }
 
@@ -260,6 +269,7 @@ export function resetUiStore(store: StoreApi<UiStore> = uiStore, resources: Read
     sidePanel: { ...INITIAL.sidePanel },
     scores: [],
     villagerCounts: { ...INITIAL.villagerCounts },
+    marketQuotes: null,
   });
 }
 

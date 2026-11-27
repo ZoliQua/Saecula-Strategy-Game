@@ -14,6 +14,7 @@ import { VictoryChecker } from '../game/VictoryChecker';
 import { cancelQueuedUnit, queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
+import { tradeAtMarket } from '../game/market';
 import { isFriendly } from '../game/diplomacy';
 import { createEcsWorld, type EcsWorld } from '../ecs/world';
 import { WONDER_HOLD_MS } from '../config/balance';
@@ -265,6 +266,7 @@ export class GameScene extends Phaser.Scene {
       humanId: human?.id ?? 1,
       teams: this.players,
       treaty: this.runner.treaty,
+      isDefeated: (id) => this.players.get(id)?.defeated ?? false,
       civ: human?.civ ?? DEFAULT_CIV,
       age: () => this.players.human()?.age ?? 1,
       buildingHp: () => {
@@ -322,6 +324,10 @@ export class GameScene extends Phaser.Scene {
             gameEvents.emit('researchRejected', { playerId: human.id, reason: result.reason });
           }
         }
+      } else if (cmd.type === 'market-buy' || cmd.type === 'market-sell') {
+        if (!human) return;
+        const result = tradeAtMarket(find(cmd.marketId), human, uiWallet(), cmd.type === 'market-buy' ? 'buy' : 'sell', cmd.resource);
+        if (result.ok) this.hudSync.syncMarket();
       } else if (cmd.type === 'cancel-research') {
         const building = find(cmd.buildingId);
         if (building?.research && building.owner?.playerId === human?.id) {

@@ -79,7 +79,10 @@ export type BaseUnitType =
   | 'fishing_boat'
   | 'transport'
   | 'galley'
-  | 'frigate';
+  | 'frigate'
+  // M17: traders (the market trains the cart, the dock the ship)
+  | 'trade_cart'
+  | 'trade_ship';
 
 /** Civ-specific units (M8); each replaces one base unit for its civ. */
 export type UniqueUnitType =
@@ -110,6 +113,8 @@ export const BASE_UNIT_TYPES: readonly BaseUnitType[] = [
   'transport',
   'galley',
   'frigate',
+  'trade_cart',
+  'trade_ship',
 ];
 
 export type BuildingType =
@@ -127,7 +132,9 @@ export type BuildingType =
   | 'wall'
   | 'wonder'
   | 'monastery'
-  | 'dock';
+  | 'dock'
+  | 'market'
+  | 'landmark';
 
 export interface Population {
   current: number;

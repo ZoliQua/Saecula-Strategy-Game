@@ -9,6 +9,7 @@ import { copyKnown, copyTile, type PerceptionState } from './strategyState';
 import { isNavalType } from '../config/balance';
 import { isFishNode } from '../ecs/workers';
 import { areEnemies, NO_TEAMS } from '../game/diplomacy';
+import { isShootingBuilding } from '../game/landmarks';
 
 /** An enemy building the AI has seen; kept until it sees the spot again without it. */
 export interface KnownBuilding {
@@ -17,6 +18,8 @@ export interface KnownBuilding {
   readonly ownerId: number;
   readonly position: TileCoord;
   readonly footprint: { readonly width: number; readonly height: number };
+  /** Seen shooting though not a tower: a finished fort landmark (M17); absent otherwise. */
+  readonly shoots?: true | undefined;
 }
 
 /** Where an enemy villager was last seen (by id), for villager raids. */
@@ -193,6 +196,8 @@ export class Perception {
           ownerId: e.owner.playerId,
           position: { ...e.position },
           footprint: { ...e.building.footprint },
+          // A fort landmark seen finished (it shoots, M17): raids keep away from it as from a tower.
+          ...(e.building.type === 'landmark' && isShootingBuilding(e) ? { shoots: true as const } : {}),
         });
       }
     }

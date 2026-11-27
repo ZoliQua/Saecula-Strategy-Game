@@ -70,5 +70,6 @@ stopped and saved, and "Reload and continue" loads the same match. It prints
 | `--url` | Use an already running dev server instead of starting one on port 5199 |
 | `--gpu` | Keep Chromium's default GL backend |
 | `--ships` | texmem only: one ship of each type per player before measuring |
+| `--trade` | texmem only: every player at age 2 with a finished market, its landmark and a trade cart (M17) |
 
 Results are written as JSON to `scripts/perf/results/` (git-ignored).

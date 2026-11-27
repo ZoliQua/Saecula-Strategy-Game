@@ -35,7 +35,15 @@ export type TechEffect =
   /** + fraction on the training speed of CONSCRIPTION_BUILDINGS (M12). */
   | { readonly kind: 'trainSpeed'; readonly bonus: number }
   /** − fraction of a monk's recharge after a conversion (M12). */
-  | { readonly kind: 'convertRecharge'; readonly bonus: number };
+  | { readonly kind: 'convertRecharge'; readonly bonus: number }
+  /** + fraction on the gold each trade arrival pays (M17 landmark). */
+  | { readonly kind: 'tradeGold'; readonly bonus: number }
+  /** + fraction on research speed at every building (M17 landmark). */
+  | { readonly kind: 'researchSpeed'; readonly bonus: number }
+  /** Market terms (M17 landmark): the sell fee and the price move per trade scaled by these factors. */
+  | { readonly kind: 'marketRate'; readonly feeMul: number; readonly stepMul: number }
+  /** + fraction on the training speed of the dock (M17 landmark). */
+  | { readonly kind: 'dockTrainSpeed'; readonly bonus: number };
 
 export interface TechSpec {
   readonly id: TechId;

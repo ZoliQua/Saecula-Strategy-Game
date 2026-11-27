@@ -1,6 +1,7 @@
 import { ARROW_UNITS, CAVALRY_CLASS, INFANTRY_CLASS } from '../../config/balance';
 import { AI_COUNTERS, AI_MEDIUM, type CounterTuning } from '../../config/aiBalance';
 import { baseUnitType } from '../../game/civUnits';
+import { tradePostType } from '../../game/trade';
 import type { BaseUnitType, Resources, UnitType } from '../../types';
 import { canAfford } from '../economy';
 
@@ -14,8 +15,8 @@ export function enemyClassShares(seen: Sightings): Record<keyof typeof AI_COUNTE
   let archers = 0;
   let infantry = 0;
   for (const [type, n] of Object.entries(seen) as [UnitType, number][]) {
-    // Exact types: only a real scout is left out; a cossack counts as cavalry.
-    if (type === 'villager' || type === 'scout' || n <= 0) continue;
+    // Exact types: only a real scout is left out; a cossack counts as cavalry. Traders (M17) are no army.
+    if (type === 'villager' || type === 'scout' || tradePostType(type) !== null || n <= 0) continue;
     total += n;
     if (CAVALRY_CLASS.includes(type)) cavalry += n;
     else if (ARROW_UNITS.includes(type)) archers += n;

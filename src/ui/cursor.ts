@@ -1,8 +1,8 @@
 import type { ResourceType } from '../types';
 
 /** The canvas cursor: what a command on the hovered tile would do. */
-export type CursorKind = 'default' | 'move' | 'gatherWood' | 'gatherGold' | 'gatherFood' | 'build' | 'attack' | 'convert' | 'board' | 'unload' | 'forbidden';
-export const CURSOR_KINDS: readonly CursorKind[] = ['default', 'move', 'gatherWood', 'gatherGold', 'gatherFood', 'build', 'attack', 'convert', 'board', 'unload', 'forbidden'];
+export type CursorKind = 'default' | 'move' | 'gatherWood' | 'gatherGold' | 'gatherFood' | 'build' | 'attack' | 'convert' | 'board' | 'unload' | 'trade' | 'forbidden';
+export const CURSOR_KINDS: readonly CursorKind[] = ['default', 'move', 'gatherWood', 'gatherGold', 'gatherFood', 'build', 'attack', 'convert', 'board', 'unload', 'trade', 'forbidden'];
 
 /** One selected own unit, by what it can do with a target. */
 export interface CursorUnit {
@@ -17,6 +17,8 @@ export interface CursorUnit {
   readonly boards?: boolean;
   /** A transport with cargo aboard (M14). */
   readonly unloads?: boolean;
+  /** A trade cart or trade ship (M17). */
+  readonly trades?: boolean;
 }
 
 export interface CursorContext {
@@ -25,7 +27,13 @@ export interface CursorContext {
   /** The selected own units (selected buildings never change the cursor). */
   readonly units: readonly CursorUnit[];
   /** The hovered tile's target under OrderIssuer's rule (resolveOrderTarget). */
-  readonly target: { readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'none'; readonly resource?: ResourceType; readonly convertible?: boolean };
+  readonly target: {
+    readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'tradePost' | 'none';
+    readonly resource?: ResourceType;
+    readonly convertible?: boolean;
+    /** A trade post the trader may set a route to (M17, checkTradeRoute passes). */
+    readonly tradeValid?: boolean;
+  };
   /** Whether the hovered tile is passable; null when the pointer is off the map. */
   readonly passable: boolean | null;
   /** Whether the hovered tile is walkable land (a loaded transport unloads there, M14). */
@@ -54,6 +62,8 @@ export function cursorFor(ctx: CursorContext): CursorKind {
   if (kind === 'enemy' && ctx.target.convertible && ctx.units.some((u) => u.converts)) return 'convert';
   if (kind === 'ownSite' && builders) return 'build';
   if (kind === 'resource' && gatherers && resource) return GATHER[resource];
+  // A route to a market / dock the trader may trade with (M17); a refused one falls through (forbidden on the building).
+  if (kind === 'tradePost' && ctx.target.tradeValid && ctx.units.some((u) => u.trades)) return 'trade';
   if (kind === 'ownTransport' && ctx.units.some((u) => u.boards ?? true)) return 'board';
   // A loaded transport sent onto land unloads there, whatever stands on the tile (as OrderIssuer orders it).
   if (ctx.land && ctx.units.some((u) => u.unloads)) return 'unload';

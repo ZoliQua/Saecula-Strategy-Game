@@ -70,6 +70,8 @@ function savedPlayer(player: Player, world: EcsWorld): SavedPlayer {
     defeated: player.defeated,
     researched: [...player.researched],
     gatherHandicap: player.gatherHandicap,
+    marketPrices: { ...player.marketPrices },
+    landmarkCarry: player.landmarkCarry,
     ...(player.personality !== undefined ? { personality: player.personality } : {}),
   };
 }

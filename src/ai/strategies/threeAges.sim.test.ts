@@ -30,6 +30,11 @@ const SIM_TIMEOUT_MS = 60_000;
  * 0.9.2: Medium trains its monks ahead of the army (AI_MEDIUM.monks.beforeArmy), which moves
  * this match; sweeping Medium RNGs 1-16, it passes with 5, 7, 8, 14 and 15, so RNG 7, which
  * passed before as well, replaces 12.)
+ * M17: Medium-family AIs build a market and their landmark in age 2 and sell surplus at the
+ * market, which moves this match again; sweeping Medium RNGs 1-16, it passes with 3, 5, 11 and
+ * 16 (with 1, 2, 12 and 14 no cannonball flies in time, with 7 and 15 no bullet, with 8 and 9
+ * no human foundry is left, with 4, 6 and 13 the human slot has no cannon, with 10 Hard has
+ * none), so RNG 5, which also passed in the 0.9.2 sweep, replaces 7.
  * Medium and Hard alone are pinned to a cannon count below.
  */
 describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Hard AI', () => {
@@ -43,7 +48,7 @@ describe('three-age match (96×96 meadow, seed 3): human slot = Medium AI vs Har
       difficulty: (id) => (id === 2 ? 'hard' : 'easy'),
       // Hard and the human go for Easy first; Easy (3) fights back at Hard.
       enemyOf: (id) => (id === 3 ? 2 : duel ? 1 : 3),
-      humanStrategy: new MediumStrategy(createRng(7)),
+      humanStrategy: new MediumStrategy(createRng(5)),
       humanEnemy: () => (duel ? 2 : 3),
     });
     const human = match.players.get(1)!;
