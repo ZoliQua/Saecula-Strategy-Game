@@ -165,8 +165,12 @@ export const AI_MEDIUM: MediumTuning = {
    * once a 64×64 meadow's gold ran out).
    */
   monks: { count: 2, minVillagers: 18, beforeArmy: true },
+  /**
+   * The dock at 8 villagers (M15; 10 before): the opening raid's hold stops villager training at
+   * about 9, so a dock that waited for 10 went up only after the raids (Hard and Master inherit).
+   */
   navy: {
-    minVillagers: 10,
+    minVillagers: 8,
     fishingBoats: 4,
     galleys: [0, 2, 3, 2],
     frigates: [0, 0, 0, 2],
