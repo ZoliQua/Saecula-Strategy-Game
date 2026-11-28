@@ -54,9 +54,11 @@ export const TEAM_PALETTES: readonly TeamPalette[] = ['default', 'colorblind'];
 
 let activePalette: TeamPalette = 'default';
 
-/** Picks the palette `playerColor` reads; applied at match start, so one match never mixes palettes. */
-export function setTeamPalette(p: TeamPalette): void {
+/** Picks the palette `playerColor` reads (applied at match start, so one match never mixes palettes); true when it changed. */
+export function setTeamPalette(p: TeamPalette): boolean {
+  const changed = p !== activePalette;
   activePalette = p;
+  return changed;
 }
 
 export function getTeamPalette(): TeamPalette {

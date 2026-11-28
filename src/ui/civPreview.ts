@@ -31,6 +31,12 @@ const previews = new Map<CivId, CivPreview>();
 /** A civ whose town centre is painted, waiting for its picture (the next call). */
 let pending: { readonly civ: CivId; readonly art: LitArt } | null = null;
 
+/** Forgets the painted previews (the team palette changed); they repaint one step per call. */
+export function resetCivPreviews(): void {
+  previews.clear();
+  pending = null;
+}
+
 /** The painted preview of a civ, if it is ready. */
 export function civPreview(civ: CivId): CivPreview | undefined {
   return previews.get(civ);

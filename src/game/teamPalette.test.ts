@@ -3,7 +3,9 @@ import { restoreMatch } from '../save/deserializer';
 import { FIXED_DATE, savableMatch } from '../save/savedMatch.testkit';
 import { CB_PLAYER_COLORS, createPlayer, playerColor, PLAYER_COLORS, setTeamPalette } from './Player';
 
-afterEach(() => setTeamPalette('default'));
+afterEach(() => {
+  setTeamPalette('default');
+});
 
 describe('team palettes', () => {
   it('both palettes have 6 distinct colours', () => {

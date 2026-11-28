@@ -6,6 +6,11 @@ import type { AgeId, BuildingType, CivId, UnitType } from '../types';
 
 const cache = new Map<string, string>();
 
+/** Forgets every picture (the team palette changed: building pictures carry the team colour). */
+export function resetThumbnailCache(): void {
+  cache.clear();
+}
+
 /**
  * Renders a texture (or one frame of it) to a PNG data URL cropped to
  * its opaque pixels, for use as an <img> in the DOM UI.
