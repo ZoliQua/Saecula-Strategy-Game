@@ -63,7 +63,7 @@ import type { AgeId, CivId } from '../../types';
 import type { CameraController } from '../systems/CameraController';
 import { evictionTimer } from './artLoadPlan';
 import { TransportSystem } from '../../ecs/systems/TransportSystem';
-import { chooseEnemyPlayer } from '../../ai/targetPlayer';
+import { chooseEnemyPlayer, freeForAllTargets } from '../../ai/targetPlayer';
 import { treatyClockFor, type TreatyClock, type TreatyGate } from '../../game/treaty';
 
 export interface SystemRunnerOptions {
@@ -74,6 +74,8 @@ export interface SystemRunnerOptions {
   readonly timeVictory?: boolean;
   /** Regicide (M19): the kings wear crowns, the human hears of them and the AIs play for them (default false). */
   readonly regicide?: boolean;
+  /** Regicide or King of the Hill outside a mission (M23, freeForAllMode): AIs pick their nearest enemy (default false). */
+  readonly freeForAll?: boolean;
   /** Game time the match starts at (a save's clock); default 0. */
   readonly startMs?: number;
   /** The match seed (config.seed). */
@@ -141,6 +143,7 @@ export class SystemRunner {
   private readonly xray: UnitXRay;
   /** The match is Regicide (M19): the AIs are told. */
   private readonly regicide: boolean;
+  private readonly freeForAll: boolean;
   /** Regicide only (M19). */
   private readonly crowns: CrownSystem | null;
   private readonly kingWatch: KingWatch | null;
@@ -259,6 +262,7 @@ export class SystemRunner {
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
     const regicide = (this.regicide = options.regicide === true);
+    this.freeForAll = options.freeForAll === true;
     this.crowns = regicide ? new CrownSystem(scene, world, (e) => this.xray.raisedDepth(e)) : null;
     this.kingWatch = regicide ? new KingWatch(world, players, this.humanId, showHudNotice) : null;
     this.hillMarker = new HillMarkerSystem(scene, world, players, this.fogData, this.treaty);
@@ -348,10 +352,13 @@ export class SystemRunner {
     this.timeLimit?.advance(delta);
     const timeVictory = this.timeLimit?.view();
     const base = { world: this.world, mapData: this.mapData, wonderVictory: this.wonderVictory, isDefeated: this.isDefeated, teams: this.players, treatyActive: this.treaty(), ...(timeVictory && { timeVictory }), ...aiModeContext(this.world, this.players, this.regicide) };
+    // Free-for-all Regicide / King of the Hill: every AI takes its nearest standing enemy (M23).
+    const nearest = this.freeForAll;
+    const ctx = freeForAllTargets(nearest, this.players) ? { ...base, freeForAll: true } : base;
     for (const ai of this.aiPlayers) {
       // Whom this AI attacks, re-chosen every decision (M16 teams; without allies: the human).
-      const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world);
-      ai.update(enemy === undefined ? base : { ...base, enemyPlayerId: enemy }, delta);
+      const enemy = this.humanId === undefined ? undefined : chooseEnemyPlayer(this.players, ai.player.id, this.world, nearest);
+      ai.update(enemy === undefined ? ctx : { ...ctx, enemyPlayerId: enemy }, delta);
     }
     this.population.update();
     this.stats.update(delta);

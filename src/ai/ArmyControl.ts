@@ -249,8 +249,8 @@ export class ArmyControl {
 
 /**
  * Waves go after the AI's chosen enemy (`enemyPlayerId`: the human, or in a
- * team match the player chooseEnemyPlayer picked); FFA between AIs is not
- * modelled. Undefined = any hostile the AI sees.
+ * team match or a free-for-all Regicide / King of the Hill (M23) the player
+ * chooseEnemyPlayer picked). Undefined = any hostile the AI sees.
  */
 function targetsEnemy(e: Entity, ctx: AIContext): boolean {
   return ctx.enemyPlayerId === undefined || e.owner?.playerId === ctx.enemyPlayerId;
@@ -259,10 +259,11 @@ function targetsEnemy(e: Entity, ctx: AIContext): boolean {
 /**
  * Enemy units a wave fights: the chosen enemy's, and in a team match (M16)
  * any enemy-team unit it meets on the way (perception lists enemies only,
- * never allies), so a wave does not march past another enemy's army.
+ * never allies), so a wave does not march past another enemy's army; the
+ * same in a free-for-all (M23), where every other player is an enemy.
  */
 function targetsEnemyUnit(e: Entity, ctx: AIContext): boolean {
-  return targetsEnemy(e, ctx) || ctx.teams?.hasTeams?.() === true;
+  return targetsEnemy(e, ctx) || ctx.teams?.hasTeams?.() === true || ctx.freeForAll === true;
 }
 
 /**

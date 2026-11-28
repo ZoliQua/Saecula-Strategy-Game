@@ -2227,6 +2227,84 @@ grafika: játékmenet, számok, mentés és AI nem változik.
   kori oszmán műhelyeknél a lapos kupolák miatt a szín viszi a jelleg nagyobb
   részét.
 
+### M23 — Nyitott kérdések lezárása: módnév, táblázat, portyacél, A domb
+Ág: `feat/M23-known-limits` (az M22 ágára épül, amíg a PR #24 és #25 nincs
+merge-elve). Változat: kiadatlan. A tulajdonos 2026-11-28-án „Folytasd.”-dal a
+következő lépést kérte; az M19–M20 óta nyitott, kis kérdéseket Claude saját
+döntéssel zárja le, a tulajdonos bármelyiket felülírhatja. Új funkció, új
+grafika és mentési változás nincs (`schemaVersion` 15 marad).
+- **„Mind” győzelmi mód neve** (Claude döntése): a beállításban a felirat
+  „Hódítás, Csoda vagy idő” lesz, mert a hat mód mellett a „Mind” úgy
+  olvasható, mintha a Királygyilkost és A domb urát is tartalmazná. Csak a
+  `hu.ts` szövege változik; a `VictoryMode` értéke (`all`) és a mentések
+  nem.
+- **Játék vége táblázat** (hiba): csapatmeccsen a szövetséges sorában a
+  „Szövetséges” jelvény mellett a népnév levágódik („Spanyol” helyett egy fél
+  „S”). Javítás után a népnév és a jelvény is teljesen olvasható, 6 játékossal
+  és a leghosszabb népnévvel is, 1280×720-as nézetben.
+- **Portyacél mindenki-mindenki ellen** (Claude döntése): Királygyilkosban és
+  A domb urában, szövetségesek nélkül, legalább 2 AI-val minden AI a hozzá
+  legközelebbi, még talpon lévő ellenfelét támadja (az embert vagy egy másik
+  AI-t; a távolság és a holtverseny szabálya a csapatmeccsé, M16), nem mindig
+  az embert. Oka: 6 játékossal öt AI portyázott az emberre, és a Királygyilkos
+  kb. 6 perc alatt eldőlt. A hullám ilyenkor, mint csapatmeccsen, bármely
+  útjába eső ellenséges egységgel megküzd. A Hódítás, a Csoda, az idő és a
+  csapatmeccsek célválasztása bitre változatlan; 1 AI-val a legközelebbi
+  ellenfél úgyis az ember, így a meccs ugyanaz. A kampány küldetései (köztük
+  *A király feje*, két Nehéz AI) a régi szabállyal futnak, mert azzal mértük
+  őket (Claude döntése a záró átnézés után).
+- **„Vitatott” domb** (Claude döntése): a HUD óra-sávja továbbra is kiírja,
+  ha a domb vitatott (ez a játékosnak hasznos: ezért áll minden óra). A minimap
+  dombjele ugyanabban a frissítésben vált vitatottra, mint a HUD (az M19 egyik
+  képén késni látszott); ezt teszt őrzi.
+- ***A domb* nehézsége** (Claude döntése): a rövid küldetésnek egy tapasztalt
+  játékos számára megnyerhetőnek kell lennie. Mérés: Nehéz AI az emberi helyen
+  a küldetés rögzített beállításával, több AI-maggal; ha a felénél kevesebbszer
+  nyer, az emberi hely kezdő többlete (`start.bonus`) nő, amíg legalább a
+  felében nyer. Az ellenfél (1 Közepes AI) és a térkép nem változik.
+- **Teszt-törékenység:** a `src/ai/regicide.headless.test.ts` két futásának
+  pontos egyezése csak a rögzített népsorsolás miatt teljesül (más sorsolással
+  1 arany eltérés). A teszt ugyanazt ellenőrzi, de bejárási sorrendtől
+  függetlenül.
+- **Tesztek:** a módfelirat; a játék vége sor elrendezése (a népnév nem
+  csonkul); a célválasztás (Királygyilkos és A domb ura mindenki-mindenki
+  ellen: legközelebbi talpon lévő ellenfél, a kiesett kihagyva; a régi módok és
+  a csapatmeccs változatlan); szimuláció: 6 játékos Királygyilkosban az AI-k
+  egymást is támadják, és az emberi hely királya tovább él, mint a változás
+  előtt; a minimap és a HUD vitatott-állapota egy lépésben; *A domb* mérése; a
+  régi módok meccsei és a körmérkőzés bitre azonosak.
+- Nem része: új győzelmi mód, a domb szabályainak változása, a Közepes vagy a
+  Nehéz AI általános erősítése, a „Mind” értékének átnevezése a mentésben.
+- Keret (10.): az M22 keretei változatlanok (új textúra nincs).
+- **Állapot (2026-12-15):** kész. A „Mind” felirata „Hódítás, Csoda vagy idő”
+  (`hu.ts`). Játék vége táblázat: a „Szövetséges” jelvény a népnév alá törik, és
+  alacsony ablakban a kártya görgethető (`screens.css`); böngészőben (fej nélküli
+  Chrome, 1280×720-as ablak) 6 játékossal, két szövetségessel egyik népnév sem
+  csonkul, és a gomb görgetéssel elérhető. Portyacél: `freeForAllMode` és
+  `freeForAllTargets` (`src/ai/targetPlayer.ts`), a `chooseEnemyPlayer` így
+  mindenki-mindenki ellen a legközelebbi talpon lévő ellenfelet adja, a hullám
+  az `AIContext.freeForAll` jelzéssel minden útjába eső ellenséggel megküzd; az
+  élő játék (`SystemRunner`, `MatchStart`) és a fej nélküli meccs ugyanígy dönt.
+  Szimuláció (`ffaTargets.sim.test.ts`, 64×64 Mezőség, 6 Nehéz játékos, 7. mag,
+  20 perc, kb. 35 s): a régi szabállyal az emberi hely királya 5,5 percnél
+  elesik, az újjal életben marad; az AI-k egymásra adott támadó parancsai
+  534-ről 12 895 másodpercre nőnek. A régi módok, a csapatmeccsek, az 1 AI-s
+  meccsek és a kampány szimulációi változatlanok. Vitatott domb: a HUD és a
+  minimap ugyanabból a tárolt állapotból rajzol, a váltást egy lépésben teszt
+  őrzi (`HudSync.test.ts`). *A domb*: a Nehéz AI az emberi helyen 16 AI-magból
+  9-szer nyer (mind a dombbal, 20,8–29,0 perc), így a kezdő többlet marad; a
+  `hillRush.sim.test.ts` hat győztes magot rögzít (kb. 23 s). A
+  `regicide.headless.test.ts` sorrendtől független összevetése a 10 népes
+  sorsolással is átmegy (a régi népsoron a pontos egyezés megmaradt jelzőnek).
+  A teljes tesztcsomag 4574 teszt. Böngésző (5196, fej nélküli Chrome): egy 6
+  játékos, 128×128-as Mezőség Királygyilkos (Nehéz, 7. mag, tétlen ember) a
+  8–9,5. percben: az AI-k egymásra adott támadó parancsai 4–10 egység, az
+  emberre 0, mind a hat király él, konzolhiba nélkül. A záró átnézés (Ready with fixes) két fontos
+  megállapítása javítva: a hullám mindenki-mindenki ellen nem harcolt a harmadik
+  játékos seregével, és *A király feje* küldetés is az új szabályt kapta volna.
+  Nyitva hagyva (apróság): a hullám a már kiesett játékos megkezdett épületét
+  még lebontja.
+
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
 - M2: 3-4 hét

@@ -33,6 +33,8 @@ describe('victory row (M19)', () => {
   it('offers every mode, with six labels', () => {
     expect(victoryItems().map((i) => i.value)).toEqual(VICTORY_MODES);
     expect(victoryItems().map((i) => i.label).slice(-2)).toEqual(['Királygyilkos', 'A domb ura']);
+    // M23: the old "Mind" read as if it covered the two newer modes as well.
+    expect(victoryItems().find((i) => i.value === 'all')?.label).toBe('Hódítás, Csoda vagy idő');
   });
 
   it('disables the hill and Regicide on the templates without a place for them and says why', () => {

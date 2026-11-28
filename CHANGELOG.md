@@ -113,6 +113,13 @@ raises the patch version.
 
 ### Changed
 
+- **Free-for-all Regicide and King of the Hill:** with two or more AIs and no
+  allies, every AI now attacks its nearest opponent (you or another AI)
+  instead of all of them raiding you; in a six-player Regicide your king no
+  longer falls in the first few minutes. Other modes, team matches and
+  one-AI matches and the campaign play exactly as before.
+- The "Mind" victory mode is now called "Hódítás, Csoda vagy idő" (conquest,
+  Wonder or time), since it never included Regicide or King of the Hill.
 - **Polish and Ottoman workshops and forts:** the barracks, archery ranges,
   stables and blacksmiths of both new nations are now drawn in their own style
   in every age (log-and-reed Biskupin halls, Kraków brick Gothic, Zamość attic
@@ -126,6 +133,10 @@ raises the patch version.
 
 ### Fixed
 
+- **Game-over table:** in a team match the "Szövetséges" (ally) chip no longer
+  squeezes the ally's nation name to a single letter; it wraps under the
+  name, and the card scrolls in a short window instead of cutting off its
+  button.
 - **Medium, Hard and Master AIs on water maps** found their dock at 8
   villagers instead of 10. The opening raid's hold stopped villager training
   at about 9, so the dock came only after the raids, and water games were

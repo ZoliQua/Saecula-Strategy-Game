@@ -70,3 +70,52 @@ describe('chooseEnemyPlayer (M16 AI target choice)', () => {
     expect(chooseEnemyPlayer(players, 2, world)).toBe(3);
   });
 });
+
+describe('chooseEnemyPlayer, free-for-all Regicide / King of the Hill (M23 `nearest`)', () => {
+  // allies 0, town centres on a line: 1 at 0, 2 at 10, 3 at 40, 4 at 20, 5 at 60.
+  it('every AI takes its nearest standing enemy, the human included', () => {
+    const { world, players } = setup(0);
+    expect(chooseEnemyPlayer(players, 2, world, true)).toBe(1); // 10 to the human, 10 to player 4: tie, smaller id
+    expect(chooseEnemyPlayer(players, 3, world, true)).toBe(4); // 20 to 4 and to 5: tie, smaller id
+    expect(chooseEnemyPlayer(players, 4, world, true)).toBe(2); // 10 beats 20
+    expect(chooseEnemyPlayer(players, 5, world, true)).toBe(3); // 20
+    // The AI-driven human picks alike.
+    expect(chooseEnemyPlayer(players, 1, world, true)).toBe(2);
+  });
+
+  it('skips the defeated and the town-centre-less, ties go to the smaller id', () => {
+    const { world, players, tcs } = setup(0);
+    fell(world, tcs.get(2)!);
+    expect(chooseEnemyPlayer(players, 4, world, true)).toBe(1); // 20 to 1, 20 to 3: tie
+    players.markDefeated(1);
+    expect(chooseEnemyPlayer(players, 4, world, true)).toBe(3);
+    players.markDefeated(3);
+    expect(chooseEnemyPlayer(players, 4, world, true)).toBe(5);
+    players.markDefeated(5);
+    expect(chooseEnemyPlayer(players, 4, world, true)).toBeUndefined();
+  });
+
+  it('equals the plain rule without `nearest` (conquest: the human always)', () => {
+    const { world, players, tcs } = setup(0);
+    for (const id of [2, 3, 4, 5]) expect(chooseEnemyPlayer(players, id, world, false)).toBe(1);
+    fell(world, tcs.get(1)!);
+    expect(chooseEnemyPlayer(players, 3, world, false)).toBe(1);
+  });
+
+  it('with one AI it is the human, standing or not', () => {
+    const world = createEcsWorld();
+    const map = new MapData(80, 80);
+    const players = createPlayers('hungarian', ['english'], undefined, 0);
+    const h = createBuilding(world, { type: 'town_center', origin: { tx: 0, ty: 5 }, playerId: 1, mapData: map });
+    createBuilding(world, { type: 'town_center', origin: { tx: 30, ty: 5 }, playerId: 2, mapData: map });
+    expect(chooseEnemyPlayer(players, 2, world, true)).toBe(1);
+    fell(world, h);
+    expect(chooseEnemyPlayer(players, 2, world, true)).toBe(1);
+  });
+
+  it('leaves team matches untouched', () => {
+    const { world, players } = setup(1);
+    expect(chooseEnemyPlayer(players, 2, world, true)).toBe(chooseEnemyPlayer(players, 2, world));
+    expect(chooseEnemyPlayer(players, 1, world, true)).toBe(chooseEnemyPlayer(players, 1, world));
+  });
+});

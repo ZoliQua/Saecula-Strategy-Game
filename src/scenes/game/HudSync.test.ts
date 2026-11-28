@@ -156,6 +156,23 @@ describe('HudSync and the hill (M19)', () => {
     expect(uiStore.getState().hill?.rows[0]?.remainingMs).toBe(HILL.holdMs - 4000);
   });
 
+  it('held → contested in the same tick, for the clock bar and the minimap alike (M23)', () => {
+    // The minimap draws the hill every frame from this same store entry
+    // (Minimap.drawHillZone / drawHillFlag), so one publish switches both.
+    const { world, players, hill } = hillMatch();
+    const sync = new HudSync(world, players, null);
+    Object.assign(hill, { holderTeam: 2, heldMs: { 2: 3000 } });
+    sync.secondTick();
+    expect(uiStore.getState().hill).toMatchObject({ status: 'held' });
+    expect(uiStore.getState().hill?.color).not.toBeNull();
+    Object.assign(hill, { holderTeam: null, contested: true });
+    sync.secondTick();
+    expect(uiStore.getState().hill).toMatchObject({ status: 'contested', color: null });
+    Object.assign(hill, { contested: false });
+    sync.secondTick();
+    expect(uiStore.getState().hill).toMatchObject({ status: 'empty', color: null });
+  });
+
   it('waits while the treaty runs, then no more', () => {
     const { world, players } = hillMatch();
     let left = 60_000;

@@ -90,8 +90,9 @@
 @keyframes e-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- game over ---------- */
-.gameover { display: grid; place-items: center; background: rgba(6, 7, 9, 0.55); pointer-events: auto; animation: e-fade 0.6s ease both; }
-.gameover-card { width: min(440px, calc(100vw - 32px)); padding: 34px 34px 28px; text-align: center; animation: e-up 0.7s var(--ease) 0.15s both; }
+/* A short window scrolls the card rather than cutting off its button (M23); auto margins centre it when it fits. */
+.gameover { display: grid; justify-items: center; overflow-y: auto; padding: 16px 0; background: rgba(6, 7, 9, 0.55); pointer-events: auto; animation: e-fade 0.6s ease both; }
+.gameover-card { margin-block: auto; width: min(440px, calc(100vw - 32px)); padding: 34px 34px 28px; text-align: center; animation: e-up 0.7s var(--ease) 0.15s both; }
 .gameover-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
 .gameover-title { margin: 10px 0 0; font-family: var(--font-display); font-size: 46px; line-height: 1.05; }
 .gameover-title.win { color: var(--amber-2); text-shadow: 0 0 40px rgba(245, 168, 87, 0.45); }
@@ -121,8 +122,9 @@
 }
 .gameover-row.human { background: rgba(245, 168, 87, 0.07); box-shadow: inset 0 0 0 1px rgba(245, 168, 87, 0.22); }
 .gameover-swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--swatch); box-shadow: 0 0 10px var(--swatch); }
-.gameover-civ { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 600; color: var(--ink); }
-.gameover-civ-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The ally chip wraps under the civ name rather than squeezing it to a sliver (M23). */
+.gameover-civ { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; font-weight: 600; color: var(--ink); }
+.gameover-civ-name { flex: 0 1 auto; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gameover-ally {
   flex: none; font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   padding: 1px 5px; border-radius: 5px; color: #bfe3ff; background: rgba(122, 196, 255, 0.14);
