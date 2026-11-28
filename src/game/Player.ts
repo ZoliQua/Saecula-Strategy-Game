@@ -46,11 +46,35 @@ export const PLAYER_COLORS: readonly number[] = [
   0x4ad0c0, // 6 — türkíz
 ];
 
+/** Okabe-Ito colour-blind-safe team colours (M18). */
+export const CB_PLAYER_COLORS: readonly number[] = [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0x0072b2, 0xd55e00];
+
+export type TeamPalette = 'default' | 'colorblind';
+export const TEAM_PALETTES: readonly TeamPalette[] = ['default', 'colorblind'];
+
+let activePalette: TeamPalette = 'default';
+
+/** Picks the palette `playerColor` reads; applied at match start, so one match never mixes palettes. */
+export function setTeamPalette(p: TeamPalette): void {
+  activePalette = p;
+}
+
+export function getTeamPalette(): TeamPalette {
+  return activePalette;
+}
+
+/** The team colour of player `id` (1-based, wrapping) under the active palette; Gaia (0) and below are white. */
+export function playerColor(id: number): number {
+  if (id < 1) return 0xffffff;
+  const colors = activePalette === 'colorblind' ? CB_PLAYER_COLORS : PLAYER_COLORS;
+  return colors[(id - 1) % colors.length] ?? 0xffffff;
+}
+
 export function createPlayer(partial: Partial<Player> & { id: number }): Player {
   return {
     isHuman: false,
     civ: DEFAULT_CIV,
-    color: PLAYER_COLORS[(partial.id - 1) % PLAYER_COLORS.length] ?? 0xffffff,
+    color: playerColor(partial.id),
     resources: { ...START_RESOURCES.normal },
     age: 1,
     researched: new Set<TechId>(),

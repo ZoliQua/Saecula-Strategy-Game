@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { BUILDING_SPECS } from '../ecs/archetypes/building';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import type { AgeId, BuildingType, CivId } from '../types';
 import { AGE_STYLED_BUILDINGS, artAgeFor } from './art/architecture/ageStyle';
 import {
@@ -94,7 +94,7 @@ export function rebaseCivArt(host: TextureHost, owners: ReadonlyMap<CivId, numbe
 type TextureHost = Pick<Phaser.Scene, 'textures'>;
 
 function teamColor(playerId: number): number {
-  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+  return playerColor(playerId);
 }
 
 /**

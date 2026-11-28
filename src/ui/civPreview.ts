@@ -1,6 +1,6 @@
 import { AVAILABLE_CIVS } from '../config/civs';
 import { MENU_PHASE } from '../config/visual';
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor } from '../game/Player';
 import { artAgeFor } from '../iso/art/architecture/ageStyle';
 import { paintBuilding } from '../iso/art/buildings';
 import type { LitArt } from '../iso/art/lighting/normalLayer';
@@ -56,7 +56,7 @@ export function paintNextCivPreview(): CivId | null {
   if (!civ) return null;
   try {
     // A half-written civ painter throws here; the card then shows its placeholder.
-    pending = { civ, art: paintBuilding('town_center', PLAYER_COLORS[0] ?? 0xffffff, artAgeFor('town_center', 1), civ) };
+    pending = { civ, art: paintBuilding('town_center', playerColor(1), artAgeFor('town_center', 1), civ) };
   } catch (err) {
     console.warn(`civ preview failed (${civ})`, err);
     // A failed paint still counts as done, so it is not retried every frame.

@@ -1,4 +1,4 @@
-import { PLAYER_COLORS } from '../game/Player';
+import { playerColor as teamColorOf } from '../game/Player';
 
 const STAT = new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 1 });
 
@@ -9,7 +9,7 @@ export function formatStat(value: number): string {
 
 /** A player's colour (0xRRGGBB, as createPlayer assigns it); Gaia (0) is white. */
 export function playerColor(playerId: number): number {
-  return playerId > 0 ? (PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff) : 0xffffff;
+  return teamColorOf(playerId);
 }
 
 /** A 0xRRGGBB colour as a CSS hex string ("#4a8ad0"). */

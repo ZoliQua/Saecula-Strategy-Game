@@ -2,7 +2,7 @@ import type { AIPlayerState } from '../ai/strategyState';
 import type { Entity } from '../ecs/components';
 import { createEcsWorld, setNextEntityId, type EcsWorld } from '../ecs/world';
 import type { GameSetupConfig } from '../game/GameSetupConfig';
-import { createPlayer, type Player } from '../game/Player';
+import { createPlayer, playerColor, type Player } from '../game/Player';
 import { PlayerManager } from '../game/PlayerManager';
 import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
@@ -47,7 +47,8 @@ function restoredPlayer(p: SavedPlayer): Player {
     id: p.id,
     isHuman: p.isHuman,
     civ: p.civ,
-    color: Number.parseInt(p.color.slice(1), 16),
+    // The saved colour is not used: the display colour follows the active palette.
+    color: playerColor(p.id),
     resources: { ...p.resources },
     age: p.age,
     researched: new Set(p.researched),

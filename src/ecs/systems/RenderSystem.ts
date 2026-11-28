@@ -5,7 +5,7 @@ import { LightManager, lit } from '../../iso/art/lighting/LightManager';
 import { frameIndex, headingSlot, unitSheetLayout } from '../../iso/art/units/layout';
 import { forgetUnitArt, pumpUnitArt } from '../../iso/art/units/UnitArt';
 import { createUnitSprites, setUnitFrame, syncTeamSprite, type UnitSprites } from '../../iso/art/units/unitSprite';
-import { PLAYER_COLORS } from '../../game/Player';
+import { playerColor } from '../../game/Player';
 import { wonderStage } from '../../iso/art/architecture/wonder';
 import {
   BUILDING_LIGHT,
@@ -381,5 +381,5 @@ export class RenderSystem {
 }
 
 function teamColor(playerId: number): number {
-  return PLAYER_COLORS[(playerId - 1) % PLAYER_COLORS.length] ?? 0xffffff;
+  return playerColor(playerId);
 }

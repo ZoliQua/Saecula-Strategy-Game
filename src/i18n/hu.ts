@@ -604,12 +604,17 @@ export const hu = {
   settings: {
     title: 'Beállítások',
     /** Kicker over the title. */
-    kicker: 'Hang és irányítás',
+    kicker: 'Hang, irányítás és megjelenítés',
     audio: 'Hang',
     volumes: { master: 'Fő hangerő', music: 'Zene', sfx: 'Hangeffektek', notifications: 'Értesítések' },
     mute: 'Némítás',
     keys: 'Billentyűk',
-    tabs: { audio: 'Hang', controls: 'Irányítás' },
+    tabs: { audio: 'Hang', controls: 'Irányítás', display: 'Megjelenítés' },
+    /** The display tab (M18): team colours. */
+    teamColors: 'Csapatszínek',
+    teamPalette: 'Színkészlet',
+    teamPalettes: { default: 'Alapértelmezett', colorblind: 'Színtévesztő-barát' },
+    teamPaletteNote: 'A következő meccstől érvényes.',
     mouse: 'Egér és érintőpad',
     actions: {
       panUp: 'Kamera fel',

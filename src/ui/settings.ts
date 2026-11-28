@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import { TEAM_PALETTES, type TeamPalette } from '../game/Player';
 import { DEFAULT_CONTROLS, DEFAULT_VOLUMES } from '../config/constants';
 import { DEFAULT_KEYS, KEY_ACTIONS, RESERVED_CODES, rebind as rebindKeys, validBindings, type KeyAction, type KeyBinding, type KeyBindings, type RebindResult } from './keymap';
 
@@ -24,9 +25,14 @@ export interface Settings {
   muted: boolean;
   keys: KeyBindings;
   controls: Readonly<ControlSettings>;
+  /** Team colours of the next match (M18): the default set or the colour-blind-safe one. */
+  teamPalette: TeamPalette;
 }
 
-export const DEFAULT_SETTINGS: Settings = { volume: DEFAULT_VOLUMES, muted: false, keys: DEFAULT_KEYS, controls: DEFAULT_CONTROLS };
+export { TEAM_PALETTES };
+export type { TeamPalette };
+
+export const DEFAULT_SETTINGS: Settings = { volume: DEFAULT_VOLUMES, muted: false, keys: DEFAULT_KEYS, controls: DEFAULT_CONTROLS, teamPalette: 'default' };
 /** Kept from the IsoRTS working title so stored settings survive the rename (CLAUDE.md 7.6). */
 export const SETTINGS_KEY = 'isorts.settings.v1';
 
@@ -104,6 +110,7 @@ const settingsSchema = z.object({
       scrollMode: z.enum(['auto', 'zoom', 'pan']).catch(DEFAULT_CONTROLS.scrollMode),
     })
     .catch(DEFAULT_CONTROLS),
+  teamPalette: z.enum(['default', 'colorblind']).catch('default'),
 });
 
 /** The stored settings; anything unreadable or invalid gives the defaults, and missing fields are filled from them. */
@@ -122,7 +129,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): Settings
 export function saveSettings(storage: Pick<Storage, 'setItem'> | null, s: Settings): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(SETTINGS_KEY, JSON.stringify({ volume: s.volume, muted: s.muted, keys: s.keys, controls: s.controls }));
+    storage.setItem(SETTINGS_KEY, JSON.stringify({ volume: s.volume, muted: s.muted, keys: s.keys, controls: s.controls, teamPalette: s.teamPalette }));
     return true;
   } catch {
     return false;
@@ -145,6 +152,7 @@ export interface SettingsStore extends Settings {
   setMuted(m: boolean): void;
   rebind(action: KeyAction, binding: KeyBinding): RebindResult;
   setControls(patch: Partial<ControlSettings>): void;
+  setTeamPalette(p: TeamPalette): void;
   /** Restores every setting (both tabs of the card). */
   resetDefaults(): void;
 }
@@ -154,8 +162,8 @@ export function createSettingsStore(storage: Pick<Storage, 'getItem' | 'setItem'
   return createStore<SettingsStore>()((set, get) => {
     const commit = (next: Settings): void => set({ ...next, persisted: saveSettings(storage, next) });
     const current = (): Settings => {
-      const { volume: v, muted, keys, controls } = get();
-      return { volume: v, muted, keys, controls };
+      const { volume: v, muted, keys, controls, teamPalette } = get();
+      return { volume: v, muted, keys, controls, teamPalette };
     };
     return {
       ...loadSettings(storage),
@@ -180,6 +188,10 @@ export function createSettingsStore(storage: Pick<Storage, 'getItem' | 'setItem'
         const next = { ...s.controls, ...patch };
         if (next.commandGesture === s.controls.commandGesture && next.scrollMode === s.controls.scrollMode) return;
         commit({ ...s, controls: next });
+      },
+      setTeamPalette: (p) => {
+        const s = current();
+        if (s.teamPalette !== p) commit({ ...s, teamPalette: p });
       },
       resetDefaults: () => commit(DEFAULT_SETTINGS),
     };
