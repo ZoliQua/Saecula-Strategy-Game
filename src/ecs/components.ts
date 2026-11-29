@@ -7,6 +7,7 @@ import type {
   TechId,
   Direction,
   ProjectileKind,
+  Resources,
   ResourceType,
   UnitType,
 } from '../types';
@@ -84,6 +85,13 @@ export interface Entity {
     elapsed: number;
   };
   buildCommand?: { targetId: number };
+  /**
+   * A villager's repair order on a finished, damaged own or allied building
+   * (M18, RepairSystem): `costCarry` the fractional resources owed but not
+   * yet charged, `hpCarry` the fractional HP restored but not yet applied
+   * (building HP stays whole, as for healing).
+   */
+  repairIntent?: { targetId: number; costCarry: Resources; hpCarry: number };
   trainingQueue?: {
     entries: Array<{ unitType: UnitType; elapsed: number; totalTime: number }>;
     maxQueue: number;

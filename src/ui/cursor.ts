@@ -28,7 +28,7 @@ export interface CursorContext {
   readonly units: readonly CursorUnit[];
   /** The hovered tile's target under OrderIssuer's rule (resolveOrderTarget). */
   readonly target: {
-    readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'tradePost' | 'none';
+    readonly kind: 'enemy' | 'ownSite' | 'repair' | 'ownTransport' | 'resource' | 'tradePost' | 'none';
     readonly resource?: ResourceType;
     readonly convertible?: boolean;
     /** A trade post the trader may set a route to (M17, checkTradeRoute passes). */
@@ -46,8 +46,8 @@ const GATHER: Readonly<Record<ResourceType, CursorKind>> = { wood: 'gatherWood',
  * The cursor for a command on the hovered tile, matching what
  * OrderIssuer would order: an enemy → attack if any selected unit
  * attacks, else convert if a ready monk is selected and the enemy is a
- * convertible unit (M11); an own unfinished building → build if a villager is
- * selected; a resource node → that resource's gather kind for
+ * convertible unit (M11); an own unfinished building, or a damaged own or
+ * allied one (repair, M18) → build if a villager is selected; a resource node → that resource's gather kind for
  * villagers; an own transport → board for land units (M14); walkable land
  * → unload for a loaded transport (M14). Otherwise the units would just move there: forbidden on
  * an impassable tile, else move. No own unit, placement mode or off the
@@ -60,7 +60,8 @@ export function cursorFor(ctx: CursorContext): CursorKind {
   const { kind, resource } = ctx.target;
   if (kind === 'enemy' && ctx.units.some((u) => u.attacks)) return 'attack';
   if (kind === 'enemy' && ctx.target.convertible && ctx.units.some((u) => u.converts)) return 'convert';
-  if (kind === 'ownSite' && builders) return 'build';
+  // Help-build a foundation, or repair a damaged own / allied building (M18): the same hammer.
+  if ((kind === 'ownSite' || kind === 'repair') && builders) return 'build';
   if (kind === 'resource' && gatherers && resource) return GATHER[resource];
   // A route to a market / dock the trader may trade with (M17); a refused one falls through (forbidden on the building).
   if (kind === 'tradePost' && ctx.target.tradeValid && ctx.units.some((u) => u.trades)) return 'trade';

@@ -279,6 +279,8 @@ export const hu = {
     /** The top bar's population counter opens the side panel's villager view. */
     populationTip: 'Népesség · kattints: mit csinálnak a falusiak',
     underConstruction: 'Építés alatt',
+    /** A selected villager's role line while it repairs a building (M18). */
+    repairing: 'Javít',
     enemy: 'Ellenség',
     /** An allied player's unit or building (M16). */
     ally: 'Szövetséges',
@@ -664,6 +666,10 @@ export const hu = {
     sameAsHome: 'Ez a kocsi (hajó) saját piaca: válassz egy másikat.',
     noHome: 'Nincs kész saját piac (kikötő), ahonnan az útvonal indulhatna.',
     unreachable: 'Oda nem lehet eljutni: a piac (kikötő) másik szigeten vagy másik vízen van, vagy el van zárva.',
+  },
+  /** Building repair (M18). */
+  repair: {
+    outOfResources: 'Elfogyott a nyersanyag a javításhoz.',
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

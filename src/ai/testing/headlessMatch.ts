@@ -5,6 +5,7 @@ import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
+import { RepairSystem } from '../../ecs/systems/RepairSystem';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { GatheringSystem } from '../../ecs/systems/GatheringSystem';
@@ -271,6 +272,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     landmarks: new LandmarkSystem(world, players),
     farms: new FarmRegenSystem(world),
     construction: new ConstructionSystem(world, map, paths, players),
+    repair: new RepairSystem(world, map, paths, players),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor, players, treaty),
@@ -293,6 +295,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     systems.trade.update(dt);
     systems.farms.update(dt);
     systems.construction.update(dt);
+    systems.repair.update(dt);
     systems.training.update(dt);
     systems.research.update(dt);
     systems.towers.update(dt);

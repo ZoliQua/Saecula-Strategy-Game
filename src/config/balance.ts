@@ -381,6 +381,17 @@ export const TRADE = {
   maxFailedPlans: 5,
 } as const;
 
+/**
+ * Building repair (M18, RepairSystem). One villager restores
+ * `maxHp / buildTime × speed` HP per second (times the owner's build-speed
+ * multiplier); restoring the full HP costs `costFraction` of the building's
+ * base cost, per resource, charged as the HP comes back.
+ */
+export const REPAIR = {
+  speed: 1,
+  costFraction: 0.5,
+} as const;
+
 /** Buildings a player may own only one of (finished or under construction). */
 export const UNIQUE_BUILDINGS: ReadonlySet<BuildingType> = new Set<BuildingType>(['wonder', 'landmark']);
 

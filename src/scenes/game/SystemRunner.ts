@@ -18,6 +18,9 @@ import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
+import { RepairSystem } from '../../ecs/systems/RepairSystem';
+import { playerWallet, uiWallet } from '../../ecs/research';
+import { showHudNotice } from '../../ui/HUD';
 import { DeathSystem } from '../../ecs/systems/DeathSystem';
 import { FarmRegenSystem } from '../../ecs/systems/FarmRegenSystem';
 import { FogOfWarSystem } from '../../ecs/systems/FogOfWarSystem';
@@ -97,6 +100,7 @@ export class SystemRunner {
   private readonly landmarks: LandmarkSystem;
   private readonly farms: FarmRegenSystem;
   private readonly construction: ConstructionSystem;
+  private readonly repair: RepairSystem;
   private readonly training: TrainingSystem;
   private readonly research: ResearchSystem;
   private readonly population: PopulationSystem;
@@ -173,6 +177,12 @@ export class SystemRunner {
     this.landmarks = new LandmarkSystem(world, players);
     this.farms = new FarmRegenSystem(world);
     this.construction = new ConstructionSystem(world, mapData, this.paths, players);
+    // Repair (M18): the human pays from the UI store's stockpile, an AI from its Player.
+    this.repair = new RepairSystem(world, mapData, this.paths, players, {
+      walletOf: (p) => (p.isHuman ? uiWallet() : playerWallet(p)),
+      humanId: this.humanId,
+      notice: (m) => showHudNotice(m),
+    });
     this.training = new TrainingSystem(world, mapData, players);
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
@@ -295,6 +305,7 @@ export class SystemRunner {
     this.trade.update(delta);
     this.farms.update(delta);
     this.construction.update(delta);
+    this.repair.update(delta);
     this.training.update(delta);
     this.research.update(delta);
     this.towers.update(delta);

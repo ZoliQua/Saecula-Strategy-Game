@@ -32,7 +32,7 @@ export interface UnitAnimState {
  *    so feet don't skate;
  *  - attacking → wind-up before the cooldown ends, strike + follow
  *    through right after a blow lands, ready stance in between;
- *  - working (gathering, building) → tool swing; with `siteOf`, a builder
+ *  - working (gathering, building, repairing) → tool swing; with `siteOf`, a builder
  *    swings only on the ring around its site (not while it waits for a
  *    path, nor inside the footprint it is stepping out of);
  *  - else a slow breathing idle, desynchronised per entity.
@@ -64,15 +64,17 @@ export function unitAnimState(entity: Entity, now: number, siteOf?: SiteLookup):
 /** Construction sites by id (the builders' targets). */
 export type SiteLookup = (id: number) => Entity | undefined;
 
-/** A per-frame lookup of the world's construction sites (there are few), for `unitAnimState`. */
+/** A per-frame lookup of the world's construction sites and damaged buildings (repair targets, M18; there are few), for `unitAnimState`. */
 export function siteLookup(world: EcsWorld): SiteLookup {
   const sites = new Map<number, Entity>();
-  for (const s of world.with('building', 'underConstruction', 'position')) if (s.id !== undefined) sites.set(s.id, s);
+  for (const s of world.with('building', 'position')) {
+    if (s.id !== undefined && (s.underConstruction || (s.health && s.health.current < s.health.max))) sites.set(s.id, s);
+  }
   return (id) => sites.get(id);
 }
 
 function isBuilding(entity: Entity, siteOf: SiteLookup | undefined): boolean {
-  const cmd = entity.buildCommand;
+  const cmd = entity.buildCommand ?? entity.repairIntent;
   if (!cmd) return false;
   if (!siteOf) return true;
   const site = siteOf(cmd.targetId);

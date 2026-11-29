@@ -42,6 +42,8 @@ export interface GameEvents {
   unitTrained: { world: EcsWorld; playerId: number; unitType: UnitType };
   /** A construction site was finished. */
   buildingCompleted: { world: EcsWorld; playerId: number; entityId: number; buildingType: BuildingType };
+  /** A repair brought a building back to full HP (M18); `playerId` owns the villager that restored the last HP. */
+  buildingRepaired: { world: EcsWorld; playerId: number; entityId: number; buildingType: BuildingType };
   /** The pause menu opened or closed (PauseScene). The music ducks on it (Task 9); nothing in play listens. */
   pauseChanged: { paused: boolean };
 }
@@ -60,6 +62,7 @@ const listeners: { [K in keyof GameEvents]: Set<Listener<K>> } = {
   unitTrained: new Set(),
   unitConverted: new Set(),
   buildingCompleted: new Set(),
+  buildingRepaired: new Set(),
   pauseChanged: new Set(),
 };
 

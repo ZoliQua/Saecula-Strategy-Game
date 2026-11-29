@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { ANIM_FRAMES, frameIndex, headingSlot, sheetLayout, unitAnims } from '../../iso/art/units/layout';
 import type { Direction } from '../../types';
 import type { Entity } from '../components';
-import { attackFrame, DYING_MS, dyingAlpha, unitAnimState } from './unitAnim';
+import { createEcsWorld } from '../world';
+import { attackFrame, DYING_MS, dyingAlpha, siteLookup, unitAnimState } from './unitAnim';
 
 const unit = (moving: boolean, facing: Direction = 'E'): Entity => ({
   id: 1,
@@ -126,5 +127,23 @@ describe('unitAnimState for builders (M7: no tool swing away from the site)', ()
     const b = builder(2, 2);
     b.movable!.path = [{ tx: 3, ty: 3 }];
     expect(unitAnimState(b, 0, siteOf).anim).toBe('walk');
+  });
+});
+
+describe('unitAnimState for repairers (M18)', () => {
+  const house: Entity = { id: 8, position: { tx: 10, ty: 10 }, building: { type: 'house', footprint: { width: 2, height: 2 } }, health: { current: 100, max: 500 } };
+  const repairer = (tx: number, ty: number): Entity => ({
+    ...unit(false),
+    unit: { unitType: 'villager' },
+    position: { tx, ty },
+    repairIntent: { targetId: 8, costCarry: { food: 0, wood: 0, gold: 0 }, hpCarry: 0 },
+  });
+
+  it('swings the tool on the ring around a damaged building it repairs, idles away from it', () => {
+    const world = createEcsWorld();
+    world.add(house);
+    const siteOf = siteLookup(world);
+    expect(unitAnimState(repairer(9, 10), 0, siteOf).anim).toBe('work');
+    expect(unitAnimState(repairer(2, 2), 0, siteOf).anim).toBe('idle');
   });
 });

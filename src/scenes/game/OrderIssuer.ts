@@ -2,6 +2,7 @@ import { audio, type AudioSink } from '../../audio/AudioManager';
 import { canConvert, readyToConvert } from '../../game/convert';
 import type { Entity } from '../../ecs/components';
 import { insideFootprint } from '../../ecs/footprint';
+import { canRepair, findRepairTargetAt, startRepair } from '../../game/repair';
 import { checkTradeRoute, startTradeRoute, tradePostType, type TradeRefusal } from '../../game/trade';
 import { TRADE } from '../../config/balance';
 import { clearUnitOrders } from '../../ecs/orders';
@@ -22,7 +23,7 @@ import { showHudNotice } from '../../ui/HUD';
 
 /** What a command on a tile is aimed at, from `actor`'s side. */
 export interface OrderTarget {
-  readonly kind: 'enemy' | 'ownSite' | 'ownTransport' | 'resource' | 'tradePost' | 'none';
+  readonly kind: 'enemy' | 'ownSite' | 'repair' | 'ownTransport' | 'resource' | 'tradePost' | 'none';
   readonly entity: Entity | null;
   /** True when another team's player is on the tile but the treaty holds (M16): no target, the units just move. */
   readonly truce?: true;
@@ -46,7 +47,7 @@ export function orderActor(selected: readonly Entity[], humanId: number): Entity
  * enemy unit or building the player can see (`canSee`, default all; any
  * other player's with health but `actor`'s allies (M16), so Gaia's too)
  * first, then one of `actor`'s own buildings under construction (not
- * dying), then a resource node; otherwise nothing. While the treaty holds
+ * dying), then a damaged own or allied building (M18: a repair), then a resource node; otherwise nothing. While the treaty holds
  * (M16), another team's player is no target (`truce` marks it; Gaia still is).
  */
 export function resolveOrderTarget(
@@ -65,6 +66,9 @@ export function resolveOrderTarget(
   if (post) return { kind: 'tradePost', entity: post, ...truce };
   const site = findOwnSiteAt(world, tile, actor);
   if (site) return { kind: 'ownSite', entity: site, ...truce };
+  // A finished, damaged own or allied building (M18): villagers repair it.
+  const damaged = findRepairTargetAt(world, tile, actor, teams);
+  if (damaged) return { kind: 'repair', entity: damaged, ...truce };
   const transport = findOwnTransportAt(world, tile, actor);
   if (transport) return { kind: 'ownTransport', entity: transport, ...truce };
   const node = findResourceNodeAt(world, tile, actor);
@@ -159,6 +163,11 @@ export class OrderIssuer {
       }
       if (target.kind === 'ownSite' && isBuilder(entity)) {
         this.world.addComponent(entity, 'buildCommand', { targetId });
+        ordered ??= 'unit_move';
+        continue;
+      }
+      if (target.kind === 'repair' && target.entity && canRepair(this.world, entity, target.entity, this.teams)) {
+        startRepair(this.world, entity, target.entity);
         ordered ??= 'unit_move';
         continue;
       }

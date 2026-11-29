@@ -50,6 +50,7 @@ export function killEntity(
   if (target.gatherIntent) world.removeComponent(target, 'gatherIntent');
   if (target.moveIntent) world.removeComponent(target, 'moveIntent');
   if (target.buildCommand) world.removeComponent(target, 'buildCommand');
+  if (target.repairIntent) world.removeComponent(target, 'repairIntent');
   if (target.movable) {
     target.movable.path = [];
     target.movable.progress = 0;

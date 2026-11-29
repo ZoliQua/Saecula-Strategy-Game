@@ -53,9 +53,10 @@ import {
  * v11 (M17): the market building and each player's market prices (marketPrices); the trade
  *   cart and trade ship and their components (tradeHome, tradeRoute); the landmark building
  *   and each player's landmark carry (landmarkCarry).
+ * v12 (M18): a villager's repair order (repairIntent) and each player's repair count (stats repairsDone).
  */
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 const nonNeg = num.nonnegative();
 const point = z.object({ x: num, y: num }).strict();
@@ -90,6 +91,10 @@ const COMPONENT_SHAPE = {
     building: z.object({ type: buildingType, footprint, minStyleAge: ageId.optional() }).strict().optional(),
     underConstruction: z.object({ totalTime: num, elapsed: num }).strict().optional(),
     buildCommand: z.object({ targetId: int }).strict().optional(),
+    repairIntent: z
+      .object({ targetId: int, costCarry: z.object({ food: nonNeg, wood: nonNeg, gold: nonNeg }).strict(), hpCarry: nonNeg })
+      .strict()
+      .optional(),
     trainingQueue: z
       .object({
         entries: z.array(z.object({ unitType, elapsed: num, totalTime: num }).strict()),
@@ -218,8 +223,12 @@ export const PlayerMatchStatsSchema = z
     buildingsBuilt: count,
     buildingsLost: count,
     ageUpAtMs: z.array(nonNeg),
+    repairsDone: count,
   })
   .strict();
+
+/** The match log's counters: a record stored before M18 has no repair count (0). */
+export const StoredPlayerMatchStatsSchema = PlayerMatchStatsSchema.extend({ repairsDone: count.default(0) });
 
 /** A score / population timeline point (player id order). */
 export const TimelineSampleSchema = z.object({ tMs: nonNeg, scores: z.array(num), pops: z.array(nonNeg) }).strict();

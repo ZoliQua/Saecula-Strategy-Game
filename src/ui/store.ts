@@ -36,6 +36,8 @@ export interface SelectedUnitInfo {
   route?: { home: BuildingType; target: BuildingType; ally: boolean; gold: number };
   /** Owned by the human's ally (M16). */
   ally?: true;
+  /** A villager repairing a building (M18): its role line says so. */
+  repairing?: true;
 }
 
 export interface SelectedBuildingInfo {

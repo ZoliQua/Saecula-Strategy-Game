@@ -21,6 +21,8 @@ export interface PlayerMatchStats {
   buildingsLost: number;
   /** Game time each later age was reached at, in order (age 2, then 3). */
   ageUpAtMs: number[];
+  /** Buildings this player's villagers repaired back to full HP (M18; the one that restored the last HP). */
+  repairsDone: number;
 }
 
 /** A timeline point: every player's score and population, in player id order. */
@@ -39,7 +41,7 @@ export interface MatchStatsSnapshot {
 
 /** Fresh counters. */
 export function zeroStats(): PlayerMatchStats {
-  return { gathered: 0, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [] };
+  return { gathered: 0, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [], repairsDone: 0 };
 }
 
 const copyStats = (s: PlayerMatchStats): PlayerMatchStats => ({ ...s, ageUpAtMs: [...s.ageUpAtMs] });
@@ -85,6 +87,9 @@ export class MatchStats {
       }),
       gameEvents.on('buildingCompleted', (e) => {
         if (mine(e.world)) this.edit(e.playerId, (s) => s.buildingsBuilt++);
+      }),
+      gameEvents.on('buildingRepaired', (e) => {
+        if (mine(e.world)) this.edit(e.playerId, (s) => s.repairsDone++);
       }),
       // A conversion counts as a kill for the converter and a lost unit for the victim (M11).
       gameEvents.on('unitConverted', (e) => {
