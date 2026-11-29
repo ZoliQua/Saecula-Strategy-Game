@@ -87,8 +87,8 @@ export interface Entity {
   buildCommand?: { targetId: number };
   /**
    * A villager's repair order on a finished, damaged own or allied building
-   * (M18, RepairSystem): `costCarry` the fractional resources owed but not
-   * yet charged, `hpCarry` the fractional HP restored but not yet applied
+   * (M18, RepairSystem): `costCarry` the prepaid credit (resources paid for
+   * HP not yet restored; lost when the repair stops), `hpCarry` the fractional HP restored but not yet applied
    * (building HP stays whole, as for healing).
    */
   repairIntent?: { targetId: number; costCarry: Resources; hpCarry: number };

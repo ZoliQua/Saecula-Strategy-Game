@@ -78,3 +78,18 @@ describe('OrderIssuer: repair (M18)', () => {
     expect(at([sword])).toBe('forbidden');
   });
 });
+
+describe('OrderIssuer: a damaged own farm (M18)', () => {
+  it('a right-click on it keeps the farming order and the basket cursor, not a repair', () => {
+    const { sim, players, issue } = scene();
+    const farm = createBuilding(sim.world, { type: 'farm', origin: { tx: 10, ty: 10 }, playerId: 1, mapData: sim.map });
+    sim.world.addComponent(farm, 'resourceNode', { type: 'food', amount: 175, maxAmount: 175 });
+    farm.health!.current = 100;
+    const v = createVillager(sim.world, { tile: { tx: 4, ty: 4 } });
+    expect(resolveOrderTarget(sim.world, { tx: 10, ty: 10 }, v, undefined, players)).toEqual({ kind: 'resource', entity: farm });
+    issue([v], { tx: 10, ty: 10 });
+    expect(v.repairIntent).toBeUndefined();
+    expect(v.gatherIntent).toEqual({ nodeId: farm.id });
+    expect(cursorFor(cursorContext(sim.world, sim.map, selectionOf([v]), { tx: 10, ty: 10 }, 1, undefined, players))).toBe('gatherFood');
+  });
+});

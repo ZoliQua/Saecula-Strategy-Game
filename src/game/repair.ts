@@ -49,11 +49,13 @@ export function startRepair(world: EcsWorld, villager: Entity, target: Entity): 
   world.addComponent(villager, 'repairIntent', { targetId: target.id, costCarry: { food: 0, wood: 0, gold: 0 }, hpCarry: 0 });
 }
 
-/** The building on `tile` that `actor`'s side may repair (own or allied, finished, damaged), or null. */
+/** The building on `tile` that `actor`'s side may repair by a right-click (own or allied, finished, damaged, not a farm), or null. */
 export function findRepairTargetAt(world: EcsWorld, tile: TileCoord, actor: Entity, teams: TeamLookup = NO_TEAMS): Entity | null {
   const playerId = actor.owner?.playerId;
   if (playerId === undefined) return null;
   for (const b of world.with('position', 'owner', 'building', 'health')) {
+    // A right-click on a farm keeps meaning "farm it", damaged or not (M18).
+    if (b.building.type === 'farm') continue;
     if (insideFootprint(tile, b.position, b.building.footprint) && isRepairableBy(b, playerId, teams)) return b;
   }
   return null;

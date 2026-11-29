@@ -86,19 +86,58 @@ describe('RepairSystem: rate', () => {
 });
 
 describe('RepairSystem: cost', () => {
-  it('charges REPAIR.costFraction of the cost over the full HP, whole units, fractions carried', () => {
+  it('charges REPAIR.costFraction of the cost over the full HP, whole units paid up front, the surplus kept as credit', () => {
     const { system, players, villager } = setup();
     const v = villager({ tx: 4, ty: 5 });
     const wallet = () => players.get(1)!.resources;
-    system.update(1000); // 20 HP × 15 / 500 = 0.6 wood
-    expect(wallet().wood).toBe(1000);
-    expect(v.repairIntent!.costCarry.wood).toBeCloseTo(0.6);
-    system.update(1000); // 1.2 wood owed: 1 charged
+    system.update(1000); // 20 HP × 15 / 500 = 0.6 wood: 1 paid up front
     expect(wallet().wood).toBe(999);
-    expect(v.repairIntent!.costCarry.wood).toBeCloseTo(0.2);
+    expect(v.repairIntent!.costCarry.wood).toBeCloseTo(0.4);
+    system.update(1000); // 1.2 wood in all: 2 paid
+    expect(wallet().wood).toBe(998);
+    expect(v.repairIntent!.costCarry.wood).toBeCloseTo(0.8);
     for (let i = 0; i < 300; i++) system.update(100);
-    // 250 HP: 7.5 wood, 7 charged; no food or gold (the house costs none).
-    expect(wallet()).toEqual({ food: 1000, wood: 993, gold: 1000 });
+    // 250 HP: 7.5 wood, 8 paid; no food or gold (the house costs none).
+    expect(wallet()).toEqual({ food: 1000, wood: 992, gold: 1000 });
+  });
+
+  it('an empty wallet restores no HP and raises one notice', () => {
+    const { system, players, house, notices, villager } = setup({ resources: { food: 0, wood: 0, gold: 0 } });
+    const a = villager({ tx: 4, ty: 5 });
+    villager({ tx: 7, ty: 5 });
+    for (let i = 0; i < 50; i++) system.update(100);
+    expect(house.health!.current).toBe(250);
+    expect(a.repairIntent).toBeUndefined();
+    expect(notices).toEqual([hu.repair.outOfResources]);
+    expect(players.get(1)!.resources.wood).toBe(0);
+  });
+
+  it('starting and stopping again and again never restores more HP than was paid for', () => {
+    const { world, system, players, house } = setup({ resources: { food: 0, wood: 3, gold: 0 } });
+    const vs = [createVillager(world, { tile: { tx: 4, ty: 5 }, playerId: 1 }), createVillager(world, { tile: { tx: 7, ty: 5 }, playerId: 1 })];
+    for (let round = 0; round < 20; round++) {
+      for (const v of vs) startRepair(world, v, house);
+      system.update(200);
+      for (const v of vs) clearUnitOrders(world, v);
+      const paid = 3 - players.get(1)!.resources.wood;
+      expect((house.health!.current - 250) * (15 / 500)).toBeLessThanOrEqual(paid + 1e-9);
+    }
+    expect(players.get(1)!.resources.wood).toBe(0);
+    expect(house.health!.current).toBeLessThan(400);
+  });
+
+  it('three villagers: the charge covers the HP restored and overpays by at most 1 per villager', () => {
+    const { system, players, house, villager } = setup();
+    const vs = [villager({ tx: 4, ty: 5 }), villager({ tx: 7, ty: 5 }), villager({ tx: 5, ty: 4 })];
+    for (let step = 0; step < 120; step++) {
+      system.update(100);
+      const paid = 1000 - players.get(1)!.resources.wood;
+      const exact = (house.health!.current - 250) * (15 / 500);
+      expect(paid).toBeGreaterThanOrEqual(exact - 1e-9);
+      expect(paid).toBeLessThanOrEqual(exact + vs.length + 1e-9);
+    }
+    expect(house.health!.current).toBe(500);
+    expect(players.get(1)!.resources).toMatchObject({ food: 1000, gold: 1000 });
   });
 
   it('a dry wallet stops the repair with one notice; nothing goes negative', () => {
@@ -133,7 +172,7 @@ describe('RepairSystem: cost', () => {
     expect(v.repairIntent).toBeDefined();
     for (let i = 0; i < 300; i++) system.update(100);
     expect(house.health!.current).toBe(500);
-    expect(players.get(1)!.resources.wood).toBe(993);
+    expect(players.get(1)!.resources.wood).toBe(992);
     expect(players.get(2)!.resources.wood).toBe(1000);
   });
 
@@ -146,7 +185,7 @@ describe('RepairSystem: cost', () => {
     const v = createVillager(world, { tile: { tx: 4, ty: 5 }, playerId: 1 });
     startRepair(world, v, house);
     for (let i = 0; i < 300; i++) system.update(100);
-    expect(stock.wood).toBe(43);
+    expect(stock.wood).toBe(42);
     expect(players.get(1)!.resources.wood).toBe(1000);
   });
 });

@@ -20,7 +20,7 @@ import { planToFootprintRing } from './walkToRing';
 type Repairer = With<Entity, 'position' | 'movable' | 'repairIntent' | 'owner'>;
 
 const RESOURCES = ['food', 'wood', 'gold'] as const;
-/** Float slack when turning the owed fraction into whole units (0.6 + 0.9 must owe 1.5, not 1.4999…). */
+/** Float slack when comparing the cost with the prepaid credit (0.6 + 0.9 is 1.5, not 1.5000…1). */
 const EPS = 1e-9;
 
 export interface RepairSystemOptions {
@@ -38,7 +38,8 @@ export interface RepairSystemOptions {
  * Building repair (M18). A villager with a `repairIntent` walks to the ring
  * around its target and restores repairHpPerSec whole HP per second there
  * (several villagers stack), paying repairCostPerHp per HP from its own
- * owner's wallet as it goes (fractions carried in the intent). The repair
+ * owner's wallet before the HP comes back (whole units bought up front, the
+ * surplus kept in the intent as prepaid credit). The repair
  * stops (the intent drops; the villager goes idle) when the target is gone,
  * dying, no longer friendly or not damaged, and for every villager of a
  * player whose wallet cannot pay the next whole unit (one notice for the
@@ -108,20 +109,26 @@ export class RepairSystem {
     for (const o of repairers) if (o.repairIntent?.targetId === intent.targetId) this.stop(o);
   }
 
-  /** Adds `hp` HP's cost to the carry and charges the whole units due; false (nothing charged) when the wallet lacks them. */
+  /**
+   * Pays for `hp` HP before it is restored: `costCarry` is the villager's
+   * prepaid credit; whatever the credit does not cover is bought in whole
+   * units up front (the surplus stays as credit, lost when the repair
+   * stops: at most 1 unit per resource per stop). False, with nothing
+   * charged, when the wallet cannot pay those units.
+   */
   private charge(intent: Repairer['repairIntent'], perHp: Resources, hp: number, wallet: Wallet): boolean {
     const have = wallet.get();
-    const owed: Resources = { food: 0, wood: 0, gold: 0 };
-    const due: Resources = { food: 0, wood: 0, gold: 0 };
+    const need: Resources = { food: 0, wood: 0, gold: 0 };
+    const buy: Resources = { food: 0, wood: 0, gold: 0 };
     for (const k of RESOURCES) {
-      owed[k] = intent.costCarry[k] + perHp[k] * hp;
-      due[k] = Math.floor(owed[k] + EPS);
-      if (due[k] > have[k]) return false;
+      need[k] = perHp[k] * hp;
+      buy[k] = need[k] > intent.costCarry[k] + EPS ? Math.ceil(need[k] - intent.costCarry[k] - EPS) : 0;
+      if (buy[k] > have[k]) return false;
     }
-    if (due.food + due.wood + due.gold > 0) {
-      wallet.set({ food: have.food - due.food, wood: have.wood - due.wood, gold: have.gold - due.gold });
+    if (buy.food + buy.wood + buy.gold > 0) {
+      wallet.set({ food: have.food - buy.food, wood: have.wood - buy.wood, gold: have.gold - buy.gold });
     }
-    for (const k of RESOURCES) intent.costCarry[k] = Math.max(0, owed[k] - due[k]);
+    for (const k of RESOURCES) intent.costCarry[k] = Math.max(0, intent.costCarry[k] + buy[k] - need[k]);
     return true;
   }
 
