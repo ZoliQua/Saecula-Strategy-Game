@@ -31,6 +31,7 @@ import type { WorldView } from '../perception';
 import { expectKind, loadedTime, savedTime, type MediumFields, type StrategyState } from '../strategyState';
 import { PressureControl } from '../PressureControl';
 import { MonkPlay } from '../MonkPlay';
+import { RepairPlay } from '../RepairPlay';
 import { TradePlay } from '../TradePlay';
 import { WonderPlay } from '../WonderPlay';
 import { assignIdleVillagers, rebalanceGatherers, workableNodes } from '../workforce';
@@ -58,6 +59,7 @@ export class MediumStrategy extends BaseStrategy {
   private readonly monks: MonkPlay;
   private readonly naval: NavalPlay;
   private readonly trade: TradePlay;
+  private readonly repair: RepairPlay;
   private readonly landing: LandingControl;
   /** Whether the enemy can be walked to (M14), re-checked now and then: [answer, checked at, enemy buildings key]. */
   private walkable: { answer: boolean; atMs: number; key: string } | null = null;
@@ -92,6 +94,7 @@ export class MediumStrategy extends BaseStrategy {
       reserve: (c, v) => this.reserve(c, v),
       goldShort: (c, v) => this.goldShort(c, v),
     });
+    this.repair = new RepairPlay(tune.repair);
     this.landing = new LandingControl(this.log, (c, v, units) => {
       this.army.launchWave(c, v, units);
     });
@@ -167,6 +170,8 @@ export class MediumStrategy extends BaseStrategy {
   }
 
   protected upkeep(ctx: AIContext, view: WorldView): void {
+    // Repairs first (M18): a villager it calls off goes back to the economy just below.
+    this.repair.update(ctx, view);
     assignIdleVillagers(ctx.world, view, this.gatherWeights(ctx, view));
     this.army.update(ctx, view);
     this.monks.control(ctx, view);
