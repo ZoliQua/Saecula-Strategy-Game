@@ -12,6 +12,20 @@ raises the patch version.
 
 ### Added
 
+- **Tutorial:** a step-by-step first mission at the top of the campaign list
+  (gather wood, build a house, gather food, six villagers, barracks, three
+  swordsmen, repair a damaged house, reach the Middle Ages), with a short hint
+  under each step that names your command click. Always available; it does not
+  unlock or lock campaign missions.
+- **Building repair:** right-click (or your command click) your own or an
+  ally's damaged, finished building with villagers to repair it. Repairing
+  back to full health costs half the building's price, paid as it goes; it
+  stops with a notice when you run out. Farms keep the farming order.
+- The Medium, Hard and Master AIs repair damaged buildings when no enemy is
+  near.
+- **Colour-blind friendly team colours:** a new "Display" settings tab with
+  an Okabe–Ito palette, applied from the next match.
+- Saves move to version 12.
 - **Market:** a new age-2 building. Buy or sell 100 food or wood for gold;
   each trade moves that resource's price, and selling costs a fee. It trains
   trade carts.

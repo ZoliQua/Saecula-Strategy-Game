@@ -158,6 +158,7 @@ A Saecula jelenlegi verziója **0.9.2**. Az egyes verziók tartalmát a
 | M12 | Tíz új technológia | ✅ 0.7.0 |
 | M13 | Háromküldetéses kampány | ✅ 0.8.0 |
 | M14 | Hajók, kikötő, halászat és két vízi térkép | ✅ 0.9.0 |
+| M18 | Oktató mód, épületjavítás, színtévesztő-barát színek | 🔧 kiadatlan |
 | Következő | A tesztjátékok alapján | 🔜 |
 
 Tudatosan nem része: többjátékos mód, mobil érintéses irányítás, hosszú sztori-kampány.

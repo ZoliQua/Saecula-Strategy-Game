@@ -12,6 +12,19 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 
 ### Új
 
+- **Oktató mód:** lépésenkénti első küldetés a kampánylista élén (fa, ház,
+  étel, hat falusi, laktanya, három kardforgató, egy sérült ház javítása,
+  középkor), minden lépés alatt rövid tippel, amely a beállított parancs-klikket
+  is megnevezi. Mindig elérhető, kampányküldetést nem old fel és nem zár le.
+- **Épületjavítás:** a falusiak jobb klikkel (vagy a parancs-klikkel) javítják
+  a saját vagy szövetséges, kész, sérült épületet. A teljes javítás az épület
+  árának fele, menet közben fizetve; ha elfogy a nyersanyag, értesítéssel
+  megáll. A farmon a jobb klikk továbbra is aratás.
+- A Közepes, a Nehéz és a Mesteri AI javítja a sérült épületeit, ha nincs
+  ellenség a közelben.
+- **Színtévesztő-barát csapatszínek:** a beállítások új „Megjelenítés” lapján
+  (Okabe–Ito paletta), a következő meccstől.
+- A mentések a 12-es verzióra lépnek.
 - **Piac:** új épület a 2. kortól. 100 étel vagy fa vehető vagy adható el
   aranyért; minden csere mozdít az adott nyersanyag árán, az eladásnak díja
   van. Kereskedőkocsit képez.

@@ -1754,6 +1754,32 @@ pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” �
   az oktató mód harci lépése (a fegyverszünet miatt), játék közbeni palettaváltás.
 - Keret (10.): az 1.0.0 keretei változatlanok (új textúra nincs, a kalapács-kurzor
   SVG).
+- **Állapot (2026-11-16):** kész. Paletta: `playerColor(id)` és
+  `setTeamPalette` (`src/game/Player.ts`); palettaváltáskor a csapatszínű
+  épület-textúrák és a bélyegkép-gyorsítótárak a következő meccs előtt
+  újrafestődnek. Javítás: `src/game/repair.ts`, `RepairSystem`; a falusi
+  egész egységeket fizet előre, a maradék hitel leálláskor elvész (legfeljebb 1
+  egység/nyersanyag túlfizetés — Claude döntése, így nem lehet ingyen javítani);
+  a farmra a jobb klikk aratás marad. AI: `src/ai/RepairPlay.ts` (5 mp-enként,
+  állapot nélkül, a `repairIntent`-ből). Oktató mód: `tutorial` a
+  `SCENARIO_IDS`-ben (a kampánylánc változatlan), új célfajták `gathered`,
+  `built` (újonnan felépített épületek, `MatchStats.builtBy`) és `repaired`;
+  ha a javítási lépésnél nincs sérült saját épület, a lépés teljesül (Claude
+  döntése, hogy ne ragadjon be). `schemaVersion` 12 valódi v11-mentéssel.
+  Körmérkőzés (`BALANCE=1`): Nehéz magyar 34, angol 25, német 25,5, francia
+  25,5, spanyol 26, olasz 30, orosz 31,5, finn 26,5 (/56; a 0.9.1-hez képest
+  angol +0,5, orosz −0,5); Mesteri azonos a 0.9.1-gyel; egyik szimuláció magja
+  sem mozdult. Az oktató küldetés szimulációja: egy Közepes AI az emberi helyen
+  kb. 14 perc alatt végigmegy a 8 lépésen (a kardforgatókat és a javítást a
+  teszt rendeli el). Mérve: textúra `distinct6` 173,2 MB (≤ 256), JS-bundle
+  0,78 MB gzip, a teljes tesztcsomag 3426 teszt. Böngésző-smoke (5196, valódi
+  Chrome): kampánylista az oktató sorral, eligazítás, célpanel tippel, három
+  falusi megjavítja a sérült házat (250 → 500 életerő, 9 fa), színtévesztő
+  palettával indított meccs (narancs, égszínkék, kékeszöld), konzolhiba nélkül.
+  Minden feladatot független átnézés követett; javítva: palettaváltáskor régi
+  színű épület-textúrák, ingyenes javítás az egységmaradékkal, a farm jobb
+  klikkje javításra váltott, az oktató módban hiányzó aranytipp és a törölt
+  sérült házzal beragadó lépés.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
