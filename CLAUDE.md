@@ -1727,7 +1727,10 @@ pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” �
   életerő másodpercenként, az építési sebesség módosítóival (olasz bónusz,
   taposókerekes daru). Ár: a teljes életerő visszaállítása az épület árának
   `REPAIR.costFraction` (0,5) része, erőforrásonként, folyamatosan levonva; ha
-  elfogy, a javítás megáll magyar értesítéssel. Félkész épület (az építés),
+  elfogy, a javítás megáll magyar értesítéssel. Tűz alatt nincs javítás: az
+  épület `REPAIR.underFireDelayMs` (5 s) ideig nem javul, miután sebzést kapott
+  (Claude döntése a záró átnézés után: a fal és a városháza különben ostrom
+  alatt is sérthetetlen lett volna); `REPAIR.speed` 0,5. Félkész épület (az építés),
   Gaia, ellenséges épület és hajó nem javítható. A javítás pontszámot nem ad.
   Mentés: új `repairIntent` komponens.
 - **AI javít** (Közepestől; Claude döntése): ha egy kész épülete
@@ -1742,8 +1745,9 @@ pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” �
   szín egyetlen forrása egy `playerColor(id)` függvény az aktív palettából; a
   meccs indulásakor és mentés betöltésekor érvényesül (a mentett szín csak
   megjelenés), a futó meccsen a következő indításig nem változik.
-- **Mentés:** `schemaVersion` 12, migrációval (`repairIntent`, a `tutorial`
-  küldetés-azonosító), valódi v11 mentéssel.
+- **Mentés:** `schemaVersion` 12, migrációval (`repairIntent`, az épület utolsó
+  sérülésének ideje, a `tutorial` küldetés-azonosító, a `MatchStats` új mezői:
+  `repairsDone`, `gatheredBy`, `builtBy`), valódi v11 mentéssel.
 - **Tesztek:** a javítás (sebesség, ár, elfogyó nyersanyag, tiltott célok,
   szövetséges épület, több falusi), a parancs és a kurzor, az új célfajták és a
   sorrendi célpanel, az oktató küldetés beállítása (érvényes, játszható) és egy
@@ -1754,7 +1758,7 @@ pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” �
   az oktató mód harci lépése (a fegyverszünet miatt), játék közbeni palettaváltás.
 - Keret (10.): az 1.0.0 keretei változatlanok (új textúra nincs, a kalapács-kurzor
   SVG).
-- **Állapot (2026-11-16):** kész. Paletta: `playerColor(id)` és
+- **Állapot (2026-11-28):** kész. Paletta: `playerColor(id)` és
   `setTeamPalette` (`src/game/Player.ts`); palettaváltáskor a csapatszínű
   épület-textúrák és a bélyegkép-gyorsítótárak a következő meccs előtt
   újrafestődnek. Javítás: `src/game/repair.ts`, `RepairSystem`; a falusi
