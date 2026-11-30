@@ -29,6 +29,7 @@ import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
 import type { BuildPlacement } from './game/BuildPlacement';
 import { MatchArt, type LoadArt } from './game/MatchArt';
+import { spawnMissionExtras } from '../campaign/missionStart';
 import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
 import { wirePlayerInput } from './game/PlayerInputWiring';
@@ -237,12 +238,13 @@ export class GameScene extends Phaser.Scene {
       spawnResourceNodes(this.world, mapData);
       spawnStartingEntities(this.world, this.players, mapData, start.generated.starts);
       spawnPresetWalls(this.world, this.players, mapData, start.generated.walls);
+      if (config.mission) spawnMissionExtras(this.world, this.players, mapData, config.mission);
     }
 
     const wonderHoldMs = hasWonderVictory(config.victory) ? WONDER_HOLD_MS : null;
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     const time = timeRuleFor(config.victory, this.runner.stats, () => this.gameElapsedMs);
-    this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, restored?.campaign?.done) : null;
+    this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, restored?.campaign?.done, undefined, undefined, this.runner.stats) : null;
     if (this.campaign && !restored) CampaignRunner.publishStart(this.players);
     this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time, this.campaign);
     const treatyLeft = config.treatyMin > 0 ? () => this.runner.treatyLeftMs() : null;

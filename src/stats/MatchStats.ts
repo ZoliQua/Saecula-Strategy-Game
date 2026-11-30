@@ -5,13 +5,15 @@ import { gameEvents } from '../game/events';
 import { houseBonus } from '../game/modifiers';
 import type { PlayerManager } from '../game/PlayerManager';
 import { computePopulation } from '../game/population';
-import type { AgeId } from '../types';
+import type { AgeId, Resources } from '../types';
 import { score, victimValue } from './score';
 
 /** One player's running match statistics (M7 Decision 8). */
 export interface PlayerMatchStats {
   /** Resources delivered, all types summed. */
   gathered: number;
+  /** Resources delivered, by type (M18: the tutorial's gathered objectives). */
+  gatheredBy: Resources;
   /** Cost of the enemy units and buildings this player destroyed. */
   killValue: number;
   unitsTrained: number;
@@ -41,10 +43,10 @@ export interface MatchStatsSnapshot {
 
 /** Fresh counters. */
 export function zeroStats(): PlayerMatchStats {
-  return { gathered: 0, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [], repairsDone: 0 };
+  return { gathered: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [], repairsDone: 0 };
 }
 
-const copyStats = (s: PlayerMatchStats): PlayerMatchStats => ({ ...s, ageUpAtMs: [...s.ageUpAtMs] });
+const copyStats = (s: PlayerMatchStats): PlayerMatchStats => ({ ...s, gatheredBy: { ...s.gatheredBy }, ageUpAtMs: [...s.ageUpAtMs] });
 
 /**
  * The match statistics of every player: counted from the stats events
@@ -80,7 +82,11 @@ export class MatchStats {
     const mine = (w: EcsWorld): boolean => w === this.world;
     const offs = [
       gameEvents.on('resourcesDelivered', (e) => {
-        if (mine(e.world)) this.edit(e.playerId, (s) => (s.gathered += e.amount));
+        if (!mine(e.world)) return;
+        this.edit(e.playerId, (s) => {
+          s.gathered += e.amount;
+          s.gatheredBy[e.resource] += e.amount;
+        });
       }),
       gameEvents.on('unitTrained', (e) => {
         if (mine(e.world)) this.edit(e.playerId, (s) => s.unitsTrained++);

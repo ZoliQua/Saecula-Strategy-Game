@@ -1,5 +1,5 @@
-import { applyMissionStart } from '../../campaign/missionStart';
-import { missionSetup, type MissionId } from '../../campaign/missions';
+import { applyMissionStart, spawnMissionExtras } from '../../campaign/missionStart';
+import { missionSetup, type ScenarioId } from '../../campaign/missions';
 import { DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
@@ -79,7 +79,7 @@ export interface HeadlessMatchOptions {
   /** The match can be won by a Wonder: WonderSystem runs and the AIs play for Wonders (default false). */
   readonly wonderVictory?: boolean;
   /** A campaign mission (M13): its fixed setup and start state replace the options' (seed, size and AI count must match it). */
-  readonly mission?: MissionId;
+  readonly mission?: ScenarioId;
   /** The match ends on score at the time limit: the AIs see the limit (default false). */
   readonly timeVictory?: boolean;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
@@ -168,6 +168,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   spawnResourceNodes(world, map);
   spawnStartingEntities(world, players, map, generated.playerStarts);
   spawnPresetWalls(world, players, map, generated.walls);
+  if (options.mission) spawnMissionExtras(world, players, map, options.mission);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     const personality = options.personality?.(p.id);

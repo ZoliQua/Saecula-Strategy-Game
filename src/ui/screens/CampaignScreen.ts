@@ -1,6 +1,6 @@
 import { audio } from '../../audio/AudioManager';
-import { MISSION_IDS, MISSIONS, type MissionId } from '../../campaign/missions';
-import { objectiveText } from '../../campaign/objectiveText';
+import { MISSION_IDS, MISSIONS, SCENARIO_IDS, TUTORIAL_ID, type MissionId, type ScenarioId } from '../../campaign/missions';
+import { missionText, objectiveText } from '../../campaign/objectiveText';
 import type { MissionStatus } from '../../campaign/progress';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
@@ -12,13 +12,14 @@ import '../campaign.css';
 
 export interface CampaignHandlers {
   /** An available or completed mission was started from its briefing. */
-  onStart(id: MissionId): void;
+  onStart(id: ScenarioId): void;
   onBack(): void;
 }
 
 /**
  * The campaign card (M13) over the main menu's diorama: the mission list
- * (locked / available / completed) and, for a chosen mission, its briefing
+ * (the tutorial first, always available, M18; then the missions: locked /
+ * available / completed) and, for a chosen mission, its briefing
  * with the objectives and a start button. Esc goes back from the briefing
  * to the list, and from the list to the menu.
  */
@@ -26,10 +27,10 @@ export class CampaignScreen {
   private readonly root: HTMLElement;
   private readonly body: HTMLElement;
   private readonly unbindKeys: () => void;
-  private briefing: MissionId | null = null;
+  private briefing: ScenarioId | null = null;
 
   constructor(
-    private readonly status: (id: MissionId) => MissionStatus,
+    private readonly status: (id: ScenarioId) => MissionStatus,
     private readonly handlers: CampaignHandlers,
   ) {
     audio().playSFX('ui_panel_open');
@@ -71,13 +72,13 @@ export class CampaignScreen {
 
   private showList(): void {
     this.briefing = null;
-    const rows = MISSION_IDS.map((id, i) => {
+    const rows = SCENARIO_IDS.map((id, i) => {
       const st = this.status(id);
-      const t = hu.campaign.missions[id];
+      const t = missionText(id);
       const row = el(
         'button',
         { class: `slot-row campaign-row ${st}`, type: 'button', style: `--i:${i}`, disabled: st === 'locked', 'data-mission': id, title: st === 'locked' ? hu.campaign.lockedHint : t.title },
-        el('span', { class: 'slot-badge' }, String(i + 1)),
+        el('span', { class: 'slot-badge' }, id === TUTORIAL_ID ? hu.campaign.tutorial.badge : String(MISSION_IDS.indexOf(id) + 1)),
         el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, t.title), el('span', { class: 'slot-detail' }, t.place)),
         el('span', { class: `campaign-status ${st}` }, hu.campaign.status[st]),
       );
@@ -93,12 +94,12 @@ export class CampaignScreen {
     (this.body.querySelector<HTMLElement>('.campaign-row:not([disabled])') ?? back).focus({ preventScroll: true });
   }
 
-  private showBriefing(id: MissionId): void {
+  private showBriefing(id: ScenarioId): void {
     if (this.status(id) === 'locked') return;
     audio().playSFX('ui_click');
     this.briefing = id;
-    const t = hu.campaign.missions[id];
-    const n = MISSION_IDS.indexOf(id) + 1;
+    const t = missionText(id);
+    const number = id === TUTORIAL_ID ? hu.campaign.tutorial.kicker : hu.campaign.missionNumber(MISSION_IDS.indexOf(id as MissionId) + 1);
     const start = el(
       'button',
       { class: 'btn btn-primary campaign-start', type: 'button' },
@@ -110,7 +111,7 @@ export class CampaignScreen {
       el(
         'article',
         { class: 'campaign-briefing anim-in' },
-        el('div', { class: 'campaign-number' }, hu.campaign.missionNumber(n)),
+        el('div', { class: 'campaign-number' }, number),
         el('h3', { class: 'campaign-title' }, t.title),
         el('div', { class: 'campaign-place' }, t.place),
         el('p', { class: 'campaign-text' }, t.briefing),

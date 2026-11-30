@@ -18,7 +18,7 @@ const MIN = 60_000;
 function world() {
   const map = new MapData(30, 30);
   const w = createEcsWorld();
-  const ctx = (o: Partial<ObjectiveContext> = {}): ObjectiveContext => ({ entities: w.entities, humanId: 1, humanAge: 1, humanDefeated: false, timeMs: 0, ...o });
+  const ctx = (o: Partial<ObjectiveContext> = {}): ObjectiveContext => ({ entities: w.entities, humanId: 1, humanAge: 1, humanDefeated: false, timeMs: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, repairsDone: 0, ...o });
   return { map, w, ctx };
 }
 
@@ -86,7 +86,7 @@ describe('ObjectiveTracker cost', () => {
     createBuilding(w, { type: 'monastery', origin: { tx: 2, ty: 2 }, playerId: 1, mapData: map });
     let scans = 0;
     const entities = { [Symbol.iterator]: () => (scans++, w.entities[Symbol.iterator]()) };
-    const ctx: ObjectiveContext = { entities, humanId: 1, humanAge: 2, humanDefeated: false, timeMs: 0 };
+    const ctx: ObjectiveContext = { entities, humanId: 1, humanAge: 2, humanDefeated: false, timeMs: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, repairsDone: 0 };
     const t = new ObjectiveTracker([{ kind: 'ownBuildings', building: 'monastery', count: 1 }]);
     expect(t.tick(ctx).fresh).toEqual([0]);
     scans = 0;

@@ -35,7 +35,8 @@ function track(match: HeadlessMatch, id: MissionId) {
   const tracker = new ObjectiveTracker(MISSIONS[id].objectives);
   const update = () => {
     const h = match.players.human()!;
-    tracker.update({ entities: match.world.entities, humanId: h.id, humanAge: h.age, humanDefeated: h.defeated, timeMs: match.timeMs() });
+    const st = match.stats.of(h.id);
+    tracker.update({ entities: match.world.entities, humanId: h.id, humanAge: h.age, humanDefeated: h.defeated, timeMs: match.timeMs(), gatheredBy: { ...st.gatheredBy }, repairsDone: st.repairsDone });
   };
   return { tracker, update };
 }

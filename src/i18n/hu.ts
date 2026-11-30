@@ -538,9 +538,36 @@ export const hu = {
       ownUnits: (name: string, n: number) => `Képezz ${n} egységet: ${name}`,
       survive: (min: number) => `Tarts ki ${min} percig (a városházád álljon)`,
       winMatch: 'Nyerd meg a meccset (hódítás vagy Csoda)',
+      gathered: (resource: string, n: number) => `Gyűjts ${n} egységnyi nyersanyagot: ${resource}`,
+      repaired: (n: number) => (n === 1 ? 'Javíts meg egy sérült épületet' : `Javíts meg ${n} sérült épületet`),
     },
     /** The objective's progress, e.g. "1 / 2" (minutes for a survive objective). */
     progress: (have: number, need: number) => `${have} / ${need}`,
+    /** The step-by-step tutorial (M18): the first row of the campaign list, outside the mission chain. */
+    tutorial: {
+      title: 'Első lépések',
+      place: 'Oktató küldetés · Magyarok · kicsi Mezőség · 20 perc fegyverszünet',
+      /** The list row's badge (in place of a mission number). */
+      badge: 'Okt.',
+      kicker: 'Oktató küldetés',
+      briefing:
+        'Ez a küldetés lépésről lépésre megtanítja a játék alapjait: nyersanyaggyűjtés, építés, kiképzés, javítás és korváltás. A célok egymás után jönnek, mindegyik alatt egy tipp mondja meg, mit és hol kell kattintani. Húsz perc fegyverszünet van: addig senki sem támadhat.',
+      victory: 'Megtanultad az alapokat: a falu él, a sereg áll, és beléptél a középkorba. Indulhat a kampány!',
+      defeat: 'A falu elesett. Semmi baj: indítsd újra az oktató küldetést, és haladj a tippek szerint.',
+      /** The command click as the controls are set: the right click, and the gesture's left click when one is set. */
+      command: (gestureKey: string | null) => (gestureKey === null ? 'jobb klikk' : `jobb klikk (vagy ${gestureKey}+klikk)`),
+      /** One hint per step, in objective order; `cmd` is `command(...)`. */
+      hints: [
+        (cmd: string) => `Jelölj ki egy falusit bal klikkel, majd ${cmd} egy fára: kivágja, és a fát a városházára hordja.`,
+        (_cmd: string) => 'A sérült ház mellé építs egy újat: jelölj ki egy falusit, a parancspanelen válaszd a Házat, és tedd le bal klikkel egy szabad helyre.',
+        (cmd: string) => `Küldj falusit a bogyós bokrokra (${cmd} a bokorra), vagy építs farmot: az étel is a városházára kerül.`,
+        (_cmd: string) => 'Jelöld ki a városházát bal klikkel, és a parancspanelen képezz falusiakat (étel kell hozzá).',
+        (_cmd: string) => 'Jelölj ki egy falusit, a parancspanelen válaszd a Laktanyát, és tedd le bal klikkel.',
+        (_cmd: string) => 'Jelöld ki a laktanyát bal klikkel, és képezz három kardforgatót (étel és arany kell hozzá).',
+        (cmd: string) => `Jelölj ki egy falusit, és ${cmd} a sérült házra (kalapács-kurzor): megjavítja. A javítás nyersanyagba kerül.`,
+        (_cmd: string) => 'Jelöld ki a városházát, és a parancspanelen indítsd a korváltást a középkorba (étel és arany kell hozzá).',
+      ],
+    },
     missions: {
       first_monastery: {
         title: 'Az első kolostor',

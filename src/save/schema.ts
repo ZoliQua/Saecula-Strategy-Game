@@ -15,7 +15,7 @@ import {
   VICTORY_MODES,
   type GameSetupConfig,
 } from '../game/GameSetupConfig';
-import { MISSION_IDS } from '../campaign/missions';
+import { SCENARIO_IDS } from '../campaign/missions';
 import { MAP_TEMPLATES } from '../map/generator';
 import { DIRECTIONS } from '../types';
 import { AIPlayerStateSchema } from './aiSchema';
@@ -53,7 +53,8 @@ import {
  * v11 (M17): the market building and each player's market prices (marketPrices); the trade
  *   cart and trade ship and their components (tradeHome, tradeRoute); the landmark building
  *   and each player's landmark carry (landmarkCarry).
- * v12 (M18): a villager's repair order (repairIntent) and each player's repair count (stats repairsDone).
+ * v12 (M18): a villager's repair order (repairIntent), each player's repair count and gathered-by-type
+ * (stats repairsDone, gatheredBy), and the tutorial scenario id (setup.mission 'tutorial').
  */
 
 export const SCHEMA_VERSION = 12;
@@ -162,7 +163,7 @@ export const GameSetupConfigSchema = z
     aiCivs: z.union([z.literal('mixed'), civId]),
     seed: int,
     victory: enumOf(VICTORY_MODES),
-    mission: enumOf(MISSION_IDS).optional(),
+    mission: enumOf(SCENARIO_IDS).optional(),
     allies: int.min(0).max(MAX_AI - 1),
     treatyMin: numberOf(TREATY_MINUTES),
     startResources: enumOf(START_RESOURCE_IDS),
@@ -217,6 +218,7 @@ const count = int.nonnegative();
 export const PlayerMatchStatsSchema = z
   .object({
     gathered: nonNeg,
+    gatheredBy: z.object({ food: nonNeg, wood: nonNeg, gold: nonNeg }).strict(),
     killValue: nonNeg,
     unitsTrained: count,
     unitsLost: count,
@@ -227,8 +229,11 @@ export const PlayerMatchStatsSchema = z
   })
   .strict();
 
-/** The match log's counters: a record stored before M18 has no repair count (0). */
-export const StoredPlayerMatchStatsSchema = PlayerMatchStatsSchema.extend({ repairsDone: count.default(0) });
+/** The match log's counters: a record stored before M18 has no repair count (0) nor gathered-by-type (zeros). */
+export const StoredPlayerMatchStatsSchema = PlayerMatchStatsSchema.extend({
+  repairsDone: count.default(0),
+  gatheredBy: PlayerMatchStatsSchema.shape.gatheredBy.default({ food: 0, wood: 0, gold: 0 }),
+});
 
 /** A score / population timeline point (player id order). */
 export const TimelineSampleSchema = z.object({ tMs: nonNeg, scores: z.array(num), pops: z.array(nonNeg) }).strict();

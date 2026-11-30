@@ -1,11 +1,14 @@
-import { MISSIONS, type MissionId } from '../../campaign/missions';
-import { objectiveText } from '../../campaign/objectiveText';
+import { MISSIONS, type ScenarioId } from '../../campaign/missions';
+import type { ObjectiveContext } from '../../campaign/objectives';
+import { missionText, objectiveHint, objectiveText } from '../../campaign/objectiveText';
 import { ObjectiveTracker } from '../../campaign/ObjectiveTracker';
 import { CampaignProgress } from '../../campaign/progress';
 import type { EcsWorld } from '../../ecs/world';
 import type { PlayerManager } from '../../game/PlayerManager';
 import { hu } from '../../i18n/hu';
+import type { MatchStats } from '../../stats/MatchStats';
 import { showHudNotice } from '../../ui/HUD';
+import { settingsStore } from '../../ui/settings';
 import { uiStore, type ObjectiveRowInfo } from '../../ui/store';
 
 /**
@@ -21,12 +24,15 @@ export class CampaignRunner {
   constructor(
     private readonly world: EcsWorld,
     private readonly players: PlayerManager,
-    readonly mission: MissionId,
+    readonly mission: ScenarioId,
     done: readonly number[] = [],
     private readonly progress: CampaignProgress = new CampaignProgress(),
     private readonly notify: (message: string) => void = (m) => showHudNotice(m, 'ok'),
+    /** The match statistics (gathered and repair objectives, M18); none counts as nothing gathered. */
+    private readonly stats: Pick<MatchStats, 'of'> | null = null,
   ) {
-    this.tracker = new ObjectiveTracker(MISSIONS[mission].objectives, done);
+    const def = MISSIONS[mission];
+    this.tracker = new ObjectiveTracker(def.objectives, done, def.sequential === true);
   }
 
   /**
@@ -50,20 +56,28 @@ export class CampaignRunner {
       const o = this.tracker.objectives[i];
       if (o) this.notify(hu.campaign.objectiveDone(objectiveText(o)));
     }
-    const rows: ObjectiveRowInfo[] = states.map((s) => ({
-      text: objectiveText(s.objective),
-      done: s.done,
-      have: s.progress.have,
-      need: s.progress.need,
-      counted: s.objective.kind !== 'reachAge' && s.objective.kind !== 'winMatch',
-    }));
+    // A sequential mission (M18 tutorial) shows the done objectives and the current one, with its hint.
+    const current = this.tracker.current();
+    const gesture = settingsStore.getState().controls.commandGesture;
+    const shown = this.tracker.sequential ? states.filter((s) => s.done || s.index === current) : states;
+    const rows: ObjectiveRowInfo[] = shown.map((s) => {
+      const hint = s.index === current ? objectiveHint(this.mission, s.index, gesture) : null;
+      return {
+        text: objectiveText(s.objective),
+        done: s.done,
+        have: s.progress.have,
+        need: s.progress.need,
+        counted: s.objective.kind !== 'reachAge' && s.objective.kind !== 'winMatch',
+        ...(hint ? { hint } : {}),
+      };
+    });
     // Publish only on a change: a new store object re-renders the HUD.
     const prev = uiStore.getState().objectives?.rows;
     const same = !!prev && prev.length === rows.length && rows.every((r, i) => {
       const p = prev[i];
-      return !!p && p.done === r.done && p.have === r.have && p.need === r.need && p.text === r.text;
+      return !!p && p.done === r.done && p.have === r.have && p.need === r.need && p.text === r.text && p.hint === r.hint;
     });
-    if (!same) uiStore.getState().setObjectives({ title: hu.campaign.missions[this.mission].title, rows });
+    if (!same) uiStore.getState().setObjectives({ title: missionText(this.mission).title, rows });
   }
 
   complete(): boolean {
@@ -82,18 +96,22 @@ export class CampaignRunner {
    */
   finish(victory: boolean): string {
     if (victory && this.progress.status(this.mission) !== 'locked') this.progress.markCompleted(this.mission);
-    const t = hu.campaign.missions[this.mission];
+    const t = missionText(this.mission);
     return victory ? t.victory : t.defeat;
   }
 
-  private context(timeMs: number) {
+  private context(timeMs: number): ObjectiveContext {
     const human = this.players.human();
+    const humanId = human?.id ?? 1;
+    const counters = this.stats?.of(humanId);
     return {
       entities: this.world.entities,
-      humanId: human?.id ?? 1,
+      humanId,
       humanAge: human?.age ?? 1,
       humanDefeated: human?.defeated ?? true,
       timeMs,
+      gatheredBy: counters ? { ...counters.gatheredBy } : { food: 0, wood: 0, gold: 0 },
+      repairsDone: counters?.repairsDone ?? 0,
     };
   }
 }

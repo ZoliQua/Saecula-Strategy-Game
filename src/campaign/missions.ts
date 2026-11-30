@@ -7,22 +7,55 @@ import type { Objective } from './objectives';
 export const MISSION_IDS = ['first_monastery', 'border_guards', 'age_of_wonders'] as const;
 export type MissionId = (typeof MISSION_IDS)[number];
 
+/** The step-by-step tutorial (M18): outside the campaign chain (never locks or unlocks a mission). */
+export const TUTORIAL_ID = 'tutorial';
+/** Every scenario a match can run: the tutorial and the campaign missions (saves keep it in setup.mission). */
+export const SCENARIO_IDS = [TUTORIAL_ID, ...MISSION_IDS] as const;
+export type ScenarioId = (typeof SCENARIO_IDS)[number];
+
+/** The tutorial's damaged house starts at this fraction of its HP. */
+export const DAMAGED_HOUSE_HP_FRACTION = 0.5;
+
 export interface MissionDef {
-  readonly id: MissionId;
+  readonly id: ScenarioId;
   /** The match (fixed: the player does not change it). */
   readonly setup: Omit<GameSetupConfig, 'mission'>;
-  /** Start state on top of a regular start: every player's age, and the human's extra stock. */
-  readonly start: { readonly age?: AgeId; readonly bonus?: Resources };
+  /**
+   * Start state on top of a regular start: every player's age, the human's
+   * extra stock, and (tutorial) a finished house of the human next to its
+   * town centre at DAMAGED_HOUSE_HP_FRACTION of its HP.
+   */
+  readonly start: { readonly age?: AgeId; readonly bonus?: Resources; readonly damagedHouse?: boolean };
   readonly objectives: readonly Objective[];
+  /** The objectives come one at a time, in order (M18 tutorial; ObjectiveTracker). */
+  readonly sequential?: boolean;
 }
 
 const MIN = 60_000;
+/** The tutorial's fixed map seed (a small meadow with forest and berries near the human's town centre). */
+const TUTORIAL_SEED = 1801;
 
 /**
  * The three missions (CLAUDE.md §9 M13). Texts (title, briefing, closing)
  * live in hu.ts under campaign.missions.
  */
-export const MISSIONS: Readonly<Record<MissionId, MissionDef>> = {
+export const MISSIONS: Readonly<Record<ScenarioId, MissionDef>> = {
+  tutorial: {
+    id: TUTORIAL_ID,
+    setup: { template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'easy', civ: 'hungarian', aiCivs: 'english', seed: TUTORIAL_SEED, victory: 'conquest', ...MODE_DEFAULTS, treatyMin: 20 },
+    start: { damagedHouse: true },
+    sequential: true,
+    objectives: [
+      { kind: 'gathered', resource: 'wood', amount: 100 },
+      { kind: 'ownBuildings', building: 'house', count: 2 },
+      { kind: 'gathered', resource: 'food', amount: 100 },
+      { kind: 'ownUnits', unit: 'villager', count: 6 },
+      { kind: 'ownBuildings', building: 'barracks', count: 1 },
+      { kind: 'ownUnits', unit: 'swordsman', count: 3 },
+      { kind: 'repaired', count: 1 },
+      { kind: 'reachAge', age: 2 },
+    ],
+  },
   first_monastery: {
     id: 'first_monastery',
     setup: { template: 'meadow', mapSize: 'small', aiCount: 1, difficulty: 'easy', civ: 'hungarian', aiCivs: 'english', seed: 1101, victory: 'conquest', ...MODE_DEFAULTS },
@@ -50,8 +83,8 @@ export const MISSIONS: Readonly<Record<MissionId, MissionDef>> = {
   },
 };
 
-/** The match setup of a mission (tagged with the mission). */
-export function missionSetup(id: MissionId): GameSetupConfig {
+/** The match setup of a mission or the tutorial (tagged with its id). */
+export function missionSetup(id: ScenarioId): GameSetupConfig {
   return { ...MISSIONS[id].setup, mission: id };
 }
 

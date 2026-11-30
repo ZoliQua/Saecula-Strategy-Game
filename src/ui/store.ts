@@ -85,6 +85,8 @@ export interface ObjectiveRowInfo {
   readonly need: number;
   /** Show "have / need" (counted objectives: buildings, units, minutes). */
   readonly counted: boolean;
+  /** The current step's hint (M18 tutorial), under the objective. */
+  readonly hint?: string;
 }
 
 /** The time-victory clock on the HUD (HudSync, once a second). */

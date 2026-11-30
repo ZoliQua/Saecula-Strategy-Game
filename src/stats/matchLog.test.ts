@@ -110,7 +110,7 @@ describe('MatchLog', () => {
     expect(records[0]?.setup).toMatchObject({ allies: 0, treatyMin: 0, startResources: 'normal', speed: 1 });
   });
 
-  it('a record written before M18 (stats without the repair count) reads with 0 repairs', async () => {
+  it('a record written before M18 (stats without the repair count or gathered-by-type) reads with 0 repairs and zeros', async () => {
     const store = memoryStore();
     const stats = { gathered: 1, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [] };
     const player = { id: 1, isHuman: true, civ: 'hungarian' as const, color: 1, difficulty: null, personality: null, age: 1 as const, result: 'standing' as const, score: { economy: 0, military: 0, buildings: 0, age: 0, total: 0 } };
@@ -118,7 +118,7 @@ describe('MatchLog', () => {
     store.data.set(matchKey(old.matchId), JSON.stringify({ ...old, players: [{ ...player, stats }] }));
     const { records, corrupt } = await new MatchLog(store).readAll();
     expect(corrupt).toBe(0);
-    expect(records[0]?.players[0]?.stats).toEqual({ ...stats, repairsDone: 0 });
+    expect(records[0]?.players[0]?.stats).toEqual({ ...stats, repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 } });
   });
 
   it('keeps at most the cap and drops the oldest by createdAt (not by key), oldest first on read', async () => {

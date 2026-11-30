@@ -1,5 +1,5 @@
 import type { Entity } from '../ecs/components';
-import type { AgeId, BuildingType, UnitType } from '../types';
+import type { AgeId, BuildingType, ResourceType, Resources, UnitType } from '../types';
 
 /**
  * A mission objective (M13). Objectives latch: once met they stay met
@@ -8,6 +8,8 @@ import type { AgeId, BuildingType, UnitType } from '../types';
  *  - ownBuildings: the human owns `count` finished buildings of `building`;
  *  - ownUnits: the human owns `count` living units of `unit`;
  *  - survive: the match clock reaches `ms` with the human still standing;
+ *  - gathered: the human has gathered `amount` of `resource` this match (MatchStats, M18);
+ *  - repaired: the human's villagers finished `count` repairs (MatchStats repairsDone, M18);
  *  - winMatch: the match is won (conquest or Wonder); never met by the tracker,
  *    the regular victory ends such a mission.
  */
@@ -16,6 +18,8 @@ export type Objective =
   | { readonly kind: 'ownBuildings'; readonly building: BuildingType; readonly count: number }
   | { readonly kind: 'ownUnits'; readonly unit: UnitType; readonly count: number }
   | { readonly kind: 'survive'; readonly ms: number }
+  | { readonly kind: 'gathered'; readonly resource: ResourceType; readonly amount: number }
+  | { readonly kind: 'repaired'; readonly count: number }
   | { readonly kind: 'winMatch' };
 
 /** What an objective is judged on (the live game and the headless match both provide it). */
@@ -25,6 +29,10 @@ export interface ObjectiveContext {
   readonly humanAge: AgeId;
   readonly humanDefeated: boolean;
   readonly timeMs: number;
+  /** What the human has gathered this match, by resource (MatchStats). */
+  readonly gatheredBy: Resources;
+  /** Repairs the human's villagers finished this match (MatchStats). */
+  readonly repairsDone: number;
 }
 
 /** How far an objective is: `have` of `need` (a survive objective counts whole minutes). */
@@ -58,6 +66,10 @@ export function objectiveProgress(o: Objective, ctx: ObjectiveContext): Objectiv
       if (ctx.humanDefeated) return { have: 0, need };
       return { have: ctx.timeMs >= o.ms ? need : Math.min(need - 1, Math.floor(ctx.timeMs / MIN)), need };
     }
+    case 'gathered':
+      return { have: Math.min(Math.floor(ctx.gatheredBy[o.resource]), o.amount), need: objectiveNeed(o) };
+    case 'repaired':
+      return { have: Math.min(ctx.repairsDone, o.count), need: objectiveNeed(o) };
     case 'winMatch':
       return { have: 0, need: objectiveNeed(o) };
   }
@@ -70,7 +82,10 @@ export function objectiveNeed(o: Objective): number {
       return o.age;
     case 'ownBuildings':
     case 'ownUnits':
+    case 'repaired':
       return o.count;
+    case 'gathered':
+      return o.amount;
     case 'survive':
       return Math.round(o.ms / MIN);
     case 'winMatch':
