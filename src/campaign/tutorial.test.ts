@@ -5,6 +5,7 @@ import { createRng } from '../map/random';
 import { createUnit } from '../ecs/archetypes/createUnit';
 import { createEcsWorld } from '../ecs/world';
 import { gameEvents } from '../game/events';
+import { TECH_SPECS } from '../game/technologies';
 import { withSetup } from '../game/GameSetupConfig';
 import { createPlayers } from '../game/PlayerManager';
 import { TERRAIN } from '../map/TerrainTypes';
@@ -15,7 +16,7 @@ import { MatchStats } from '../stats/MatchStats';
 import { resetUiStore, uiStore } from '../ui/store';
 import { DAMAGED_HOUSE_HP_FRACTION, MISSION_IDS, MISSIONS, missionSetup, SCENARIO_IDS, TUTORIAL_ID } from './missions';
 import { objectiveProgress, type Objective, type ObjectiveContext } from './objectives';
-import { objectiveHint, objectiveText } from './objectiveText';
+import { objectiveHint, objectiveText, scenarioObjectiveText } from './objectiveText';
 import { ObjectiveTracker } from './ObjectiveTracker';
 import { CAMPAIGN_KEY, CampaignProgress, type ProgressStorage } from './progress';
 
@@ -27,7 +28,7 @@ function memory(initial: Record<string, string> = {}): ProgressStorage & { data:
 }
 
 function ctxOf(entities: ObjectiveContext['entities'], o: Partial<ObjectiveContext> = {}): ObjectiveContext {
-  return { entities, humanId: 1, humanAge: 1, humanDefeated: false, timeMs: 0, gatheredBy: ZERO, repairsDone: 0, ...o };
+  return { entities, humanId: 1, humanAge: 1, humanDefeated: false, timeMs: 0, gatheredBy: ZERO, repairsDone: 0, builtBy: {}, ...o };
 }
 
 describe('gathered and repaired objectives (M18)', () => {
@@ -104,7 +105,7 @@ describe('tutorial mission (M18)', () => {
     expect(withSetup(setup, {})).toEqual(setup);
     expect(GameSetupConfigSchema.safeParse(setup).success).toBe(true);
     expect(MISSIONS.tutorial.sequential).toBe(true);
-    expect(MISSIONS.tutorial.objectives.map((o) => o.kind)).toEqual(['gathered', 'ownBuildings', 'gathered', 'ownUnits', 'ownBuildings', 'ownUnits', 'repaired', 'reachAge']);
+    expect(MISSIONS.tutorial.objectives.map((o) => o.kind)).toEqual(['gathered', 'built', 'gathered', 'ownUnits', 'ownBuildings', 'ownUnits', 'repaired', 'reachAge']);
     expect(tryGenerateGameMap(setup)).not.toBeNull();
   });
 
@@ -136,10 +137,14 @@ describe('tutorial mission (M18)', () => {
     expect(createHeadlessMatch({ seed: s.seed, size: 64, aiCount: 1, strategy: () => new EasyStrategy(createRng(1)) }).world.entities.some((e) => e.building?.type === 'house')).toBe(false);
   });
 
-  it('hints name the command click as set in the controls', () => {
-    expect(objectiveHint(TUTORIAL_ID, 0, 'ctrl')).toContain('jobb klikk (vagy Ctrl+klikk)');
-    expect(objectiveHint(TUTORIAL_ID, 6, 'meta')).toContain('Cmd+klikk');
-    expect(objectiveHint(TUTORIAL_ID, 0, 'none')).toContain('jobb klikk egy fára');
+  it('hints name the command click as set in the controls; the age-up hint names its cost and the gold mine', () => {
+    expect(objectiveHint(TUTORIAL_ID, 0, 'ctrl')).toContain('majd kattints jobb gombbal (vagy Ctrl+klikkel) egy fára');
+    expect(objectiveHint(TUTORIAL_ID, 6, 'meta')).toContain('Cmd+klikkel');
+    expect(objectiveHint(TUTORIAL_ID, 0, 'none')).toContain('majd kattints jobb gombbal egy fára');
+    const age = TECH_SPECS.feudalism.cost;
+    const last = objectiveHint(TUTORIAL_ID, 7, 'alt')!;
+    expect(last).toContain(`${age.food} ételbe és ${age.gold} aranyba`);
+    expect(last).toContain('aranyérhez (kattints jobb gombbal (vagy Alt+klikkel) az aranyra)');
     for (let i = 0; i < MISSIONS.tutorial.objectives.length; i++) expect(objectiveHint(TUTORIAL_ID, i, 'ctrl')?.length, String(i)).toBeGreaterThan(20);
     expect(objectiveHint('first_monastery', 0, 'ctrl')).toBeNull();
   });
@@ -148,13 +153,18 @@ describe('tutorial mission (M18)', () => {
     const world = createEcsWorld();
     const players = createPlayers('hungarian', ['english']);
     const stats = { of: () => ({ ...new MatchStats(world, players).of(1), gatheredBy: { food: 0, wood: 120, gold: 0 } }) };
-    const run = new CampaignRunner(world, players, TUTORIAL_ID, [], new CampaignProgress(memory()), () => undefined, stats);
+    const toasts: string[] = [];
+    const run = new CampaignRunner(world, players, TUTORIAL_ID, { progress: new CampaignProgress(memory()), notify: (m) => toasts.push(m), stats });
     run.secondTick(1000);
     const o = uiStore.getState().objectives!;
     expect(o.title).toBe('Első lépések');
     expect(o.rows.map((r) => r.done)).toEqual([true, false]);
+    expect(o.rows.map((r) => r.text)).toEqual(['Gyűjts 100 fát', 'Építs egy házat']);
+    // The house step counts new houses: 0 / 1 (the damaged house at start does not count).
+    expect(o.rows[1]).toMatchObject({ have: 0, need: 1, counted: true });
     expect(o.rows[0]?.hint).toBeUndefined();
     expect(o.rows[1]?.hint).toContain('Házat');
+    expect(toasts).toEqual(['Cél teljesítve: Gyűjts 100 fát']);
   });
 
   it('completing it sets the tutorial flag, which never locks or unlocks a mission; older stored progress still reads', () => {
@@ -162,7 +172,7 @@ describe('tutorial mission (M18)', () => {
     const progress = new CampaignProgress(store);
     expect(progress.status(TUTORIAL_ID)).toBe('available');
     expect(MISSION_IDS.map((id) => progress.status(id))).toEqual(['completed', 'available', 'locked']);
-    const run = new CampaignRunner(createEcsWorld(), createPlayers('hungarian', ['english']), TUTORIAL_ID, [], progress, () => undefined);
+    const run = new CampaignRunner(createEcsWorld(), createPlayers('hungarian', ['english']), TUTORIAL_ID, { progress, notify: () => undefined });
     expect(run.finish(true)).toContain('alapokat');
     expect(progress.tutorialDone()).toBe(true);
     expect(progress.status(TUTORIAL_ID)).toBe('completed');
@@ -174,8 +184,19 @@ describe('tutorial mission (M18)', () => {
     expect(MISSION_IDS.map((id) => fresh.status(id))).toEqual(['available', 'locked', 'locked']);
   });
 
-  it('every tutorial objective has a Hungarian line', () => {
+  it('every tutorial step has its own title, built from the step', () => {
+    expect(MISSIONS.tutorial.objectives.map((_, i) => scenarioObjectiveText(TUTORIAL_ID, i))).toEqual([
+      'Gyűjts 100 fát',
+      'Építs egy házat',
+      'Gyűjts 100 ételt',
+      'Legyen 6 falusid',
+      'Építs laktanyát',
+      'Képezz 3 kardforgatót',
+      'Javítsd meg a sérült házat',
+      'Lépj a középkorba',
+    ]);
     for (const o of MISSIONS.tutorial.objectives) expect(objectiveText(o).length).toBeGreaterThan(5);
+    expect(scenarioObjectiveText('first_monastery', 2)).toBe('Képezz 2 egységet: Szerzetes');
   });
 });
 

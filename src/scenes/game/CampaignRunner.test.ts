@@ -23,7 +23,7 @@ describe('CampaignRunner', () => {
     const players = createPlayers('hungarian', ['english']);
     const toasts: string[] = [];
     const progress = new CampaignProgress(memory());
-    const run = new CampaignRunner(world, players, 'first_monastery', [], progress, (m) => toasts.push(m));
+    const run = new CampaignRunner(world, players, 'first_monastery', { progress, notify: (m) => toasts.push(m) });
     run.secondTick(1000);
     expect(uiStore.getState().objectives).toMatchObject({ title: 'Az első kolostor', rows: [{ done: false }, { done: false, have: 0, need: 1, counted: true }, { done: false, have: 0, need: 2 }] });
     players.human()!.age = 2;
@@ -44,7 +44,7 @@ describe('CampaignRunner', () => {
 
   it('a lost mission is not recorded; a restored one keeps its done objectives', () => {
     const progress = new CampaignProgress(memory());
-    const run = new CampaignRunner(createEcsWorld(), createPlayers('english', ['german', 'german']), 'border_guards', [1], progress, () => undefined);
+    const run = new CampaignRunner(createEcsWorld(), createPlayers('english', ['german', 'german']), 'border_guards', { done: [1], progress, notify: () => undefined });
     expect(run.state()).toEqual({ done: [1] });
     expect(run.finish(false)).toContain('próbáld újra');
     expect(progress.status('border_guards')).toBe('locked');
@@ -62,14 +62,14 @@ describe('CampaignRunner', () => {
 
   it('winning a mission that is still locked (an imported save) does not complete it nor unlock the next one', () => {
     const progress = new CampaignProgress(memory());
-    const run = new CampaignRunner(createEcsWorld(), createPlayers('italian', ['german', 'french']), 'age_of_wonders', [], progress, () => undefined);
+    const run = new CampaignRunner(createEcsWorld(), createPlayers('italian', ['german', 'french']), 'age_of_wonders', { progress, notify: () => undefined });
     run.finish(true);
     expect(progress.status('age_of_wonders')).toBe('locked');
     expect(progress.completed().size).toBe(0);
   });
 
   it('publishes the objectives only when they change (the HUD is not re-rendered every second)', () => {
-    const run = new CampaignRunner(createEcsWorld(), createPlayers('hungarian', ['english']), 'first_monastery', [], new CampaignProgress(memory()), () => undefined);
+    const run = new CampaignRunner(createEcsWorld(), createPlayers('hungarian', ['english']), 'first_monastery', { progress: new CampaignProgress(memory()), notify: () => undefined });
     run.secondTick(1000);
     const first = uiStore.getState().objectives;
     let sets = 0;

@@ -47,7 +47,7 @@ export const MISSIONS: Readonly<Record<ScenarioId, MissionDef>> = {
     sequential: true,
     objectives: [
       { kind: 'gathered', resource: 'wood', amount: 100 },
-      { kind: 'ownBuildings', building: 'house', count: 2 },
+      { kind: 'built', building: 'house', count: 1 },
       { kind: 'gathered', resource: 'food', amount: 100 },
       { kind: 'ownUnits', unit: 'villager', count: 6 },
       { kind: 'ownBuildings', building: 'barracks', count: 1 },

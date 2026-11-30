@@ -244,7 +244,7 @@ export class GameScene extends Phaser.Scene {
     const wonderHoldMs = hasWonderVictory(config.victory) ? WONDER_HOLD_MS : null;
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     const time = timeRuleFor(config.victory, this.runner.stats, () => this.gameElapsedMs);
-    this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, restored?.campaign?.done, undefined, undefined, this.runner.stats) : null;
+    this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, { done: restored?.campaign?.done ?? [], stats: this.runner.stats }) : null;
     if (this.campaign && !restored) CampaignRunner.publishStart(this.players);
     this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time, this.campaign);
     const treatyLeft = config.treatyMin > 0 ? () => this.runner.treatyLeftMs() : null;

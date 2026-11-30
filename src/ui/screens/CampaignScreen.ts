@@ -1,9 +1,10 @@
 import { audio } from '../../audio/AudioManager';
-import { MISSION_IDS, MISSIONS, SCENARIO_IDS, TUTORIAL_ID, type MissionId, type ScenarioId } from '../../campaign/missions';
-import { missionText, objectiveText } from '../../campaign/objectiveText';
+import { MISSION_IDS, MISSIONS, TUTORIAL_ID, type MissionId, type ScenarioId } from '../../campaign/missions';
+import { missionText, scenarioObjectiveText } from '../../campaign/objectiveText';
 import type { MissionStatus } from '../../campaign/progress';
 import { hu } from '../../i18n/hu';
 import { el, uiRoot } from '../dom';
+import { campaignRows } from './campaignRows';
 import { bindModalKeys, GLYPHS } from './modalKeys';
 import '../hud.css';
 import '../screens.css';
@@ -72,17 +73,16 @@ export class CampaignScreen {
 
   private showList(): void {
     this.briefing = null;
-    const rows = SCENARIO_IDS.map((id, i) => {
-      const st = this.status(id);
-      const t = missionText(id);
+    const rows = campaignRows(this.status).map((r, i) => {
+      const st = r.status;
       const row = el(
         'button',
-        { class: `slot-row campaign-row ${st}`, type: 'button', style: `--i:${i}`, disabled: st === 'locked', 'data-mission': id, title: st === 'locked' ? hu.campaign.lockedHint : t.title },
-        el('span', { class: 'slot-badge' }, id === TUTORIAL_ID ? hu.campaign.tutorial.badge : String(MISSION_IDS.indexOf(id) + 1)),
-        el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, t.title), el('span', { class: 'slot-detail' }, t.place)),
-        el('span', { class: `campaign-status ${st}` }, hu.campaign.status[st]),
+        { class: `slot-row campaign-row ${st}`, type: 'button', style: `--i:${i}`, disabled: st === 'locked', 'data-mission': r.id, title: st === 'locked' ? hu.campaign.lockedHint : r.title },
+        el('span', { class: 'slot-badge' }, r.badge),
+        el('span', { class: 'slot-text' }, el('span', { class: 'slot-title' }, r.title), el('span', { class: 'slot-detail' }, r.place)),
+        el('span', { class: `campaign-status ${st}` }, r.statusText),
       );
-      row.addEventListener('click', () => this.showBriefing(id));
+      row.addEventListener('click', () => this.showBriefing(r.id));
       return row;
     });
     const back = this.backButton(() => this.handlers.onBack());
@@ -116,7 +116,7 @@ export class CampaignScreen {
         el('div', { class: 'campaign-place' }, t.place),
         el('p', { class: 'campaign-text' }, t.briefing),
         el('div', { class: 'panel-title' }, hu.campaign.objectivesTitle),
-        el('ul', { class: 'campaign-objectives' }, ...MISSIONS[id].objectives.map((o) => el('li', {}, objectiveText(o)))),
+        el('ul', { class: 'campaign-objectives' }, ...MISSIONS[id].objectives.map((_, i) => el('li', {}, scenarioObjectiveText(id, i)))),
       ),
       el('div', { class: 'slots-foot' }, this.backButton(() => this.showList()), start),
     );

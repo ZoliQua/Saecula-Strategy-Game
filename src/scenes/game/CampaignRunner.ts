@@ -1,6 +1,6 @@
 import { MISSIONS, type ScenarioId } from '../../campaign/missions';
 import type { ObjectiveContext } from '../../campaign/objectives';
-import { missionText, objectiveHint, objectiveText } from '../../campaign/objectiveText';
+import { missionText, objectiveHint, scenarioObjectiveText } from '../../campaign/objectiveText';
 import { ObjectiveTracker } from '../../campaign/ObjectiveTracker';
 import { CampaignProgress } from '../../campaign/progress';
 import type { EcsWorld } from '../../ecs/world';
@@ -11,6 +11,16 @@ import { showHudNotice } from '../../ui/HUD';
 import { settingsStore } from '../../ui/settings';
 import { uiStore, type ObjectiveRowInfo } from '../../ui/store';
 
+/** CampaignRunner's optional parts (defaults: no done objectives, the stored progress, HUD toasts, no stats). */
+export interface CampaignRunnerOptions {
+  /** Objective indices already done (a loaded save). */
+  readonly done?: readonly number[];
+  readonly progress?: CampaignProgress;
+  readonly notify?: (message: string) => void;
+  /** The match statistics (gathered, built and repair objectives, M18); none counts as nothing done. */
+  readonly stats?: Pick<MatchStats, 'of'> | null;
+}
+
 /**
  * A campaign mission in a running match (M13): judges its objectives once
  * a second (latching, ObjectiveTracker), shows them on the HUD with a
@@ -20,19 +30,21 @@ import { uiStore, type ObjectiveRowInfo } from '../../ui/store';
  */
 export class CampaignRunner {
   readonly tracker: ObjectiveTracker;
+  private readonly progress: CampaignProgress;
+  private readonly notify: (message: string) => void;
+  private readonly stats: Pick<MatchStats, 'of'> | null;
 
   constructor(
     private readonly world: EcsWorld,
     private readonly players: PlayerManager,
     readonly mission: ScenarioId,
-    done: readonly number[] = [],
-    private readonly progress: CampaignProgress = new CampaignProgress(),
-    private readonly notify: (message: string) => void = (m) => showHudNotice(m, 'ok'),
-    /** The match statistics (gathered and repair objectives, M18); none counts as nothing gathered. */
-    private readonly stats: Pick<MatchStats, 'of'> | null = null,
+    options: CampaignRunnerOptions = {},
   ) {
     const def = MISSIONS[mission];
-    this.tracker = new ObjectiveTracker(def.objectives, done, def.sequential === true);
+    this.tracker = new ObjectiveTracker(def.objectives, options.done ?? [], def.sequential === true);
+    this.progress = options.progress ?? new CampaignProgress();
+    this.notify = options.notify ?? ((m) => showHudNotice(m, 'ok'));
+    this.stats = options.stats ?? null;
   }
 
   /**
@@ -52,10 +64,7 @@ export class CampaignRunner {
   /** Re-judges the objectives at game time `timeMs` and refreshes the HUD panel. */
   secondTick(timeMs: number): void {
     const { fresh, states } = this.tracker.tick(this.context(timeMs));
-    for (const i of fresh) {
-      const o = this.tracker.objectives[i];
-      if (o) this.notify(hu.campaign.objectiveDone(objectiveText(o)));
-    }
+    for (const i of fresh) this.notify(hu.campaign.objectiveDone(scenarioObjectiveText(this.mission, i)));
     // A sequential mission (M18 tutorial) shows the done objectives and the current one, with its hint.
     const current = this.tracker.current();
     const gesture = settingsStore.getState().controls.commandGesture;
@@ -63,7 +72,7 @@ export class CampaignRunner {
     const rows: ObjectiveRowInfo[] = shown.map((s) => {
       const hint = s.index === current ? objectiveHint(this.mission, s.index, gesture) : null;
       return {
-        text: objectiveText(s.objective),
+        text: scenarioObjectiveText(this.mission, s.index),
         done: s.done,
         have: s.progress.have,
         need: s.progress.need,
@@ -112,6 +121,7 @@ export class CampaignRunner {
       timeMs,
       gatheredBy: counters ? { ...counters.gatheredBy } : { food: 0, wood: 0, gold: 0 },
       repairsDone: counters?.repairsDone ?? 0,
+      builtBy: counters ? { ...counters.builtBy } : {},
     };
   }
 }

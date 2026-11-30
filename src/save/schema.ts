@@ -17,7 +17,7 @@ import {
 } from '../game/GameSetupConfig';
 import { SCENARIO_IDS } from '../campaign/missions';
 import { MAP_TEMPLATES } from '../map/generator';
-import { DIRECTIONS } from '../types';
+import { DIRECTIONS, type BuildingType } from '../types';
 import { AIPlayerStateSchema } from './aiSchema';
 import {
   ageId,
@@ -54,7 +54,7 @@ import {
  *   cart and trade ship and their components (tradeHome, tradeRoute); the landmark building
  *   and each player's landmark carry (landmarkCarry).
  * v12 (M18): a villager's repair order (repairIntent), each player's repair count and gathered-by-type
- * (stats repairsDone, gatheredBy), and the tutorial scenario id (setup.mission 'tutorial').
+ * (stats repairsDone, gatheredBy, builtBy), and the tutorial scenario id (setup.mission 'tutorial').
  */
 
 export const SCHEMA_VERSION = 12;
@@ -223,16 +223,19 @@ export const PlayerMatchStatsSchema = z
     unitsTrained: count,
     unitsLost: count,
     buildingsBuilt: count,
+    // A partial record: only the types built so far have a key (enumOf keys would infer a full record).
+    builtBy: z.record(buildingType, count) as unknown as z.ZodType<Partial<Record<BuildingType, number | undefined>>>,
     buildingsLost: count,
     ageUpAtMs: z.array(nonNeg),
     repairsDone: count,
   })
   .strict();
 
-/** The match log's counters: a record stored before M18 has no repair count (0) nor gathered-by-type (zeros). */
+/** The match log's counters: a record stored before M18 has no repair count (0), gathered-by-type (zeros) nor built-by-type (none). */
 export const StoredPlayerMatchStatsSchema = PlayerMatchStatsSchema.extend({
   repairsDone: count.default(0),
   gatheredBy: PlayerMatchStatsSchema.shape.gatheredBy.default({ food: 0, wood: 0, gold: 0 }),
+  builtBy: PlayerMatchStatsSchema.shape.builtBy.default({}),
 });
 
 /** A score / population timeline point (player id order). */

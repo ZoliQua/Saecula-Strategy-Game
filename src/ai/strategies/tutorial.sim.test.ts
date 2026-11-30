@@ -51,7 +51,7 @@ describe('tutorial mission (M18)', () => {
         if (Math.round(t) % 1000 !== 0) return;
         const h = match.players.human()!;
         const st = match.stats.of(h.id);
-        const fresh = tracker.update({ entities: match.world.entities, humanId: h.id, humanAge: h.age, humanDefeated: h.defeated, timeMs: t, gatheredBy: { ...st.gatheredBy }, repairsDone: st.repairsDone });
+        const fresh = tracker.update({ entities: match.world.entities, humanId: h.id, humanAge: h.age, humanDefeated: h.defeated, timeMs: t, gatheredBy: { ...st.gatheredBy }, repairsDone: st.repairsDone, builtBy: { ...st.builtBy } });
         for (const i of fresh) doneAt[i] = t;
         if (tracker.current() === SWORD_STEP) {
           const own = match.world.entities.filter((e) => e.owner?.playerId === 1);
@@ -71,8 +71,10 @@ describe('tutorial mission (M18)', () => {
         return tracker.complete();
       });
       expect(repairOrdered).toBe(true);
-      // Each step completes no earlier than the one before it.
-      expect(doneAt.every((t, i) => i === 0 || t >= (doneAt[i - 1] ?? Infinity))).toBe(true);
+      // Every step has a completion time (no hole), each no earlier than the one before it.
+      const times = Array.from({ length: MISSIONS.tutorial.objectives.length }, (_, i) => doneAt[i]);
+      expect(times.every((t) => t !== undefined)).toBe(true);
+      expect(times.every((t, i) => i === 0 || (t ?? -1) >= (times[i - 1] ?? Infinity))).toBe(true);
       expect(tracker.done).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
       expect(match.timeMs()).toBeLessThan(30 * MIN);
       expect(new VictoryChecker(match.world, match.players, null, null, tracker).check()).toMatchObject({ kind: 'victory', winnerId: 1, cause: 'mission' });

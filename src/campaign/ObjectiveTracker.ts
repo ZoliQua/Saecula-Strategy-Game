@@ -1,4 +1,4 @@
-import { objectiveNeed, objectiveProgress, progressMeets, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
+import { hasRepairableDamage, objectiveNeed, objectiveProgress, progressMeets, type Objective, type ObjectiveContext, type ObjectiveProgress } from './objectives';
 
 /** One objective's state for the HUD. */
 export interface ObjectiveState {
@@ -16,7 +16,9 @@ export interface ObjectiveState {
  *
  * A sequential tracker (M18 tutorial) judges objective i only once 0..i−1
  * are done: a later objective met early waits for its turn and is then
- * marked done in the same tick its predecessor completes.
+ * marked done in the same tick its predecessor completes. A current
+ * `repaired` step with nothing of the human's left to repair counts as met
+ * (the damaged house was deleted or lost: the step cannot get stuck).
  */
 export class ObjectiveTracker {
   private readonly doneSet: Set<number>;
@@ -47,7 +49,8 @@ export class ObjectiveTracker {
       if (blocked) return this.waitingState(objective, index);
       if (this.sequential) blocked = true;
       const progress = objectiveProgress(objective, ctx);
-      if (!progressMeets(objective, progress)) return { index, objective, done: false, progress };
+      const nothingToRepair = this.sequential && objective.kind === 'repaired' && !hasRepairableDamage(ctx);
+      if (!progressMeets(objective, progress) && !nothingToRepair) return { index, objective, done: false, progress };
       this.doneSet.add(index);
       fresh.push(index);
       blocked = false;

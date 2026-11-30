@@ -22,9 +22,9 @@ function fixture() {
   const stats = new MatchStats(world, players);
   stats.restore({
     players: {
-      '1': { gathered: 1234, killValue: 510, unitsTrained: 9, unitsLost: 2, buildingsBuilt: 4, buildingsLost: 1, ageUpAtMs: [400_000], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 } },
-      '2': { gathered: 800, killValue: 0, unitsTrained: 5, unitsLost: 6, buildingsBuilt: 2, buildingsLost: 3, ageUpAtMs: [], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 } },
-      '3': { gathered: 10, killValue: 0, unitsTrained: 0, unitsLost: 3, buildingsBuilt: 0, buildingsLost: 2, ageUpAtMs: [], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 } },
+      '1': { gathered: 1234, killValue: 510, unitsTrained: 9, unitsLost: 2, buildingsBuilt: 4, buildingsLost: 1, ageUpAtMs: [400_000], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, builtBy: {} },
+      '2': { gathered: 800, killValue: 0, unitsTrained: 5, unitsLost: 6, buildingsBuilt: 2, buildingsLost: 3, ageUpAtMs: [], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, builtBy: {} },
+      '3': { gathered: 10, killValue: 0, unitsTrained: 0, unitsLost: 3, buildingsBuilt: 0, buildingsLost: 2, ageUpAtMs: [], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, builtBy: {} },
     },
     timeline: [{ tMs: 60_000, scores: [5, 4, 1], pops: [5, 5, 4] }],
   });
@@ -35,7 +35,7 @@ function fixture() {
 /** A minimal valid record for the summary tests. */
 function rec(over: { at: string; outcome: MatchRecord['outcome']; civ?: MatchRecord['setup']['civ']; difficulty?: MatchRecord['setup']['difficulty']; durationMs?: number; score?: number }): MatchRecord {
   const setup = withSetup(defaultSetupConfig(7), { civ: over.civ ?? 'hungarian', difficulty: over.difficulty ?? 'easy', aiCount: 1 });
-  const zero = { gathered: 0, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 } };
+  const zero = { gathered: 0, killValue: 0, unitsTrained: 0, unitsLost: 0, buildingsBuilt: 0, buildingsLost: 0, ageUpAtMs: [], repairsDone: 0, gatheredBy: { food: 0, wood: 0, gold: 0 }, builtBy: {} };
   const total = over.score ?? 0;
   return {
     v: 1,

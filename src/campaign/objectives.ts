@@ -8,8 +8,13 @@ import type { AgeId, BuildingType, ResourceType, Resources, UnitType } from '../
  *  - ownBuildings: the human owns `count` finished buildings of `building`;
  *  - ownUnits: the human owns `count` living units of `unit`;
  *  - survive: the match clock reaches `ms` with the human still standing;
- *  - gathered: the human has gathered `amount` of `resource` this match (MatchStats, M18);
- *  - repaired: the human's villagers finished `count` repairs (MatchStats repairsDone, M18);
+ *  - built: the human finished building `count` new `building`s this match (MatchStats builtBy, M18:
+ *    buildings that stood at the start, or were lost since, do not matter);
+ *  - gathered: the human has gathered `amount` of `resource` this match (MatchStats, M18;
+ *    gathered income as credit.ts counts it: gold includes trade and the landmark mint, never the market);
+ *  - repaired: the human's villagers finished `count` repairs (MatchStats repairsDone, M18; in a
+ *    sequential mission also met when it is the current step and nothing of the human's needs repair,
+ *    so a deleted or lost damaged house cannot leave the tutorial stuck — ObjectiveTracker);
  *  - winMatch: the match is won (conquest or Wonder); never met by the tracker,
  *    the regular victory ends such a mission.
  */
@@ -18,6 +23,7 @@ export type Objective =
   | { readonly kind: 'ownBuildings'; readonly building: BuildingType; readonly count: number }
   | { readonly kind: 'ownUnits'; readonly unit: UnitType; readonly count: number }
   | { readonly kind: 'survive'; readonly ms: number }
+  | { readonly kind: 'built'; readonly building: BuildingType; readonly count: number }
   | { readonly kind: 'gathered'; readonly resource: ResourceType; readonly amount: number }
   | { readonly kind: 'repaired'; readonly count: number }
   | { readonly kind: 'winMatch' };
@@ -33,6 +39,8 @@ export interface ObjectiveContext {
   readonly gatheredBy: Resources;
   /** Repairs the human's villagers finished this match (MatchStats). */
   readonly repairsDone: number;
+  /** Buildings the human finished building this match, by type (MatchStats). */
+  readonly builtBy: Readonly<Partial<Record<BuildingType, number | undefined>>>;
 }
 
 /** How far an objective is: `have` of `need` (a survive objective counts whole minutes). */
@@ -66,6 +74,8 @@ export function objectiveProgress(o: Objective, ctx: ObjectiveContext): Objectiv
       if (ctx.humanDefeated) return { have: 0, need };
       return { have: ctx.timeMs >= o.ms ? need : Math.min(need - 1, Math.floor(ctx.timeMs / MIN)), need };
     }
+    case 'built':
+      return { have: Math.min(ctx.builtBy[o.building] ?? 0, o.count), need: objectiveNeed(o) };
     case 'gathered':
       return { have: Math.min(Math.floor(ctx.gatheredBy[o.resource]), o.amount), need: objectiveNeed(o) };
     case 'repaired':
@@ -82,6 +92,7 @@ export function objectiveNeed(o: Objective): number {
       return o.age;
     case 'ownBuildings':
     case 'ownUnits':
+    case 'built':
     case 'repaired':
       return o.count;
     case 'gathered':
@@ -96,4 +107,12 @@ export function objectiveNeed(o: Objective): number {
 /** Whether `progress` meets `o` (a winMatch objective is never met by progress: the regular victory ends it). */
 export function progressMeets(o: Objective, progress: ObjectiveProgress): boolean {
   return o.kind !== 'winMatch' && progress.have >= progress.need;
+}
+
+/** Whether the human owns a finished, living building below its max HP (something to repair). */
+export function hasRepairableDamage(ctx: ObjectiveContext): boolean {
+  for (const e of ctx.entities) {
+    if (e.building && e.owner?.playerId === ctx.humanId && !e.underConstruction && !e.dying && e.health && e.health.current < e.health.max) return true;
+  }
+  return false;
 }

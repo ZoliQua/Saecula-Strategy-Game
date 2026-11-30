@@ -11,11 +11,11 @@ import { v11ToV12 } from './v11ToV12';
 /* fixtures/v11-m17.json: a real M17 (schema v11) save (the default save sim after one minute), made before the bump. */
 
 describe('v11 → v12 migration', () => {
-  it("gives every player's stats a repair count of 0 and zero gathered-by-type (keeping values already there) and keeps everything else", () => {
+  it("gives every player's stats a repair count of 0 and zero gathered-by-type and built-by-type (keeping values already there) and keeps everything else", () => {
     const by = { food: 2, wood: 3, gold: 0 };
     const zero = { food: 0, wood: 0, gold: 0 };
-    const data = { schemaVersion: 11, stats: { players: { '1': { gathered: 5 }, '2': { gathered: 5, repairsDone: 3, gatheredBy: by } }, timeline: [] }, gameTimeMs: 5 };
-    const expected = { ...data, stats: { players: { '1': { gathered: 5, repairsDone: 0, gatheredBy: zero }, '2': { gathered: 5, repairsDone: 3, gatheredBy: by } }, timeline: [] } };
+    const data = { schemaVersion: 11, stats: { players: { '1': { gathered: 5 }, '2': { gathered: 5, repairsDone: 3, gatheredBy: by, builtBy: { house: 1 } } }, timeline: [] }, gameTimeMs: 5 };
+    const expected = { ...data, stats: { players: { '1': { gathered: 5, repairsDone: 0, gatheredBy: zero, builtBy: {} }, '2': { gathered: 5, repairsDone: 3, gatheredBy: by, builtBy: { house: 1 } } }, timeline: [] } };
     expect(v11ToV12(data)).toEqual(expected);
     expect(data.stats.players['1']).toEqual({ gathered: 5 });
     expect(migrate(data, 12)).toEqual({ ok: true, data: { ...expected, schemaVersion: 12 } });
@@ -37,6 +37,7 @@ describe('v11 → v12 migration', () => {
     for (const s of Object.values(parsed.save.stats.players)) {
       expect(s.repairsDone).toBe(0);
       expect(s.gatheredBy).toEqual({ food: 0, wood: 0, gold: 0 });
+      expect(s.builtBy).toEqual({});
     }
     const match = resumeHeadlessMatch(parsed.save);
     match.run(MIN, STEP_MS);

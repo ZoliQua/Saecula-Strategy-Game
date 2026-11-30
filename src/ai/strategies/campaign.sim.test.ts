@@ -36,7 +36,7 @@ function track(match: HeadlessMatch, id: MissionId) {
   const update = () => {
     const h = match.players.human()!;
     const st = match.stats.of(h.id);
-    tracker.update({ entities: match.world.entities, humanId: h.id, humanAge: h.age, humanDefeated: h.defeated, timeMs: match.timeMs(), gatheredBy: { ...st.gatheredBy }, repairsDone: st.repairsDone });
+    tracker.update({ entities: match.world.entities, humanId: h.id, humanAge: h.age, humanDefeated: h.defeated, timeMs: match.timeMs(), gatheredBy: { ...st.gatheredBy }, repairsDone: st.repairsDone, builtBy: { ...st.builtBy } });
   };
   return { tracker, update };
 }
