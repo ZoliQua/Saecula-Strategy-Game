@@ -229,6 +229,10 @@ Hajók (M14, a kikötő képzi, csak vízen járnak):
 - `galley` — Gálya. Távolsági hadihajó.
 - `frigate` — Fregatt (3. kortól). Ágyús, épület- és hajóromboló.
 
+Játékmódhoz kötött (M19):
+- `king` — Király. Csak Királygyilkos módban, játékosonként egy; nem képezhető,
+  nem harcol.
+
 **Egyedi (nép-specifikus) egységek:** MVP-ben nincsenek. Az M8-ban
 népenként egy, amely a nép egyik alap egységét váltja le (lásd M8).
 
@@ -280,6 +284,9 @@ Három lehetőség (kezdetben csak az első):
 3. **Time** (idő): 60 perc után a legnagyobb pontszám nyer.
 
 MVP-ben csak a Conquest élvez prioritást.
+
+Az M19-től két további, önállóan választható mód: **Királygyilkos** és
+**A domb ura** (lásd 9. szekció, M19).
 
 ---
 
@@ -1572,7 +1579,8 @@ tárgyalással) érvényesek.
   közepes térképen, a szövetséges AI az ellenséges AI-t támadja és egy csapat
   nyer; fegyverszünet alatt egyetlen sebzés sincs csapatok között.
 - Nem része: szövetség-váltás, tárgyalás, adó, közös nyersanyag, csapat-
-  kampány, királygyilkos és „domb ura” mód (új grafika kellene), sebesség
+  kampány, királygyilkos és „domb ura” mód (új grafika kellene; az M19 meglévő
+  egységlappal pótolja), sebesség
   váltása meccs közben.
 - Keret (10.): az M15 keretei (új textúra nincs).
 - **Állapot (2026-11-22):** kész. `src/game/diplomacy.ts` (`areAllies`,
@@ -1786,6 +1794,67 @@ pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” �
   klikkje javításra váltott, az oktató módban hiányzó aranytipp és a törölt
   sérült házzal beragadó lépés; a záró átnézés után a túl gyors javítás (egy
   falusi gyorsabban javította a falat, mint ahogy egy ágyú rombolta).
+
+### M19 — Királygyilkos és A domb ura
+Ág: `feat/M19-game-modes` (az M18 ágára épül). Változat: kiadatlan (az 1.0.0
+utáni MINOR kiadásba kerül). A sorrendet és az indítást a tulajdonos 2026-11-22-én
+jóváhagyta (az M18 ágáról, kevés új grafikával); a részletek Claude döntései, a
+tulajdonos felülírhatja.
+- **Beállítás:** a `VictoryMode` két új értéke: `regicide` („Királygyilkos”) és
+  `hill` („A domb ura”). A Hódítás mindkettőben él, a Csoda és az idő egyikben
+  sem. A csapatok, a fegyverszünet, a kezdő nyersanyag és a sebesség (M16)
+  mindkettővel működik. A régi módok menete bitre változatlan.
+- **Királygyilkos:**
+  - minden játékos egy királlyal (`king`) indul a városházája mellett;
+  - a játékos kiesik, ha nincs élő királya (a szállítóhajón utazó él) vagy
+    nincs városházája (így elbújtatott királlyal nem húzható a végtelenségig);
+  - a csapat akkor nyer, ha minden ellenfele kiesett; az ember a saját
+    kiesésével veszít. Új győzelmi ok: `regicide`;
+  - a király nem képezhető, nem harcol, nem téríthető, népességet nem foglal,
+    gyógyítható és hajóra szállhat; számok a `balance.ts`-ben (`KING`);
+  - értesítés, ha az ember királyát sebzés éri (ritkítva), és ha egy király elesik.
+- **A domb ura:**
+  - csak Rét, Vadon és Erődítmény sablonon; máshol a választó tiltott,
+    magyarázattal, és sablonváltáskor a mód az alapértelmezettre áll vissza;
+  - a domb a térkép közepéhez legközelebbi alkalmas 7×7-es terület (legalább 33
+    járható mező, minden kezdőhelyről gyalog elérhető). A térképgenerálást nem
+    változtatja: ugyanaz a mag ugyanazt a térképet adja. A terep lapos marad
+    (3.5), a „domb” csak jelölés. Épület és fal nem rakható rá;
+  - foglaló egység: élő, harcoló szárazföldi egység (falusi nem), ki nem esett
+    játékosé. Ha csak egy csapatnak van rajta ilyen egysége, annak az órája
+    halad; vitatott vagy üres dombon, és fegyverszünet alatt minden óra áll;
+  - az idő összeadódik, nem nullázódik; aki előbb eléri a
+    `HILL.holdMs`-t (8 perc), az a csapat nyer. Új győzelmi ok: `hill`;
+  - a domb helye és az órák nyilvánosak (mint a Csodáé), a ködöt nem oszlatja.
+- **AI (minden szinten, csalás nélkül):**
+  - a királyát otthon tartja, és a látott fenyegetés elől félrehúzza;
+  - a hullám a látótávjában lévő ellenséges királyt támadja elsőként;
+  - A domb urában a hullám célja a domb, és ott marad védeni; ha egy ellenfél
+    órája a felén túl jár, kisebb sereggel is elindul (hangolás az AI
+    konfigurációjában).
+- **Grafika (új egységlap nélkül):** a király a nép lovag-helyének lapját
+  használja (a nép egyedi egységénél azét), fölötte és a minimapen koronával.
+  A domb: talajgyűrű és zászlók a birtokos színében, jel a minimapen, óra-sáv
+  a HUD-on. A fejlődési fa és a képző gombok a királyt nem mutatják.
+- **Mentés:** `schemaVersion` 13, migrációval, valódi v12-es mentéssel; a domb
+  egy tulajdonos nélküli entitás `hill` komponenssel (hely, csapatonkénti idő).
+- **Tesztek:** kiesés, győzelem és okok csapattal és anélkül (rakományban lévő
+  és vele elsüllyedő király is); a domb helye a három sablonon minden méretben,
+  sok magon; órák (üres, vitatott, fegyverszünet, kiesett játékos); építési
+  tilalom; AI-szimulációk: mindkét mód minden szinten elindul, Nehéz szinten 60
+  percen belül eldől; mentés oda-vissza és migráció; a régi módok szimulációi
+  és rajz-rögzítései változatlanok.
+- Nem része: király képessége vagy saját grafikája, várkastély, több vagy
+  mozgó domb, a domb a többi sablonon, a módok kampányban, Csoda- vagy
+  időgyőzelem a két új módban, népegyensúly a két új módban.
+- Keret (10.): az M18 keretei; a textúra-memória legfeljebb 1 MB-tal nő, vízen
+  is a 400 MB-on belül marad.
+- **Alapmérés a pályaválasztáshoz (2026-11-22):** sablononként és
+  méret–játékosszám páronként 60 mag. Réten, Vadonban és Erődítményben mindig
+  van alkalmas hely a középtől legfeljebb 3 mezőre. Szigeteken, Véletlen és
+  Beltenger térképen a legtávolabbi és a legközelebbi játékos gyalogtávjának
+  aránya 3–6 játékossal mediánban 1,4–4,7, ezért maradnak ki. A Szigetvilágnak
+  nincs közös szárazföldje.
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
