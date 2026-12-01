@@ -19,7 +19,8 @@ Az 1.0 előtt egy új mérföldkő vagy nagyobb funkciócsomag a középső
 - **Épületjavítás:** a falusiak jobb klikkel (vagy a parancs-klikkel) javítják
   a saját vagy szövetséges, kész, sérült épületet. A teljes javítás az épület
   árának fele, menet közben fizetve; ha elfogy a nyersanyag, értesítéssel
-  megáll. A farmon a jobb klikk továbbra is aratás.
+  megáll. Az az épület, amely az utolsó 5 másodpercben sebzést kapott, nem
+  javítható (tűz alatt nincs javítás). A farmon a jobb klikk továbbra is aratás.
 - A Közepes, a Nehéz és a Mesteri AI javítja a sérült épületeit, ha nincs
   ellenség a közelben.
 - **Színtévesztő-barát csapatszínek:** a beállítások új „Megjelenítés” lapján

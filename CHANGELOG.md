@@ -20,7 +20,9 @@ raises the patch version.
 - **Building repair:** right-click (or your command click) your own or an
   ally's damaged, finished building with villagers to repair it. Repairing
   back to full health costs half the building's price, paid as it goes; it
-  stops with a notice when you run out. Farms keep the farming order.
+  stops with a notice when you run out. A building that took damage in the
+  last 5 seconds cannot be repaired (no repairing under fire). Farms keep the
+  farming order.
 - The Medium, Hard and Master AIs repair damaged buildings when no enemy is
   near.
 - **Colour-blind friendly team colours:** a new "Display" settings tab with

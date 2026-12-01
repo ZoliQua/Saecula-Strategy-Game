@@ -1773,17 +1773,19 @@ pontjából, a tulajdonos felülírhatja. Az M6 „Nem része: oktató mód” �
   Körmérkőzés (`BALANCE=1`): Nehéz magyar 34, angol 25, német 25,5, francia
   25,5, spanyol 26, olasz 30, orosz 31,5, finn 26,5 (/56; a 0.9.1-hez képest
   angol +0,5, orosz −0,5); Mesteri azonos a 0.9.1-gyel; egyik szimuláció magja
-  sem mozdult. Az oktató küldetés szimulációja: egy Közepes AI az emberi helyen
+  sem mozdult; a záró átnézés utáni lassítás (`REPAIR.speed` 0,5, 5 s tűz alatti
+  szünet) után újramérve meccsre ugyanez. Az oktató küldetés szimulációja: egy Közepes AI az emberi helyen
   kb. 14 perc alatt végigmegy a 8 lépésen (a kardforgatókat és a javítást a
   teszt rendeli el). Mérve: textúra `distinct6` 173,2 MB (≤ 256), JS-bundle
-  0,78 MB gzip, a teljes tesztcsomag 3426 teszt. Böngésző-smoke (5196, valódi
+  0,78 MB gzip, a teljes tesztcsomag 3433 teszt. Böngésző-smoke (5196, valódi
   Chrome): kampánylista az oktató sorral, eligazítás, célpanel tippel, három
   falusi megjavítja a sérült házat (250 → 500 életerő, 9 fa), színtévesztő
   palettával indított meccs (narancs, égszínkék, kékeszöld), konzolhiba nélkül.
   Minden feladatot független átnézés követett; javítva: palettaváltáskor régi
   színű épület-textúrák, ingyenes javítás az egységmaradékkal, a farm jobb
   klikkje javításra váltott, az oktató módban hiányzó aranytipp és a törölt
-  sérült házzal beragadó lépés.
+  sérült házzal beragadó lépés; a záró átnézés után a túl gyors javítás (egy
+  falusi gyorsabban javította a falat, mint ahogy egy ágyú rombolta).
 
 **Becsült munkaóra szólóban, parttime (heti ~10-15h):**
 - M0-M1: 4-6 hét
