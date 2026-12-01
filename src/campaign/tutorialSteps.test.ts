@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { EasyStrategy } from '../ai/strategies/EasyStrategy';
-import { createHeadlessMatch } from '../ai/testing/headlessMatch';
+import { createHeadlessMatch, resumeHeadlessMatch } from '../ai/testing/headlessMatch';
+import { parseSave } from '../save/parse';
+import { createBuilding } from '../ecs/archetypes/building';
 import { createEcsWorld } from '../ecs/world';
 import { gameEvents } from '../game/events';
 import { createPlayers } from '../game/PlayerManager';
-import { createRng } from '../map/random';
+import { createRng, createStatefulRng } from '../map/random';
 import { uiWallet } from '../ecs/research';
 import { deleteBuilding } from '../scenes/game/BuildingDeletion';
 import { CampaignRunner } from '../scenes/game/CampaignRunner';
@@ -12,7 +14,7 @@ import { MatchStats, zeroStats } from '../stats/MatchStats';
 import { campaignRows } from '../ui/screens/campaignRows';
 import { resetUiStore, uiStore } from '../ui/store';
 import { MISSION_IDS, MISSIONS, TUTORIAL_ID, type ScenarioId } from './missions';
-import { objectiveProgress, type ObjectiveContext } from './objectives';
+import { hasRepairableDamage, objectiveProgress, type ObjectiveContext } from './objectives';
 import { objectiveText } from './objectiveText';
 import { ObjectiveTracker } from './ObjectiveTracker';
 import { CampaignProgress, type MissionStatus, type ProgressStorage } from './progress';
@@ -70,6 +72,17 @@ describe('tutorial steps that cannot get stuck (M18)', () => {
     expect(later.current()).toBe(REPAIR_STEP + 1);
   });
 
+  it('a damaged farm alone is nothing to repair (a right-click on it farms): the repair step counts as met', () => {
+    const match = tutorialMatch();
+    const house = match.world.entities.find((e) => e.building?.type === 'house' && e.owner?.playerId === 1)!;
+    expect(deleteBuilding(match.world, house, 1, uiWallet()).ok).toBe(true);
+    const farm = createBuilding(match.world, { type: 'farm', origin: { tx: 2, ty: 2 }, playerId: 1, mapData: match.map });
+    farm.health!.current = Math.floor(farm.health!.max / 2);
+    expect(hasRepairableDamage(ctxOf(match))).toBe(false);
+    const later = new ObjectiveTracker(MISSIONS.tutorial.objectives, [0, 1, 2, 3, 4, 5], true);
+    expect(later.tick(ctxOf(match)).fresh).toEqual([REPAIR_STEP]);
+  });
+
   it('with the damaged house standing, the repair step waits for a repair', () => {
     const match = tutorialMatch();
     const tracker = new ObjectiveTracker(MISSIONS.tutorial.objectives, [0, 1, 2, 3, 4, 5], true);
@@ -94,6 +107,54 @@ describe('tutorial steps that cannot get stuck (M18)', () => {
     expect(rows[2]).toMatchObject({ have: 0, need: 100 });
     expect(rows[2]?.hint).toContain('bogyós bokrokhoz');
     expect(rows.slice(0, 2).every((r) => r.hint === undefined)).toBe(true);
+  });
+});
+
+describe('tutorial save and load (M18)', () => {
+  beforeEach(() => resetUiStore());
+
+  it('a match saved mid-tutorial loads with the same current step, hint, counters and damaged house', () => {
+    // An Easy AI built with a stateful rng, so the match can be saved.
+    const s = MISSIONS.tutorial.setup;
+    const rng = createStatefulRng(4);
+    const match = createHeadlessMatch({ mission: TUTORIAL_ID, seed: s.seed, size: 64, aiCount: 1, strategy: () => new EasyStrategy(rng.next), rng: () => rng });
+    const noop = () => undefined;
+    const run = new CampaignRunner(match.world, match.players, TUTORIAL_ID, { progress: new CampaignProgress(memory()), notify: noop, stats: match.stats });
+    // The human's villagers chop the nearest trees (as a player following the first hint would).
+    const tc = match.world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === 1)!;
+    const trees = match.world.entities
+      .filter((e) => e.resourceNode?.type === 'wood' && e.position)
+      .sort((a, b) => Math.hypot(a.position!.tx - tc.position!.tx, a.position!.ty - tc.position!.ty) - Math.hypot(b.position!.tx - tc.position!.tx, b.position!.ty - tc.position!.ty));
+    const villagers = match.world.entities.filter((e) => e.unit?.unitType === 'villager' && e.owner?.playerId === 1);
+    villagers.forEach((v, i) => match.world.addComponent(v, 'gatherIntent', { nodeId: trees[i % 3]!.id! }));
+    match.run(10 * 60_000, 100, (t) => {
+      if (Math.round(t) % 1000 !== 0) return;
+      run.secondTick(t);
+      return run.tracker.current() !== 0;
+    });
+    expect(run.tracker.current()).toBe(1);
+    match.run(5_000, 100);
+    run.secondTick(match.timeMs());
+    const before = { current: run.tracker.current(), done: [...run.state().done], stats: structuredClone(match.stats.of(1)), rows: uiStore.getState().objectives!.rows };
+    expect(before.stats.gatheredBy.wood).toBeGreaterThanOrEqual(100);
+    const house = match.world.entities.find((e) => e.building?.type === 'house' && e.owner?.playerId === 1)!;
+    const houseHp = house.health!.current;
+    expect(houseHp).toBeLessThan(house.health!.max);
+
+    const saved = { ...match.snapshot(new Date('2026-11-28T12:00:00.000Z')), campaign: run.state() };
+    const back = parseSave(JSON.stringify(saved));
+    if (!back.ok) throw new Error(back.reason);
+    expect(back.save.setup.mission).toBe(TUTORIAL_ID);
+    resetUiStore();
+    const again = resumeHeadlessMatch(back.save);
+    const run2 = new CampaignRunner(again.world, again.players, TUTORIAL_ID, { done: back.save.campaign!.done, progress: new CampaignProgress(memory()), notify: noop, stats: again.stats });
+    expect(run2.tracker.sequential).toBe(true);
+    expect(run2.tracker.current()).toBe(before.current);
+    expect(run2.state().done).toEqual(before.done);
+    expect(again.stats.of(1)).toEqual(before.stats);
+    expect(again.world.entities.find((e) => e.id === house.id)?.health?.current).toBe(houseHp);
+    run2.secondTick(again.timeMs());
+    expect(uiStore.getState().objectives!.rows).toEqual(before.rows);
   });
 });
 

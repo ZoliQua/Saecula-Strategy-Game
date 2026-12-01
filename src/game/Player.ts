@@ -49,8 +49,8 @@ export const PLAYER_COLORS: readonly number[] = [
 /** Okabe-Ito colour-blind-safe team colours (M18). */
 export const CB_PLAYER_COLORS: readonly number[] = [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0x0072b2, 0xd55e00];
 
-export type TeamPalette = 'default' | 'colorblind';
-export const TEAM_PALETTES: readonly TeamPalette[] = ['default', 'colorblind'];
+export const TEAM_PALETTES = ['default', 'colorblind'] as const;
+export type TeamPalette = (typeof TEAM_PALETTES)[number];
 
 let activePalette: TeamPalette = 'default';
 

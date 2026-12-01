@@ -142,8 +142,24 @@ describe('unitAnimState for repairers (M18)', () => {
   it('swings the tool on the ring around a damaged building it repairs, idles away from it', () => {
     const world = createEcsWorld();
     world.add(house);
+    const near = world.add(repairer(9, 10));
+    const far = world.add(repairer(2, 2));
     const siteOf = siteLookup(world);
-    expect(unitAnimState(repairer(9, 10), 0, siteOf).anim).toBe('work');
-    expect(unitAnimState(repairer(2, 2), 0, siteOf).anim).toBe('idle');
+    expect(unitAnimState(near, 0, siteOf).anim).toBe('work');
+    expect(unitAnimState(far, 0, siteOf).anim).toBe('idle');
+  });
+
+  it('looks up only the buildings a repairIntent targets, and only while damaged', () => {
+    const world = createEcsWorld();
+    world.add({ ...house, health: { current: 100, max: 500 } });
+    const other: Entity = { id: 9, position: { tx: 2, ty: 2 }, building: { type: 'house', footprint: { width: 2, height: 2 } }, health: { current: 10, max: 500 } };
+    world.add(other);
+    expect(siteLookup(world)(8)).toBeUndefined();
+    const r = world.add(repairer(9, 10));
+    expect(siteLookup(world)(8)?.id).toBe(8);
+    expect(siteLookup(world)(9)).toBeUndefined();
+    world.entities.find((e) => e.id === 8)!.health!.current = 500;
+    expect(siteLookup(world)(8)).toBeUndefined();
+    expect(r.repairIntent).toBeDefined();
   });
 });

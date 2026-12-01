@@ -7,6 +7,7 @@ import type { Entity } from '../components';
 import { escapeRulesAt } from '../escapeRules';
 import { onFootprintRing, type FootprintSize } from '../footprint';
 import type { EcsWorld } from '../world';
+import { findAdjacentToFootprint } from './gathering/gatherGeometry';
 
 /** A unit sent to work a building from the ring around its footprint (a builder, a repairer). */
 export type RingWalker = With<Entity, 'position' | 'movable'>;
@@ -26,7 +27,7 @@ export function planToFootprintRing(
   origin: TileCoord,
   size: FootprintSize,
 ): 'planned' | 'budget' | 'failed' {
-  const goal = findAdjacentToFootprint(map, origin, size, unit.position);
+  const goal = findAdjacentToFootprint(map, { position: origin, building: { footprint: size } }, unit.position);
   if (goal && !paths.take()) return 'budget';
   const escape = escapeRulesAt(world, unit.position, map, unit.owner?.playerId ?? 0);
   const path = goal
@@ -37,31 +38,4 @@ export function planToFootprintRing(
   unit.movable.path = path.slice(1);
   unit.movable.progress = 0;
   return 'planned';
-}
-
-/** The passable tile on the ring around the footprint nearest to `preferNear` (Manhattan; ties: ring order), or null. */
-export function findAdjacentToFootprint(
-  map: MapData,
-  origin: TileCoord,
-  size: FootprintSize,
-  preferNear: TileCoord,
-): TileCoord | null {
-  const { width, height } = size;
-  const candidates: TileCoord[] = [];
-  for (let dx = -1; dx <= width; dx++) {
-    candidates.push({ tx: origin.tx + dx, ty: origin.ty - 1 });
-    candidates.push({ tx: origin.tx + dx, ty: origin.ty + height });
-  }
-  for (let dy = 0; dy < height; dy++) {
-    candidates.push({ tx: origin.tx - 1, ty: origin.ty + dy });
-    candidates.push({ tx: origin.tx + width, ty: origin.ty + dy });
-  }
-  const passable = candidates.filter((t) => map.isPassable(t.tx, t.ty));
-  if (passable.length === 0) return null;
-  passable.sort(
-    (a, b) =>
-      Math.abs(a.tx - preferNear.tx) + Math.abs(a.ty - preferNear.ty) -
-      (Math.abs(b.tx - preferNear.tx) + Math.abs(b.ty - preferNear.ty)),
-  );
-  return passable[0]!;
 }

@@ -110,7 +110,7 @@ const settingsSchema = z.object({
       scrollMode: z.enum(['auto', 'zoom', 'pan']).catch(DEFAULT_CONTROLS.scrollMode),
     })
     .catch(DEFAULT_CONTROLS),
-  teamPalette: z.enum(['default', 'colorblind']).catch('default'),
+  teamPalette: z.enum(TEAM_PALETTES).catch('default'),
 });
 
 /** The stored settings; anything unreadable or invalid gives the defaults, and missing fields are filled from them. */

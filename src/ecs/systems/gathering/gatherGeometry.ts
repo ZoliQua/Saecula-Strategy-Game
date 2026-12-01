@@ -1,7 +1,7 @@
 import type { TileCoord } from '../../../iso/coordinates';
 import type { NavGrid } from '../../../map/navGrid';
 import type { Entity } from '../../components';
-import { onFootprintRing } from '../../footprint';
+import { onFootprintRing, type FootprintSize } from '../../footprint';
 import type { Dropoff, ResourceNode } from './gatherTypes';
 
 /* Tile geometry of the gather cycle: who stands next to what, and which free tile to walk to. */
@@ -65,9 +65,16 @@ export function findAdjacentToBuildingNode(
   return passable[0]!;
 }
 
+/** A footprint on the map: its origin tile and size (a drop-off, a construction site, a repair target). */
+export interface FootprintAt {
+  readonly position: TileCoord;
+  readonly building: { readonly footprint: FootprintSize };
+}
+
+/** The passable tile on the ring around `d`'s footprint nearest to `preferNear` (Manhattan; ties: ring order), or null. */
 export function findAdjacentToFootprint(
   map: NavGrid,
-  d: Dropoff,
+  d: FootprintAt,
   preferNear: TileCoord,
 ): TileCoord | null {
   const { width, height } = d.building.footprint;
