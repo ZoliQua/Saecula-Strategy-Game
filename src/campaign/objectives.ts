@@ -1,4 +1,5 @@
 import type { Entity } from '../ecs/components';
+import { isOrderRepairable } from '../game/repair';
 import type { AgeId, BuildingType, ResourceType, Resources, UnitType } from '../types';
 
 /**
@@ -109,10 +110,10 @@ export function progressMeets(o: Objective, progress: ObjectiveProgress): boolea
   return o.kind !== 'winMatch' && progress.have >= progress.need;
 }
 
-/** Whether the human owns a finished, living building below its max HP (something to repair). */
+/** Whether the human owns a building its villagers can be ordered to repair (finished, living, damaged, not a farm). */
 export function hasRepairableDamage(ctx: ObjectiveContext): boolean {
   for (const e of ctx.entities) {
-    if (e.building && e.owner?.playerId === ctx.humanId && !e.underConstruction && !e.dying && e.health && e.health.current < e.health.max) return true;
+    if (e.owner?.playerId === ctx.humanId && isOrderRepairable(e, ctx.humanId)) return true;
   }
   return false;
 }

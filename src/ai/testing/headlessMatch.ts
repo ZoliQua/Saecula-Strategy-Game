@@ -266,6 +266,8 @@ function assemble(parts: MatchParts): HeadlessMatch {
   let now = parts.startMs;
   // The treaty (M16): from the setup and this match's clock, like the live runner.
   const treaty: TreatyGate = () => treatyActive(setup, now);
+  // Game time for hit buildings (M18: no repair under fire), like the live runner.
+  const gameNow = (): number => now;
   const systems = {
     pathfinding: new PathfindingSystem(world, map, paths),
     gathering: new GatheringSystem(world, map, players, paths),
@@ -273,13 +275,13 @@ function assemble(parts: MatchParts): HeadlessMatch {
     landmarks: new LandmarkSystem(world, players),
     farms: new FarmRegenSystem(world),
     construction: new ConstructionSystem(world, map, paths, players),
-    repair: new RepairSystem(world, map, paths, players),
+    repair: new RepairSystem(world, map, paths, players, { now: gameNow }),
     training: new TrainingSystem(world, map, players),
     research: new ResearchSystem(world, players),
     towers: new TowerCombatSystem(world, fogFor, players, treaty),
-    combat: new CombatSystem(world, map, players, paths, treaty),
+    combat: new CombatSystem(world, map, players, paths, treaty, gameNow),
     monks: new MonkSystem(world, map, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), paths, players, treaty),
-    projectiles: new ProjectileSystem(world, players, treaty),
+    projectiles: new ProjectileSystem(world, players, treaty, gameNow),
     movement: new MovementSystem(world, players, map),
     transports: new TransportSystem(world, map),
     death: new DeathSystem(world, map),

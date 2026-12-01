@@ -4,6 +4,9 @@ import type { EcsWorld } from '../ecs/world';
 import { gameEvents } from './events';
 import { siteProgress } from './refund';
 
+/** The match's game time in ms (a save's clock plus every step since), as the damage-dealing systems read it. */
+export type GameNow = () => number;
+
 /** Time a dying unit stays in the world (matches unitAnim DYING_MS); buildings use BUILDING_DEATH_TTL_MS. */
 export const DEATH_TTL_MS = 900;
 
@@ -12,16 +15,19 @@ export const DEATH_TTL_MS = 900;
  * stripped of every component that would let the corpse keep acting.
  * Returns true when this call killed it. A kill is announced as
  * `entityKilled` with `killerId` (the attacker's owner) for the match
- * statistics.
+ * statistics. With the game time `nowMs`, a damaged building records it
+ * (`building.damagedAtMs`: no repair under fire, M18).
  */
 export function applyDamage(
   world: EcsWorld,
   target: Entity & { health: { current: number; max: number } },
   amount: number,
   killerId: number | null = null,
+  nowMs?: number,
 ): boolean {
   if (target.dying) return false;
   target.health.current -= amount;
+  if (target.building && nowMs !== undefined) target.building.damagedAtMs = nowMs;
   if (target.health.current > 0) return false;
   killEntity(world, target);
   // A sunk transport's cargo (M14) goes down with it: each unit is lost to the same killer.

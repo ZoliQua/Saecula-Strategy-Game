@@ -7,7 +7,8 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
  * count (a v11 player never repaired, so 0) and gathered-by-type (unknown
  * for v11, so zeros: the total `gathered` is kept) and built-by-type (none
  * known: the total `buildingsBuilt` is kept); a value already there is kept. Villagers gained the
- * `repairIntent` component, which no v11 save has. Stats that are not
+ * `repairIntent` component and buildings the optional `damagedAtMs`, which no
+ * v11 save has (left unset: never damaged, so no repair is held off). Stats that are not
  * objects are left for the schema to reject.
  */
 export const v11ToV12: Migration = (data) => {

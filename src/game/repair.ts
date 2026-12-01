@@ -35,6 +35,15 @@ export function isRepairableBy(target: Entity | undefined, playerId: number, tea
   );
 }
 
+/**
+ * Whether a right-click by `playerId`'s villager on `target` means repair:
+ * isRepairableBy, except a farm (a right-click on a farm keeps meaning
+ * "farm it", damaged or not).
+ */
+export function isOrderRepairable(target: Entity | undefined, playerId: number, teams: TeamLookup = NO_TEAMS): target is RepairTarget {
+  return target?.building?.type !== 'farm' && isRepairableBy(target, playerId, teams);
+}
+
 /** Whether `villager` may be sent to repair `target` now (a living villager, a repairable building still in the world). */
 export function canRepair(world: EcsWorld, villager: Entity, target: Entity, teams: TeamLookup = NO_TEAMS): boolean {
   const playerId = villager.owner?.playerId;
@@ -54,11 +63,15 @@ export function findRepairTargetAt(world: EcsWorld, tile: TileCoord, actor: Enti
   const playerId = actor.owner?.playerId;
   if (playerId === undefined) return null;
   for (const b of world.with('position', 'owner', 'building', 'health')) {
-    // A right-click on a farm keeps meaning "farm it", damaged or not (M18).
-    if (b.building.type === 'farm') continue;
-    if (insideFootprint(tile, b.position, b.building.footprint) && isRepairableBy(b, playerId, teams)) return b;
+    if (insideFootprint(tile, b.position, b.building.footprint) && isOrderRepairable(b, playerId, teams)) return b;
   }
   return null;
+}
+
+/** Whether `target` took damage less than REPAIR.underFireDelayMs ago at game time `nowMs` (it gains no repair HP yet). */
+export function isUnderFire(target: RepairTarget, nowMs: number): boolean {
+  const at = target.building.damagedAtMs;
+  return at !== undefined && nowMs - at < REPAIR.underFireDelayMs;
 }
 
 /** HP one villager of `owner` restores on `target` per second: maxHp / buildTime × REPAIR.speed × build-speed bonuses. */

@@ -117,6 +117,8 @@ export class SystemRunner {
   private readonly treatyClock: TreatyClock;
   /** The treaty gate the combat systems, the AIs and the human's orders share (M16). */
   readonly treaty: TreatyGate;
+  /** Game time (ms) from the save's clock (`startMs`), advanced first each frame: hit buildings record it (M18). */
+  private gameMs: number;
   /** The time limit as the AIs see it (null: no time victory). */
   private readonly timeLimit: TimeLimitWatch | null;
   private readonly isDefeated: (playerId: number) => boolean;
@@ -159,6 +161,8 @@ export class SystemRunner {
     this.humanId = players.human()?.id;
     this.humanAge = () => players.human()?.age ?? 1;
     this.treatyClock = treatyClockFor(options);
+    this.gameMs = options.startMs ?? 0;
+    const gameNow = (): number => this.gameMs;
     this.treaty = this.treatyClock.gate;
     this.render = new RenderSystem(scene, world);
     this.render.setAgeSource((id) => players.get(id)?.age ?? 1);
@@ -182,13 +186,14 @@ export class SystemRunner {
       walletOf: (p) => (p.isHuman ? uiWallet() : playerWallet(p)),
       humanId: this.humanId,
       notice: (m) => showHudNotice(m),
+      now: gameNow,
     });
     this.training = new TrainingSystem(world, mapData, players);
     this.research = new ResearchSystem(world, players);
     this.population = new PopulationSystem(world, 1, players);
-    this.combat = new CombatSystem(world, mapData, players, this.paths, this.treaty);
+    this.combat = new CombatSystem(world, mapData, players, this.paths, this.treaty, gameNow);
     this.monks = new MonkSystem(world, mapData, (id) => players.get(id)?.civ ?? DEFAULT_CIV, (id) => players.get(id), this.paths, players, this.treaty);
-    this.projectiles = new ProjectileSystem(world, players, this.treaty);
+    this.projectiles = new ProjectileSystem(world, players, this.treaty, gameNow);
     this.projectileRender = new ProjectileRenderSystem(scene, world);
     this.death = new DeathSystem(world, mapData);
     this.wonders = new WonderSystem(world, options.wonderVictory, this.treaty);
@@ -295,6 +300,7 @@ export class SystemRunner {
   update(time: number, delta: number, realDelta: number = delta): void {
     // The treaty clock reads this frame's game time (the scene's clock adds the same delta after the runner).
     this.treatyClock.advance(delta);
+    this.gameMs += delta;
     this.cameraController.update(realDelta);
     this.tileMap.update(time, delta);
     this.paths.reset(delta);

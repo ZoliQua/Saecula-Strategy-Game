@@ -12,12 +12,16 @@ import { canRepair, startRepair } from '../../game/repair';
 import { MatchStats } from '../../stats/MatchStats';
 import type { CivId, Resources } from '../../types';
 import { hu } from '../../i18n/hu';
+import { applyDamage } from '../../game/kill';
+import { REPAIR } from '../../config/balance';
+import { CombatSystem } from './CombatSystem';
 import { MovementSystem } from './MovementSystem';
+import { ProjectileSystem } from './ProjectileSystem';
 import { RepairSystem } from './RepairSystem';
 
 const RICH: Resources = { food: 1000, wood: 1000, gold: 1000 };
 
-function setup(opts: { civ?: CivId; resources?: Resources; allies?: number; houseOwner?: number } = {}) {
+function setup(opts: { civ?: CivId; resources?: Resources; allies?: number; houseOwner?: number; clock?: { ms: number } } = {}) {
   const map = new MapData(20, 20, TERRAIN.grass);
   const world = createEcsWorld();
   const players = createPlayers(opts.civ ?? 'hungarian', ['english', 'german'], opts.resources ?? RICH, opts.allies ?? 0);
@@ -25,7 +29,8 @@ function setup(opts: { civ?: CivId; resources?: Resources; allies?: number; hous
   const house = createBuilding(world, { type: 'house', origin: { tx: 5, ty: 5 }, playerId: opts.houseOwner ?? 1, mapData: map });
   house.health!.current = 250;
   const notices: string[] = [];
-  const system = new RepairSystem(world, map, undefined, players, { humanId: 1, notice: (m) => notices.push(m) });
+  const clock = opts.clock;
+  const system = new RepairSystem(world, map, undefined, players, { humanId: 1, notice: (m) => notices.push(m), ...(clock && { now: () => clock.ms }) });
   const villager = (tile: { tx: number; ty: number }, playerId = 1): Entity => {
     const v = createVillager(world, { tile, playerId });
     startRepair(world, v, house);
@@ -35,18 +40,19 @@ function setup(opts: { civ?: CivId; resources?: Resources; allies?: number; hous
 }
 
 describe('RepairSystem: rate', () => {
-  it('one adjacent villager restores maxHp / buildTime HP per second', () => {
+  it('one adjacent villager restores maxHp / buildTime × REPAIR.speed HP per second', () => {
+    expect(REPAIR.speed).toBe(0.5);
     const { system, house, villager } = setup();
     villager({ tx: 4, ty: 5 });
     system.update(1000);
-    expect(house.health!.current).toBe(270);
+    expect(house.health!.current).toBe(260);
   });
 
   it('three villagers stack, and the HP never passes the maximum; then they all go idle', () => {
     const { system, house, villager } = setup();
     const vs = [villager({ tx: 4, ty: 5 }), villager({ tx: 7, ty: 5 }), villager({ tx: 5, ty: 4 })];
     system.update(1000);
-    expect(house.health!.current).toBe(310);
+    expect(house.health!.current).toBe(280);
     for (let i = 0; i < 100; i++) system.update(100);
     expect(house.health!.current).toBe(500);
     for (const v of vs) expect(v.repairIntent).toBeUndefined();
@@ -59,8 +65,8 @@ describe('RepairSystem: rate', () => {
     const v = createVillager(world, { tile: { tx: 11, ty: 12 }, playerId: 1 });
     startRepair(world, v, wonder);
     const system = new RepairSystem(world, map, undefined, players);
-    for (let i = 0; i < 61; i++) system.update(1000 / 60);
-    // 4800 / 600 = 8 HP per second.
+    for (let i = 0; i < 121; i++) system.update(1000 / 60);
+    // 4800 / 600 × 0.5 = 4 HP per second.
     expect(wonder.health!.current).toBe(1008);
     expect(Number.isInteger(wonder.health!.current)).toBe(true);
   });
@@ -68,7 +74,7 @@ describe('RepairSystem: rate', () => {
   it('the Italian build bonus speeds it up', () => {
     const { system, house, villager } = setup({ civ: 'italian' });
     villager({ tx: 4, ty: 5 });
-    system.update(1000);
+    system.update(2000);
     expect(house.health!.current).toBe(273);
   });
 
@@ -90,13 +96,13 @@ describe('RepairSystem: cost', () => {
     const { system, players, villager } = setup();
     const v = villager({ tx: 4, ty: 5 });
     const wallet = () => players.get(1)!.resources;
-    system.update(1000); // 20 HP × 15 / 500 = 0.6 wood: 1 paid up front
+    system.update(2000); // 20 HP × 15 / 500 = 0.6 wood: 1 paid up front
     expect(wallet().wood).toBe(999);
     expect(v.repairIntent!.costCarry.wood).toBeCloseTo(0.4);
-    system.update(1000); // 1.2 wood in all: 2 paid
+    system.update(2000); // 1.2 wood in all: 2 paid
     expect(wallet().wood).toBe(998);
     expect(v.repairIntent!.costCarry.wood).toBeCloseTo(0.8);
-    for (let i = 0; i < 300; i++) system.update(100);
+    for (let i = 0; i < 600; i++) system.update(100);
     // 250 HP: 7.5 wood, 8 paid; no food or gold (the house costs none).
     expect(wallet()).toEqual({ food: 1000, wood: 992, gold: 1000 });
   });
@@ -129,7 +135,7 @@ describe('RepairSystem: cost', () => {
   it('three villagers: the charge covers the HP restored and overpays by at most 1 per villager', () => {
     const { system, players, house, villager } = setup();
     const vs = [villager({ tx: 4, ty: 5 }), villager({ tx: 7, ty: 5 }), villager({ tx: 5, ty: 4 })];
-    for (let step = 0; step < 120; step++) {
+    for (let step = 0; step < 240; step++) {
       system.update(100);
       const paid = 1000 - players.get(1)!.resources.wood;
       const exact = (house.health!.current - 250) * (15 / 500);
@@ -170,7 +176,7 @@ describe('RepairSystem: cost', () => {
     const { system, players, house, villager } = setup({ allies: 1, houseOwner: 2 });
     const v = villager({ tx: 4, ty: 5 });
     expect(v.repairIntent).toBeDefined();
-    for (let i = 0; i < 300; i++) system.update(100);
+    for (let i = 0; i < 600; i++) system.update(100);
     expect(house.health!.current).toBe(500);
     expect(players.get(1)!.resources.wood).toBe(992);
     expect(players.get(2)!.resources.wood).toBe(1000);
@@ -184,9 +190,71 @@ describe('RepairSystem: cost', () => {
     });
     const v = createVillager(world, { tile: { tx: 4, ty: 5 }, playerId: 1 });
     startRepair(world, v, house);
-    for (let i = 0; i < 300; i++) system.update(100);
+    for (let i = 0; i < 600; i++) system.update(100);
     expect(stock.wood).toBe(42);
     expect(players.get(1)!.resources.wood).toBe(1000);
+  });
+});
+
+describe('RepairSystem: no repair under fire', () => {
+  it('a building gains no HP and costs nothing until REPAIR.underFireDelayMs after its last damage; the villager waits and resumes', () => {
+    expect(REPAIR.underFireDelayMs).toBe(5000);
+    const clock = { ms: 60_000 };
+    const { world, system, players, house, villager } = setup({ clock });
+    const v = villager({ tx: 4, ty: 5 });
+    applyDamage(world, house as Parameters<typeof applyDamage>[1], 10, 2, clock.ms);
+    expect(house.building!.damagedAtMs).toBe(60_000);
+    const step = (ms: number) => {
+      clock.ms += ms;
+      system.update(ms);
+    };
+    for (let i = 0; i < 49; i++) step(100); // 4.9 s after the hit
+    expect(house.health!.current).toBe(240);
+    expect(players.get(1)!.resources.wood).toBe(1000);
+    expect(v.repairIntent).toBeDefined();
+    expect(v.repairIntent!.hpCarry).toBe(0);
+    for (let i = 0; i < 21; i++) step(100); // 7 s after the hit: 2 s of repair
+    expect(house.health!.current).toBeGreaterThan(240);
+    expect(players.get(1)!.resources.wood).toBeLessThan(1000);
+    // A new hit stops it again for 5 s.
+    applyDamage(world, house as Parameters<typeof applyDamage>[1], 10, 2, clock.ms);
+    const hp = house.health!.current;
+    for (let i = 0; i < 49; i++) step(100);
+    expect(house.health!.current).toBe(hp);
+    expect(v.repairIntent).toBeDefined();
+  });
+
+  it('a building never damaged this way (no timestamp) is repaired at once', () => {
+    const { system, house, villager } = setup({ clock: { ms: 1000 } });
+    villager({ tx: 4, ty: 5 });
+    system.update(1000);
+    expect(house.building!.damagedAtMs).toBeUndefined();
+    expect(house.health!.current).toBe(260);
+  });
+
+  it('melee and projectile hits stamp the building with the game time', () => {
+    const map = new MapData(20, 20, TERRAIN.grass);
+    const world = createEcsWorld();
+    const players = createPlayers('hungarian', ['english'], RICH);
+    const house = createBuilding(world, { type: 'house', origin: { tx: 5, ty: 5 }, playerId: 2, mapData: map });
+    const sword = createUnit(world, { type: 'swordsman', tile: { tx: 4, ty: 5 }, playerId: 1 });
+    world.addComponent(sword, 'attackIntent', { targetId: house.id! });
+    new CombatSystem(world, map, players, undefined, undefined, () => 12_345).update(100);
+    expect(house.health!.current).toBeLessThan(house.health!.max);
+    expect(house.building!.damagedAtMs).toBe(12_345);
+
+    const archer = createUnit(world, { type: 'archer', tile: { tx: 9, ty: 5 }, playerId: 1 });
+    world.removeComponent(sword, 'attackIntent');
+    world.addComponent(archer, 'attackIntent', { targetId: house.id! });
+    const combat = new CombatSystem(world, map, players, undefined, undefined, () => 20_000);
+    const projectiles = new ProjectileSystem(world, players, undefined, () => 20_000);
+    const before = house.health!.current;
+    for (let i = 0; i < 40 && house.health!.current === before; i++) {
+      combat.update(100);
+      projectiles.update(100);
+    }
+    expect(house.health!.current).toBeLessThan(before);
+    expect(house.building!.damagedAtMs).toBe(20_000);
   });
 });
 
@@ -231,7 +299,7 @@ describe('RepairSystem: stopping', () => {
     const off = stats.attach();
     villager({ tx: 4, ty: 5 });
     villager({ tx: 7, ty: 5 });
-    for (let i = 0; i < 200; i++) system.update(100);
+    for (let i = 0; i < 400; i++) system.update(100);
     off();
     expect(stats.of(1).repairsDone).toBe(1);
     expect(stats.snapshot().players['1']!.repairsDone).toBe(1);

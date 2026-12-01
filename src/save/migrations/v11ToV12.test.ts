@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resumeHeadlessMatch } from '../../ai/testing/headlessMatch';
+import { REPAIR } from '../../config/balance';
+import { applyDamage } from '../../game/kill';
 import { startRepair } from '../../game/repair';
 import { parseSave } from '../parse';
 import { SCHEMA_VERSION } from '../schema';
@@ -68,6 +70,35 @@ describe('v11 → v12 migration', () => {
     again.run(10_000, STEP_MS);
     expect(tc2!.health!.current).toBeGreaterThan(mid);
     const bad = { ...saved, entities: saved.entities.map((e) => (e.id === v.id ? { ...e, components: { ...e.components, repairIntent: { targetId: 1, costCarry: { food: -1, wood: 0, gold: 0 }, hpCarry: 0 } } } : e)) };
+    expect(parseSave(JSON.stringify(bad)).ok).toBe(false);
+  });
+
+  it("a building's last-damage time round-trips (v11 buildings have none) and still holds the repair off after the load", () => {
+    const parsed = parseSave(JSON.stringify(v11Save));
+    if (!parsed.ok) throw new Error(parsed.reason);
+    const match = resumeHeadlessMatch(parsed.save);
+    expect(match.world.entities.some((e) => e.building?.damagedAtMs !== undefined)).toBe(false);
+    const tc = match.world.entities.find((e) => e.building?.type === 'town_center' && e.owner?.playerId === 1);
+    const v = match.world.entities.find((e) => e.unit?.unitType === 'villager' && e.owner?.playerId === 1);
+    if (!tc?.health || !tc.building || !v) throw new Error('no town centre or villager');
+    tc.health.current = 1000;
+    startRepair(match.world, v, tc);
+    match.run(10_000, STEP_MS);
+    expect(tc.health.current).toBeGreaterThan(1000); // on the job
+    tc.health.current = 1000;
+    applyDamage(match.world, tc as Parameters<typeof applyDamage>[1], 1, 2, match.timeMs());
+    const hitAt = match.timeMs();
+    const back = parseSave(JSON.stringify(match.snapshot(FIXED_DATE)));
+    if (!back.ok) throw new Error(back.reason);
+    const again = resumeHeadlessMatch(back.save);
+    const tc2 = again.world.entities.find((e) => e.id === tc.id)!;
+    expect(tc2.building?.damagedAtMs).toBe(hitAt);
+    again.run(REPAIR.underFireDelayMs - 1000, STEP_MS); // 4 s after the hit
+    expect(tc2.health!.current).toBe(999);
+    expect(again.world.entities.find((e) => e.id === v.id)?.repairIntent).toBeDefined();
+    again.run(10_000, STEP_MS);
+    expect(tc2.health!.current).toBeGreaterThan(999);
+    const bad = { ...back.save, entities: back.save.entities.map((e) => (e.id === tc.id ? { ...e, components: { ...e.components, building: { ...e.components.building!, damagedAtMs: -1 } } } : e)) };
     expect(parseSave(JSON.stringify(bad)).ok).toBe(false);
   });
 });

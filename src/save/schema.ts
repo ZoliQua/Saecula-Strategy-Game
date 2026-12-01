@@ -53,7 +53,8 @@ import {
  * v11 (M17): the market building and each player's market prices (marketPrices); the trade
  *   cart and trade ship and their components (tradeHome, tradeRoute); the landmark building
  *   and each player's landmark carry (landmarkCarry).
- * v12 (M18): a villager's repair order (repairIntent), each player's repair count and gathered-by-type
+ * v12 (M18): a villager's repair order (repairIntent), a building's last-damage game time
+ * (building.damagedAtMs; absent = never damaged, as in every v11 save), each player's repair count and gathered-by-type
  * (stats repairsDone, gatheredBy, builtBy), and the tutorial scenario id (setup.mission 'tutorial').
  */
 
@@ -89,7 +90,7 @@ const COMPONENT_SHAPE = {
       .optional(),
     gatherIntent: z.object({ nodeId: int }).strict().optional(),
     resourceDropoff: z.object({ accepts: z.array(resourceType).readonly() }).strict().optional(),
-    building: z.object({ type: buildingType, footprint, minStyleAge: ageId.optional() }).strict().optional(),
+    building: z.object({ type: buildingType, footprint, minStyleAge: ageId.optional(), damagedAtMs: nonNeg.optional() }).strict().optional(),
     underConstruction: z.object({ totalTime: num, elapsed: num }).strict().optional(),
     buildCommand: z.object({ targetId: int }).strict().optional(),
     repairIntent: z

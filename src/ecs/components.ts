@@ -77,6 +77,8 @@ export interface Entity {
     footprint: { width: number; height: number };
     /** Art shows at least this age's style, whatever the owner's age (fortress preset stone walls). */
     minStyleAge?: AgeId;
+    /** Game time (ms) the building last took damage (M18: no repair under fire); unset = never damaged by an attack. */
+    damagedAtMs?: number;
   };
   underConstruction?: {
     /** Seconds of builder-effort required in total. */

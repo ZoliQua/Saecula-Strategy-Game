@@ -4,7 +4,8 @@ import { NO_TEAMS, type TeamLookup } from '../../game/diplomacy';
 import { gameEvents } from '../../game/events';
 import type { Player } from '../../game/Player';
 import type { PlayerManager } from '../../game/PlayerManager';
-import { isRepairableBy, repairCostPerHp, repairHpPerSec, type RepairTarget } from '../../game/repair';
+import type { GameNow } from '../../game/kill';
+import { isRepairableBy, isUnderFire, repairCostPerHp, repairHpPerSec, type RepairTarget } from '../../game/repair';
 import { hu } from '../../i18n/hu';
 import type { MapData } from '../../map/MapData';
 import { UNLIMITED_PATHS, type PathAllowance } from '../../map/pathBudget';
@@ -32,6 +33,8 @@ export interface RepairSystemOptions {
   readonly humanId?: number | undefined;
   /** Shows a HUD notice (the game's toast). */
   readonly notice?: (message: string) => void;
+  /** The match's game time (no repair under fire, M18). None: buildings are never under fire. */
+  readonly now?: GameNow;
 }
 
 /**
@@ -44,7 +47,9 @@ export interface RepairSystemOptions {
  * dying, no longer friendly or not damaged, and for every villager of a
  * player whose wallet cannot pay the next whole unit (one notice for the
  * human). The villager that restores the last HP raises `buildingRepaired`
- * and every repairer of that building goes idle.
+ * and every repairer of that building goes idle. Under fire (damaged less
+ * than REPAIR.underFireDelayMs of game time ago) the repairers wait on the
+ * ring: no HP, no charge, and they resume by themselves.
  */
 export class RepairSystem {
   private nowMs = 0;
@@ -67,6 +72,7 @@ export class RepairSystem {
     this.nowMs += deltaMs;
     const repairers = [...this.world.with('position', 'movable', 'repairIntent', 'owner')];
     if (repairers.length === 0) return;
+    const gameMs = this.options.now?.();
     const buildings = new Map<number, Entity>();
     for (const b of this.world.with('building', 'health', 'position', 'owner')) if (b.id !== undefined) buildings.set(b.id, b);
     for (const r of repairers) {
@@ -84,6 +90,7 @@ export class RepairSystem {
       r.movable.path = [];
       r.movable.progress = 0;
       faceToward(r as Entity, target);
+      if (gameMs !== undefined && isUnderFire(target, gameMs)) continue;
       this.work(r, target, deltaMs, repairers);
     }
   }
