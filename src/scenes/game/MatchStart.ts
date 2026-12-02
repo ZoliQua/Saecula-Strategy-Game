@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { defaultSetupConfig, hasTimeVictory, hasWonderVictory, matchCivs, startResourcesFor, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { defaultSetupConfig, hasRegicide, hasTimeVictory, hasWonderVictory, matchCivs, startResourcesFor, withSetup, type GameSetupConfig } from '../../game/GameSetupConfig';
 import { applyMissionStart } from '../../campaign/missionStart';
 import { newMatchId } from '../../game/matchId';
 import { createPlayers, type PlayerManager } from '../../game/PlayerManager';
@@ -156,6 +156,7 @@ export function runnerFor(start: MatchStart, setup: GameSetupConfig, make: (opti
     difficulty: setup.difficulty,
     wonderVictory: hasWonderVictory(setup.victory),
     timeVictory: hasTimeVictory(setup.victory),
+    regicide: hasRegicide(setup.victory),
     seed: setup.seed,
     treatyMin: setup.treatyMin,
   };

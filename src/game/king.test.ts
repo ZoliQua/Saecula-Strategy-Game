@@ -7,7 +7,7 @@ import { createUnit } from '../ecs/archetypes/createUnit';
 import { queueUnit } from '../ecs/queueUnit';
 import { toSelectedInfo } from '../ecs/systems/selectedInfo';
 import { createEcsWorld } from '../ecs/world';
-import { enemyClassShares } from '../ai/decisions/army';
+import { enemyClassShares, isArmySighting } from '../ai/decisions/army';
 import { enemyArmySeen } from '../ai/decisions/stance';
 import type { AIContext } from '../ai/AIPlayer';
 import { MediumStrategy } from '../ai/strategies/MediumStrategy';
@@ -16,7 +16,7 @@ import { FogOfWarData } from '../map/FogOfWarData';
 import { MapData } from '../map/MapData';
 import { createRng } from '../map/random';
 import { techTreeModel } from '../ui/screens/techTreeModel';
-import { BASE_UNIT_TYPES, type AgeId, type BuildingType } from '../types';
+import { BASE_UNIT_TYPES, type AgeId, type BuildingType, type UnitType } from '../types';
 import { canCivTrain, civUnitTypes, isTrainableUnit, TRAINABLE_UNIT_TYPES } from './civUnits';
 import { canConvert } from './convert';
 import { createPlayer } from './Player';
@@ -121,6 +121,11 @@ describe('the king (M19)', () => {
     expect(enemyClassShares({ king: 3, knight: 1 })).toEqual(enemyClassShares({ knight: 1 }));
   });
 
+  it('the army predicate leaves out exactly villagers, scouts, kings and traders', () => {
+    const all = Object.keys(UNIT_BALANCE) as UnitType[];
+    expect(all.filter((t) => !isArmySighting(t)).sort()).toEqual(['king', 'scout', 'trade_cart', 'trade_ship', 'villager']);
+  });
+
   it('cannot be converted', () => {
     const world = createEcsWorld();
     expect(canConvert(createUnit(world, { type: 'king', tile: { tx: 3, ty: 3 }, playerId: 2 }), 1)).toBe(false);
@@ -129,6 +134,6 @@ describe('the king (M19)', () => {
 
   it('is called "Király" and has a role line', () => {
     expect(hu.units.king).toBe('Király');
-    expect(hu.unitRoles.king).toBe('Nem harcol · ha elesik, kiesel');
+    expect(hu.unitRoles.king).toBe('Nem harcol · ha elesik, a gazdája kiesik');
   });
 });

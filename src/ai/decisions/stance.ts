@@ -1,7 +1,7 @@
 import { BUILDING_BALANCE, UNIT_BALANCE } from '../../config/balance';
 import type { StanceTuning } from '../../config/aiBalance';
 import type { AgeId, BuildingType, UnitType } from '../../types';
-import { tradePostType } from '../../game/trade';
+import { isArmySighting } from './army';
 
 /**
  * Hard AI strategy stances (§10.3 "stratégiai váltás"):
@@ -70,7 +70,7 @@ export function decayedPeak(previous: number, now: number, elapsedMs: number, de
 export function enemyArmySeen(sightings: Readonly<Partial<Record<UnitType, number>>>): number {
   let n = 0;
   for (const [type, count] of Object.entries(sightings) as [UnitType, number][]) {
-    if (type !== 'villager' && type !== 'scout' && type !== 'king' && tradePostType(type) === null) n += count;
+    if (isArmySighting(type)) n += count;
   }
   return n;
 }

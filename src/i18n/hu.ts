@@ -390,7 +390,7 @@ export const hu = {
     frigate: 'Ágyús hadihajó · épület- és hajórombolás',
     trade_cart: 'Két saját vagy szövetséges piac között ingázik · aranyat hoz',
     trade_ship: 'Két saját vagy szövetséges kikötő között ingázik · aranyat hoz',
-    king: 'Nem harcol · ha elesik, kiesel',
+    king: 'Nem harcol · ha elesik, a gazdája kiesik',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -439,7 +439,7 @@ export const hu = {
       },
       regicide: {
         victory: 'Minden ellenfél kiesett. A trón a tiéd.',
-        defeat: 'Elveszett a királyod vagy az utolsó városházád. Még egy menet?',
+        defeat: 'Elesett a királyod. Még egy menet?',
       },
       hill: {
         victory: `Összesen ${HILL_MINUTES} percig tartottad a dombot. A győzelem a tiéd.`,
@@ -462,7 +462,7 @@ export const hu = {
       },
       regicide: {
         victory: 'Az ellenséges csapat minden tagja kiesett. A trón a csapatodé.',
-        defeat: 'Elveszett a királyod vagy az utolsó városházád, számodra véget ért a meccs. Még egy menet?',
+        defeat: 'Elesett a királyod, számodra véget ért a meccs. Még egy menet?',
       },
       hill: {
         victory: `Csapatod összesen ${HILL_MINUTES} percig tartotta a dombot. A győzelem a tiétek.`,
@@ -747,6 +747,13 @@ export const hu = {
   /** Building repair (M18). */
   repair: {
     outOfResources: 'Elfogyott a nyersanyag a javításhoz.',
+  },
+  /** The Regicide notices (M19). */
+  kings: {
+    attacked: 'Támadás éri a királyodat!',
+    fellOwn: 'Elesett a királyod!',
+    fellAlly: (id: number) => `Elesett szövetségesed királya (${id}. játékos)!`,
+    fellEnemy: (id: number) => `Elesett a(z) ${id}. játékos királya!`,
   },
   /** The treaty (M16): the HUD countdown and its notices. */
   treaty: {

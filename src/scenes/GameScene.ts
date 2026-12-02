@@ -10,7 +10,7 @@ import type { PlayerManager } from '../game/PlayerManager';
 import { browserSaveStore } from '../save/browserStore';
 import type { MatchState } from '../save/serializer';
 import { SaveStorage, type SlotId } from '../save/storage';
-import { VictoryChecker } from '../game/VictoryChecker';
+import { createVictoryChecker, type VictoryChecker } from '../game/VictoryChecker';
 import { cancelQueuedUnit, queueUnit } from '../ecs/queueUnit';
 import { cancelResearch, startResearch, uiWallet } from '../ecs/research';
 import { gameEvents } from '../game/events';
@@ -29,8 +29,7 @@ import { onCommand } from '../ui/events';
 import { resetUiStore, uiStore } from '../ui/store';
 import type { BuildPlacement } from './game/BuildPlacement';
 import { MatchArt, type LoadArt } from './game/MatchArt';
-import { spawnMissionExtras } from '../campaign/missionStart';
-import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from './game/GameBootstrap';
+import { spawnNewMatch } from './game/GameBootstrap';
 import { hu } from '../i18n/hu';
 import { wirePlayerInput } from './game/PlayerInputWiring';
 import { wirePause } from './game/PauseWiring';
@@ -234,19 +233,14 @@ export class GameScene extends Phaser.Scene {
       this.matchSave = null;
     });
 
-    if (start.kind === 'new') {
-      spawnResourceNodes(this.world, mapData);
-      spawnStartingEntities(this.world, this.players, mapData, start.generated.starts);
-      spawnPresetWalls(this.world, this.players, mapData, start.generated.walls);
-      if (config.mission) spawnMissionExtras(this.world, this.players, mapData, config.mission);
-    }
+    if (start.kind === 'new') spawnNewMatch(this.world, this.players, start.generated, config);
 
     const wonderHoldMs = hasWonderVictory(config.victory) ? WONDER_HOLD_MS : null;
     this.gameElapsedMs = restored?.gameTimeMs ?? 0;
     const time = timeRuleFor(config.victory, this.runner.stats, () => this.gameElapsedMs);
     this.campaign = config.mission ? new CampaignRunner(this.world, this.players, config.mission, { done: restored?.campaign?.done ?? [], stats: this.runner.stats }) : null;
     if (this.campaign && !restored) CampaignRunner.publishStart(this.players);
-    this.victoryChecker = new VictoryChecker(this.world, this.players, wonderHoldMs, time, this.campaign);
+    this.victoryChecker = createVictoryChecker(config.victory, this.world, this.players, time, this.campaign);
     const treatyLeft = config.treatyMin > 0 ? () => this.runner.treatyLeftMs() : null;
     this.hudSync = new HudSync(this.world, this.players, wonderHoldMs, this.runner.stats, time, treatyLeft);
     this.gameOverTriggered = false;

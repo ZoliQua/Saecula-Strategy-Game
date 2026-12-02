@@ -6,6 +6,9 @@ import {
 } from '../../ecs/archetypes/resource';
 import { createVillager } from '../../ecs/archetypes/villager';
 import { createWall } from '../../ecs/archetypes/wall';
+import { createUnit } from '../../ecs/archetypes/createUnit';
+import { spawnMissionExtras } from '../../campaign/missionStart';
+import { kingStartTile } from '../../game/regicide';
 import type { EcsWorld } from '../../ecs/world';
 import type { TileCoord } from '../../iso/coordinates';
 import { generateMap, MapGenerationError, type PresetWall } from '../../map/generator';
@@ -13,7 +16,7 @@ import type { MapData } from '../../map/MapData';
 import { TERRAIN } from '../../map/TerrainTypes';
 import { NAVAL } from '../../config/balance';
 import { townCenterOrigin, villagerSpawnTiles } from '../../map/startLayout';
-import { mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
+import { hasRegicide, mapTiles, playerCount, type GameSetupConfig } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
 
 export interface GeneratedGame {
@@ -98,4 +101,33 @@ export function spawnPresetWalls(
     if (!player) throw new RangeError(`no player for wall slot ${wall.playerIndex}`);
     createWall(world, { tile: wall.tile, playerId: player.id, mapData, underConstruction: false, minStyleAge: wall.minStyleAge, hpMultiplier: buildingHpMultiplier(player) });
   }
+}
+
+/**
+ * Everything a new match starts with, in spawn order: resource nodes,
+ * starting entities, preset walls, a mission's extras and, last, Regicide's
+ * kings (M19): every other entity keeps its id and order, and the walls
+ * already block their tiles when the kings' tiles are chosen.
+ */
+export function spawnNewMatch(
+  world: EcsWorld,
+  players: PlayerManager,
+  game: GeneratedGame,
+  setup: Pick<GameSetupConfig, 'victory' | 'mission'>,
+): void {
+  const { mapData, starts, walls } = game;
+  spawnResourceNodes(world, mapData);
+  spawnStartingEntities(world, players, mapData, starts);
+  spawnPresetWalls(world, players, mapData, walls);
+  if (setup.mission) spawnMissionExtras(world, players, mapData, setup.mission);
+  if (hasRegicide(setup.victory)) spawnKings(world, players, mapData, starts);
+}
+
+/** One king for every player, beside its town centre. */
+function spawnKings(world: EcsWorld, players: PlayerManager, mapData: MapData, starts: readonly TileCoord[]): void {
+  players.all().forEach((player, i) => {
+    const start = starts[i];
+    if (!start) throw new RangeError(`no start tile for player ${player.id}`);
+    createUnit(world, { type: 'king', tile: kingStartTile(start, mapData), playerId: player.id });
+  });
 }

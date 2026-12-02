@@ -1,6 +1,9 @@
+import { WONDER_HOLD_MS } from '../config/balance';
 import type { EcsWorld } from '../ecs/world';
 import { areAllies, areEnemies } from './diplomacy';
+import { hasRegicide, hasWonderVictory, type VictoryMode } from './GameSetupConfig';
 import type { PlayerManager } from './PlayerManager';
+import { hasLivingKing } from './regicide';
 import { timeLeading, type TimeVictoryRule } from './timeVictory';
 
 /** How a match was decided. */
@@ -26,6 +29,12 @@ export type VictoryState =
  * Mission victory (M13, when `mission` is set, right after conquest): the
  * human wins once every objective of the mission is done.
  *
+ * Regicide (M19, when `regicide` is set): a player is also defeated
+ * without a living king (one in a transport's cargo lives), in the same
+ * pass, and is never revived. The human's defeat names `regicide` when
+ * kingless, the victory when some enemy is kingless; else both name
+ * `conquest`.
+ *
  * Time victory (when `time` is set, checked last): once the clock reaches
  * the limit the standing player with the best score wins (timeLeading).
  *
@@ -47,13 +56,15 @@ export class VictoryChecker {
     private readonly time: TimeVictoryRule | null = null,
     /** A campaign mission (M13): every objective done is a victory; null = no mission. */
     private readonly mission: { complete(): boolean } | null = null,
+    /** Regicide (M19): losing the king eliminates too. */
+    private readonly regicide = false,
   ) {}
 
   check(): VictoryState {
     for (const player of this.players.all()) {
       if (player.defeated) continue;
-      const hasTc = this.hasLiveTownCenter(player.id);
-      if (!hasTc) this.players.markDefeated(player.id);
+      const out = !this.hasLiveTownCenter(player.id) || this.lostKing(player.id);
+      if (out) this.players.markDefeated(player.id);
     }
     const human = this.players.human();
     if (!human) return { kind: 'playing' };
@@ -62,10 +73,11 @@ export class VictoryChecker {
     if (human.defeated) {
       // Never an ally: with every enemy fallen in the same tick nobody is named (0).
       const winner = enemies.find((p) => !p.defeated);
-      return { kind: 'defeat', winnerId: winner?.id ?? 0, cause: 'conquest' };
+      return { kind: 'defeat', winnerId: winner?.id ?? 0, cause: this.lostKing(human.id) ? 'regicide' : 'conquest' };
     }
     if (enemies.length > 0 && enemies.every((p) => p.defeated)) {
-      return { kind: 'victory', winnerId: human.id, cause: 'conquest' };
+      const cause = enemies.some((p) => this.lostKing(p.id)) ? 'regicide' : 'conquest';
+      return { kind: 'victory', winnerId: human.id, cause };
     }
     if (this.mission?.complete()) return { kind: 'victory', winnerId: human.id, cause: 'mission' };
     const wonderWinner = this.wonderWinner();
@@ -81,6 +93,10 @@ export class VictoryChecker {
       }
     }
     return { kind: 'playing' };
+  }
+
+  private lostKing(playerId: number): boolean {
+    return this.regicide && !hasLivingKing(this.world, playerId);
   }
 
   private onHumanTeam(humanId: number, playerId: number): boolean {
@@ -114,4 +130,15 @@ export class VictoryChecker {
     }
     return false;
   }
+}
+
+/** The checker of a match in `victory` mode (the game and the headless match judge by it). */
+export function createVictoryChecker(
+  victory: VictoryMode,
+  world: EcsWorld,
+  players: PlayerManager,
+  time: TimeVictoryRule | null = null,
+  mission: { complete(): boolean } | null = null,
+): VictoryChecker {
+  return new VictoryChecker(world, players, hasWonderVictory(victory) ? WONDER_HOLD_MS : null, time, mission, hasRegicide(victory));
 }

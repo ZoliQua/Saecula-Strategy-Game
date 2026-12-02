@@ -1,4 +1,5 @@
 import { civUnitTypes } from '../../game/civUnits';
+import { civsInPlay, hasRegicide, type GameSetupConfig } from '../../game/GameSetupConfig';
 import { BUILDING_BALANCE, isNavalType, UNIT_BALANCE } from '../../config/balance';
 import { tradePostType } from '../../game/trade';
 import {
@@ -32,6 +33,17 @@ export interface ArtPainters {
 export function prewarmUnitTypes(civ: CivId, human: CivId): UnitType[] {
   const types = civUnitTypes(civ);
   return civ === human ? types : types.filter((t) => UNIT_BALANCE[t].age === 1 && !onDemand(t));
+}
+
+/**
+ * The (type, civ) sheets the setup screen prewarms for a new match: only
+ * the civs in play (texture memory and load budget), and in Regicide (M19)
+ * the shared sheet each civ's kings show from the first frame.
+ */
+export function setupPrewarmSheets(config: GameSetupConfig): Array<readonly [UnitType, CivId]> {
+  const civs = civsInPlay(config);
+  const sheets = civs.flatMap((civ) => prewarmUnitTypes(civ, config.civ).map((type) => [type, civ] as const));
+  return hasRegicide(config.victory) ? [...sheets, ...civs.map((civ) => ['king', civ] as const)] : sheets;
 }
 
 /** An AI civ's sheets painted only when such a unit appears: ships (M14) and the trade cart (M17, few AIs trade). */

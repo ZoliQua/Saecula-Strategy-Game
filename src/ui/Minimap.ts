@@ -1,7 +1,11 @@
 import type Phaser from 'phaser';
 import { TILE_HEIGHT, TILE_WIDTH } from '../config/constants';
+import { CROWN } from '../config/visual';
 import type { EcsWorld } from '../ecs/world';
 import { playerColor } from '../game/Player';
+import { livingKings } from '../game/regicide';
+import { drawCrown } from '../iso/art/crown';
+import type { TileCoord } from '../iso/coordinates';
 import { css } from '../iso/art/palette';
 import { FOG_EXPLORED, FOG_UNEXPLORED, type FogOfWarData } from '../map/FogOfWarData';
 import type { MapData } from '../map/MapData';
@@ -26,6 +30,15 @@ const TERRAIN_COLOR: Record<TerrainId, number> = {
  */
 export function minimapShows(ownerId: number, friendly: (ownerId: number) => boolean, visible: () => boolean): boolean {
   return friendly(ownerId) || visible();
+}
+
+/** The tiles the minimap puts a crown on (M19): living kings, under the units' own fog rule. */
+export function minimapCrowns(world: EcsWorld, friendly: (ownerId: number) => boolean, visible: (at: TileCoord) => boolean): TileCoord[] {
+  const tiles: TileCoord[] = [];
+  for (const king of livingKings(world)) {
+    if (minimapShows(king.owner.playerId, friendly, () => visible(king.position))) tiles.push(king.position);
+  }
+  return tiles;
 }
 
 /**
@@ -171,6 +184,12 @@ export class Minimap {
       else ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+    }
+    // Crowns last, over every dot (M19).
+    const fog = this.fog;
+    for (const { tx, ty } of minimapCrowns(this.world, this.friendly, (at) => !fog || fog.isVisible(at.tx, at.ty))) {
+      const [cx, cy] = this.toMini((tx - ty) * hw, (tx + ty) * hh);
+      drawCrown(ctx, cx, cy - CROWN.minimapRise * this.dpr, CROWN.minimapWidth * this.dpr, CROWN.minimapHeight * this.dpr, this.dpr);
     }
   }
 

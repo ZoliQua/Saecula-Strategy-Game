@@ -53,6 +53,14 @@ describe('gameOverBody (M16 team wording)', () => {
     expect(gameOverBody({ victory: false, cause: 'time', teams: true })).toContain('ellenséges csapat több pontot');
   });
 
+  it('the Regicide defeat names the king only: a lost town centre reports conquest (M19)', () => {
+    for (const teams of [false, true]) {
+      const line = gameOverBody({ victory: false, cause: 'regicide', teams });
+      expect(line).toMatch(/kir[aá]ly/i);
+      expect(line).not.toMatch(/városház/i);
+    }
+  });
+
   it("a mission's closing text wins over any line", () => {
     expect(gameOverBody({ victory: true, cause: 'wonder', teams: true, missionText: 'Kész.' })).toBe('Kész.');
   });

@@ -15,6 +15,7 @@ import { AmbientFxSystem } from '../../ecs/systems/AmbientFxSystem';
 import { BuildingFxSystem } from '../../ecs/systems/BuildingFxSystem';
 import { CombatFxSystem } from '../../ecs/systems/CombatFxSystem';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
+import { CrownSystem } from '../../ecs/systems/CrownSystem';
 import { LandmarkSystem } from '../../ecs/systems/LandmarkSystem';
 import { MonkSystem } from '../../ecs/systems/MonkSystem';
 import { ConstructionSystem } from '../../ecs/systems/ConstructionSystem';
@@ -42,6 +43,7 @@ import type { EcsWorld } from '../../ecs/world';
 import { AGE_UP_FX } from '../../config/visual';
 import { areAllies, isFriendly } from '../../game/diplomacy';
 import { tradeRouteView } from '../../game/trade';
+import { KingWatch } from '../../game/kingWatch';
 import { gameEvents } from '../../game/events';
 import type { Difficulty } from '../../game/GameSetupConfig';
 import type { PlayerManager } from '../../game/PlayerManager';
@@ -67,6 +69,8 @@ export interface SystemRunnerOptions {
   readonly wonderVictory: boolean;
   /** The match ends on score at TIME_VICTORY.limitMs: the AIs see the limit. */
   readonly timeVictory?: boolean;
+  /** Regicide (M19): the kings wear crowns and the human hears of them (default false). */
+  readonly regicide?: boolean;
   /** Game time the match starts at (a save's clock); default 0. */
   readonly startMs?: number;
   /** The match seed (config.seed). */
@@ -130,6 +134,9 @@ export class SystemRunner {
   private readonly buildingFx: BuildingFxSystem;
   private readonly cliffSort: CliffBuildingSort;
   private readonly xray: UnitXRay;
+  /** Regicide only (M19). */
+  private readonly crowns: CrownSystem | null;
+  private readonly kingWatch: KingWatch | null;
   /** Game sounds from the ECS; `combatNear()` feeds the combat music. */
   readonly audioWatch: AudioWatch;
   private readonly camera: Phaser.Cameras.Scene2D.Camera;
@@ -240,6 +247,9 @@ export class SystemRunner {
     this.xray = new UnitXRay(scene, world, tileMap.coverSources());
     this.selection.setRaisedDepth((e) => this.xray.raisedDepth(e));
     this.buildingFx.setFogContext(this.fogData);
+    const regicide = options.regicide === true;
+    this.crowns = regicide ? new CrownSystem(scene, world, (e) => this.xray.raisedDepth(e)) : null;
+    this.kingWatch = regicide ? new KingWatch(world, players, this.humanId, showHudNotice) : null;
     this.evictTimer = scene.time.addEvent({
       ...evictionTimer(restore !== undefined),
       loop: true,
@@ -332,12 +342,14 @@ export class SystemRunner {
     }
     this.population.update();
     this.stats.update(delta);
+    this.kingWatch?.update(this.gameMs);
     this.fogOfWar.update(delta);
     this.tileMap.applyFog(this.fogData);
     this.render.update();
     this.xray.update();
     // After the X-ray: selection rings follow this frame's raised depths (xray.raisedDepth).
     this.selection.update();
+    this.crowns?.update();
     this.buildingFx.update(delta);
     this.projectileRender.update();
     this.healthBars.update();
@@ -369,6 +381,8 @@ export class SystemRunner {
     this.evictTimer.remove();
     this.cliffSort.destroy();
     this.xray.destroy();
+    this.crowns?.destroy();
+    this.kingWatch?.destroy();
     this.ageUpFx.destroy();
     this.buildingFx.destroy();
     this.ambientFx.destroy();

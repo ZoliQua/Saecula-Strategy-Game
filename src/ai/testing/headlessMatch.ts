@@ -1,4 +1,4 @@
-import { applyMissionStart, spawnMissionExtras } from '../../campaign/missionStart';
+import { applyMissionStart } from '../../campaign/missionStart';
 import { missionSetup, type ScenarioId } from '../../campaign/missions';
 import { DEFAULT_CIV } from '../../config/civs';
 import { CombatSystem } from '../../ecs/systems/CombatSystem';
@@ -25,12 +25,13 @@ import { FogOfWarData } from '../../map/FogOfWarData';
 import type { MapData } from '../../map/MapData';
 import type { StatefulRng } from '../../map/random';
 import { PathBudget } from '../../map/pathBudget';
-import { spawnPresetWalls, spawnResourceNodes, spawnStartingEntities } from '../../scenes/game/GameBootstrap';
+import { spawnNewMatch } from '../../scenes/game/GameBootstrap';
 import { resetUiStore } from '../../ui/store';
 import type { PersonalityId } from '../../config/aiPersonality';
 import {
   clampAllies,
   defaultSetupConfig,
+  hasRegicide,
   hasTimeVictory,
   hasWonderVictory,
   MAP_SIZE_IDS,
@@ -42,12 +43,14 @@ import {
   type GameSpeed,
   type StartResourcesId,
   type TreatyMinutes,
+  type VictoryMode,
 } from '../../game/GameSetupConfig';
 import { restoreMatch } from '../../save/deserializer';
 import type { SaveData } from '../../save/schema';
 import { serializeMatch, type MatchState } from '../../save/serializer';
 import { MatchStats } from '../../stats/MatchStats';
-import { TimeLimitWatch } from '../../game/timeVictory';
+import { TimeLimitWatch, timeRuleFor } from '../../game/timeVictory';
+import { createVictoryChecker, type VictoryState } from '../../game/VictoryChecker';
 import type { CivId } from '../../types';
 import { AIPlayer, type AIStrategy } from '../AIPlayer';
 import { applyDifficulty } from '../createStrategy';
@@ -82,6 +85,8 @@ export interface HeadlessMatchOptions {
   readonly mission?: ScenarioId;
   /** The match ends on score at the time limit: the AIs see the limit (default false). */
   readonly timeVictory?: boolean;
+  /** The victory mode, in place of the two flags above (M19: Regicide spawns kings and judges every step). */
+  readonly victory?: VictoryMode;
   /** Personality per AI player, set on the Player before its strategy is built (default: none). */
   readonly personality?: (playerId: number) => PersonalityId | undefined;
   /** AIs on the human's team (M16 setup `allies`, clamped to 0..aiCount - 1; default 0). Stored in the setup only. */
@@ -110,6 +115,12 @@ export interface HeadlessMatch {
   /** Advances every gameplay system (no rendering) by `stepMs`, `totalMs / stepMs` times. */
   run(totalMs: number, stepMs: number, onStep?: (timeMs: number) => boolean | void): void;
   readonly timeMs: () => number;
+  /**
+   * The match judged as the game judges it, campaign objectives aside: this
+   * marks the defeated; the first decided result stands. Regicide also
+   * judges after every step, as every frame of the game does.
+   */
+  judge(): VictoryState;
   /** The match as a save; needs every AI built with an `rng` and no AI-driven human. */
   snapshot(now?: Date): SaveData;
 }
@@ -129,7 +140,7 @@ function setupOf(options: HeadlessMatchOptions): GameSetupConfig {
     template: options.template ?? 'meadow',
     mapSize,
     difficulty: options.difficulty?.(2) ?? 'medium',
-    victory: victoryOf(options.wonderVictory === true, options.timeVictory === true),
+    victory: options.victory ?? victoryOf(options.wonderVictory === true, options.timeVictory === true),
     allies: clampAllies(options.allies ?? 0, options.aiCount),
     treatyMin: options.treatyMin ?? 0,
     startResources: options.startResources ?? 'normal',
@@ -165,10 +176,7 @@ export function createHeadlessMatch(options: HeadlessMatchOptions): HeadlessMatc
   const civs = options.civs ?? matchCivs(options.mission ? setup : { ...defaultSetupConfig(options.seed), aiCount: options.aiCount });
   const players = createPlayers(civs.human, civs.ais, startResourcesFor(setup), setup.allies);
   if (options.mission) applyMissionStart(players, options.mission);
-  spawnResourceNodes(world, map);
-  spawnStartingEntities(world, players, map, generated.playerStarts);
-  spawnPresetWalls(world, players, map, generated.walls);
-  if (options.mission) spawnMissionExtras(world, players, map, options.mission);
+  spawnNewMatch(world, players, { mapData: map, starts: generated.playerStarts, walls: generated.walls }, setup);
   const ais = players.ais().map((p) => {
     if (options.difficulty) applyDifficulty(p, options.difficulty(p.id));
     const personality = options.personality?.(p.id);
@@ -289,6 +297,16 @@ function assemble(parts: MatchParts): HeadlessMatch {
     population: new PopulationSystem(world, 1, players),
   };
   const timeLimit = hasTimeVictory(setup.victory) ? new TimeLimitWatch(players, stats, now) : null;
+  const checker = createVictoryChecker(setup.victory, world, players, timeRuleFor(setup.victory, stats, () => now));
+  let decided: VictoryState | null = null;
+  const judge = (): VictoryState => {
+    if (decided) return decided;
+    const state = checker.check();
+    if (state.kind !== 'playing') decided = state;
+    return state;
+  };
+  // Only in Regicide: stepping never marked anybody in the older modes, and their sims must not move.
+  const judgesEachStep = hasRegicide(setup.victory);
   const step = (dt: number) => {
     now += dt;
     paths.reset(dt);
@@ -316,6 +334,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     humanAi?.update(withEnemy(base, humanEnemy()), dt);
     systems.population.update();
     stats.update(dt);
+    if (judgesEachStep) judge();
   };
   return {
     matchId: parts.matchId,
@@ -326,6 +345,7 @@ function assemble(parts: MatchParts): HeadlessMatch {
     setup,
     stats,
     timeMs: () => now,
+    judge,
     snapshot(date) {
       if (humanAi) throw new Error('A headless match with an AI-driven human cannot be saved');
       const fogs = new Map<number, FogOfWarData>();

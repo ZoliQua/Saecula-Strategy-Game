@@ -14,7 +14,8 @@ export function unitSheetSlot(type: UnitType): SheetSlot {
  * The unit type whose sheet draws `type` for a civ: the type itself, but
  * for the king the civ's unit of the knight slot (the Hungarian hussar).
  * Every texture key, look, geometry and portrait lookup goes through
- * this, so the king never gets a sheet or cache entry of its own.
+ * this, so the king never gets a sheet, geometry or portrait of its own
+ * (the layout cache needs no civ and keeps an equal copy per raw type).
  */
 export function unitSheetType(type: UnitType, civ: CivId): UnitType {
   return type === 'king' ? civUnitType(civ, unitSheetSlot(type)) : type;

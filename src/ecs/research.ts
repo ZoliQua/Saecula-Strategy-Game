@@ -1,5 +1,6 @@
 import { isTechAvailable } from '../game/availability';
 import type { Player } from '../game/Player';
+import { isRetiredTownCentre } from '../game/regicide';
 import { TECH_SPECS } from '../game/technologies';
 import type { Resources, TechId } from '../types';
 import { uiStore } from '../ui/store';
@@ -31,6 +32,7 @@ export function uiWallet(): Wallet {
 export type ResearchFailure =
   | 'wrong-building'
   | 'destroyed'
+  | 'owner-defeated'
   | 'under-construction'
   | 'already-researching'
   | 'already-in-progress'
@@ -47,7 +49,8 @@ export interface StartResearchResult {
  * Starts `techId` on `building`: one research per building, and a
  * building with a non-empty training queue cannot research. The cost
  * is paid up front. A tech already running at another building of the
- * same player is refused (each tech is researched once).
+ * same player is refused (each tech is researched once), and so is any
+ * at a defeated player's town centre (M19, isRetiredTownCentre).
  */
 export function startResearch(
   world: EcsWorld,
@@ -61,6 +64,7 @@ export function startResearch(
     return { ok: false, reason: 'wrong-building' };
   }
   if (building.dying) return { ok: false, reason: 'destroyed' };
+  if (isRetiredTownCentre(building, player)) return { ok: false, reason: 'owner-defeated' };
   if (building.underConstruction) return { ok: false, reason: 'under-construction' };
   if (building.research) return { ok: false, reason: 'already-researching' };
   if ((building.trainingQueue?.entries.length ?? 0) > 0) {

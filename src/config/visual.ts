@@ -219,6 +219,24 @@ export const TERRAIN_LOOK = {
 } as const;
 
 /** Unit X-ray silhouettes behind cliffs, buildings and trees (UnitXRay). Sizes in world px. */
+/** The king's crown (M19): the HUD's amber accent, unlit; sizes in world px. */
+export const CROWN = {
+  gold: 0xffcf8f,
+  band: 0xf5a857,
+  edge: 0x2b1608,
+  width: 14,
+  height: 10,
+  /** Above the feet: clears the tallest idle or walking frame of every knight-slot sheet (43.5) and its HP bar. */
+  lift: 44,
+  /** Over the body and its team layer (body + 0.0001), under whatever stands in front. */
+  depthAboveBody: 0.0002,
+  /** On the minimap, CSS px. */
+  minimapWidth: 10,
+  minimapHeight: 7,
+  /** Its gap above the unit's centre: the owner's dot stays readable. */
+  minimapRise: 2,
+} as const;
+
 export const XRAY = {
   /** Opacity of the team-colour silhouette. */
   alpha: 0.55,

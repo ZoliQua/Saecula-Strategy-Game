@@ -87,3 +87,20 @@ describe('game over in teams (M16)', () => {
     expect(ffa.every((r) => !('ally' in r))).toBe(true);
   });
 });
+
+describe('decidedWinner in Regicide (M19)', () => {
+  const defeat = { kind: 'defeat', winnerId: 2, cause: 'regicide' } as const;
+  const players = (out: readonly number[]) => [1, 2, 3].map((id) => createPlayer({ id, isHuman: id === 1, defeated: out.includes(id) }));
+
+  it('the human kingless with two AIs standing: nobody is crowned', () => {
+    expect(decidedWinner(defeat, players([1]))).toBeNull();
+  });
+
+  it('one AI left standing: it won', () => {
+    expect(decidedWinner(defeat, players([1, 3]))).toBe(2);
+  });
+
+  it('human and the last enemy together: nobody', () => {
+    expect(decidedWinner({ ...defeat, winnerId: 0 }, players([1, 2, 3]))).toBeNull();
+  });
+});

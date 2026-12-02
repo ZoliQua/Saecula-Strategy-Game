@@ -4,6 +4,7 @@ import { BUILDING_SPECS } from '../ecs/archetypes/building';
 import { buildingTexture, registerLitArt } from './buildingTextures';
 import { paintConstructionSite } from './art/buildings';
 import { paintWallBanner } from './art/walls/wallBanner';
+import { paintCrown } from './art/crown';
 import { ART_SCALE, makeCanvas, registerCanvas, registerStrip } from './art/canvas';
 import {
   paintArrow,
@@ -66,6 +67,7 @@ export const FX_KEYS = {
   glow: 'fx_glow',
   explosion: 'fx_explosion',
   wallBanner: 'fx_wall_banner',
+  crown: 'fx_crown',
 } as const;
 
 export function constructionKey(size: number): string {
@@ -127,6 +129,7 @@ function generateFx(scene: Phaser.Scene): void {
   radial(FX_KEYS.dust, 32, [[0, 'rgba(214,190,140,.8)'], [1, 'rgba(214,190,140,0)']]);
   radial(FX_KEYS.spark, 16, [[0, 'rgba(255,250,220,1)'], [0.4, 'rgba(255,200,90,.9)'], [1, 'rgba(255,140,40,0)']]);
   radial(FX_KEYS.mote, 12, [[0, 'rgba(255,248,210,.95)'], [1, 'rgba(255,248,210,0)']]);
+  if (!scene.textures.exists(FX_KEYS.crown)) registerCanvas(scene, FX_KEYS.crown, paintCrown());
   generateCombatFx(scene);
   generateDamageArt(scene);
 }

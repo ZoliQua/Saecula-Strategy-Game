@@ -39,6 +39,8 @@ function fakeScene() {
   const textures = new Map<string, object>();
   const created: string[] = [];
   const frame = { n: 0 };
+  /** The game objects on screen (what the eviction's in-use scan reads). */
+  const list: object[] = [];
   const tm = {
     exists: (key: string) => textures.has(key),
     get: (key: string) => textures.get(key),
@@ -51,17 +53,26 @@ function fakeScene() {
       return texture;
     },
   };
-  const scene = { textures: tm, game: { loop: { get frame() { return frame.n; } }, renderer: {} }, add: { sprite } };
+  const scene = { textures: tm, game: { loop: { get frame() { return frame.n; } }, renderer: {} }, add: { sprite }, children: { list }, time: { now: 0 } };
   function sprite(_x: number, _y: number, key: string) {
     const s = {
       scene,
       texture: { key },
+      frame: { name: 0 },
       setScale: () => s,
+      setPosition: () => s,
+      setDepth: () => s,
+      setVisible: () => s,
+      setAlpha: () => s,
+      setFrame: () => s,
+      setFlipX: () => s,
+      destroy: () => void list.splice(list.indexOf(s), 1),
       setOrigin: () => s,
       setTint: () => s,
       setPipeline: () => s,
       setTexture: (next: string) => ((s.texture.key = next), s),
     };
+    list.push(s);
     return s;
   }
   return { scene: scene as unknown as Phaser.Scene, created, textures, frame };
@@ -94,6 +105,20 @@ describe('king art (M19)', () => {
   it.each(['hungarian', 'english'] as const)('%s: every pixel is the knight slot’s', (civ) => {
     expect(unitPixelsHash('king', civ)).toBe(unitPixelsHash(slotOf(civ), civ));
     expect(unitGeometryHash('king', civ)).toBe(unitGeometryHash(slotOf(civ), civ));
+  });
+
+  it.each(CIV_IDS)('%s: every posed figure has the knight slot’s primitives', async (civ) => {
+    const { buildFigure } = await import('./units/rig');
+    const { frameContent, unitSheetLayout } = await import('./units/layout');
+    const slotType = slotOf(civ);
+    const layout = unitSheetLayout(slotType);
+    for (let k = 0; k < layout.frameCount; k++) {
+      const { slot, anim, i } = frameContent(layout, k);
+      const king = buildFigure('king', civ, slot, anim, i);
+      const unit = buildFigure(slotType, civ, slot, anim, i);
+      expect(king.prims, `frame ${k}`).toEqual(unit.prims);
+      expect(king.mats.list, `frame ${k}`).toEqual(unit.mats.list);
+    }
   });
 
   it('every other type keeps its own sheet', async () => {
@@ -154,6 +179,37 @@ describe('king art (M19)', () => {
     expect(unitArt(scene, 'hussar', 'hungarian', true)).toBe(art);
     forgetUnitArt(none, new Set());
     releaseAbsentCivArt(scene, none, new Set());
+    expect(textures.has(key)).toBe(false);
+  });
+
+  it('a converted (originCiv) unit shares the eviction: the sheet stays while either shows it', async () => {
+    const { RenderSystem } = await import('../../ecs/systems/RenderSystem');
+    const { createUnit } = await import('../../ecs/archetypes/createUnit');
+    const { createEcsWorld } = await import('../../ecs/world');
+    const { forgetUnitArt, unitArt, unitTextureKey } = await import('./units/UnitArt');
+    const { scene, textures, frame } = fakeScene();
+    forgetUnitArt(new Set(), new Set());
+    frame.n = 1000;
+    const key = unitTextureKey('hussar', 'hungarian');
+    const art = unitArt(scene, 'hussar', 'hungarian', true);
+    const world = createEcsWorld();
+    const render = new RenderSystem(scene, world);
+    render.setCivSource((id) => (id === 1 ? 'hungarian' : 'english'));
+    const king = createUnit(world, { type: 'king', tile: { tx: 2, ty: 2 }, playerId: 1 });
+    // A hussar converted by the English player keeps the Hungarian look.
+    const converted = createUnit(world, { type: 'hussar', tile: { tx: 4, ty: 4 }, playerId: 2 });
+    world.addComponent(converted, 'originCiv', { civ: 'hungarian' });
+    render.update();
+    expect([king.sprite?.texture.key, converted.sprite?.texture.key]).toEqual([key, key]);
+    const english = new Set<CivId>(['english']);
+    render.releaseAbsentCivs(english);
+    expect(textures.has(key)).toBe(true);
+    world.remove(king);
+    render.releaseAbsentCivs(english);
+    expect(textures.has(key)).toBe(true);
+    expect(unitArt(scene, 'hussar', 'hungarian', true)).toBe(art);
+    world.remove(converted);
+    render.releaseAbsentCivs(english);
     expect(textures.has(key)).toBe(false);
   });
 
