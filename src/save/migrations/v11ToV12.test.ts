@@ -21,7 +21,6 @@ describe('v11 → v12 migration', () => {
     expect(v11ToV12(data)).toEqual(expected);
     expect(data.stats.players['1']).toEqual({ gathered: 5 });
     expect(migrate(data, 12)).toEqual({ ok: true, data: { ...expected, schemaVersion: 12 } });
-    expect(SCHEMA_VERSION).toBe(12);
   });
 
   it('leaves stats that are not objects for the schema to reject', () => {

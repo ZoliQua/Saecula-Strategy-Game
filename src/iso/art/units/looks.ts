@@ -1,6 +1,5 @@
 import { CIV_DEFS, type UnitLookId } from '../../../config/civs';
 import type { BaseUnitType, CivId, UnitType } from '../../../types';
-import { baseUnitType } from '../../../game/civUnits';
 import { ENGLISH_LOOKS } from './english/englishLooks';
 import { FINNISH_LOOKS } from './finnish/finnishLooks';
 import { FRENCH_LOOKS } from './french/frenchLooks';
@@ -13,6 +12,7 @@ import type { HorseLook } from './horse';
 import type { HumanLook } from './humanoid';
 import { M, type Material } from './materials';
 import type { ContactShadow } from './raster';
+import { unitSheetSlot, unitSheetType, type SheetSlot } from './sheetType';
 import type { ShipLook } from './ship';
 import { tradeCartLook, type WagonLook } from './wagon';
 
@@ -29,12 +29,12 @@ export type UnitLook =
 const BASE_TRANSPORT: UnitLook = { kind: 'ship', ship: { ship: 'transport' } };
 
 /**
- * What every unit wears and carries: the shared base look (the
+ * What every sheet slot wears and carries: the shared base look (the
  * Hungarian look), which a civ's override map replaces type by type.
  * Team colour (M.team) goes where it reads best at a glance: tunics,
  * coats, shields, hoods, caparisons.
  */
-export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
+const SLOT_LOOKS: Readonly<Record<SheetSlot, UnitLook>> = {
   // M11: a hooded habit in the team colour (ownership reads at a glance) and a crook.
   monk: {
     kind: 'foot',
@@ -196,6 +196,9 @@ export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = {
   trade_ship: BASE_TRANSPORT,
 };
 
+/** The base look of every base type: its slot's own, and for the king (M19) that of the slot it is drawn from. */
+export const BASE_UNIT_LOOKS: Readonly<Record<BaseUnitType, UnitLook>> = { ...SLOT_LOOKS, king: SLOT_LOOKS[unitSheetSlot('king')] };
+
 /** Per unit-look id: the types whose look differs from the base. */
 export const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record<UnitType, UnitLook>>>>> = {
   hungarian: HUNGARIAN_LOOKS,
@@ -208,9 +211,9 @@ export const LOOK_OVERRIDES: Readonly<Record<UnitLookId, Readonly<Partial<Record
   finnish: FINNISH_LOOKS,
 };
 
-/** The look a civ's units of a type wear (civ registry unitLook → override, else the look of the base unit it replaces). */
+/** The look a civ's units of a type wear: that of the type whose sheet draws it (civ registry unitLook → override, else the look of its base slot). */
 export function unitLook(type: UnitType, civ: CivId): UnitLook {
-  return LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][type] ?? BASE_UNIT_LOOKS[baseUnitType(type)];
+  return LOOK_OVERRIDES[CIV_DEFS[civ].unitLook][unitSheetType(type, civ)] ?? SLOT_LOOKS[unitSheetSlot(type)];
 }
 
 export function contactShadow(look: UnitLook): ContactShadow {

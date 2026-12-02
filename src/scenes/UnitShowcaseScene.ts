@@ -31,7 +31,7 @@ export interface ShowcaseOptions {
 
 const BASE_ORDER: UnitType[] = ['villager', 'swordsman', 'archer', 'pikeman', 'crossbowman', 'musketeer', 'scout', 'knight', 'cavalry', 'cannon', 'monk'];
 /** Base types in showcase order, each followed by the unique units (M8) replacing it. */
-const TYPES: UnitType[] = BASE_ORDER.flatMap((base) => [
+export const SHOWCASE_TYPES: readonly UnitType[] = BASE_ORDER.flatMap((base) => [
   base,
   ...(Object.keys(UNIT_BALANCE) as UnitType[]).filter((t) => UNIT_BALANCE[t].replaces === base),
 ]);
@@ -70,7 +70,7 @@ export class UnitShowcaseScene extends Phaser.Scene {
     // Silhouettes are unlit: no lights or cast shadows.
     this.lighting = silhouette ? null : new LightManager(this, { phase: this.opts.phase ?? 0.4, fixed: true });
     const civs = this.opts.civs ?? [this.opts.civ ?? MENU_CIV];
-    const types = TYPES.filter((type) => this.opts.types?.includes(type) ?? true);
+    const types = SHOWCASE_TYPES.filter((type) => this.opts.types?.includes(type) ?? true);
     // A unique unit shows only for the civ that trains it, next to the base unit it replaces.
     const rows = types.flatMap((type, t) => civs.filter((civ) => !isUniqueUnit(type) || canCivTrain(civ, type)).map((civ) => ({ type, civ, t })));
     const columns = this.opts.teams

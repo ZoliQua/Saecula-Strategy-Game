@@ -17,11 +17,19 @@ export function civUnitType(civ: CivId, base: BaseUnitType): UnitType {
   return UNIT_BALANCE[unique].replaces === base ? unique : base;
 }
 
-/** All 10 unit types a civ can train, in BASE_UNIT_TYPES order. */
+/** Whether any building trains `t` (all but the king, M19). */
+export function isTrainableUnit(t: UnitType): boolean {
+  return UNIT_BALANCE[t].trainers.length > 0;
+}
+
+/** The base types that can be trained, in BASE_UNIT_TYPES order. */
+export const TRAINABLE_UNIT_TYPES: readonly BaseUnitType[] = BASE_UNIT_TYPES.filter(isTrainableUnit);
+
+/** All unit types a civ can train, in BASE_UNIT_TYPES order. */
 export function civUnitTypes(civ: CivId): UnitType[] {
-  return BASE_UNIT_TYPES.map((b) => civUnitType(civ, b));
+  return TRAINABLE_UNIT_TYPES.map((b) => civUnitType(civ, b));
 }
 
 export function canCivTrain(civ: CivId, t: UnitType): boolean {
-  return civUnitType(civ, baseUnitType(t)) === t;
+  return isTrainableUnit(t) && civUnitType(civ, baseUnitType(t)) === t;
 }

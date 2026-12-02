@@ -1,5 +1,5 @@
-import { baseUnitType } from '../../../game/civUnits';
-import type { BaseUnitType, Direction, UnitType } from '../../../types';
+import type { Direction, UnitType } from '../../../types';
+import { unitSheetSlot, type SheetSlot } from './sheetType';
 
 /**
  * Frame layout of a unit sprite sheet (pure, no DOM).
@@ -102,7 +102,9 @@ export function paintOrder(layout: SheetLayout): number[] {
 }
 
 /** Villagers also have a work (tool swing) animation. */
-export function unitAnims(type: UnitType): readonly UnitAnim[] {
+export function unitAnims(unitType: UnitType): readonly UnitAnim[] {
+  // M19: the king has the layout of the sheet it is drawn from.
+  const type = unitSheetSlot(unitType);
   if (type === 'villager') return ['idle', 'walk', 'attack', 'work', 'death'];
   // The monk never attacks: its "work" frames are the heal / conversion channel (M11).
   if (type === 'monk') return ['idle', 'walk', 'work', 'death'];
@@ -114,7 +116,7 @@ export function unitAnims(type: UnitType): readonly UnitAnim[] {
 }
 
 /** Ground covered by one walk / gallop / wheel cycle (tiles), so feet don't skate. */
-export const WALK_CYCLE_TILES: Readonly<Record<BaseUnitType, number>> = {
+export const WALK_CYCLE_TILES: Readonly<Record<SheetSlot, number>> = {
   villager: 0.85,
   swordsman: 0.85,
   archer: 0.85,
@@ -136,9 +138,9 @@ export const WALK_CYCLE_TILES: Readonly<Record<BaseUnitType, number>> = {
   trade_ship: 2.4,
 };
 
-/** Walk-cycle ground length of a unit type (unique units use their base unit's). */
+/** Walk-cycle ground length of a unit type (unique units use their base unit's, the king its sheet slot's). */
 export function walkCycleTiles(type: UnitType): number {
-  return WALK_CYCLE_TILES[baseUnitType(type)];
+  return WALK_CYCLE_TILES[unitSheetSlot(type)];
 }
 
 const layouts = new Map<UnitType, SheetLayout>();

@@ -1,7 +1,10 @@
-import { CIV_BONUS, LANDMARK, NAVAL } from '../config/balance';
+import { CIV_BONUS, HILL, LANDMARK, NAVAL } from '../config/balance';
 
 /** A balance fraction as a whole percent, e.g. 0.15 -> "15%". */
 const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
+
+/** The minutes a team must hold the hill (M19). */
+const HILL_MINUTES = HILL.holdMs / 60_000;
 
 /** What a tutorial hint is filled with (hu.campaign.tutorial.hints). */
 export interface TutorialHintArgs {
@@ -106,7 +109,14 @@ export const hu = {
     loading: 'Betöltés…',
     summary: (players: number, tiles: number) => `${players} játékos · ${tiles}×${tiles} mező`,
     victory: 'Győzelem',
-    victories: { conquest: 'Hódítás', conquest_wonder: 'Hódítás vagy Csoda', conquest_time: 'Hódítás vagy idő', all: 'Mind' },
+    victories: {
+      conquest: 'Hódítás',
+      conquest_wonder: 'Hódítás vagy Csoda',
+      conquest_time: 'Hódítás vagy idő',
+      all: 'Mind',
+      regicide: 'Királygyilkos',
+      hill: 'A domb ura',
+    },
     allies: 'Szövetségesek',
     /** Under the allies row: who is on whose side (M16). */
     alliesHint: (allies: number, enemies: number) =>
@@ -194,6 +204,7 @@ export const hu = {
     frigate: 'Fregatt',
     trade_cart: 'Kereskedőkocsi',
     trade_ship: 'Kereskedőhajó',
+    king: 'Király',
   },
   buildings: {
     town_center: 'Városháza',
@@ -379,6 +390,7 @@ export const hu = {
     frigate: 'Ágyús hadihajó · épület- és hajórombolás',
     trade_cart: 'Két saját vagy szövetséges piac között ingázik · aranyat hoz',
     trade_ship: 'Két saját vagy szövetséges kikötő között ingázik · aranyat hoz',
+    king: 'Nem harcol · ha elesik, kiesel',
   },
   buildingRoles: {
     town_center: 'Falusiak képzése · nyersanyag-lerakó',
@@ -425,6 +437,14 @@ export const hu = {
         victory: 'Minden célt teljesítettél. A küldetés sikerült.',
         defeat: 'A küldetés nem sikerült. Próbáld újra!',
       },
+      regicide: {
+        victory: 'Minden ellenfél kiesett. A trón a tiéd.',
+        defeat: 'Elveszett a királyod vagy az utolsó városházád. Még egy menet?',
+      },
+      hill: {
+        victory: `Összesen ${HILL_MINUTES} percig tartottad a dombot. A győzelem a tiéd.`,
+        defeat: `Egy ellenfél összesen ${HILL_MINUTES} percig tartotta a dombot. Még egy menet?`,
+      },
     },
     /** Body lines in a team match (M16): the team wins or loses together, the human loses alone when their town centres fall. */
     teamBodies: {
@@ -440,12 +460,20 @@ export const hu = {
         victory: 'Lejárt a 60 perc, és csapatod összpontszáma a legmagasabb. A győzelem a tiétek.',
         defeat: 'Lejárt a 60 perc, és az ellenséges csapat több pontot gyűjtött. Még egy menet?',
       },
+      regicide: {
+        victory: 'Az ellenséges csapat minden tagja kiesett. A trón a csapatodé.',
+        defeat: 'Elveszett a királyod vagy az utolsó városházád, számodra véget ért a meccs. Még egy menet?',
+      },
+      hill: {
+        victory: `Csapatod összesen ${HILL_MINUTES} percig tartotta a dombot. A győzelem a tiétek.`,
+        defeat: `Az ellenséges csapat összesen ${HILL_MINUTES} percig tartotta a dombot. Még egy menet?`,
+      },
     },
     backToMenu: 'Vissza a főmenübe',
     statsHeader: 'Statisztika',
     durationLabel: 'Játékidő',
     causeLabel: 'Döntött',
-    causes: { conquest: 'Hódítás', wonder: 'Csoda', time: 'Idő', mission: 'Küldetés' },
+    causes: { conquest: 'Hódítás', wonder: 'Csoda', time: 'Idő', mission: 'Küldetés', regicide: 'Királygyilkos', hill: 'A domb ura' },
     /** The player table. */
     players: 'Játékosok',
     human: 'Te',

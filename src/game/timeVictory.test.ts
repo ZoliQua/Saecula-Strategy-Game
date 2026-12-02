@@ -15,9 +15,9 @@ describe('time victory', () => {
   });
 
   it('modes: which victories each one enables', () => {
-    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder', 'conquest_time', 'all']);
-    expect(VICTORY_MODES.map(hasWonderVictory)).toEqual([false, true, false, true]);
-    expect(VICTORY_MODES.map(hasTimeVictory)).toEqual([false, false, true, true]);
+    expect(VICTORY_MODES).toEqual(['conquest', 'conquest_wonder', 'conquest_time', 'all', 'regicide', 'hill']);
+    expect(VICTORY_MODES.map(hasWonderVictory)).toEqual([false, true, false, true, false, false]);
+    expect(VICTORY_MODES.map(hasTimeVictory)).toEqual([false, false, true, true, false, false]);
   });
 
   it('leader: highest score among standing players', () => {

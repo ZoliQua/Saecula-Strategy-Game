@@ -32,9 +32,11 @@ export const AVAILABLE_TEMPLATES: readonly MapTemplate[] = MAP_TEMPLATES;
 /**
  * How a match can be won (CLAUDE.md §4.8): conquest is always on; a Wonder
  * held WONDER_HOLD_MS and / or the best score at TIME_VICTORY.limitMs are optional.
+ * Regicide and King of the Hill (M19) have neither: `all` does not include them.
  */
-export type VictoryMode = 'conquest' | 'conquest_wonder' | 'conquest_time' | 'all';
-export const VICTORY_MODES: readonly VictoryMode[] = ['conquest', 'conquest_wonder', 'conquest_time', 'all'];
+export type VictoryMode = 'conquest' | 'conquest_wonder' | 'conquest_time' | 'all' | 'regicide' | 'hill';
+export const VICTORY_MODES: readonly VictoryMode[] = ['conquest', 'conquest_wonder', 'conquest_time', 'all', 'regicide', 'hill'];
+const DEFAULT_VICTORY: VictoryMode = 'conquest_wonder';
 
 /** The mode lets a held Wonder win. */
 export function hasWonderVictory(mode: VictoryMode): boolean {
@@ -44,6 +46,24 @@ export function hasWonderVictory(mode: VictoryMode): boolean {
 /** The mode ends the match on score at the time limit. */
 export function hasTimeVictory(mode: VictoryMode): boolean {
   return mode === 'conquest_time' || mode === 'all';
+}
+
+/** The mode is Regicide (M19): every player has a king to keep alive. */
+export function hasRegicide(mode: VictoryMode): boolean {
+  return mode === 'regicide';
+}
+
+/** The mode is King of the Hill (M19): a team wins by holding the hill HILL.holdMs in all. */
+export function hasHill(mode: VictoryMode): boolean {
+  return mode === 'hill';
+}
+
+/** The templates with a fair hill site (M19). */
+export const HILL_TEMPLATES: readonly MapTemplate[] = ['meadow', 'wilderness', 'fortress'];
+
+/** Whether a new match of `template` may be set up with `mode`; a saved match keeps whatever mode it has. */
+export function victoryAllowed(mode: VictoryMode, template: MapTemplate): boolean {
+  return !hasHill(mode) || HILL_TEMPLATES.includes(template);
 }
 
 /** Treaty length in game minutes (0 = none, M16). */
@@ -102,7 +122,7 @@ export function defaultSetupConfig(seed: number = randomSeed()): GameSetupConfig
     civ: DEFAULT_CIV,
     aiCivs: 'mixed',
     seed: clampSeed(seed),
-    victory: 'conquest_wonder',
+    victory: DEFAULT_VICTORY,
     ...MODE_DEFAULTS,
   };
 }
@@ -131,21 +151,24 @@ export function clampAiCount(count: number): number {
 /**
  * Applies a partial change and returns a valid config: unsupported
  * template / difficulty / civ / victory / treaty / start-resource / speed
- * values fall back to the working ones (or defaults), numbers are clamped
+ * values fall back to the working ones (or defaults), as does a victory
+ * mode the template does not allow (victoryAllowed, M19); numbers are clamped
  * (allies to 0..aiCount - 1, so a smaller AI count re-clamps them).
+ * For setup input only: loading a save never passes through it.
  */
 export function withSetup(base: GameSetupConfig, change: Partial<GameSetupConfig>): GameSetupConfig {
   const next = { ...base, ...change };
   const aiCount = clampAiCount(next.aiCount);
+  const template = AVAILABLE_TEMPLATES.includes(next.template) ? next.template : 'meadow';
   return {
-    template: AVAILABLE_TEMPLATES.includes(next.template) ? next.template : 'meadow',
+    template,
     mapSize: MAP_SIZE_IDS.includes(next.mapSize) ? next.mapSize : 'medium',
     aiCount,
     difficulty: AVAILABLE_DIFFICULTIES.includes(next.difficulty) ? next.difficulty : 'easy',
     civ: AVAILABLE_CIVS.includes(next.civ) ? next.civ : DEFAULT_CIV,
     aiCivs: next.aiCivs !== 'mixed' && AVAILABLE_CIVS.includes(next.aiCivs) ? next.aiCivs : 'mixed',
     seed: clampSeed(next.seed),
-    victory: VICTORY_MODES.includes(next.victory) ? next.victory : 'conquest_wonder',
+    victory: VICTORY_MODES.includes(next.victory) && victoryAllowed(next.victory, template) ? next.victory : DEFAULT_VICTORY,
     allies: clampAllies(next.allies, aiCount),
     treatyMin: TREATY_MINUTES.includes(next.treatyMin) ? next.treatyMin : MODE_DEFAULTS.treatyMin,
     startResources: START_RESOURCE_IDS.includes(next.startResources) ? next.startResources : MODE_DEFAULTS.startResources,

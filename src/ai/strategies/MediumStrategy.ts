@@ -4,8 +4,8 @@ import { BUILDING_SPECS } from '../../ecs/archetypes/building';
 import { UNIT_SPECS } from '../../ecs/archetypes/unit';
 import { isUnitAvailable } from '../../game/availability';
 import { TECH_SPECS } from '../../game/technologies';
-import { baseUnitType, civUnitType } from '../../game/civUnits';
-import { BASE_UNIT_TYPES, type BaseUnitType, type BuildingType, type Resources, type TechId } from '../../types';
+import { baseUnitType, civUnitType, TRAINABLE_UNIT_TYPES } from '../../game/civUnits';
+import type { BaseUnitType, BuildingType, Resources, TechId } from '../../types';
 import type { AIContext } from '../AIPlayer';
 import { chebyshev, type TileCoord } from '../../iso/coordinates';
 import { ArmyControl } from '../ArmyControl';
@@ -419,7 +419,7 @@ export class MediumStrategy extends BaseStrategy {
   /** Mix for the current age, countered against what has been seen, limited to what is unlocked. */
   protected armyMix(ctx: AIContext, view: WorldView): ReturnType<typeof counterMix> {
     const base = this.tune.armyByAge[ctx.player.age] ?? {};
-    const allowed = BASE_UNIT_TYPES.filter(
+    const allowed = TRAINABLE_UNIT_TYPES.filter(
       // Monks are trained apart (MonkPlay), never as part of the army mix.
       (t) => t !== 'villager' && t !== 'scout' && t !== 'monk' && isUnitAvailable(t, ctx.player.age),
     );

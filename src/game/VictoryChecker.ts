@@ -4,8 +4,8 @@ import type { PlayerManager } from './PlayerManager';
 import { timeLeading, type TimeVictoryRule } from './timeVictory';
 
 /** How a match was decided. */
-export type VictoryCause = 'conquest' | 'wonder' | 'time' | 'mission';
-export const VICTORY_CAUSES: readonly VictoryCause[] = ['conquest', 'wonder', 'time', 'mission'];
+export type VictoryCause = 'conquest' | 'wonder' | 'time' | 'mission' | 'regicide' | 'hill';
+export const VICTORY_CAUSES: readonly VictoryCause[] = ['conquest', 'wonder', 'time', 'mission', 'regicide', 'hill'];
 
 export type VictoryState =
   | { kind: 'playing' }

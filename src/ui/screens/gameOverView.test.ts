@@ -28,7 +28,7 @@ describe('gameOverRowView in teams (M16)', () => {
 });
 
 describe('gameOverBody (M16 team wording)', () => {
-  const causes = ['conquest', 'wonder', 'time'] as const;
+  const causes = ['conquest', 'wonder', 'time', 'regicide', 'hill'] as const;
 
   it('without teams every cause and outcome keeps its free-for-all line', () => {
     for (const cause of [...causes, 'mission'] as const) {

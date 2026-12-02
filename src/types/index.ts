@@ -62,7 +62,7 @@ export interface Resources {
   gold: number;
 }
 
-/** Units every civ can train (CLAUDE.md 4.4). */
+/** Units every civ has (CLAUDE.md 4.4); all but the king can be trained (civUnits TRAINABLE_UNIT_TYPES). */
 export type BaseUnitType =
   | 'villager'
   | 'scout'
@@ -82,7 +82,9 @@ export type BaseUnitType =
   | 'frigate'
   // M17: traders (the market trains the cart, the dock the ship)
   | 'trade_cart'
-  | 'trade_ship';
+  | 'trade_ship'
+  // M19: spawned in Regicide, never trained
+  | 'king';
 
 /** Civ-specific units (M8); each replaces one base unit for its civ. */
 export type UniqueUnitType =
@@ -115,6 +117,7 @@ export const BASE_UNIT_TYPES: readonly BaseUnitType[] = [
   'frigate',
   'trade_cart',
   'trade_ship',
+  'king',
 ];
 
 export type BuildingType =

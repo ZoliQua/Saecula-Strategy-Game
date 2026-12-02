@@ -62,7 +62,7 @@ export function decayedPeak(previous: number, now: number, elapsedMs: number, de
 }
 
 /**
- * Enemy military seen: sightings of everything but villagers, scouts and
+ * Enemy military seen: sightings of everything but villagers, scouts, kings (M19) and
  * traders (exact types: a cossack counts). Trade carts and ships (M17) are
  * unarmed economy like villagers; fishing boats and transports still count,
  * as since M14 (left as they were, so existing water matches play on unchanged).
@@ -70,7 +70,7 @@ export function decayedPeak(previous: number, now: number, elapsedMs: number, de
 export function enemyArmySeen(sightings: Readonly<Partial<Record<UnitType, number>>>): number {
   let n = 0;
   for (const [type, count] of Object.entries(sightings) as [UnitType, number][]) {
-    if (type !== 'villager' && type !== 'scout' && tradePostType(type) === null) n += count;
+    if (type !== 'villager' && type !== 'scout' && type !== 'king' && tradePostType(type) === null) n += count;
   }
   return n;
 }

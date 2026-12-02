@@ -26,8 +26,8 @@ function baseOf(u: UniqueUnitType): BaseUnitType {
   return b;
 }
 
-/** Land units outside the duel's counter pool: the villager, the cannon (a siege unit) and the monk (it converts, M11). */
-const NOT_COUNTERS: ReadonlySet<BaseUnitType> = new Set<BaseUnitType>(['villager', 'cannon', 'monk']);
+/** Land units outside the duel's counter pool: the villager, the cannon (a siege unit), the monk (it converts, M11) and the king (never trained, no cost, M19). */
+const NOT_COUNTERS: ReadonlySet<BaseUnitType> = new Set<BaseUnitType>(['villager', 'cannon', 'monk', 'king']);
 
 /**
  * Base land military units available by `age` other than `base` itself (a mirror match says

@@ -6,6 +6,7 @@ import { civArtGroupsInUse, unitArtKey } from '../artKeys';
 import { shadowKey, shareNormalMap } from '../lighting/litTextures';
 import { PAINTED_HEADINGS } from './layout';
 import { spendPaintBudget } from './paintBudget';
+import { unitSheetType } from './sheetType';
 import { createSheet, frameBox, frameRect, paintSome, type DirtyFrame, type UnitSheet } from './sheet';
 
 /**
@@ -15,8 +16,8 @@ import { createSheet, frameBox, frameRect, paintSome, type DirtyFrame, type Unit
  * per-frame budget and uploads only the changed frames.
  * Frames that are not painted yet fall back to the heading's idle frame.
  *
- * Textures (per type and civ — artKeys unitArtKey — shared by every
- * player of that civ):
+ * Textures (per sheet type and civ — unitSheetType, artKeys unitArtKey —
+ * shared by every player of that civ):
  *  - `key`          albedo, team parts in neutral grey, normal map attached;
  *  - `maskKey(key)` team mask (same frames at half resolution, shares the normal map), drawn
  *                   on top and tinted with the player colour;
@@ -53,9 +54,9 @@ export function teamMaskKey(key: string): string {
   return `${key}#team`;
 }
 
-/** Texture key of a unit type's sheet for a civ. */
+/** Texture key of the sheet that draws a unit type for a civ. */
 export function unitTextureKey(type: UnitType, civ: CivId): string {
-  return unitArtKey(UNIT_SPECS[type].textureKey, civ);
+  return unitArtKey(UNIT_SPECS[unitSheetType(type, civ)].textureKey, civ);
 }
 
 /**
@@ -64,7 +65,8 @@ export function unitTextureKey(type: UnitType, civ: CivId): string {
  * a sheet (callers retry next frame) unless `force` (scene set-up, where
  * a hitch is harmless).
  */
-export function unitArt(scene: Phaser.Scene, type: UnitType, civ: CivId, force = false): UnitArt | null {
+export function unitArt(scene: Phaser.Scene, unitType: UnitType, civ: CivId, force = false): UnitArt | null {
+  const type = unitSheetType(unitType, civ);
   const key = unitTextureKey(type, civ);
   const hit = arts.get(key);
   if (hit && scene.textures.exists(key)) return hit;

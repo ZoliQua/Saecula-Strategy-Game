@@ -33,7 +33,7 @@ export function takeConvertGivenUp(monk: Entity): number | undefined {
 
 /**
  * Whether a monk of `playerId` may convert `target` (M11): a living enemy unit (M16: another
- * team's, never an ally's or Gaia's) that is not a monk or a ship (M14). None while the treaty holds (M16).
+ * team's, never an ally's or Gaia's) that is not a monk, a ship (M14) or a king (M19). None while the treaty holds (M16).
  */
 export function canConvert(target: Entity | undefined, playerId: number, teams: TeamLookup = NO_TEAMS, treaty: TreatyGate = NO_TREATY): target is Entity & Required<Pick<Entity, 'unit' | 'owner' | 'position'>> {
   return (
@@ -44,6 +44,7 @@ export function canConvert(target: Entity | undefined, playerId: number, teams: 
     !target.dying &&
     !target.building &&
     target.unit.unitType !== 'monk' &&
+    target.unit.unitType !== 'king' &&
     // Ships (M14) cannot be converted.
     !isNavalType(target.unit.unitType) &&
     areEnemies(teams, target.owner.playerId, playerId) &&
