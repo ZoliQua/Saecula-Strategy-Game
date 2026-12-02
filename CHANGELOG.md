@@ -58,6 +58,8 @@ raises the patch version.
   villagers instead of 10. The opening raid's hold stopped villager training
   at about 9, so the dock came only after the raids, and water games were
   decided by who happened to have one.
+- **Health bars under fog:** a damaged enemy's health bar no longer
+  shows on explored ground that is out of sight.
 
 ### For developers
 

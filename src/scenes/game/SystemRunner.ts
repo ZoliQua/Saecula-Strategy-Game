@@ -213,6 +213,7 @@ export class SystemRunner {
     // Shared vision (M16): the human's allies light its fog too.
     this.fogOfWar = new FogOfWarSystem(world, this.fogData, 1, undefined, (owner) => isFriendly(players, owner, viewer));
     this.render.setFogContext(this.fogData, 1);
+    this.healthBars.setFogContext(this.fogData, 1);
     this.ambientFx = new AmbientFxSystem(scene, world);
     this.ambientFx.setFogContext(this.fogData, 1);
     this.projectileRender.setFogContext(this.fogData);
